@@ -257,24 +257,29 @@ private struct MonitorStep: View {
     @ObservedObject private var l10n = L10n.shared
 
     var body: some View {
-        VStack(spacing: 18) {
-            StepHeader(icon: "gauge.with.dots.needle.50percent",
-                       title: l10n.s.obStepMonitorTitle,
-                       subtitle: l10n.s.obStepMonitorBody)
+        // The live System preview is the tallest step and can exceed the window,
+        // so it scrolls. The navigation bar lives outside `content`, so Back and
+        // Continue stay pinned and visible regardless of scroll position.
+        ScrollView {
+            VStack(spacing: 18) {
+                StepHeader(icon: "gauge.with.dots.needle.50percent",
+                           title: l10n.s.obStepMonitorTitle,
+                           subtitle: l10n.s.obStepMonitorBody)
 
-            // A live taste of the panel's System section.
-            SystemSection()
-                .frame(width: 320)
-                .onAppear { SystemMonitor.shared.panelDidAppear() }
-                .onDisappear { SystemMonitor.shared.panelDidDisappear() }
+                // A live taste of the panel's System section.
+                SystemSection()
+                    .frame(width: 320)
+                    .onAppear { SystemMonitor.shared.panelDidAppear() }
+                    .onDisappear { SystemMonitor.shared.panelDidDisappear() }
 
-            Text(l10n.s.obMonitorNoPermission)
-                .font(.system(size: 11.5))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 36)
-
-            Spacer()
+                Text(l10n.s.obMonitorNoPermission)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 36)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
         }
     }
 }

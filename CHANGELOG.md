@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.13.1] - 2026-06-15
+
+### Fixed
+- The System monitor step in the welcome tour now scrolls, so its content is never
+  clipped at the bottom on shorter windows.
+
 ## [2.13.0] - 2026-06-15
 
 ### Added
