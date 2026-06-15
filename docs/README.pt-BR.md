@@ -15,6 +15,14 @@ algumas chatices do dia a dia.
 IA. Nada sai do seu Mac, exceto uma verificação de atualização que você pode
 desligar. É nativo (SwiftUI + AppKit), não é Electron, então fica pequeno e rápido.
 
+**Instale com o [Homebrew](https://brew.sh):**
+
+```sh
+brew install --cask vorssaint/tap/vorssaint
+```
+
+Já tem o Vorssaint instalado? Adote a sua cópia no Homebrew sem reinstalar: `brew install --cask --adopt vorssaint/tap/vorssaint`. Você também pode [baixar o .dmg](https://github.com/vorssaint/vorssaint-utils/releases).
+
 <p align="center">
   <img src="screenshot.png" alt="O painel do Vorssaint na barra de menus: manter acordado, mixer de volume por app e monitor do sistema ao vivo com temperaturas, uso de CPU e GPU e pressão de memória" width="420">
 </p>
@@ -70,7 +78,18 @@ textos e links para você arrastar entre apps, janelas e desktops.
 
 ## Instalação
 
-### Download (recomendado)
+### Homebrew (recomendado)
+```sh
+brew install --cask vorssaint/tap/vorssaint
+```
+Já tem o Vorssaint instalado e não quer reinstalar? Adote a sua cópia no
+Homebrew:
+```sh
+brew install --cask --adopt vorssaint/tap/vorssaint
+```
+Depois disso, as atualizações chegam por `brew upgrade --cask vorssaint`.
+
+### Download
 Baixe o DMG mais recente em [**Releases**](https://github.com/vorssaint/vorssaint-utils/releases),
 abra e arraste o **Vorssaint** para **Aplicativos**.
 

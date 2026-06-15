@@ -19,6 +19,14 @@ volume per app, switch windows, and fix a few everyday annoyances.
 Nothing leaves your Mac except an update check you can turn off. It's native
 (SwiftUI + AppKit), not Electron, so it stays small and quick.
 
+**Install with [Homebrew](https://brew.sh):**
+
+```sh
+brew install --cask vorssaint/tap/vorssaint
+```
+
+Already have Vorssaint installed? Adopt your copy into Homebrew with no reinstall: `brew install --cask --adopt vorssaint/tap/vorssaint`. You can also [download the .dmg](https://github.com/vorssaint/vorssaint-utils/releases).
+
 <p align="center">
   <img src="docs/screenshot.png" alt="The Vorssaint menu bar panel: keep awake, a per-app volume mixer, and a live system monitor with temperatures, CPU and GPU load and memory pressure" width="420">
 </p>
@@ -74,7 +82,18 @@ links so you can drag them between apps, windows and Spaces.
 
 ## Install
 
-### Download (recommended)
+### Homebrew (recommended)
+```sh
+brew install --cask vorssaint/tap/vorssaint
+```
+Already have Vorssaint installed and don't want to reinstall it? Adopt your
+existing copy into Homebrew instead:
+```sh
+brew install --cask --adopt vorssaint/tap/vorssaint
+```
+After that, updates arrive with `brew upgrade --cask vorssaint`.
+
+### Download
 Grab the latest DMG from [**Releases**](https://github.com/vorssaint/vorssaint-utils/releases),
 open it and drag **Vorssaint** into **Applications**.
 
