@@ -284,6 +284,8 @@ extension Strings {
         obDoneHint: "在菜单栏（屏幕右上角）寻找那个黑洞图标。",
         obWhatsNewTitle: "此版本的新功能",
         obWhatsNewBody: "四项全新的可选功能。了解每项的工作方式，并开启你想要的功能。",
+        obLanguageUpdateTitle: "现在支持你的语言",
+        obLanguageUpdateBody: "Vorssaint 现在支持多种语言。选择你想使用的语言，随时可在设置中更改。",
 
         tabMonitor: "监视",
         monitorMenuBarSection: "在菜单栏中",

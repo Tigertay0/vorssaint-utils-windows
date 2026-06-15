@@ -2,15 +2,6 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// Measures the panel's natural content height so the popover can cap itself to
-/// the screen and scroll, instead of clipping the top when many blocks are on.
-private struct PanelHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
-
 /// Content of the menu bar popover: keep-awake controls, the volume mixer and
 /// the system monitor.
 struct MenuPanelView: View {
@@ -30,7 +21,13 @@ struct MenuPanelView: View {
     }
 
     var body: some View {
-        ScrollView(.vertical) {
+        // Hosted in a custom overlay-scroller container. SwiftUI's own ScrollView
+        // reserves a legacy scroller gutter on the right when the system is set to
+        // always show scroll bars, pushing the fixed-width content off-center. An
+        // overlay scroller floats over the content and reserves no space, so the
+        // panel stays centered whether or not it needs to scroll. The container also
+        // reports its content's natural height so the popover caps to the screen.
+        OverlayScrollView(measuredHeight: $contentHeight) {
             VStack(alignment: .leading, spacing: 12) {
                 UpdateBanner()
                 header
@@ -41,20 +38,10 @@ struct MenuPanelView: View {
             }
             .padding(12)
             .frame(width: 332)
-            .background(GeometryReader { proxy in
-                Color.clear.preference(key: PanelHeightKey.self, value: proxy.size.height)
-            })
         }
-        // Hide the scroll indicator: with the system set to always show scroll bars,
-        // a legacy ~17pt scroller is reserved on the right, which pushed the content
-        // left and left an uneven gap against the popover edge. Trackpad and wheel
-        // scrolling still work, and collapsible sections keep the panel short.
-        .scrollIndicators(.hidden)
-        // Before the first measurement, start from a compact estimate (not maxHeight)
-        // so the popover grows slightly into place rather than opening full-screen-tall
-        // and snapping down on first use.
+        // Start from a compact estimate before the first measurement so the popover
+        // grows into place rather than opening full-screen-tall.
         .frame(width: 332, height: min(contentHeight == 0 ? 480 : contentHeight, maxHeight))
-        .onPreferenceChange(PanelHeightKey.self) { contentHeight = $0 }
         .onAppear {
             awake.refreshPasswordlessStatus()
         }
@@ -141,6 +128,60 @@ struct MenuPanelView: View {
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
     }
+}
+
+// MARK: - Overlay scroll container
+
+/// A vertical scroll container that always uses an overlay scroller, so it never
+/// reserves a legacy gutter on the right (which, when the system is set to always
+/// show scroll bars, would push the fixed-width panel content off-center). The
+/// content is pinned to the full width; its natural height is reported back so the
+/// popover can size itself and cap to the screen.
+private struct OverlayScrollView<Content: View>: NSViewRepresentable {
+    @Binding var measuredHeight: CGFloat
+    let content: Content
+
+    init(measuredHeight: Binding<CGFloat>, @ViewBuilder content: () -> Content) {
+        _measuredHeight = measuredHeight
+        self.content = content()
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSScrollView()
+        scroll.hasVerticalScroller = true
+        scroll.hasHorizontalScroller = false
+        scroll.scrollerStyle = .overlay
+        scroll.autohidesScrollers = true
+        scroll.drawsBackground = false
+        scroll.borderType = .noBorder
+
+        let host = NSHostingView(rootView: content)
+        host.translatesAutoresizingMaskIntoConstraints = false
+        scroll.documentView = host
+        let clip = scroll.contentView
+        NSLayoutConstraint.activate([
+            host.topAnchor.constraint(equalTo: clip.topAnchor),
+            host.leadingAnchor.constraint(equalTo: clip.leadingAnchor),
+            host.trailingAnchor.constraint(equalTo: clip.trailingAnchor),
+            host.widthAnchor.constraint(equalTo: clip.widthAnchor),
+        ])
+        context.coordinator.host = host
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        scroll.scrollerStyle = .overlay
+        context.coordinator.host?.rootView = content
+        if let host = context.coordinator.host {
+            let height = host.fittingSize.height
+            if height > 1, abs(height - measuredHeight) > 0.5 {
+                DispatchQueue.main.async { measuredHeight = height }
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+    final class Coordinator { var host: NSHostingView<Content>? }
 }
 
 // MARK: - Update banner

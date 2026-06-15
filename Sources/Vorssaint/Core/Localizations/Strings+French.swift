@@ -284,6 +284,8 @@ extension Strings {
         obDoneHint: "Cherchez le trou noir dans la barre des menus, en haut à droite de l’écran.",
         obWhatsNewTitle: "Nouveautés de cette version",
         obWhatsNewBody: "Quatre nouvelles fonctionnalités optionnelles. Découvrez comment chacune fonctionne et activez celles que vous voulez.",
+        obLanguageUpdateTitle: "Maintenant dans votre langue",
+        obLanguageUpdateBody: "Vorssaint parle désormais plusieurs langues. Choisissez celle que vous voulez utiliser ; vous pouvez en changer à tout moment dans les Réglages.",
 
         tabMonitor: "Moniteur",
         monitorMenuBarSection: "Dans la barre des menus",
