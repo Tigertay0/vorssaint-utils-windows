@@ -30,8 +30,25 @@ cp build/dmg-background.png "$STAGING/.background/background.png"
 echo "▸ Creating writable image…"
 WORK="$(mktemp -d)"
 RW="$WORK/rw.dmg"
-hdiutil create -volname "$VOLUME" -srcfolder "$STAGING" -fs HFS+ -format UDRW -ov -quiet "$RW"
-hdiutil attach "$RW" -nobrowse -quiet
+# Clear any stale mount left by a previous attempt on the same runner.
+hdiutil detach "/Volumes/$VOLUME" -force 2>/dev/null || true
+# hdiutil can fail transiently on CI runners; retry a few times. No -quiet, so a
+# real error is visible in the build log rather than swallowed.
+created=0
+for attempt in 1 2 3; do
+    if hdiutil create -volname "$VOLUME" -srcfolder "$STAGING" -fs HFS+ -format UDRW -ov "$RW"; then
+        created=1
+        break
+    fi
+    echo "  hdiutil create failed (attempt $attempt of 3), retrying…" >&2
+    rm -f "$RW"
+    sleep 3
+done
+if [[ $created -ne 1 ]]; then
+    echo "✗ Could not create the disk image after 3 attempts" >&2
+    exit 1
+fi
+hdiutil attach "$RW" -nobrowse
 MOUNT="/Volumes/$VOLUME"
 
 echo "▸ Arranging window (icons, arrow, background)…"
