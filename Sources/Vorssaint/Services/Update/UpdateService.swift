@@ -96,7 +96,7 @@ final class UpdateService: ObservableObject {
                 self.lastChecked = Date()
                 guard let data, error == nil,
                       let release = try? JSONDecoder().decode(GitHubRelease.self, from: data) else {
-                    self.state = .failed(error?.localizedDescription ?? "—")
+                    self.state = .failed(error?.localizedDescription ?? "-")
                     return
                 }
                 let latest = release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV "))
@@ -149,7 +149,7 @@ final class UpdateService: ObservableObject {
             guard let self else { return }
             guard let tempURL, error == nil else {
                 DispatchQueue.main.async {
-                    self.state = offered.map { State.available(version: $0) } ?? .failed(error?.localizedDescription ?? "—")
+                    self.state = offered.map { State.available(version: $0) } ?? .failed(error?.localizedDescription ?? "-")
                 }
                 return
             }
@@ -182,9 +182,15 @@ final class UpdateService: ObservableObject {
         let script = """
         #!/bin/sh
         APP="$1"; DMG="$2"; PID="$3"
+        SCRIPT="$0"
         while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done
-        MNT="$(/usr/bin/mktemp -d)"
-        /usr/bin/hdiutil attach "$DMG" -nobrowse -quiet -mountpoint "$MNT" || { /usr/bin/open "$APP"; exit 1; }
+        MNT="$(/usr/bin/mktemp -d)" || { /usr/bin/open "$APP"; /bin/rm -f "$SCRIPT"; exit 1; }
+        if ! /usr/bin/hdiutil attach "$DMG" -nobrowse -quiet -mountpoint "$MNT"; then
+            /bin/rmdir "$MNT" 2>/dev/null
+            /bin/rm -f "$DMG" "$SCRIPT"
+            /usr/bin/open "$APP"
+            exit 1
+        fi
         SRC="$(/usr/bin/find "$MNT" -maxdepth 1 -name '*.app' -print -quit)"
         LAUNCH="$APP"
         if [ -n "$SRC" ]; then
@@ -201,25 +207,38 @@ final class UpdateService: ObservableObject {
                 # Clear ALL xattrs (quarantine + FinderInfo the DMG round-trip
                 # adds): FinderInfo breaks strict signature verification.
                 /usr/bin/xattr -cr "$STAGE" 2>/dev/null
-                if /bin/rm -rf "$DEST" && /bin/mv "$STAGE" "$DEST"; then
-                    LAUNCH="$DEST"
-                    # If the bundle was renamed, remove the old-named one. The
-                    # bundle id is unchanged, so macOS keeps every granted
-                    # permission for the new bundle.
-                    [ "$DEST" != "$APP" ] && /bin/rm -rf "$APP"
+                VERIFY_REQ='identifier "com.vorssaint.utils" and anchor apple generic and certificate leaf[subject.OU] = "3D485NHW29"'
+                if /usr/bin/codesign -v --deep --strict -R="$VERIFY_REQ" "$STAGE" 2>/dev/null \
+                    && /usr/sbin/spctl -a -t exec "$STAGE" >/dev/null 2>&1; then
+                    BACKUP="$DEST.update-old"
+                    /bin/rm -rf "$BACKUP"
+                    if { [ ! -d "$DEST" ] || /bin/mv "$DEST" "$BACKUP"; } \
+                        && /bin/mv "$STAGE" "$DEST"; then
+                        LAUNCH="$DEST"
+                        /bin/rm -rf "$BACKUP"
+                        # If the bundle was renamed, remove the old-named one.
+                        # This happens only after the new bundle is in place.
+                        [ "$DEST" != "$APP" ] && /bin/rm -rf "$APP"
+                    else
+                        [ -d "$BACKUP" ] && [ ! -d "$DEST" ] && /bin/mv "$BACKUP" "$DEST"
+                    fi
                 fi
             fi
             /bin/rm -rf "$STAGE"
         fi
-        /usr/bin/hdiutil detach "$MNT" -quiet 2>/dev/null
-        /bin/rm -f "$DMG"
+        /usr/bin/hdiutil detach "$MNT" -quiet 2>/dev/null \
+            || /usr/bin/hdiutil detach "$MNT" -force -quiet 2>/dev/null \
+            || true
+        /bin/rmdir "$MNT" 2>/dev/null
+        /bin/rm -f "$DMG" "$SCRIPT"
         /usr/bin/open "$LAUNCH"
         """
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("vorssaint-update.sh")
+            .appendingPathComponent("vorssaint-update-\(pid)-\(UUID().uuidString).sh")
         do {
             try script.write(to: scriptURL, atomically: true, encoding: .utf8)
         } catch {
+            try? FileManager.default.removeItem(atPath: dmgPath)
             state = .failed(error.localizedDescription)
             return
         }
@@ -230,6 +249,8 @@ final class UpdateService: ObservableObject {
         do {
             try task.run()
         } catch {
+            try? FileManager.default.removeItem(at: scriptURL)
+            try? FileManager.default.removeItem(atPath: dmgPath)
             state = .failed(error.localizedDescription)
             return
         }

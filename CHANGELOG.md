@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.15.2] - 2026-06-16
+
+### Fixed
+- The menu panel now resizes smoothly as sections collapse and expand, without
+  stale empty space or unnecessary scrolling.
+- The Settings window now stays open when clicking outside it, and only closes
+  when the user closes it intentionally.
+- Clicking the Settings window now hides the menu panel only when the panel is
+  overlapping it, while still allowing Settings and the panel to stay open side
+  by side for live layout changes.
+- App updates no longer open the language chooser or Buy Me a Coffee support
+  prompt automatically.
+
 ## [2.15.1] - 2026-06-16
 
 ### Fixed

@@ -10,10 +10,13 @@ final class AppActivationTracker {
 
     private(set) var mru: [pid_t] = []
     private let ownPid = ProcessInfo.processInfo.processIdentifier
+    private var started = false
 
     private init() {}
 
     func start() {
+        guard !started else { return }
+        started = true
         let center = NSWorkspace.shared.notificationCenter
         center.addObserver(self, selector: #selector(appActivated(_:)),
                            name: NSWorkspace.didActivateApplicationNotification, object: nil)
@@ -22,6 +25,10 @@ final class AppActivationTracker {
         if let front = NSWorkspace.shared.frontmostApplication {
             record(front.processIdentifier)
         }
+    }
+
+    deinit {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
     }
 
     /// MRU rank of an app; unseen apps sort after every known one.

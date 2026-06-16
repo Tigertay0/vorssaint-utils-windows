@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Unit tests
+        run: ./build.sh --test
+
       - name: Set up signing
         env:
           SIGNING_CERT_P12: ${{ secrets.SIGNING_CERT_P12 }}

@@ -122,8 +122,7 @@ final class StatusItemController {
     /// continuously only while at least one metric is pinned to the menu bar.
     private func syncMonitorMode() {
         let defaults = UserDefaults.standard
-        var interval = defaults.integer(forKey: DefaultsKey.monitorInterval)
-        if interval <= 0 { interval = 2 }
+        let interval = Defaults.sanitizedMonitorInterval(defaults.integer(forKey: DefaultsKey.monitorInterval))
         SystemMonitor.shared.setInterval(seconds: interval)
         SystemMonitor.shared.setMenuBarActive(MenuBarMetric.anyEnabled(in: defaults))
     }

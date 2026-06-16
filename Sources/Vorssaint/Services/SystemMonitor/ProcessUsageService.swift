@@ -15,8 +15,8 @@ struct ProcessUsage: Identifiable, Equatable {
 /// Answers "which apps are eating this resource?" for the panel's System
 /// section. CPU and memory come from `ps`; GPU comes from the accelerator's
 /// per-process `accumulatedGPUTime` counters, sampled as deltas between calls.
-/// Helper processes are consolidated under the app responsible for them, so
-/// Safari shows up once — not as a dozen "Web Content" rows.
+    /// Helper processes are consolidated under the app responsible for them, so
+    /// one app shows up once instead of as a pile of helper rows.
 final class ProcessUsageService {
     static let shared = ProcessUsageService()
 

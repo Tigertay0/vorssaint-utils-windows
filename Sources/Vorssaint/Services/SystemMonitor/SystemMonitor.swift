@@ -63,6 +63,8 @@ final class SystemMonitor: ObservableObject {
     private var intervalSeconds = 2
     private var panelClients = 0
     private var menuBarActive = false
+    private var refreshInFlight = false
+    private var pendingFullRefresh = false
 
     // SMC sensors
     private var smc: SMCClient?
@@ -179,6 +181,15 @@ final class SystemMonitor: ObservableObject {
     // MARK: - Refresh
 
     private func refresh(full: Bool) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in self?.refresh(full: full) }
+            return
+        }
+        if refreshInFlight {
+            pendingFullRefresh = pendingFullRefresh || full
+            return
+        }
+        refreshInFlight = true
         // Network and power are heavier to read, so sample them only when the
         // panel is open or that metric is pinned to the menu bar.
         let defaults = UserDefaults.standard
@@ -250,6 +261,12 @@ final class SystemMonitor: ObservableObject {
 
             DispatchQueue.main.async {
                 self.snapshot = next
+                self.refreshInFlight = false
+                let shouldRunFullRefresh = self.pendingFullRefresh
+                self.pendingFullRefresh = false
+                if shouldRunFullRefresh, self.shouldRun {
+                    self.refresh(full: self.panelVisible)
+                }
             }
         }
     }

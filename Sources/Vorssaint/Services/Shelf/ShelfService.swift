@@ -63,12 +63,18 @@ final class ShelfService: ObservableObject {
     }
 
     private let tempDir: URL = {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("VorssaintShelf", isDirectory: true)
+        let id = Bundle.main.bundleIdentifier ?? "com.vorssaint.utils"
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("VorssaintShelf", isDirectory: true)
+            .appendingPathComponent(id, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
 
-    private init() {}
+    private init() {
+        cleanTemporaryFiles()
+        cleanLegacyTemporaryFiles()
+    }
 
     var isVisible: Bool { panel?.isVisible == true }
 
@@ -285,8 +291,10 @@ final class ShelfService: ObservableObject {
     }
 
     func removeItem(_ id: UUID) {
+        let removed = items.filter { $0.id == id }
         items.removeAll { $0.id == id }
         selection.remove(id)
+        retireTemporaryPayloads(in: removed)
         noteInteraction()
     }
 
@@ -294,14 +302,18 @@ final class ShelfService: ObservableObject {
     /// tiles you dropped elsewhere leave the shelf.
     func removeItems(_ ids: [UUID]) {
         let set = Set(ids)
+        let removed = items.filter { set.contains($0.id) }
         items.removeAll { set.contains($0.id) }
         selection.subtract(set)
+        retireTemporaryPayloads(in: removed)
         noteInteraction()
     }
 
     func clear() {
+        let removed = items
         items = []
         selection = []
+        retireTemporaryPayloads(in: removed)
         noteInteraction()
     }
 
@@ -355,6 +367,48 @@ final class ShelfService: ObservableObject {
     private func append(_ item: Item) {
         items.append(item)
         noteInteraction()
+    }
+
+    private func retireTemporaryPayloads(in removed: [Item]) {
+        let urls = removed.compactMap { item -> URL? in
+            guard case let .file(url) = item.payload,
+                  isShelfTemporaryFile(url) else { return nil }
+            return url
+        }
+        guard !urls.isEmpty else { return }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .seconds(10 * 60)) {
+            let fm = FileManager.default
+            for url in urls where self.isShelfTemporaryFile(url) {
+                try? fm.removeItem(at: url)
+            }
+        }
+    }
+
+    private func cleanTemporaryFiles() {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(at: tempDir,
+                                                        includingPropertiesForKeys: nil) else { return }
+        for url in entries where isShelfTemporaryFile(url) {
+            try? fm.removeItem(at: url)
+        }
+    }
+
+    private func cleanLegacyTemporaryFiles() {
+        let legacyDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("VorssaintShelf", isDirectory: true)
+        guard legacyDir != tempDir,
+              let entries = try? FileManager.default.contentsOfDirectory(at: legacyDir,
+                                                                         includingPropertiesForKeys: nil)
+        else { return }
+        for url in entries where url.pathExtension.lowercased() == "png" {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private func isShelfTemporaryFile(_ url: URL) -> Bool {
+        let dir = tempDir.standardizedFileURL.path
+        let path = url.standardizedFileURL.path
+        return path.hasPrefix(dir + "/")
     }
 
     private func symbol(_ name: String) -> NSImage {

@@ -4,10 +4,10 @@ import Combine
 import CoreGraphics
 import SwiftUI
 
-/// Windows-style cut & paste for files in Finder: ⌘X marks the current
-/// selection, ⌘V moves it into the folder you're viewing. A global event tap
-/// claims those two shortcuts only while Finder is frontmost and no text field
-/// is being edited — so renaming and text editing keep working untouched.
+/// Cut and paste for files in Finder: ⌘X marks the current selection, ⌘V moves
+/// it into the folder you're viewing. A global event tap claims those two
+/// shortcuts only while Finder is frontmost and no text field is being edited,
+/// so renaming and text editing keep working untouched.
 ///
 /// The decision to swallow a keystroke is made synchronously (in-memory marks +
 /// the pasteboard change count + a fast Accessibility role check); the slow
@@ -47,6 +47,8 @@ final class FinderCutPaste: ObservableObject {
     private var runLoopSource: CFRunLoopSource?
     private var panel: NSPanel?
     private var resultDismiss: DispatchWorkItem?
+    private var operationGeneration = 0
+    private var moveInProgress = false
 
     private static let finderBundleID = "com.apple.finder"
 
@@ -144,6 +146,9 @@ final class FinderCutPaste: ObservableObject {
                 clearMarks()
                 return Unmanaged.passUnretained(event)
             }
+            guard !moveInProgress else {
+                return nil
+            }
             pasteAsync()
             return nil
         default:
@@ -172,14 +177,20 @@ final class FinderCutPaste: ObservableObject {
     // MARK: - Cut
 
     private func cutAsync() {
+        operationGeneration += 1
+        let generation = operationGeneration
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let urls = FinderBridge.selectionURLs()
-            DispatchQueue.main.async { self?.applyCut(urls) }
+            DispatchQueue.main.async {
+                guard let self, generation == self.operationGeneration else { return }
+                self.applyCut(urls)
+            }
         }
     }
 
     private func applyCut(_ urls: [URL]) {
         guard !urls.isEmpty else { clearMarks(); return }
+        moveInProgress = false
         marked = urls.map { MarkedItem(url: $0, icon: NSWorkspace.shared.icon(forFile: $0.path)) }
         // Also place the files on the pasteboard so a normal ⌘V elsewhere still
         // works as a copy, and so the move guard has a change count to anchor to.
@@ -194,10 +205,16 @@ final class FinderCutPaste: ObservableObject {
     // MARK: - Paste (move)
 
     private func pasteAsync() {
+        guard !moveInProgress else { return }
+        moveInProgress = true
+        operationGeneration += 1
+        let generation = operationGeneration
         let urls = marked.map(\.url)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let destPath = FinderBridge.insertionLocationPath() else {
-                DispatchQueue.main.async { self?.finishPaste(moved: 0, failed: urls.count) }
+                DispatchQueue.main.async {
+                    self?.finishPaste(generation: generation, moved: 0, failed: urls.count)
+                }
                 return
             }
             let dir = URL(fileURLWithPath: destPath, isDirectory: true)
@@ -206,11 +223,15 @@ final class FinderCutPaste: ObservableObject {
             for src in urls {
                 if Self.move(src, into: dir, fm: fm) { moved += 1 } else { failed += 1 }
             }
-            DispatchQueue.main.async { self?.finishPaste(moved: moved, failed: failed) }
+            DispatchQueue.main.async {
+                self?.finishPaste(generation: generation, moved: moved, failed: failed)
+            }
         }
     }
 
-    private func finishPaste(moved: Int, failed: Int) {
+    private func finishPaste(generation: Int, moved: Int, failed: Int) {
+        guard generation == operationGeneration else { return }
+        moveInProgress = false
         marked = []
         markedChangeCount = 0
         lastResult = MoveResult(moved: moved, failed: failed)
@@ -253,6 +274,8 @@ final class FinderCutPaste: ObservableObject {
 
     func clearMarks() {
         guard !marked.isEmpty || lastResult != nil else { return }
+        operationGeneration += 1
+        moveInProgress = false
         marked = []
         markedChangeCount = 0
         lastResult = nil

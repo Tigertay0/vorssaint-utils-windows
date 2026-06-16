@@ -38,13 +38,17 @@ else
     SDK="$(xcrun --show-sdk-path)"
 fi
 
-# --test: compile and run the standalone unit tests (pure metric helpers only —
-# no app, no UI, no IOKit), then exit. Fast and deterministic; no XCTest needed.
+# --test: compile and run the standalone unit tests (pure helpers only: metrics,
+# defaults, localization contracts; no app, no UI, no IOKit), then exit. Fast and
+# deterministic; no XCTest needed.
 if (( TEST )); then
     echo "▸ Building & running unit tests against $(basename "$SDK")…"
     rm -rf build
     mkdir -p build
     swiftc -O -target "$TARGET" -sdk "$SDK" \
+        Sources/Vorssaint/Core/Defaults.swift \
+        Sources/Vorssaint/Core/Localization.swift \
+        Sources/Vorssaint/Core/Localizations/Strings+*.swift \
         Sources/Vorssaint/Services/Metrics/MetricFormat.swift \
         Sources/Vorssaint/Services/CleaningMode/CleaningUnlockCounter.swift \
         Tests/MetricsTests.swift \
@@ -101,40 +105,126 @@ xattr -cr "$STAGE"
 ENTITLEMENTS="Resources/Vorssaint.entitlements"
 DEVID="$(security find-identity -v -p codesigning 2>/dev/null | grep 'Developer ID Application' | head -1 | sed -E 's/.*"(.*)".*/\1/')"
 LEGACY_IDENTITY="Vorssaint Utils Signing"
-if [[ -n "$DEVID" ]]; then
-    echo "  signing with Developer ID (hardened runtime): $DEVID"
-    codesign --force --options runtime --timestamp \
-        --entitlements "$ENTITLEMENTS" --sign "$DEVID" "$STAGE"
-elif security find-identity -p codesigning 2>/dev/null | grep -q "$LEGACY_IDENTITY"; then
-    echo "  signing with legacy self-signed identity: $LEGACY_IDENTITY"
-    codesign --force --sign "$LEGACY_IDENTITY" "$STAGE"
-else
-    echo "  signing ad-hoc (no identity installed — run Tools/setup-signing.sh)"
-    codesign --force --sign - "$STAGE"
-fi
-codesign --verify --strict "$STAGE"
+codesign_target() {
+    local target="$1"
+    if [[ -n "$DEVID" ]]; then
+        codesign --force --options runtime --timestamp \
+            --entitlements "$ENTITLEMENTS" --sign "$DEVID" "$target"
+    elif security find-identity -p codesigning 2>/dev/null | grep -q "$LEGACY_IDENTITY"; then
+        codesign --force --sign "$LEGACY_IDENTITY" "$target"
+    else
+        codesign --force --sign - "$target"
+    fi
+}
+
+sign_bundle() {
+    local bundle="$1"
+    local executable="$bundle/Contents/MacOS/$EXECUTABLE"
+    xattr -cr "$bundle"
+
+    if [[ -n "$DEVID" ]]; then
+        echo "  signing with Developer ID (hardened runtime): $DEVID"
+    elif security find-identity -p codesigning 2>/dev/null | grep -q "$LEGACY_IDENTITY"; then
+        echo "  signing with legacy self-signed identity: $LEGACY_IDENTITY"
+    else
+        echo "  signing ad-hoc (no identity installed — run Tools/setup-signing.sh)"
+    fi
+    codesign_target "$bundle"
+
+    # macOS can attach provenance metadata immediately after file creation.
+    # If that lands just after signing, sign once more against the settled bundle
+    # so the app remains valid when launched or copied to /Applications.
+    sleep 0.2
+    if ! codesign --verify --deep --strict "$bundle" >/dev/null 2>&1; then
+        echo "  re-signing after filesystem metadata settled"
+        xattr -cr "$bundle"
+        codesign_target "$bundle"
+    fi
+    [[ -f "$executable" ]] && codesign --verify --strict "$executable"
+    codesign --verify --deep --strict "$bundle"
+}
+
+sign_bundle "$STAGE"
+
+process_is_running() {
+    local proc="$1"
+    if (( ${#proc} > 15 )); then
+        pgrep -f "/Contents/MacOS/$proc" >/dev/null 2>&1
+    else
+        pgrep -x "$proc" >/dev/null 2>&1
+    fi
+}
+
+stop_process() {
+    local proc="$1"
+    if (( ${#proc} > 15 )); then
+        pkill -f "/Contents/MacOS/$proc" 2>/dev/null || true
+    else
+        pkill -x "$proc" 2>/dev/null || true
+    fi
+    for _ in {1..50}; do
+        if ! process_is_running "$proc"; then
+            return 0
+        fi
+        sleep 0.1
+    done
+    echo "✗ $proc is still running — quit it and retry" >&2
+    return 1
+}
+
+wait_for_launch_metadata() {
+    local bundle="$1"
+    for _ in {1..100}; do
+        if xattr -p com.apple.macl "$bundle" >/dev/null 2>&1; then
+            # LaunchServices and provenance tagging can continue touching the
+            # bundle for several seconds after the first launch on recent macOS.
+            sleep 12
+            return 0
+        fi
+        sleep 0.1
+    done
+    return 0
+}
 
 mkdir -p "build/stage"
-rm -rf "build/stage/$APP_NAME.app"
-ditto "$STAGE" "build/stage/$APP_NAME.app"
-echo "✓ Bundle ready: build/stage/$APP_NAME.app"
+BUILD_STAGE="build/stage/$APP_NAME.app"
+rm -rf "$BUILD_STAGE"
+ditto "$STAGE" "$BUILD_STAGE"
+xattr -cr "$BUILD_STAGE"
+if ! codesign --verify --deep --strict "$BUILD_STAGE" >/dev/null 2>&1; then
+    if xattr -lr "$BUILD_STAGE" 2>/dev/null | grep -Eq 'com\.apple\.(FinderInfo|ResourceFork|provenance|fileprovider)'; then
+        echo "  build/stage copy has local filesystem metadata; temp bundle was verified"
+    else
+        codesign --verify --deep --strict "$BUILD_STAGE"
+    fi
+fi
+echo "✓ Bundle ready: $BUILD_STAGE"
 
 if (( INSTALL )); then
     echo "▸ Installing into /Applications…"
-    pkill -x "$EXECUTABLE" 2>/dev/null || true
+    stop_process "$EXECUTABLE"
     # Remove the pre-rename apps so two menu bar items never coexist. Same bundle
     # id, so macOS keeps the granted permissions for the new bundle.
     for legacy in "Vorss:Vorss" "Vorssaint Utils:VorssaintUtils"; do
         name="${legacy%%:*}"; proc="${legacy##*:}"
         if [[ -d "/Applications/$name.app" ]]; then
-            pkill -x "$proc" 2>/dev/null || true
+            stop_process "$proc"
             rm -rf "/Applications/$name.app"
             echo "  (legacy $name.app removed)"
         fi
     done
     sleep 0.5
-    rm -rf "/Applications/$APP_NAME.app"
-    ditto "$STAGE" "/Applications/$APP_NAME.app"
-    echo "✓ Installed: /Applications/$APP_NAME.app"
-    open "/Applications/$APP_NAME.app"
+    INSTALL_DEST="/Applications/$APP_NAME.app"
+    rm -rf "$INSTALL_DEST"
+    ditto "$STAGE" "$INSTALL_DEST"
+    sleep 2
+    sign_bundle "$INSTALL_DEST"
+    open "$INSTALL_DEST"
+    wait_for_launch_metadata "$INSTALL_DEST"
+    stop_process "$EXECUTABLE"
+    sign_bundle "$INSTALL_DEST"
+    echo "✓ Installed: $INSTALL_DEST"
+    open "$INSTALL_DEST"
+    wait_for_launch_metadata "$INSTALL_DEST"
+    codesign --verify --deep --strict "$INSTALL_DEST"
 fi

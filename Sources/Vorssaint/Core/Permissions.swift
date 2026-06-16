@@ -16,6 +16,9 @@ final class Permissions: ObservableObject {
     /// grants it in System Settings.
     @Published private(set) var fullDiskAccess = false
 
+    private var activePermissionTimer: Timer?
+    private var activationObserver: NSObjectProtocol?
+
     private init() {
         refresh()
         // Cheap always-on watch for Accessibility and Screen Recording: those are
@@ -30,13 +33,19 @@ final class Permissions: ObservableObject {
         }
         timer.tolerance = 1
         RunLoop.main.add(timer, forMode: .common)
+        activePermissionTimer = timer
         // Re-check everything the instant the user returns from System Settings
         // (e.g. after relaunching for Full Disk Access), so the state reflects
         // immediately instead of waiting for the next launch.
-        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
-                                               object: nil, queue: .main) { [weak self] _ in
+        activationObserver = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+                                                                    object: nil, queue: .main) { [weak self] _ in
             self?.refresh()
         }
+    }
+
+    deinit {
+        activePermissionTimer?.invalidate()
+        if let activationObserver { NotificationCenter.default.removeObserver(activationObserver) }
     }
 
     /// Full refresh including Full Disk Access. Runs at launch and on activation.
@@ -114,20 +123,18 @@ final class Permissions: ObservableObject {
     }
 
     /// Full Disk Access has no prompt API, and an app only shows up (toggled
-    /// off) in its System Settings list once it has *attempted* to read a
-    /// protected location. So touch a few data-vault paths to register the app,
-    /// then open the pane. Two things make this reliable: the TCC database read
-    /// always fires (that file always exists and is always FDA-gated), and the
-    /// pane opens only after a short delay so tccd has recorded the denial before
-    /// System Settings reads the list. If it still does not appear, the user can
-    /// add the app with the list's "+" button (see the hint under the button).
+    /// off) in its System Settings list once it has attempted to read a
+    /// protected location. Touch likely protected paths to register the app,
+    /// then open the pane after a short delay so tccd has recorded the denial
+    /// before System Settings reads the list. If it still does not appear, the
+    /// user can add the app with the list's "+" button.
     func requestFullDiskAccess() {
         DispatchQueue.global(qos: .userInitiated).async {
             let home = NSHomeDirectory()
             let fm = FileManager.default
-            // The TCC database is the dependable trigger: it always exists and a
-            // read is always denied without Full Disk Access. Reading it is what
-            // registers the app with tccd.
+            // The TCC database is the classic trigger when present. Some macOS
+            // versions omit it, so the protected directories below are the
+            // fallback registration attempts.
             let tccDB = (home as NSString)
                 .appendingPathComponent("Library/Application Support/com.apple.TCC/TCC.db")
             _ = try? Data(contentsOf: URL(fileURLWithPath: tccDB), options: .mappedIfSafe)

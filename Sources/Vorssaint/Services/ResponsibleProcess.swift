@@ -3,11 +3,11 @@ import Darwin
 
 /// Maps helper processes to the app responsible for them and gives processes
 /// a human name. Shared by the resource breakdown and the volume mixer, so
-/// "Safari Web Content" always rolls up into Safari with its proper icon.
+/// helper processes roll up into their app with its proper icon.
 enum ResponsibleProcess {
     /// `responsibility_get_pid_responsible_for_pid`, exported by libsystem and
-    /// used by Activity Monitor for the same grouping; resolved at runtime so
-    /// a missing symbol degrades to per-process rows instead of breaking.
+    /// used by the system for the same grouping; resolved at runtime so a
+    /// missing symbol degrades to per-process rows instead of breaking.
     private static let resolve: (@convention(c) (pid_t) -> pid_t)? = {
         guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2) /* RTLD_DEFAULT */,
                                  "responsibility_get_pid_responsible_for_pid")

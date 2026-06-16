@@ -3,8 +3,8 @@ import Combine
 import CoreGraphics
 
 /// Inverts the scroll direction of mouse wheels only, leaving the trackpad on
-/// macOS natural scrolling — the UnnaturalScrollWheels recipe: a modifying tap
-/// at the HID level (before the window server derives pixel deltas from the
+/// macOS natural scrolling: a modifying tap at the HID level (before the window
+/// server derives pixel deltas from the
 /// wheel ticks), appended at the tail, flipping only the line delta.
 ///
 /// Wheel detection: discrete events (`isContinuous == 0`) are wheels; events
@@ -83,7 +83,7 @@ final class ScrollInverter: ObservableObject {
 
         if event.getIntegerValueField(.scrollWheelEventIsContinuous) == 0 {
             // Classic wheel tick: flip the line delta and let the window
-            // server derive the rest. Vertical only — Windows behavior.
+            // server derive the rest. Vertical only.
             event.setIntegerValueField(.scrollWheelEventDeltaAxis1,
                                        value: -event.getIntegerValueField(.scrollWheelEventDeltaAxis1))
         } else if event.getIntegerValueField(.scrollWheelEventMomentumPhase) == 0,

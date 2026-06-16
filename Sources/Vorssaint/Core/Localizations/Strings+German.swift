@@ -283,7 +283,6 @@ extension Strings {
         obStepDoneBody: "Vorssaint kümmert sich bereits um deinen Mac.",
         obDoneHint: "Halte Ausschau nach dem schwarzen Loch in der Menüleiste, oben rechts auf dem Bildschirm.",
         obWhatsNewTitle: "Neu in dieser Version",
-        obWhatsNewBody: "Vier neue optionale Funktionen. Sieh dir an, wie jede funktioniert, und aktiviere die, die du möchtest.",
         obLanguageUpdateTitle: "Jetzt in deiner Sprache",
         obLanguageUpdateBody: "Vorssaint spricht jetzt mehrere Sprachen. Wähle die, die du verwenden möchtest; du kannst sie jederzeit in den Einstellungen ändern.",
 

@@ -283,7 +283,6 @@ extension Strings {
         obStepDoneBody: "Vorssaint si sta già prendendo cura del tuo Mac.",
         obDoneHint: "Cerca il buco nero nella barra dei menu, in alto a destra dello schermo.",
         obWhatsNewTitle: "Novità di questa versione",
-        obWhatsNewBody: "Quattro nuove funzioni opzionali. Scopri come funziona ciascuna e attiva quelle che vuoi.",
         obLanguageUpdateTitle: "Ora nella tua lingua",
         obLanguageUpdateBody: "Vorssaint ora parla diverse lingue. Scegli quella che vuoi usare; puoi cambiarla quando vuoi nelle Impostazioni.",
 

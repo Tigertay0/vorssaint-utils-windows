@@ -6,7 +6,6 @@ enum DefaultsKey {
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
     static let onboardingStep = "onboardingStep"          // resume point if onboarding is interrupted
     static let featuresOnboardingVersion = "featuresOnboardingVersion" // last feature-tour version the user saw
-    static let lastUpdatePromptVersion = "lastUpdatePromptVersion"     // app version that last showed the post-update note
     static let defaultDuration = "defaultDurationMinutes" // 0 = indefinite
     static let batteryLimit = "batteryLimitPercent"       // 0 = never
     static let hotkeyEnabled = "hotkeyEnabled"
@@ -17,7 +16,7 @@ enum DefaultsKey {
     static let switcherEnabled = "switcherEnabled"
     static let switcherMergeTabs = "switcherMergeTabs"     // show one switcher entry per app (collapse all of an app's windows)
     static let autoCheckUpdates = "autoCheckUpdates"
-    static let appVolumes = "appVolumes"                  // [bundle id: 0...1]
+    static let appVolumes = "appVolumes"                  // [bundle id: 0...2]
     static let finderCutPasteEnabled = "finderCutPasteEnabled"
     static let autoQuitEnabled = "autoQuitEnabled"
     static let autoQuitExceptions = "autoQuitExceptions"  // [bundle id] kept running
@@ -32,6 +31,7 @@ enum DefaultsKey {
     static let menuBarPower = "menuBarPower"
     static let menuBarMemoryStyle = "menuBarMemoryStyle"   // dot | percent | both
     static let monitorInterval = "monitorIntervalSeconds"  // sampling cadence: 1/2/5
+    static let temperatureUnit = "temperatureUnit"          // celsius | fahrenheit
     // System monitor — which blocks appear in the panel.
     static let monitorShowSystem = "monitorShowSystem"
     static let monitorShowNetwork = "monitorShowNetwork"
@@ -69,64 +69,101 @@ enum DefaultsKey {
     static let simulateUpdate = "simulateUpdate"
 }
 
-/// Bump `currentFeatureSet` when a release introduces new features worth a
-/// one-time tour. Users who onboarded under an older value are shown the
-/// "what's new" pass once, then their stored value catches up.
+/// Bump `currentFeatureSet` when the first-run tour changes. Existing users are
+/// marked as caught up silently on update; the app should not open update popups.
 enum OnboardingInfo {
-    // 2: system monitor — network, power, history graphs and the configurable
-    // menu bar. Existing users see the one-time "what's new" pass for it, opening
-    // straight on the menu bar setup page.
-    // 3: Buy Me a Coffee support. Updaters see a one-time, gentle announcement
-    // that the project now accepts donations (and stays free), with a link.
+    // 2: system monitor, configurable panel and menu bar metrics.
+    // 3: app languages and Buy Me a Coffee support in first-run onboarding.
     static let currentFeatureSet = 3
 }
 
 enum Defaults {
+    static let allowedDurations = [0, 15, 30, 60, 120, 240, 480]
+    static let allowedBatteryLimits = [0, 5, 10, 15, 20]
+    static let allowedMonitorIntervals = [1, 2, 5]
+    static let allowedMenuBarMemoryStyles = ["dot", "percent", "both"]
+
+    static let registeredDefaults: [String: Any] = [
+        DefaultsKey.clamshellPreferred: false,
+        DefaultsKey.defaultDuration: 0,
+        DefaultsKey.batteryLimit: 10,
+        DefaultsKey.hotkeyEnabled: true,
+        DefaultsKey.showCountdown: false,
+        DefaultsKey.scrollInverterEnabled: false,
+        DefaultsKey.switcherEnabled: true,
+        DefaultsKey.switcherMergeTabs: false,
+        DefaultsKey.autoCheckUpdates: true,
+        // Finder never benefits from being "quit" (it just relaunches), so
+        // it's excepted out of the box.
+        DefaultsKey.autoQuitExceptions: ["com.apple.finder"],
+        // When the shelf is on, the shake gesture is on too (still toggleable).
+        DefaultsKey.shelfShakeToOpen: true,
+        // Menu bar metrics start off (the icon stays clean) and are opt-in.
+        // The panel shows every monitoring block by default; users hide what
+        // they don't want.
+        DefaultsKey.monitorInterval: 2,
+        DefaultsKey.temperatureUnit: TemperatureUnit.celsius.rawValue,
+        DefaultsKey.menuBarMemoryStyle: "percent",
+        DefaultsKey.monitorShowSystem: true,
+        DefaultsKey.monitorShowNetwork: true,
+        DefaultsKey.monitorShowPower: true,
+        DefaultsKey.monitorShowMixer: true,
+        DefaultsKey.monitorGraphCPU: true,
+        DefaultsKey.monitorGraphGPU: true,
+        DefaultsKey.monitorGraphMemory: true,
+        DefaultsKey.monitorGraphNetwork: true,
+        DefaultsKey.monitorGraphPower: true,
+        DefaultsKey.monitorGraphBattery: true,
+        // Every per-item block shows by default; users hide what they don't want.
+        DefaultsKey.monitorSysTemps: true,
+        DefaultsKey.monitorSysCPU: true,
+        DefaultsKey.monitorSysGPU: true,
+        DefaultsKey.monitorSysBattery: true,
+        DefaultsKey.monitorSysMemory: true,
+        DefaultsKey.monitorSysUptime: true,
+        DefaultsKey.monitorNetSpeed: true,
+        DefaultsKey.monitorNetTotals: true,
+        DefaultsKey.monitorNetTest: true,
+        DefaultsKey.monitorPwrSystem: true,
+        DefaultsKey.monitorPwrAdapter: true,
+        DefaultsKey.monitorPwrBattery: true,
+        DefaultsKey.monitorPwrHealth: true,
+    ]
+
     static func register() {
-        UserDefaults.standard.register(defaults: [
-            DefaultsKey.clamshellPreferred: false,
-            DefaultsKey.defaultDuration: 0,
-            DefaultsKey.batteryLimit: 10,
-            DefaultsKey.hotkeyEnabled: true,
-            DefaultsKey.showCountdown: false,
-            DefaultsKey.scrollInverterEnabled: false,
-            DefaultsKey.switcherEnabled: true,
-            DefaultsKey.switcherMergeTabs: false,
-            DefaultsKey.autoCheckUpdates: true,
-            // Finder never benefits from being "quit" (it just relaunches), so
-            // it's excepted out of the box.
-            DefaultsKey.autoQuitExceptions: ["com.apple.finder"],
-            // When the shelf is on, the shake gesture is on too (still toggleable).
-            DefaultsKey.shelfShakeToOpen: true,
-            // Menu bar metrics start off (the icon stays clean) and are opt-in.
-            // The panel shows every monitoring block by default; users hide what
-            // they don't want.
-            DefaultsKey.monitorInterval: 2,
-            DefaultsKey.menuBarMemoryStyle: "percent",
-            DefaultsKey.monitorShowSystem: true,
-            DefaultsKey.monitorShowNetwork: true,
-            DefaultsKey.monitorShowPower: true,
-            DefaultsKey.monitorShowMixer: true,
-            DefaultsKey.monitorGraphCPU: true,
-            DefaultsKey.monitorGraphGPU: true,
-            DefaultsKey.monitorGraphMemory: true,
-            DefaultsKey.monitorGraphNetwork: true,
-            DefaultsKey.monitorGraphPower: true,
-            DefaultsKey.monitorGraphBattery: true,
-            // Every per-item block shows by default; users hide what they don't want.
-            DefaultsKey.monitorSysTemps: true,
-            DefaultsKey.monitorSysCPU: true,
-            DefaultsKey.monitorSysGPU: true,
-            DefaultsKey.monitorSysBattery: true,
-            DefaultsKey.monitorSysMemory: true,
-            DefaultsKey.monitorSysUptime: true,
-            DefaultsKey.monitorNetSpeed: true,
-            DefaultsKey.monitorNetTotals: true,
-            DefaultsKey.monitorNetTest: true,
-            DefaultsKey.monitorPwrSystem: true,
-            DefaultsKey.monitorPwrAdapter: true,
-            DefaultsKey.monitorPwrBattery: true,
-            DefaultsKey.monitorPwrHealth: true,
-        ])
+        UserDefaults.standard.register(defaults: registeredDefaults)
+    }
+
+    static func sanitizedDefaultDuration(_ minutes: Int) -> Int {
+        allowedDurations.contains(minutes) ? minutes : 0
+    }
+
+    static func sanitizedBatteryLimit(_ percent: Int) -> Int {
+        allowedBatteryLimits.contains(percent) ? percent : 10
+    }
+
+    static func sanitizedMonitorInterval(_ seconds: Int) -> Int {
+        allowedMonitorIntervals.contains(seconds) ? seconds : 2
+    }
+
+    static func sanitizedMenuBarMemoryStyle(_ style: String) -> String {
+        allowedMenuBarMemoryStyles.contains(style) ? style : "percent"
+    }
+
+    static func sanitizedBundleIdentifierList(_ bundleIDs: [String]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for raw in bundleIDs {
+            let bundleID = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !bundleID.isEmpty, !seen.contains(bundleID) else { continue }
+            seen.insert(bundleID)
+            result.append(bundleID)
+        }
+        return result
+    }
+
+    static func sanitizedAppVolume(_ volume: Double) -> Double {
+        guard volume.isFinite else { return 1 }
+        return min(max(volume, 0), 2)
     }
 }

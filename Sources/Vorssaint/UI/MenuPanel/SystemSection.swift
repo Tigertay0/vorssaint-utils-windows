@@ -18,6 +18,7 @@ struct SystemSection: View {
     @AppStorage(DefaultsKey.monitorGraphGPU) private var graphGPU = true
     @AppStorage(DefaultsKey.monitorGraphMemory) private var graphMemory = true
     @AppStorage(DefaultsKey.monitorGraphBattery) private var graphBattery = true
+    @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
     @AppStorage(DefaultsKey.monitorSysTemps) private var sysTemps = true
     @AppStorage(DefaultsKey.monitorSysCPU) private var sysCPU = true
     @AppStorage(DefaultsKey.monitorSysGPU) private var sysGPU = true
@@ -178,7 +179,7 @@ struct SystemSection: View {
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
-            Text(value.map { String(format: "%.0f °C", $0) } ?? "—")
+            Text(value.map { MetricFormat.temperature($0, unit: displayTemperatureUnit) } ?? "-")
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -189,6 +190,10 @@ struct SystemSection: View {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(Color.primary.opacity(0.045))
         )
+    }
+
+    private var displayTemperatureUnit: TemperatureUnit {
+        TemperatureUnit(rawValue: temperatureUnit) ?? .celsius
     }
 
     // MARK: Hardware usage
@@ -291,7 +296,7 @@ struct SystemSection: View {
                     .minimumScaleFactor(0.8)
                     .frame(width: 52, alignment: .leading)
                 UsageBar(fraction: fraction ?? 0)
-                Text(fraction.map { String(format: "%.0f%%", $0 * 100) } ?? "—")
+                Text(fraction.map { String(format: "%.0f%%", $0 * 100) } ?? "-")
                     .font(.system(size: 11, weight: .medium))
                     .monospacedDigit()
                     .frame(width: 38, alignment: .trailing)
@@ -413,7 +418,7 @@ struct PressureIndicator: View {
         case .normal: return l10n.s.pressureNormal
         case .warning: return l10n.s.pressureWarning
         case .critical: return l10n.s.pressureCritical
-        case .unknown: return "—"
+        case .unknown: return "-"
         }
     }
 }

@@ -1,8 +1,7 @@
 import Foundation
 
-// Standalone unit tests for the pure metric helpers. Compiled with only
-// MetricFormat.swift (no IOKit, no UI) by `./build.sh --test`, so they run fast
-// and deterministically on any machine.
+// Standalone unit tests for pure helpers. Compiled without IOKit or UI by
+// `./build.sh --test`, so they run fast and deterministically on any machine.
 //
 // A tiny @main harness instead of XCTest: the Command Line Tools cannot run
 // `swift test`, and these checks need nothing more than equality assertions.
@@ -23,6 +22,11 @@ struct MetricsTests {
         func expectClose(_ actual: Double, _ expected: Double, _ label: String, tol: Double = 0.0001) {
             checks += 1
             if abs(actual - expected) > tol { failures.append("\(label): got \(actual), expected \(expected)") }
+        }
+        func expectFormat(_ format: String, _ expected: [String], _ label: String) {
+            checks += 1
+            let actual = formatSpecifiers(in: format)
+            if actual != expected { failures.append("\(label): got \(actual), expected \(expected)") }
         }
 
         // MARK: Byte / rate formatting
@@ -53,6 +57,79 @@ struct MetricsTests {
         expectEqual(MetricFormat.percent(1), "100%", "percent full")
         expectEqual(MetricFormat.percent(1.4), "100%", "percent clamps high")
         expectEqual(MetricFormat.percent(-0.2), "0%", "percent clamps low")
+        expectEqual(MetricFormat.temperature(0, unit: .celsius), "0 °C", "celsius freezing")
+        expectEqual(MetricFormat.temperature(0, unit: .fahrenheit), "32 °F", "fahrenheit freezing")
+        expectEqual(MetricFormat.temperature(41, unit: .fahrenheit), "106 °F", "fahrenheit rounds")
+
+        // MARK: Registered defaults
+
+        let registeredDefaults = Defaults.registeredDefaults
+        expect(registeredDefaults[DefaultsKey.hotkeyEnabled] as? Bool == true,
+               "global hotkey is on for clean installs")
+        expect(registeredDefaults[DefaultsKey.switcherEnabled] as? Bool == true,
+               "window switcher is on for clean installs")
+        expect(registeredDefaults[DefaultsKey.autoCheckUpdates] as? Bool == true,
+               "update checks are on for clean installs")
+        expect(registeredDefaults[DefaultsKey.shelfShakeToOpen] as? Bool == true,
+               "shelf shake opens by default once shelf is enabled")
+        expect(registeredDefaults[DefaultsKey.monitorInterval] as? Int == 2,
+               "monitor default interval stays at 2 seconds")
+        expect(registeredDefaults[DefaultsKey.temperatureUnit] as? String == TemperatureUnit.celsius.rawValue,
+               "temperature defaults to Celsius")
+        expect(registeredDefaults[DefaultsKey.menuBarMemoryStyle] as? String == "percent",
+               "memory menu bar style defaults to percent")
+        expect((registeredDefaults[DefaultsKey.autoQuitExceptions] as? [String]) == ["com.apple.finder"],
+               "Finder stays in the default auto-quit exception list")
+        expect(registeredDefaults[DefaultsKey.panelCollapsedSections] == nil,
+               "panel collapsed sections intentionally has no registered default")
+        expect(Defaults.sanitizedDefaultDuration(60) == 60, "valid default duration is preserved")
+        expect(Defaults.sanitizedDefaultDuration(999) == 0, "invalid default duration falls back to indefinite")
+        expect(Defaults.sanitizedBatteryLimit(15) == 15, "valid battery limit is preserved")
+        expect(Defaults.sanitizedBatteryLimit(100) == 10, "invalid battery limit falls back to default")
+        expect(Defaults.sanitizedMonitorInterval(5) == 5, "valid monitor interval is preserved")
+        expect(Defaults.sanitizedMonitorInterval(7) == 2, "invalid monitor interval falls back to default")
+        expect(Defaults.sanitizedMenuBarMemoryStyle("dot") == "dot", "valid memory style is preserved")
+        expect(Defaults.sanitizedMenuBarMemoryStyle("bad") == "percent", "invalid memory style falls back to percent")
+        expect(Defaults.sanitizedBundleIdentifierList([" com.example.One ", "", "com.example.One", "com.example.Two"])
+               == ["com.example.One", "com.example.Two"],
+               "bundle id lists are trimmed and deduplicated")
+        expectClose(Defaults.sanitizedAppVolume(1.5), 1.5, "valid app volume is preserved")
+        expectClose(Defaults.sanitizedAppVolume(3), 2, "high app volume clamps to boost maximum")
+        expectClose(Defaults.sanitizedAppVolume(-1), 0, "negative app volume clamps to mute")
+        expectClose(Defaults.sanitizedAppVolume(.infinity), 1, "non-finite app volume falls back to unity")
+
+        // MARK: Localization format contracts
+
+        let localizedStrings: [(AppLanguage, Strings)] = [
+            (.enUS, .enUS),
+            (.ptBR, .ptBR),
+            (.es, .es),
+            (.de, .de),
+            (.fr, .fr),
+            (.it, .it),
+            (.ja, .ja),
+            (.zhHans, .zhHans),
+        ]
+        expect(localizedStrings.count == AppLanguage.allCases.count, "all app languages are covered by tests")
+        for (language, strings) in localizedStrings {
+            let prefix = "localization \(language.rawValue)"
+            expectFormat(strings.cutMovedPluralFormat, ["d"], "\(prefix) cut plural format")
+            expectFormat(strings.uninstallerSelectedFormat, ["d", "d"], "\(prefix) uninstaller selected format")
+            expectFormat(strings.uninstallerFreedFormat, ["@"], "\(prefix) uninstaller freed format")
+            expectFormat(strings.shelfSelectedFormat, ["d"], "\(prefix) shelf selection format")
+            expectFormat(strings.powerAdapterMaxFormat, ["@"], "\(prefix) adapter max format")
+
+            let rendered = [
+                String(format: strings.cutMovedPluralFormat, 2),
+                String(format: strings.uninstallerSelectedFormat, 1, 3),
+                String(format: strings.uninstallerFreedFormat, "1 MB"),
+                String(format: strings.shelfSelectedFormat, 2),
+                String(format: strings.powerAdapterMaxFormat, "30 W"),
+            ]
+            for value in rendered {
+                expect(!value.isEmpty && !value.contains("%"), "\(prefix) renders format strings")
+            }
+        }
 
         // MARK: Network speed math
 
@@ -162,4 +239,31 @@ struct MetricsTests {
             exit(1)
         }
     }
+
+    private static func formatSpecifiers(in format: String) -> [String] {
+        var specifiers: [String] = []
+        var index = format.startIndex
+        while index < format.endIndex {
+            guard format[index] == "%" else {
+                index = format.index(after: index)
+                continue
+            }
+            index = format.index(after: index)
+            if index < format.endIndex, format[index] == "%" {
+                index = format.index(after: index)
+                continue
+            }
+            while index < format.endIndex {
+                let character = format[index]
+                if character.isLetter || character == "@" {
+                    specifiers.append(String(character))
+                    index = format.index(after: index)
+                    break
+                }
+                index = format.index(after: index)
+            }
+        }
+        return specifiers
+    }
+
 }

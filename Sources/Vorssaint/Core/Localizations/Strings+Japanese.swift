@@ -283,7 +283,6 @@ extension Strings {
         obStepDoneBody: "Vorssaint はすでにあなたの Mac を見守っています。",
         obDoneHint: "画面右上のメニューバーで、ブラックホールを探してください。",
         obWhatsNewTitle: "このバージョンの新機能",
-        obWhatsNewBody: "4つの新しいオプション機能。それぞれのしくみを確認して、使いたいものをオンにしてください。",
         obLanguageUpdateTitle: "あなたの言語に対応",
         obLanguageUpdateBody: "Vorssaint が複数の言語に対応しました。使いたい言語を選んでください。設定でいつでも変更できます。",
 

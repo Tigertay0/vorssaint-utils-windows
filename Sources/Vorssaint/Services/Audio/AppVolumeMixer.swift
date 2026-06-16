@@ -24,8 +24,8 @@ struct MixerApp: Identifiable, Equatable {
 ///
 /// For every app the user turns down, a muted CoreAudio process tap removes
 /// the app's sound from the output device, and an aggregate device re-renders
-/// the tapped stream with the chosen gain (the AudioCap architecture, public
-/// API since macOS 14.4). Apps at 100% are left completely untouched —
+/// the tapped stream with the chosen gain (public API since macOS 14.4). Apps
+/// at 100% are left completely untouched —
 /// bit-perfect passthrough, zero overhead. Volumes persist per app and
 /// re-apply when the app plays again.
 final class AppVolumeMixer: ObservableObject {
@@ -52,6 +52,8 @@ final class AppVolumeMixer: ObservableObject {
     private var lastAudibleVolume: [String: Double] = [:]
     private var listenerInstalled = false
     private var runningListeners = Set<AudioObjectID>()
+    private var currentOutputDeviceUID: String?
+    private var stopped = false
     private let buildQueue = DispatchQueue(label: "com.vorssaint.utils.mixer", qos: .userInitiated)
 
     private init() {}
@@ -61,7 +63,9 @@ final class AppVolumeMixer: ObservableObject {
     /// Starts watching audio processes. Saved volumes re-apply as soon as the
     /// matching app produces sound — no panel interaction needed.
     func start() {
-        guard Self.isSupported, !listenerInstalled else { return }
+        guard Self.isSupported else { return }
+        stopped = false
+        guard !listenerInstalled else { return }
         listenerInstalled = true
         installListener(selector: kAudioHardwarePropertyProcessObjectList)
         installListener(selector: kAudioHardwarePropertyDefaultOutputDevice)
@@ -70,6 +74,8 @@ final class AppVolumeMixer: ObservableObject {
 
     /// Tears every tap down so all apps return to untouched system output.
     func stopAll() {
+        stopped = true
+        buildingEngines.removeAll()
         for engine in engines.values { engine.stop() }
         engines.removeAll()
     }
@@ -102,7 +108,7 @@ final class AppVolumeMixer: ObservableObject {
     private func isUnity(_ volume: Double) -> Bool { abs(volume - 1) < 0.005 }
 
     func setVolume(_ volume: Double, for app: MixerApp) {
-        let clamped = min(max(volume, 0), Self.maxVolume)
+        let clamped = Defaults.sanitizedAppVolume(volume)
         persistVolume(clamped, for: app.id)
         if clamped > 0.001 { lastAudibleVolume[app.id] = clamped }
         if let index = apps.firstIndex(where: { $0.id == app.id }) {
@@ -123,9 +129,11 @@ final class AppVolumeMixer: ObservableObject {
     /// Main-thread only. Engine creation happens off-main (CoreAudio object
     /// setup takes tens of milliseconds) and lands back here exactly once.
     private func applyVolume(_ volume: Double, for app: MixerApp) {
+        guard !stopped else { return }
         if isUnity(volume) {
             // 100% only: remove the tap entirely, for true passthrough.
             engines.removeValue(forKey: app.id)?.stop()
+            clearPermissionIfNoActiveAdjustments()
             return
         }
         if let engine = engines[app.id] {
@@ -143,16 +151,36 @@ final class AppVolumeMixer: ObservableObject {
                     return
                 }
                 self.buildingEngines.remove(app.id)
+                guard !self.stopped else {
+                    engine?.stop()
+                    return
+                }
                 guard let engine else {
                     self.needsPermission = true
                     return
                 }
                 self.needsPermission = false
                 // The slider may have moved (or returned to 100%) while the
-                // engine was being built — honor the latest state.
-                let latest = self.apps.first { $0.id == app.id }?.volume ?? volume
+                // engine was being built, or the app's audio objects may have
+                // changed. Honor the latest state, never an old tap target.
+                guard let latestApp = self.apps.first(where: { $0.id == app.id }) else {
+                    engine.stop()
+                    return
+                }
+                let latest = latestApp.volume
+                if latestApp.audioObjects != engine.tappedObjects {
+                    engine.stop()
+                    self.applyVolume(latest, for: latestApp)
+                    return
+                }
+                if engine.outputDeviceUID != self.currentOutputDeviceUID {
+                    engine.stop()
+                    self.applyVolume(latest, for: latestApp)
+                    return
+                }
                 if self.isUnity(latest) {
                     engine.stop()
+                    self.clearPermissionIfNoActiveAdjustments()
                 } else {
                     engine.gain = Float(latest)
                     self.engines[app.id] = engine
@@ -167,6 +195,14 @@ final class AppVolumeMixer: ObservableObject {
         guard Self.isSupported else { return }
         let ownPid = ProcessInfo.processInfo.processIdentifier
         let saved = savedVolumes()
+        let outputUID = Self.defaultOutputDeviceUID()
+        let outputChanged = currentOutputDeviceUID != nil && outputUID != currentOutputDeviceUID
+        if outputChanged {
+            buildingEngines.removeAll()
+            for engine in engines.values { engine.stop() }
+            engines.removeAll()
+        }
+        currentOutputDeviceUID = outputUID
 
         var groups: [pid_t: [AudioObjectID]] = [:]
         var playing: Set<pid_t> = []
@@ -180,8 +216,8 @@ final class AppVolumeMixer: ObservableObject {
             guard Self.read(object, kAudioProcessPropertyPID, &pid), pid > 0, pid != ownPid else { continue }
 
             // Show every regular app that holds an audio connection, not only
-            // the ones making sound this instant — so Discord, Safari, etc.
-            // are adjustable before they play, and stay put between sounds.
+            // the ones making sound this instant, so apps are adjustable before
+            // they play and stay put between sounds.
             let owner = ResponsibleProcess.owner(of: pid)
             guard let app = NSRunningApplication(processIdentifier: owner),
                   app.activationPolicy == .regular else { continue }
@@ -209,9 +245,10 @@ final class AppVolumeMixer: ObservableObject {
         }
         next.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
-        guard next != apps else { return }
+        guard outputChanged || next != apps else { return }
         apps = next
         reconcileEngines(with: next)
+        clearPermissionIfNoActiveAdjustments()
     }
 
     /// Brings the running engines in line with the current app list: drops
@@ -220,7 +257,7 @@ final class AppVolumeMixer: ObservableObject {
     private func reconcileEngines(with apps: [MixerApp]) {
         let byId = Dictionary(uniqueKeysWithValues: apps.map { ($0.id, $0) })
 
-        for (id, engine) in engines {
+        for (id, engine) in Array(engines) {
             guard let app = byId[id] else {
                 engine.stop()
                 engines.removeValue(forKey: id)
@@ -242,7 +279,21 @@ final class AppVolumeMixer: ObservableObject {
     // MARK: - Persistence
 
     private func savedVolumes() -> [String: Double] {
-        UserDefaults.standard.dictionary(forKey: DefaultsKey.appVolumes) as? [String: Double] ?? [:]
+        let raw = UserDefaults.standard.dictionary(forKey: DefaultsKey.appVolumes) ?? [:]
+        var sanitized: [String: Double] = [:]
+        for (id, value) in raw {
+            let number: Double?
+            if let value = value as? Double {
+                number = value
+            } else if let value = value as? NSNumber {
+                number = value.doubleValue
+            } else {
+                number = nil
+            }
+            guard let number, number.isFinite else { continue }
+            sanitized[id] = Defaults.sanitizedAppVolume(number)
+        }
+        return sanitized
     }
 
     private func persistVolume(_ volume: Double, for id: String) {
@@ -253,6 +304,14 @@ final class AppVolumeMixer: ObservableObject {
             volumes[id] = volume
         }
         UserDefaults.standard.set(volumes, forKey: DefaultsKey.appVolumes)
+    }
+
+    private func clearPermissionIfNoActiveAdjustments() {
+        guard needsPermission,
+              !apps.contains(where: { !isUnity($0.volume) }),
+              engines.isEmpty,
+              buildingEngines.isEmpty else { return }
+        needsPermission = false
     }
 
     // MARK: - CoreAudio plumbing
@@ -268,6 +327,16 @@ final class AppVolumeMixer: ObservableObject {
         guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
                                          &address, 0, nil, &size, &objects) == noErr else { return [] }
         return objects
+    }
+
+    private static func defaultOutputDeviceUID() -> String? {
+        var defaultDevice = AudioObjectID(0)
+        guard read(AudioObjectID(kAudioObjectSystemObject),
+                   kAudioHardwarePropertyDefaultOutputDevice, &defaultDevice),
+              defaultDevice != 0 else { return nil }
+        var uidRef: CFString = "" as CFString
+        guard read(defaultDevice, kAudioDevicePropertyDeviceUID, &uidRef) else { return nil }
+        return uidRef as String
     }
 
     @discardableResult
@@ -292,6 +361,7 @@ final class AppVolumeMixer: ObservableObject {
 private protocol GainEngine: AnyObject {
     var gain: Float { get set }
     var tappedObjects: [AudioObjectID] { get }
+    var outputDeviceUID: String { get }
     func stop()
 }
 
@@ -302,6 +372,7 @@ private protocol GainEngine: AnyObject {
 @available(macOS 14.4, *)
 private final class TapGainEngine: GainEngine {
     let tappedObjects: [AudioObjectID]
+    let outputDeviceUID: String
     var gain: Float {
         get { gainBox.value }
         set { gainBox.value = min(max(newValue, 0), Float(AppVolumeMixer.maxVolume)) }
@@ -327,6 +398,7 @@ private final class TapGainEngine: GainEngine {
         var uidRef: CFString = "" as CFString
         guard AppVolumeMixer.read(defaultDevice, kAudioDevicePropertyDeviceUID, &uidRef) else { return nil }
         let outputUID = uidRef as String
+        outputDeviceUID = outputUID
 
         let description = CATapDescription(stereoMixdownOfProcesses: objects)
         description.muteBehavior = .mutedWhenTapped

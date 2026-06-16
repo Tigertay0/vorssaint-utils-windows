@@ -51,16 +51,23 @@ enum BundleMigration {
         OLD="$1"; NEW="$2"; PID="$3"
         while kill -0 "$PID" 2>/dev/null; do sleep 0.2; done
         if [ -d "$NEW" ]; then
-            /bin/rm -rf "$OLD"
+            TRASH="$HOME/.Trash"
+            /bin/mkdir -p "$TRASH" 2>/dev/null || true
+            BASE="$(basename "$OLD")"
+            DEST="$TRASH/$BASE"
+            n=2
+            while [ -e "$DEST" ]; do DEST="$TRASH/${BASE%.app} $n.app"; n=$((n+1)); done
+            /bin/mv "$OLD" "$DEST" 2>/dev/null || true
             /usr/bin/open "$NEW"
         elif /bin/mv "$OLD" "$NEW" 2>/dev/null; then
             /usr/bin/open "$NEW"
         else
             /usr/bin/open "$OLD"
         fi
+        /bin/rm -f "$0"
         """
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("vorssaint-rename.sh")
+            .appendingPathComponent("vorssaint-rename-\(pid)-\(UUID().uuidString).sh")
         do {
             try script.write(to: scriptURL, atomically: true, encoding: .utf8)
             let task = Process()
@@ -68,6 +75,7 @@ enum BundleMigration {
             task.arguments = [scriptURL.path, oldPath, newPath, "\(pid)"]
             try task.run()
         } catch {
+            try? FileManager.default.removeItem(at: scriptURL)
             return false   // could not stage the rename; keep running as we are
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }

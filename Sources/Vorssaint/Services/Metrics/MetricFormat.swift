@@ -70,6 +70,17 @@ enum MetricFormat {
         "\(Int((max(0, min(1, fraction)) * 100).rounded()))%"
     }
 
+    /// Temperature, stored internally as Celsius and formatted in the user's
+    /// preferred display unit.
+    static func temperature(_ celsius: Double, unit: TemperatureUnit) -> String {
+        switch unit {
+        case .celsius:
+            return String(format: "%.0f °C", celsius)
+        case .fahrenheit:
+            return String(format: "%.0f °F", celsius * 9 / 5 + 32)
+        }
+    }
+
     // MARK: Network speed & filtering
 
     /// Per-second download/upload from two cumulative readings. Guards against a
@@ -95,6 +106,11 @@ enum MetricFormat {
                         "ap", "anpi", "p2p", "XHC", "vmenet", "tap", "tun"]
         return !excluded.contains { name.hasPrefix($0) }
     }
+}
+
+enum TemperatureUnit: String {
+    case celsius
+    case fahrenheit
 }
 
 /// Fixed-size ring of recent samples (oldest → newest) for the history graphs.

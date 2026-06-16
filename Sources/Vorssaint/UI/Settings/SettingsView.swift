@@ -257,6 +257,8 @@ struct EnergySettings: View {
         }
         .formStyle(.grouped)
         .onAppear {
+            defaultDuration = Defaults.sanitizedDefaultDuration(defaultDuration)
+            batteryLimit = Defaults.sanitizedBatteryLimit(batteryLimit)
             awake.refreshPasswordlessStatus()
         }
     }

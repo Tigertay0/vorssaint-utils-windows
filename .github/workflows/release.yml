@@ -21,11 +21,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Unit tests
+        run: ./build.sh --test
+
       - name: Set up signing
         env:
           SIGNING_CERT_P12: ${{ secrets.SIGNING_CERT_P12 }}
           SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: ./Tools/ci-setup-signing.sh
+
+      - name: Verify release version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Resources/Info.plist)"
+          if [[ "$APP_VERSION" != "$VERSION" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match app version $APP_VERSION" >&2
+            exit 1
+          fi
 
       - name: Build
         run: ./build.sh
@@ -54,19 +66,33 @@ jobs:
         run: |
           DMG=$(ls dist/*.dmg | head -1)
           xcrun stapler validate "$DMG"
-          MP=$(hdiutil attach -nobrowse -readonly "$DMG" | grep -oE '/Volumes/[^ ]+.*' | tail -1)
+          MP=$(mktemp -d)
+          cleanup() {
+            hdiutil detach "$MP" >/dev/null 2>&1 || true
+            rmdir "$MP" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          hdiutil attach -nobrowse -readonly -mountpoint "$MP" "$DMG"
           spctl -a -t exec -vv "$MP/Vorssaint.app" 2>&1 | tee /tmp/spctl.txt
           grep -q "source=Notarized Developer ID" /tmp/spctl.txt
           xcrun stapler validate "$MP/Vorssaint.app"
-          hdiutil detach "$MP" >/dev/null 2>&1 || true
 
       - name: Release notes from CHANGELOG
         id: notes
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          if ! grep -Fq "## [$VERSION]" CHANGELOG.md; then
+            echo "CHANGELOG.md has no entry for $VERSION" >&2
+            exit 1
+          fi
+          NOTES="$(awk -v hdr="## [$VERSION]" 'index($0,hdr)==1{g=1;next} /^## \[/&&g{exit} g{print}' CHANGELOG.md)"
+          if [[ -z "${NOTES//[[:space:]]/}" ]]; then
+            echo "CHANGELOG.md entry for $VERSION is empty" >&2
+            exit 1
+          fi
           {
             echo "NOTES<<__VRSS_EOF__"
-            awk -v hdr="## [$VERSION]" 'index($0,hdr)==1{g=1;next} /^## \[/&&g{exit} g{print}' CHANGELOG.md
+            printf '%s\n' "$NOTES"
             echo ""
             echo "Signed with an Apple Developer ID and notarized by Apple, so it downloads and opens normally. Requires macOS 14 or later. Open the .dmg below and drag Vorssaint to Applications."
             echo "__VRSS_EOF__"

@@ -19,7 +19,7 @@ enum Shell {
 /// Runs a command with administrator privileges (system password prompt).
 enum AdminShell {
     static func runSync(_ command: String, prompt: String) -> Bool {
-        let source = "do shell script \"\(command)\" with administrator privileges with prompt \"\(prompt)\""
+        let source = "do shell script \(appleScriptString(command)) with administrator privileges with prompt \(appleScriptString(prompt))"
         return Shell.run("/usr/bin/osascript", ["-e", source]).status == 0
     }
 
@@ -27,6 +27,13 @@ enum AdminShell {
         DispatchQueue.global(qos: .userInitiated).async {
             completion(runSync(command, prompt: prompt))
         }
+    }
+
+    private static func appleScriptString(_ value: String) -> String {
+        let escaped = value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\"\(escaped)\""
     }
 }
 

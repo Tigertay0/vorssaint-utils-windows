@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The "Monitor" settings page: pick what shows next to the menu bar icon, how
 /// often it refreshes, which blocks appear in the panel, and which metrics draw
@@ -14,6 +15,7 @@ struct MonitorSettings: View {
     @AppStorage(DefaultsKey.menuBarPower) private var menuBarPower = false
     @AppStorage(DefaultsKey.menuBarMemoryStyle) private var memoryStyle = "percent"
     @AppStorage(DefaultsKey.monitorInterval) private var interval = 2
+    @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
 
     @AppStorage(DefaultsKey.monitorGraphCPU) private var graphCPU = true
     @AppStorage(DefaultsKey.monitorGraphGPU) private var graphGPU = true
@@ -48,6 +50,11 @@ struct MonitorSettings: View {
                     Text(l10n.s.monitorInterval2).tag(2)
                     Text(l10n.s.monitorInterval5).tag(5)
                 }
+                Picker(l10n.s.temperatures, selection: $temperatureUnit) {
+                    Text("°C").tag(TemperatureUnit.celsius.rawValue)
+                    Text("°F").tag(TemperatureUnit.fahrenheit.rawValue)
+                }
+                .pickerStyle(.segmented)
             }
             Section(l10n.s.monitorPanelSection) {
                 MonitorPanelConfig()
@@ -74,6 +81,13 @@ struct MonitorSettings: View {
             }
         }
         .formStyle(.grouped)
+        .onAppear {
+            interval = Defaults.sanitizedMonitorInterval(interval)
+            memoryStyle = Defaults.sanitizedMenuBarMemoryStyle(memoryStyle)
+            if TemperatureUnit(rawValue: temperatureUnit) == nil {
+                temperatureUnit = TemperatureUnit.celsius.rawValue
+            }
+        }
     }
 }
 
@@ -83,28 +97,66 @@ struct MonitorSettings: View {
 private struct PanelOrderEditor: View {
     @ObservedObject private var l10n = L10n.shared
     @State private var order: [PanelSectionID] = PanelLayout.order
+    @State private var dragging: PanelSectionID?
 
     var body: some View {
-        List {
+        VStack(spacing: 0) {
             ForEach(order) { id in
-                HStack(spacing: 8) {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                    Text(id.title(l10n.s))
-                    Spacer()
+                VStack(spacing: 0) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.tertiary)
+                        Text(id.title(l10n.s))
+                        Spacer()
+                    }
+                    .frame(height: 32)
+                    .contentShape(Rectangle())
+                    .opacity(dragging == id ? 0.45 : 1)
+                    .onDrag {
+                        dragging = id
+                        return NSItemProvider(object: id.rawValue as NSString)
+                    }
+                    .onDrop(of: [UTType.text],
+                            delegate: PanelOrderDropDelegate(target: id,
+                                                             order: $order,
+                                                             dragging: $dragging))
+
+                    if id != order.last {
+                        Divider()
+                    }
                 }
             }
-            .onMove { from, to in
-                order.move(fromOffsets: from, toOffset: to)
-                PanelLayout.setOrder(order)
-            }
         }
-        .listStyle(.plain)
-        .scrollDisabled(true)
-        // Headroom so the longer pt-BR titles don't clip a row; the Settings
-        // window is reused, so re-read the stored order each time the page shows.
-        .frame(height: CGFloat(order.count) * 32 + 12)
+        .padding(.vertical, 2)
         .onAppear { order = PanelLayout.order }
+    }
+}
+
+private struct PanelOrderDropDelegate: DropDelegate {
+    let target: PanelSectionID
+    @Binding var order: [PanelSectionID]
+    @Binding var dragging: PanelSectionID?
+
+    func dropEntered(info: DropInfo) {
+        guard let dragging,
+              dragging != target,
+              let from = order.firstIndex(of: dragging),
+              let to = order.firstIndex(of: target) else { return }
+
+        withAnimation(.easeInOut(duration: 0.12)) {
+            order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        }
+        PanelLayout.setOrder(order)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        dragging = nil
+        PanelLayout.setOrder(order)
+        return true
     }
 }

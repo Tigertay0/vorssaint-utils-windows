@@ -14,9 +14,9 @@ Um app pequeno na barra de menus que faz o trabalho para o qual você instalaria
 deixando ele lento, ajustar o volume por app, alternar janelas, e resolver
 algumas chatices do dia a dia.
 
-**Grátis. Open source. Local.** Sem conta, sem assinatura, sem telemetria, sem
-IA. Nada sai do seu Mac, exceto uma verificação de atualização que você pode
-desligar. É nativo (SwiftUI + AppKit), não é Electron, então fica pequeno e rápido.
+**Grátis. Open source. Local.** Sem conta, sem assinatura, sem telemetria.
+Nada sai do seu Mac, exceto uma verificação de atualização que você pode
+desligar. É feito com frameworks nativos do macOS, então fica pequeno e rápido.
 
 **Instale com o [Homebrew](https://brew.sh):**
 
@@ -39,8 +39,8 @@ Temperaturas de CPU, GPU e bateria, uso de CPU/GPU ao vivo e pressão de memóri
 direto na barra de menus. Toque em qualquer leitura para ver quais apps estão por trás.
 
 ### 🎚️ Ajuste o volume por app
-Abaixe o Safari sem mexer no Spotify nem no Zoom. O mixer por app que o macOS
-nunca trouxe, com um ponto ao vivo no que está tocando. (macOS 14.4 ou mais recente.)
+Abaixe um app sem mexer no resto do Mac. O mixer por app que o macOS nunca
+trouxe, com um ponto ao vivo no que está tocando. (macOS 14.4 ou mais recente.)
 
 ### 🪟 Vá para qualquer janela na hora
 Substitui o ⌘Tab por uma grade com miniaturas reais das janelas, incluindo várias

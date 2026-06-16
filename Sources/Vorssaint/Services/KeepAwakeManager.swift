@@ -59,12 +59,13 @@ final class KeepAwakeManager: ObservableObject {
         if isActive {
             deactivate(reason: .manual)
         } else {
-            activate(minutes: UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration))
+            activate(minutes: Defaults.sanitizedDefaultDuration(UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration)))
         }
     }
 
     /// `minutes <= 0` activates indefinitely.
     func activate(minutes: Int) {
+        let minutes = Defaults.sanitizedDefaultDuration(minutes)
         endTimer?.invalidate()
         endTimer = nil
         applyAssertions()
@@ -243,7 +244,7 @@ final class KeepAwakeManager: ObservableObject {
     }
 
     private func checkBattery() {
-        let limit = UserDefaults.standard.integer(forKey: DefaultsKey.batteryLimit)
+        let limit = Defaults.sanitizedBatteryLimit(UserDefaults.standard.integer(forKey: DefaultsKey.batteryLimit))
         guard limit > 0, isActive else { return }
         guard let battery = SystemInfo.batterySnapshot(),
               battery.isOnBattery,

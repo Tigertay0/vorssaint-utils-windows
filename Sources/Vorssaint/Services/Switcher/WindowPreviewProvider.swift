@@ -62,8 +62,10 @@ final class WindowPreviewProvider {
                 guard let image = try? await SCScreenshotManager.captureImage(contentFilter: filter,
                                                                               configuration: configuration)
                 else { continue }
+                guard !Task.isCancelled else { return }
 
                 await MainActor.run {
+                    guard !Task.isCancelled else { return }
                     self.cache[target.id] = image
                     onUpdate(target.id, image)
                 }

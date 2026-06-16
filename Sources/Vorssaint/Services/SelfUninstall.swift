@@ -82,22 +82,34 @@ enum SelfUninstall {
         APP="$1"; PID="$2"
         while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done
         TRASH="$HOME/.Trash"
+        /bin/mkdir -p "$TRASH" 2>/dev/null || true
         BASE="$(basename "$APP")"
         DEST="$TRASH/$BASE"
         n=2
         while [ -e "$DEST" ]; do DEST="$TRASH/${BASE%.app} $n.app"; n=$((n+1)); done
-        # Reversible move to the Trash; fall back to a plain remove only if that
-        # fails (e.g. a different volume), so the app always goes away.
-        /bin/mv "$APP" "$DEST" 2>/dev/null || /bin/rm -rf "$APP"
+        # Reversible move to the Trash. If a direct move fails, ask Finder to do
+        # the same Trash operation so it can present the standard admin prompt.
+        if ! /bin/mv "$APP" "$DEST" 2>/dev/null; then
+            /usr/bin/osascript - "$APP" <<'APPLESCRIPT'
+        on run argv
+            tell application "Finder" to delete POSIX file (item 1 of argv)
+        end run
+        APPLESCRIPT
+        fi
+        if [ -d "$APP" ]; then /usr/bin/open "$APP" 2>/dev/null; fi
+        /bin/rm -f "$0"
         """
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("vorssaint-uninstall.sh")
-        if (try? script.write(to: scriptURL, atomically: true, encoding: .utf8)) != nil {
+            .appendingPathComponent("vorssaint-uninstall-\(pid)-\(UUID().uuidString).sh")
+        do {
+            try script.write(to: scriptURL, atomically: true, encoding: .utf8)
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/bin/sh")
             task.arguments = [scriptURL.path, app, "\(pid)"]
-            try? task.run()
+            try task.run()
+            NSApp.terminate(nil)
+        } catch {
+            try? FileManager.default.removeItem(at: scriptURL)
         }
-        NSApp.terminate(nil)
     }
 }

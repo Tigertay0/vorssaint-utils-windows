@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private let popover = NSPopover()
     private var popoverClosedAt = Date.distantPast
     private var popoverDismissMonitor: Any?
+    private var popoverLocalDismissMonitor: Any?
     private var isTerminating = false
     private var cancellables = Set<AnyCancellable>()
     private var settingsWindow: NSWindow?
@@ -70,12 +71,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             .sink { [weak self] _ in self?.installMainMenu() }
             .store(in: &cancellables)
 
-        if !UserDefaults.standard.bool(forKey: DefaultsKey.hasOnboarded) {
+        let defaults = UserDefaults.standard
+        if !defaults.bool(forKey: DefaultsKey.hasOnboarded) {
             showOnboarding(mode: .full)
-        } else if UserDefaults.standard.string(forKey: DefaultsKey.lastUpdatePromptVersion) != AppInfo.version {
-            // After every update to a new version, show the short post-update note
-            // once.
-            showOnboarding(mode: .whatsNew)
+        } else if defaults.integer(forKey: DefaultsKey.featuresOnboardingVersion) < OnboardingInfo.currentFeatureSet {
+            // Updates should stay quiet. Mark the current feature tour as seen so
+            // older installs do not get legacy language/support update prompts.
+            defaults.set(OnboardingInfo.currentFeatureSet, forKey: DefaultsKey.featuresOnboardingVersion)
         }
     }
 
@@ -144,8 +146,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     private func setUpPopover() {
         // Application-defined (not .transient) so the panel stays open while the
-        // user works in our own Settings window and sees changes live. A global
-        // click monitor + resign-active still dismiss it for clicks in other apps.
+        // user works in our own Settings window and sees changes live. Click
+        // monitors below dismiss it when it would block that same Settings window.
         popover.behavior = .applicationDefined
         popover.animates = false
         popover.delegate = self
@@ -183,13 +185,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private func installPopoverDismissMonitor() {
         removePopoverDismissMonitor()
         // A global monitor only sees events delivered to OTHER apps, so a click in
-        // another app or on the desktop dismisses the panel — while clicks in our
-        // own Settings window do not, so the two can be used side by side.
+        // another app or on the desktop dismisses the panel.
         popoverDismissMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown]
         ) { [weak self] _ in
             guard let self, self.popover.isShown else { return }
             self.closePopover()
+        }
+
+        // Local events cover our own Settings window. Keep Settings + panel open
+        // when they sit side by side for live reordering, but close the panel if it
+        // overlaps Settings and the user clicks Settings to get it out of the way.
+        popoverLocalDismissMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] event in
+            guard let self, self.popover.isShown else { return event }
+            if self.shouldDismissPopover(forLocalEvent: event) {
+                self.closePopover()
+            }
+            return event
         }
     }
 
@@ -198,6 +212,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             NSEvent.removeMonitor(monitor)
             popoverDismissMonitor = nil
         }
+        if let monitor = popoverLocalDismissMonitor {
+            NSEvent.removeMonitor(monitor)
+            popoverLocalDismissMonitor = nil
+        }
+    }
+
+    private func shouldDismissPopover(forLocalEvent event: NSEvent) -> Bool {
+        guard event.window === settingsWindow,
+              let settingsFrame = settingsWindow?.frame,
+              let popoverFrame = popover.contentViewController?.view.window?.frame else {
+            return false
+        }
+        return settingsFrame.intersects(popoverFrame)
     }
 
     @objc private func appResignedActive() {
@@ -448,6 +475,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             // .miniaturizable so the Window menu's Minimize (Cmd+M) actually works.
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.canHide = false
+            window.delegate = self
             window.center()
             settingsWindow = window
         }
@@ -468,7 +498,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         let path = Bundle.main.bundlePath
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", "sleep 0.3; /usr/bin/open \"\(path)\""]
+        task.arguments = ["-c", "sleep 0.3; /usr/bin/open \"$1\"", "vorssaint-relaunch", path]
         try? task.run()
         NSApp.terminate(nil)
     }
@@ -486,7 +516,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             self?.onboardingWindow?.close()
         })
         let window = NSWindow(contentViewController: host)
-        window.title = mode == .whatsNew ? L10n.shared.s.obWhatsNewTitle : L10n.shared.s.obStepWelcomeTitle
+        window.title = L10n.shared.s.obStepWelcomeTitle
         window.styleMask = [.titled, .closable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
@@ -500,13 +530,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     func windowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow, window === onboardingWindow else { return }
-        onboardingWindow = nil
-        // Closing the window mid-flow counts as "skip" — but quitting (e.g.
-        // the relaunch macOS forces after granting Screen Recording) must NOT,
-        // so the flow can resume where it stopped.
-        guard !isTerminating else { return }
-        markOnboardingComplete()
+        guard let window = notification.object as? NSWindow else { return }
+        if window === settingsWindow {
+            return
+        }
+        if window === onboardingWindow {
+            onboardingWindow = nil
+            // Closing the window mid-flow counts as "skip" — but quitting (e.g.
+            // the relaunch macOS forces after granting Screen Recording) must NOT,
+            // so the flow can resume where it stopped.
+            guard !isTerminating else { return }
+            markOnboardingComplete()
+        }
     }
 
     /// Marks both the first run and this version's feature tour as seen, so
@@ -514,7 +549,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private func markOnboardingComplete() {
         UserDefaults.standard.set(true, forKey: DefaultsKey.hasOnboarded)
         UserDefaults.standard.set(OnboardingInfo.currentFeatureSet, forKey: DefaultsKey.featuresOnboardingVersion)
-        // Stamp the current version so the post-update note shows once per new version.
-        UserDefaults.standard.set(AppInfo.version, forKey: DefaultsKey.lastUpdatePromptVersion)
     }
 }

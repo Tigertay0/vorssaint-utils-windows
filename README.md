@@ -18,9 +18,9 @@ One small menu bar app that does the jobs you'd otherwise buy a handful of
 separate utilities for: keep your Mac awake, see what's slowing it down, set the
 volume per app, switch windows, and fix a few everyday annoyances.
 
-**Free. Open source. Local.** No account, no subscription, no telemetry, no AI.
-Nothing leaves your Mac except an update check you can turn off. It's native
-(SwiftUI + AppKit), not Electron, so it stays small and quick.
+**Free. Open source. Local.** No account, no subscription, no telemetry.
+Nothing leaves your Mac except an update check you can turn off. It's built
+with native macOS frameworks, so it stays small and quick.
 
 **Install with [Homebrew](https://brew.sh):**
 
@@ -43,8 +43,8 @@ CPU, GPU and battery temperatures, live CPU/GPU load and memory pressure, right
 in the menu bar. Tap any reading to see which apps are behind it.
 
 ### 🎚️ Set the volume per app
-Turn Safari down without touching Spotify or Zoom. The per-app mixer macOS never
-shipped, with a live dot on whatever is playing. (macOS 14.4 and later.)
+Turn one app down without changing the rest of your Mac. The per-app mixer macOS
+never shipped, with a live dot on whatever is playing. (macOS 14.4 and later.)
 
 ### 🪟 Jump to any window instantly
 Replace ⌘Tab with a grid of live window thumbnails, including multiple windows of

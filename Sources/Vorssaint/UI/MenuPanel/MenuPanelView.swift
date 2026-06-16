@@ -25,8 +25,9 @@ struct MenuPanelView: View {
         // reserves a legacy scroller gutter on the right when the system is set to
         // always show scroll bars, pushing the fixed-width content off-center. An
         // overlay scroller floats over the content and reserves no space, so the
-        // panel stays centered whether or not it needs to scroll. The container also
-        // reports its content's natural height so the popover caps to the screen.
+        // panel stays centered whether or not it needs to scroll. The hosting
+        // view reports its natural height after layout so section collapse and
+        // expand animations resize the popover as they happen.
         OverlayScrollView(measuredHeight: $contentHeight) {
             VStack(alignment: .leading, spacing: 12) {
                 UpdateBanner()
@@ -39,8 +40,6 @@ struct MenuPanelView: View {
             .padding(12)
             .frame(width: 332)
         }
-        // Start from a compact estimate before the first measurement so the popover
-        // grows into place rather than opening full-screen-tall.
         .frame(width: 332, height: min(contentHeight == 0 ? 480 : contentHeight, maxHeight))
         .onAppear {
             awake.refreshPasswordlessStatus()
@@ -336,6 +335,9 @@ struct KeepAwakeCard: View {
                           disabled: false)
             }
             .panelCard()
+        }
+        .onAppear {
+            defaultDuration = Defaults.sanitizedDefaultDuration(defaultDuration)
         }
     }
 

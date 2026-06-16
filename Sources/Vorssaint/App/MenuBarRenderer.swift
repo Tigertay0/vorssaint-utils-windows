@@ -30,8 +30,9 @@ enum MemoryMenuBarStyle: String, CaseIterable {
     case dot, percent, both
 
     static var current: MemoryMenuBarStyle {
-        MemoryMenuBarStyle(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.menuBarMemoryStyle) ?? "")
-            ?? .percent
+        let raw = UserDefaults.standard.string(forKey: DefaultsKey.menuBarMemoryStyle) ?? ""
+        let style = Defaults.sanitizedMenuBarMemoryStyle(raw)
+        return MemoryMenuBarStyle(rawValue: style) ?? .percent
     }
 
     var showsDot: Bool { self == .dot || self == .both }

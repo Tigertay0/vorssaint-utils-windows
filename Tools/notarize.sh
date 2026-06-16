@@ -39,6 +39,7 @@ printf '%s' "$NOTARY_API_KEY_P8" | base64 --decode > "$P8"
 case "$TARGET" in
     *.app)
         xattr -cr "$TARGET"
+        codesign --verify --deep --strict "$TARGET"
         SUBMIT="$WORK/$(basename "$TARGET").zip"
         /usr/bin/ditto -c -k --keepParent "$TARGET" "$SUBMIT"
         ;;

@@ -9,7 +9,7 @@ import CoreGraphics
 /// switcher matches the system ⌘Tab toggle. Window titles require Screen
 /// Recording on modern macOS — without it entries fall back to app names.
 enum WindowEnumerator {
-    /// Windows larger than this are considered real, switchable windows.
+    /// Window surfaces larger than this are considered real, switchable windows.
     private static let minimumSize = CGSize(width: 80, height: 60)
     /// Hard cap to keep the switcher readable and captures cheap.
     private static let maximumCount = 24
@@ -30,28 +30,30 @@ enum WindowEnumerator {
 
         for info in raw {
             guard windows.count < maximumCount else { break }
-            guard let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
-                  let windowID = info[kCGWindowNumber as String] as? CGWindowID,
+            guard let layer = (info[kCGWindowLayer as String] as? NSNumber)?.intValue, layer == 0,
+                  let windowID = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   !seen.contains(windowID),
-                  let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+                  let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
                   pid != ownPid,
                   let appName = regularApps[pid],
-                  let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat]
+                  let boundsDict = info[kCGWindowBounds as String] as? [String: Any]
             else { continue }
 
-            let frame = CGRect(x: boundsDict["X"] ?? 0,
-                               y: boundsDict["Y"] ?? 0,
-                               width: boundsDict["Width"] ?? 0,
-                               height: boundsDict["Height"] ?? 0)
+            let frame = CGRect(x: (boundsDict["X"] as? NSNumber)?.doubleValue ?? 0,
+                               y: (boundsDict["Y"] as? NSNumber)?.doubleValue ?? 0,
+                               width: (boundsDict["Width"] as? NSNumber)?.doubleValue ?? 0,
+                               height: (boundsDict["Height"] as? NSNumber)?.doubleValue ?? 0)
             guard frame.width >= minimumSize.width, frame.height >= minimumSize.height else { continue }
 
-            if let alpha = info[kCGWindowAlpha as String] as? Double, alpha == 0 { continue }
+            if let alpha = (info[kCGWindowAlpha as String] as? NSNumber)?.doubleValue, alpha == 0 { continue }
 
             let title = info[kCGWindowName as String] as? String ?? ""
-            let isOnScreen = info[kCGWindowIsOnscreen as String] as? Bool ?? false
+            let isOnScreen = (info[kCGWindowIsOnscreen as String] as? NSNumber)?.boolValue
+                ?? (info[kCGWindowIsOnscreen as String] as? Bool)
+                ?? false
 
             // Off-screen *and* untitled windows are usually invisible helpers
-            // (web pickers, Electron shells), not something to switch to.
+            // (web pickers, framework shells), not something to switch to.
             if !isOnScreen && title.isEmpty { continue }
 
             seen.insert(windowID)

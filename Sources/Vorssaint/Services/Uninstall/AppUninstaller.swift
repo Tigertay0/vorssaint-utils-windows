@@ -158,15 +158,17 @@ final class AppUninstaller: ObservableObject {
     /// reversible move to the Trash, never a permanent delete. Waits until the
     /// user answers the prompt; a cancel simply leaves the items in place.
     private static func trashViaFinder(_ urls: [URL]) {
-        let list = urls
-            .map { url -> String in
-                let escaped = url.path
-                    .replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "\"", with: "\\\"")
-                return "POSIX file \"\(escaped)\""
-            }
-            .joined(separator: ", ")
-        _ = Shell.run("/usr/bin/osascript", ["-e", "tell application \"Finder\" to delete {\(list)}"])
+        guard !urls.isEmpty else { return }
+        let source = """
+        on run argv
+            set targets to {}
+            repeat with pathText in argv
+                set end of targets to POSIX file (pathText as text)
+            end repeat
+            tell application "Finder" to delete targets
+        end run
+        """
+        _ = Shell.run("/usr/bin/osascript", ["-e", source] + urls.map(\.path))
     }
 
     // MARK: - Scanning
@@ -200,16 +202,16 @@ final class AppUninstaller: ObservableObject {
             add("\(lib)/Application Scripts/\(id)", .containers)
             add("\(lib)/Cookies/\(id).binarycookies", .caches)
             add("\(lib)/Logs/\(id)", .logs)
-            addMatches(in: "\(lib)/Preferences/ByHost", .preferences) { $0.hasPrefix(id) }
+            addMatches(in: "\(lib)/Preferences/ByHost", .preferences) { matchesBundleScopedName($0, bundleID: id) }
             addMatches(in: "\(lib)/Preferences", .preferences) { $0.hasPrefix("\(id).") && $0 != "\(id).plist" }
-            addMatches(in: "\(lib)/Group Containers", .containers) { $0.contains(id) }
-            addMatches(in: "\(lib)/LaunchAgents", .other) { $0.hasPrefix(id) }
+            addMatches(in: "\(lib)/Group Containers", .containers) { matchesBundleScopedName($0, bundleID: id) }
+            addMatches(in: "\(lib)/LaunchAgents", .other) { matchesBundleScopedName($0, bundleID: id) }
             // System locations (may need admin to trash; failures are reported).
             add("/Library/Application Support/\(id)", .support)
             add("/Library/Caches/\(id)", .caches)
             add("/Library/Preferences/\(id).plist", .preferences)
-            addMatches(in: "/Library/LaunchAgents", .other) { $0.hasPrefix(id) }
-            addMatches(in: "/Library/LaunchDaemons", .other) { $0.hasPrefix(id) }
+            addMatches(in: "/Library/LaunchAgents", .other) { matchesBundleScopedName($0, bundleID: id) }
+            addMatches(in: "/Library/LaunchDaemons", .other) { matchesBundleScopedName($0, bundleID: id) }
         }
 
         // Name-based folders, exact match only: fuzzy matching is risky.
@@ -230,6 +232,15 @@ final class AppUninstaller: ObservableObject {
         return safe
             .map { Leftover(url: $0.0, category: $0.1, size: directorySize(of: $0.0, fm: fm)) }
             .sorted { ($0.category.sortRank, -$0.size) < ($1.category.sortRank, -$1.size) }
+    }
+
+    private static func matchesBundleScopedName(_ name: String, bundleID: String) -> Bool {
+        if name == bundleID { return true }
+        if name.hasPrefix("\(bundleID).") { return true }
+        if name.hasSuffix(".\(bundleID)") { return true }
+        if name.contains(".\(bundleID).") { return true }
+        let groupName = "group.\(bundleID)"
+        return name == groupName || name.hasPrefix("\(groupName).")
     }
 
     /// Drops exact duplicates and any path nested inside another already found.

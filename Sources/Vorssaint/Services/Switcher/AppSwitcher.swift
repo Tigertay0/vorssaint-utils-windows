@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Combine
 import CoreGraphics
 import SwiftUI
@@ -143,8 +144,9 @@ final class AppSwitcher: ObservableObject {
                   !flags.contains(.maskControl)
             else { return Unmanaged.passUnretained(event) }
 
-            beginSession(reversed: flags.contains(.maskShift))
-            return nil
+            return beginSession(reversed: flags.contains(.maskShift))
+                ? nil
+                : Unmanaged.passUnretained(event)
         }
 
         switch keyCode {
@@ -172,9 +174,9 @@ final class AppSwitcher: ObservableObject {
 
     // MARK: - Session lifecycle
 
-    private func beginSession(reversed: Bool) {
+    private func beginSession(reversed: Bool) -> Bool {
         let windows = WindowEnumerator.listWindows()
-        guard !windows.isEmpty else { return }
+        guard !windows.isEmpty else { return false }
 
         let list = orderedForSession(windows)
         self.windows = list
@@ -193,9 +195,13 @@ final class AppSwitcher: ObservableObject {
         sessionActive = true
 
         WindowPreviewProvider.shared.refreshPreviews(for: list) { [weak self] windowID, image in
-            self?.previews[windowID] = image
+            guard let self,
+                  self.sessionActive,
+                  self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
+            self.previews[windowID] = image
         }
         scheduleShowPanel()
+        return true
     }
 
     /// Orders a session's windows so the on-screen window is first and the rest
@@ -220,12 +226,30 @@ final class AppSwitcher: ObservableObject {
         return (2, 0, original)
     }
 
-    /// The id of the window on screen right now: the frontmost app's front
-    /// window (first in the list once ordered).
+    /// The id of the window on screen right now. Prefer the Accessibility
+    /// focused window so the first ⌘Tab never targets the window the user is
+    /// already in when the frontmost app has more than one window.
     private func currentItemID(in items: [SwitcherItem]) -> String? {
         let frontPid = AppActivationTracker.shared.frontmostPid
+        if let frontPid,
+           let focusedID = focusedWindowID(for: frontPid),
+           items.contains(where: { $0.windowID == focusedID }) {
+            return "w:\(focusedID)"
+        }
         let current = items.first { frontPid == nil || $0.pid == frontPid }
         return current?.id ?? items.first?.id
+    }
+
+    private func focusedWindowID(for pid: pid_t) -> CGWindowID? {
+        guard Permissions.shared.accessibility else { return nil }
+        let app = AXUIElementCreateApplication(pid)
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute as CFString, &value) == .success,
+              let value,
+              CFGetTypeID(value) == AXUIElementGetTypeID()
+        else { return nil }
+        let window = value as! AXUIElement
+        return AXWindowResolver.windowID(for: window)
     }
 
     /// Records a switch into the window MRU: the activated window moves to the
@@ -321,6 +345,13 @@ final class AppSwitcher: ObservableObject {
         pendingShow = nil
         WindowPreviewProvider.shared.cancel()
         panel?.orderOut(nil)
+        windows = []
+        previews = [:]
+        selectedIndex = 0
+        grid = .empty
+        hoverAnchor = nil
+        userNavigated = false
+        sessionStartItemID = nil
     }
 
     // MARK: - Panel

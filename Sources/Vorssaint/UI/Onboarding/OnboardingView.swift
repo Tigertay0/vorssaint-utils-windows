@@ -2,32 +2,21 @@ import ServiceManagement
 import SwiftUI
 
 /// First-run experience, also reachable later through Settings › About.
-/// Seven steps: welcome & language, Accessibility, Screen Recording, system
-/// monitor, optional features, status verification and the final summary.
-/// Whether onboarding is the first-run tour or the shorter "what's new" pass
-/// shown once to people updating to this version.
+/// Covers welcome and language, permissions, monitor setup, optional features,
+/// status verification and the final summary.
 enum OnboardingMode {
     case full
-    case whatsNew
 
     var steps: [OnboardingStep] {
-        switch self {
-        case .full:
-            return [.welcome, .accessibility, .screenRecording, .monitor, .menuBarSetup,
-                    .panelSetup, .optionalFeatures, .cutPaste, .autoQuit, .uninstaller, .shelf,
-                    .status, .donate, .done]
-        case .whatsNew:
-            // Shown once after each update: let people pick the interface
-            // language (new in this release), then a short, gentle note that the
-            // project stays free and runs on community support, then wrap up.
-            return [.languageUpdate, .donate, .done]
-        }
+        [.welcome, .accessibility, .screenRecording, .monitor, .menuBarSetup,
+         .panelSetup, .optionalFeatures, .cutPaste, .autoQuit, .uninstaller, .shelf,
+         .status, .donate, .done]
     }
 }
 
 enum OnboardingStep {
     case welcome, accessibility, screenRecording, monitor, menuBarSetup, panelSetup, optionalFeatures
-    case whatsNew, languageUpdate, cutPaste, autoQuit, uninstaller, shelf
+    case cutPaste, autoQuit, uninstaller, shelf
     case status, donate, done
 }
 
@@ -54,10 +43,7 @@ struct OnboardingView: View {
         }
         .frame(width: 540, height: 600)
         .onAppear {
-            // "What's new" always opens on its first (exact) page; the resume
-            // index is only meaningful for the full first-run flow.
-            if mode == .whatsNew { index = 0 }
-            else if !steps.indices.contains(index) { index = 0 }
+            if !steps.indices.contains(index) { index = 0 }
         }
     }
 
@@ -79,8 +65,6 @@ struct OnboardingView: View {
         case .menuBarSetup: MenuBarSetupStep()
         case .panelSetup: PanelSetupStep()
         case .optionalFeatures: OptionalFeaturesStep()
-        case .whatsNew: WhatsNewIntroStep()
-        case .languageUpdate: LanguageUpdateStep()
         case .cutPaste: CutPasteShowcaseStep()
         case .autoQuit: AutoQuitShowcaseStep()
         case .uninstaller: UninstallerShowcaseStep()
@@ -615,52 +599,10 @@ private struct StatusStep: View {
     }
 }
 
-// MARK: - Donate announcement (one-time "what's new" headline)
+// MARK: - Donate announcement
 
-/// Gentle, good-looking announcement that the project now accepts support. Shown
-/// once to updaters and near the end of the first-run flow. Never gated or pushy:
-/// the message, a coffee button, and a thank-you.
-// MARK: - What's new: language chooser (update flow)
-
-/// Shown once after updating to the multi-language release: announces the new
-/// languages and lets people pick one right here. Changing the picker re-renders
-/// the whole window in the chosen language instantly.
-private struct LanguageUpdateStep: View {
-    @ObservedObject private var l10n = L10n.shared
-
-    var body: some View {
-        VStack(spacing: 20) {
-            StepHeader(icon: "globe",
-                       title: l10n.s.obLanguageUpdateTitle,
-                       subtitle: l10n.s.obLanguageUpdateBody)
-
-            Text("🇺🇸  🇧🇷  🇪🇸  🇩🇪  🇫🇷  🇮🇹  🇯🇵  🇨🇳")
-                .font(.system(size: 24))
-
-            HStack {
-                Text(l10n.s.obLanguageLabel)
-                    .font(.system(size: 13, weight: .medium))
-                Spacer()
-                Picker("", selection: $l10n.language) {
-                    ForEach(AppLanguage.allCases) { language in
-                        Text(language.displayName).tag(language)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .fixedSize()
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.primary.opacity(0.05))
-            )
-            .padding(.horizontal, 28)
-
-            Spacer()
-        }
-    }
-}
+/// Gentle support page shown near the end of the first-run flow. Never gated or
+/// pushy: the message, a coffee button, and a thank-you.
 
 private struct DonateStep: View {
     @ObservedObject private var l10n = L10n.shared
