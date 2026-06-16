@@ -22,7 +22,13 @@ enum SelfTest {
             failures.append("power assertion (\(result))")
         }
 
-        if SystemInfo.memoryUsage() == nil { failures.append("memory reading") }
+        if let memory = SystemInfo.memoryUsage() {
+            if memory.used == 0 || memory.total == 0 || memory.used > memory.total {
+                failures.append("memory bounds")
+            }
+        } else {
+            failures.append("memory reading")
+        }
         _ = SystemInfo.batterySnapshot() // may be nil on desktops
 
         if let smc = SMCClient() {

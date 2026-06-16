@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.16.1] - 2026-06-16
+
+### Fixed
+- Memory usage now matches Activity Monitor's Memory Used total more closely.
+- Network readings now ignore another local virtual interface so totals stay focused on real network traffic.
+
 ## [2.16.0] - 2026-06-16
 
 ### Added

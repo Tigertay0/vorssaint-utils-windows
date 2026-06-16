@@ -64,6 +64,18 @@ struct MetricsTests {
         expectEqual(MetricFormat.temperature(0, unit: .fahrenheit), "32 °F", "fahrenheit freezing")
         expectEqual(MetricFormat.temperature(41, unit: .fahrenheit), "106 °F", "fahrenheit rounds")
 
+        // MARK: Memory used
+
+        let used = MetricFormat.memoryUsed(totalBytes: 16 * 1024,
+                                           pageSize: 1024,
+                                           freePages: 1,
+                                           speculativePages: 2,
+                                           fileBackedPages: 3)
+        expect(used == 10 * 1024, "memory used excludes free, speculative and file-backed pages")
+        expect(MetricFormat.memoryUsed(totalBytes: 16, pageSize: 1,
+                                       freePages: 20, speculativePages: 0, fileBackedPages: 0) == 0,
+               "memory used clamps impossible available memory")
+
         // MARK: Registered defaults
 
         let registeredDefaults = Defaults.registeredDefaults
@@ -155,6 +167,7 @@ struct MetricsTests {
         expect(MetricFormat.includeNetworkInterface("en12"), "en12 included")
         expect(!MetricFormat.includeNetworkInterface("lo0"), "lo0 excluded")
         expect(!MetricFormat.includeNetworkInterface("awdl0"), "awdl0 excluded")
+        expect(!MetricFormat.includeNetworkInterface("nan0"), "nan0 excluded")
         expect(!MetricFormat.includeNetworkInterface("utun3"), "utun3 (VPN) excluded")
         expect(!MetricFormat.includeNetworkInterface("bridge0"), "bridge0 excluded")
         expect(!MetricFormat.includeNetworkInterface(""), "empty excluded")

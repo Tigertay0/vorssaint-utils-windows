@@ -16,6 +16,26 @@ struct NetworkCounters: Equatable {
 /// Everything here depends only on Foundation — no IOKit, no AppKit, no UI — so
 /// it compiles and runs standalone in the unit-test target (`./build.sh --test`).
 enum MetricFormat {
+    // MARK: Memory
+
+    /// Matches Activity Monitor's "Memory Used": physical RAM minus pages that
+    /// are free, speculative, or file-backed cache. The side breakdown
+    /// (App/Wired/Compressed) does not expose every bucket counted in the total.
+    static func memoryUsed(totalBytes: UInt64,
+                           pageSize: UInt64,
+                           freePages: UInt64,
+                           speculativePages: UInt64,
+                           fileBackedPages: UInt64) -> UInt64 {
+        guard totalBytes > 0, pageSize > 0 else { return 0 }
+        let freeAndSpeculative = freePages.addingReportingOverflow(speculativePages)
+        guard !freeAndSpeculative.overflow else { return 0 }
+        let availablePages = freeAndSpeculative.partialValue.addingReportingOverflow(fileBackedPages)
+        guard !availablePages.overflow else { return 0 }
+        let availableBytes = availablePages.partialValue.multipliedReportingOverflow(by: pageSize)
+        guard !availableBytes.overflow else { return 0 }
+        return availableBytes.partialValue >= totalBytes ? 0 : totalBytes - availableBytes.partialValue
+    }
+
     // MARK: Byte sizes
 
     /// Splits a byte count into a human value + unit, base-1024.
@@ -105,7 +125,7 @@ enum MetricFormat {
     /// VPN does not double-count the traffic already seen on the physical NIC.
     static func includeNetworkInterface(_ name: String) -> Bool {
         guard !name.isEmpty else { return false }
-        let excluded = ["lo", "gif", "stf", "awdl", "llw", "utun", "bridge",
+        let excluded = ["lo", "gif", "stf", "awdl", "llw", "nan", "utun", "bridge",
                         "ap", "anpi", "p2p", "XHC", "vmenet", "tap", "tun"]
         return !excluded.contains { name.hasPrefix($0) }
     }

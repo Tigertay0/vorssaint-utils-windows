@@ -48,8 +48,12 @@ enum SystemInfo {
             }
         }
         guard kr == KERN_SUCCESS else { return nil }
-        let page = UInt64(vm_kernel_page_size)
-        let used = (UInt64(stats.active_count) + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)) * page
-        return (used, ProcessInfo.processInfo.physicalMemory)
+        let total = ProcessInfo.processInfo.physicalMemory
+        let used = MetricFormat.memoryUsed(totalBytes: total,
+                                           pageSize: UInt64(vm_kernel_page_size),
+                                           freePages: UInt64(stats.free_count),
+                                           speculativePages: UInt64(stats.speculative_count),
+                                           fileBackedPages: UInt64(stats.external_page_count))
+        return (used, total)
     }
 }
