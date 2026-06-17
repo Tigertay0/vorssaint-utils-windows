@@ -40,7 +40,13 @@ struct MixerSection: View {
 
     @ViewBuilder
     private var mixerRows: some View {
-        rowList
+        if #available(macOS 26.0, *) {
+            GlassEffectContainer(spacing: 8) {
+                rowList
+            }
+        } else {
+            rowList
+        }
     }
 
     @ViewBuilder
@@ -207,6 +213,7 @@ private struct MixerVolumeSlider: View {
     }
 }
 
+@available(macOS 26.0, *)
 private struct LiquidGlassMixerSlider: View {
     @Binding var value: Double
     let tint: Color
@@ -297,10 +304,8 @@ private struct LiquidGlassMixerSlider: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(Capsule().fill(tint.opacity(colorScheme == .light ? 0.10 : 0.16)))
         } else {
-            Capsule()
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(colorScheme == .light ? 0.42 : 0.26))
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().fill(tint.opacity(isBoosting ? 0.16 : 0.09)))
+            Color.clear
+                .glassEffect(.regular.tint(tint.opacity(isBoosting ? 0.18 : 0.10)).interactive(), in: Capsule())
         }
     }
 
