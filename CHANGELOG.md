@@ -4,6 +4,27 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.17.0] - 2026-06-17
+
+### Added
+- The Battery section now shows apps with significant current energy use.
+- The Volume Mixer uses a compact Liquid Glass slider on macOS 26 and later,
+  while older macOS versions keep the standard slider.
+
+### Changed
+- The Keep Awake status under the app name is now a clearer state indicator.
+- Panel metric colors now adapt between Light Mode and Dark Mode for better
+  contrast.
+
+### Fixed
+- Update notices in section navigation mode now count toward the panel height
+  instead of cutting off the content.
+- The Settings window now opens in a normal centered position after relaunch,
+  instead of appearing under the menu panel.
+- Volume Mixer sliders now track system accent color changes more reliably.
+- The menu panel no longer opens with its header clipped during first-launch
+  layout timing.
+
 ## [2.16.1] - 2026-06-16
 
 ### Fixed

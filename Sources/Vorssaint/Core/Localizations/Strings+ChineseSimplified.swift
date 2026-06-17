@@ -41,7 +41,6 @@ extension Strings {
 
         panelAwake: "Mac 已唤醒",
         panelNormalSleep: "正常睡眠",
-        panelActiveBadge: "已启用",
         panelSettings: "设置",
         panelQuit: "退出",
         panelHotkeyHint: "⌃⌥⌘K 切换",
@@ -69,6 +68,8 @@ extension Strings {
         pressureWarning: "注意",
         pressureCritical: "严重",
         monitorUnavailable: "此 Mac 上无可用传感器",
+        energyAppsTitle: "显著耗能",
+        energyAppsIdle: "无显著耗能",
 
         notifySessionEndedTitle: "会话已结束",
         notifySessionEndedBody: "时间到。Mac 将恢复正常睡眠。",

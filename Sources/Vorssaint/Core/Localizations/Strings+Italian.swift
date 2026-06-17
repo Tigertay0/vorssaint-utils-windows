@@ -41,7 +41,6 @@ extension Strings {
 
         panelAwake: "Mac attivo",
         panelNormalSleep: "Stop normale",
-        panelActiveBadge: "ATTIVO",
         panelSettings: "Impostazioni",
         panelQuit: "Esci",
         panelHotkeyHint: "⌃⌥⌘K attiva/disattiva",
@@ -69,6 +68,8 @@ extension Strings {
         pressureWarning: "Attenzione",
         pressureCritical: "Critica",
         monitorUnavailable: "Sensori non disponibili su questo Mac",
+        energyAppsTitle: "Consumo energia rilevante",
+        energyAppsIdle: "Nessun consumo energia rilevante",
 
         notifySessionEndedTitle: "Sessione terminata",
         notifySessionEndedBody: "Il tempo è scaduto. Il Mac tornerà allo stop normale.",

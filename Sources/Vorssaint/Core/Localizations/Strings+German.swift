@@ -41,7 +41,6 @@ extension Strings {
 
         panelAwake: "Mac wach",
         panelNormalSleep: "Normaler Ruhezustand",
-        panelActiveBadge: "AKTIV",
         panelSettings: "Einstellungen",
         panelQuit: "Beenden",
         panelHotkeyHint: "⌃⌥⌘K schaltet um",
@@ -69,6 +68,8 @@ extension Strings {
         pressureWarning: "Erhöht",
         pressureCritical: "Kritisch",
         monitorUnavailable: "Sensoren auf diesem Mac nicht verfügbar",
+        energyAppsTitle: "Hoher Energieverbrauch",
+        energyAppsIdle: "Kein hoher Energieverbrauch",
 
         notifySessionEndedTitle: "Sitzung beendet",
         notifySessionEndedBody: "Die Zeit ist abgelaufen. Der Mac wechselt wieder normal in den Ruhezustand.",

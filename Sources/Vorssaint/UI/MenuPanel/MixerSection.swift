@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import SwiftUI
 
 /// Per-app volume sliders, the mixer macOS never shipped. Shows every app
@@ -10,6 +11,8 @@ import SwiftUI
 struct MixerSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
+    @State private var normalSliderTint = Color(nsColor: .controlAccentColor)
+    @State private var accentRevision = 0
     var collapsible = true
 
     var body: some View {
@@ -22,13 +25,42 @@ struct MixerSection: View {
                 } else if mixer.apps.isEmpty {
                     emptyLabel(l10n.s.mixerEmpty)
                 } else {
-                    ForEach(mixer.apps) { app in
-                        MixerRow(app: app)
-                    }
+                    mixerRows
                 }
             }
             .panelCard()
         }
+        .onReceive(NSApplication.shared.publisher(for: \.effectiveAppearance, options: [.new])) { _ in
+            refreshSliderTint()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NSSystemColorsDidChangeNotification"))) { _ in
+            refreshSliderTint()
+        }
+    }
+
+    @ViewBuilder
+    private var mixerRows: some View {
+        if #available(macOS 26.0, *) {
+            GlassEffectContainer(spacing: 8) {
+                rowList
+            }
+        } else {
+            rowList
+        }
+    }
+
+    @ViewBuilder
+    private var rowList: some View {
+        ForEach(mixer.apps) { app in
+            MixerRow(app: app,
+                     normalTint: normalSliderTint,
+                     accentRevision: accentRevision)
+        }
+    }
+
+    private func refreshSliderTint() {
+        normalSliderTint = Color(nsColor: .controlAccentColor)
+        accentRevision += 1
     }
 
     private func emptyLabel(_ text: String) -> some View {
@@ -57,10 +89,13 @@ struct MixerSection: View {
 private struct MixerRow: View {
     @ObservedObject private var mixer = AppVolumeMixer.shared
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.colorScheme) private var colorScheme
     let app: MixerApp
+    let normalTint: Color
+    let accentRevision: Int
 
-    /// Amber, matching the panel's dark aesthetic, to flag the boost range.
-    private let boostColor = Color(red: 0.96, green: 0.65, blue: 0.16)
+    /// Warm accent to flag the boost range, darkened in Light Mode for contrast.
+    private var boostColor: Color { PanelMetricColor.orange(for: colorScheme) }
     /// Tie the visual state to the displayed percentage, so "amber" and ">100%"
     /// always agree and the reset hides exactly when the row reads 100%.
     private var isBoosting: Bool { (app.volume * 100).rounded() > 100 }
@@ -74,7 +109,7 @@ private struct MixerRow: View {
                     .frame(width: 18, height: 18)
                 if app.isPlaying {
                     Circle()
-                        .fill(Color.green)
+                        .fill(PanelMetricColor.green(for: colorScheme))
                         .frame(width: 6, height: 6)
                         .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1))
                 }
@@ -86,12 +121,12 @@ private struct MixerRow: View {
                 .truncationMode(.middle)
                 .frame(width: 86, alignment: .leading)
 
-            Slider(value: volumeBinding, in: 0...AppVolumeMixer.maxVolume)
-                .controlSize(.small)
-                // Pass an explicit accent (not nil) for the normal state: on the
-                // macOS slider, tint(nil) does not reliably clear a previously
-                // applied colour, so the bar would stay amber after leaving boost.
-                .tint(isBoosting ? boostColor : Color.accentColor)
+            MixerVolumeSlider(value: volumeBinding,
+                              normalTint: normalTint,
+                              boostTint: boostColor,
+                              isBoosting: isBoosting,
+                              accentRevision: accentRevision,
+                              accessibilityLabel: app.name)
 
             HStack(spacing: 2) {
                 if isBoosting {
@@ -124,7 +159,9 @@ private struct MixerRow: View {
             } label: {
                 Image(systemName: app.volume <= 0.001 ? "speaker.slash.fill" : "speaker.wave.2.fill")
                     .font(.system(size: 10))
-                    .foregroundStyle(app.volume <= 0.001 ? Color.red : Color.secondary)
+                    .foregroundStyle(app.volume <= 0.001
+                                     ? PanelMetricColor.red(for: colorScheme)
+                                     : Color.secondary)
                     .frame(width: 16)
             }
             .buttonStyle(.plain)
@@ -136,5 +173,145 @@ private struct MixerRow: View {
             get: { app.volume },
             set: { mixer.setVolume($0, for: app) }
         )
+    }
+}
+
+private struct MixerVolumeSlider: View {
+    @Binding var value: Double
+    let normalTint: Color
+    let boostTint: Color
+    let isBoosting: Bool
+    let accentRevision: Int
+    let accessibilityLabel: String
+
+    private var activeTint: Color { isBoosting ? boostTint : normalTint }
+    private var percentage: Int { Int((value * 100).rounded()) }
+
+    var body: some View {
+        Group {
+            if #available(macOS 26.0, *) {
+                LiquidGlassMixerSlider(value: $value,
+                                       tint: activeTint,
+                                       isBoosting: isBoosting,
+                                       accessibilityLabel: accessibilityLabel)
+            } else {
+                nativeSlider
+                    .accessibilityLabel(accessibilityLabel)
+                    .accessibilityValue("\(percentage)%")
+            }
+        }
+    }
+
+    private var nativeSlider: some View {
+        Slider(value: $value, in: 0...AppVolumeMixer.maxVolume)
+            .controlSize(.small)
+            // Pass an explicit accent (not nil) for the normal state: on the
+            // macOS slider, tint(nil) does not reliably clear a previously
+            // applied colour, so the bar would stay amber after leaving boost.
+            .tint(activeTint)
+            .id(accentRevision)
+    }
+}
+
+@available(macOS 26.0, *)
+private struct LiquidGlassMixerSlider: View {
+    @Binding var value: Double
+    let tint: Color
+    let isBoosting: Bool
+    let accessibilityLabel: String
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var colorScheme
+
+    private let knobWidth: CGFloat = 24
+    private let knobHeight: CGFloat = 15
+    private let trackHeight: CGFloat = 5
+
+    private var progress: CGFloat {
+        let clamped = min(max(value, 0), AppVolumeMixer.maxVolume)
+        return CGFloat(clamped / AppVolumeMixer.maxVolume)
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = max(proxy.size.width, knobWidth)
+            let amount = progress
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(trackOpacity))
+                    .frame(height: trackHeight)
+
+                Capsule()
+                    .fill(tint)
+                    .frame(width: max(trackHeight, width * amount), height: trackHeight)
+                    .shadow(color: tint.opacity(0.18), radius: 3)
+
+                knob
+                    .frame(width: knobWidth, height: knobHeight)
+                    .offset(x: (width - knobWidth) * amount)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .animation(.easeOut(duration: 0.16), value: amount)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        updateValue(at: gesture.location.x, width: width)
+                    }
+            )
+        }
+        .frame(height: knobHeight)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue("\(Int((value * 100).rounded()))%")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment:
+                value = min(AppVolumeMixer.maxVolume, value + 0.05)
+            case .decrement:
+                value = max(0, value - 0.05)
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    private var trackOpacity: Double {
+        colorScheme == .light ? 0.11 : 0.16
+    }
+
+    private var knob: some View {
+        ZStack {
+            knobFill
+            Capsule()
+                .strokeBorder(tint.opacity(isBoosting ? 0.55 : 0.36), lineWidth: isBoosting ? 1.1 : 0.8)
+            Capsule()
+                .fill(
+                    LinearGradient(colors: [
+                        Color.white.opacity(colorScheme == .light ? 0.48 : 0.28),
+                        Color.white.opacity(0.06)
+                    ], startPoint: .top, endPoint: .bottom)
+                )
+                .blendMode(.screen)
+                .padding(1)
+        }
+        .shadow(color: tint.opacity(isBoosting ? 0.24 : 0.16), radius: 3, x: 0, y: 0)
+        .shadow(color: Color.black.opacity(colorScheme == .light ? 0.08 : 0.18), radius: 2, x: 0, y: 1)
+    }
+
+    @ViewBuilder
+    private var knobFill: some View {
+        if reduceTransparency {
+            Capsule()
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(Capsule().fill(tint.opacity(colorScheme == .light ? 0.10 : 0.16)))
+        } else {
+            Color.clear
+                .glassEffect(.regular.tint(tint.opacity(isBoosting ? 0.18 : 0.10)).interactive(), in: Capsule())
+        }
+    }
+
+    private func updateValue(at x: CGFloat, width: CGFloat) {
+        let travel = max(width - knobWidth, 1)
+        let normalized = min(max((x - knobWidth / 2) / travel, 0), 1)
+        value = Double(normalized) * AppVolumeMixer.maxVolume
     }
 }

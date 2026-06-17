@@ -8,6 +8,7 @@ import SwiftUI
 /// enabled in a public build.
 struct FanControlSection: View {
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.colorScheme) private var colorScheme
     var collapsible = true
 
     var body: some View {
@@ -16,7 +17,7 @@ struct FanControlSection: View {
                 HStack(spacing: 8) {
                     Image(systemName: "fanblades.fill")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(PanelMetricColor.cyan(for: colorScheme))
                         .frame(width: 24)
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 6) {
@@ -26,8 +27,8 @@ struct FanControlSection: View {
                                 .font(.system(size: 8, weight: .bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.cyan.opacity(0.18)))
-                                .foregroundStyle(.cyan)
+                                .background(Capsule().fill(PanelMetricColor.cyan(for: colorScheme).opacity(0.16)))
+                                .foregroundStyle(PanelMetricColor.cyan(for: colorScheme))
                         }
                         Text(l10n.s.fanControlBetaStatus)
                             .font(.system(size: 10))

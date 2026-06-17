@@ -18,12 +18,39 @@ struct ProcessUsage: Identifiable, Equatable {
 /// Answers "which apps are eating this resource?" for the panel's System
 /// section. CPU and memory come from `ps`; GPU comes from the accelerator's
 /// per-process `accumulatedGPUTime` counters, sampled as deltas between calls.
-    /// Helper processes are consolidated under the app responsible for them, so
-    /// one app shows up once instead of as a pile of helper rows.
+/// Helper processes are consolidated under the app responsible for them, so
+/// one app shows up once instead of as a pile of helper rows.
 final class ProcessUsageService {
     static let shared = ProcessUsageService()
 
     private init() {}
+
+    // MARK: - Energy
+
+    /// macOS does not expose Activity Monitor's Energy Impact as a `ps` column.
+    /// For the live battery list, combine the current CPU and GPU app shares and
+    /// keep only rows that are meaningfully active right now.
+    func topEnergy(limit: Int = 5) -> [ProcessUsage] {
+        let sampleLimit = max(limit * 3, 12)
+        let cpuRows = topCPU(limit: sampleLimit)
+        let gpuRows = topGPU(limit: sampleLimit)
+        var scores: [pid_t: (name: String, value: Double)] = [:]
+
+        for row in cpuRows + gpuRows {
+            var score = scores[row.pid] ?? (row.name, 0)
+            score.value += row.value
+            if score.name.hasPrefix("pid ") { score.name = row.name }
+            scores[row.pid] = score
+        }
+
+        return scores
+            .filter { _, score in score.value >= 2 }
+            .sorted { $0.value.value > $1.value.value }
+            .prefix(limit)
+            .map { pid, score in
+                ProcessUsage(pid: pid, name: score.name, value: score.value)
+            }
+    }
 
     // MARK: - CPU
 
@@ -88,6 +115,7 @@ final class ProcessUsageService {
     // MARK: - GPU
 
     private var previousGPUSample: (time: TimeInterval, perPid: [pid_t: Double])?
+    private let gpuSampleLock = NSLock()
 
     /// Per-process GPU share since the previous call. The first call after a
     /// while only primes the baseline and returns [] — callers show a
@@ -95,9 +123,12 @@ final class ProcessUsageService {
     func topGPU(limit: Int = 5) -> [ProcessUsage] {
         let now = ProcessInfo.processInfo.systemUptime
         let current = Self.gpuTimePerPid()
-        defer { previousGPUSample = (now, current) }
+        gpuSampleLock.lock()
+        let previous = previousGPUSample
+        previousGPUSample = (now, current)
+        gpuSampleLock.unlock()
 
-        guard let previous = previousGPUSample, now > previous.time,
+        guard let previous, now > previous.time,
               now - previous.time < 30 // stale baseline => re-prime
         else { return [] }
 

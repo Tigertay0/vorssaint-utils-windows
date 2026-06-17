@@ -41,7 +41,6 @@ extension Strings {
 
         panelAwake: "Mac éveillé",
         panelNormalSleep: "Veille normale",
-        panelActiveBadge: "ACTIF",
         panelSettings: "Réglages",
         panelQuit: "Quitter",
         panelHotkeyHint: "⌃⌥⌘K bascule",
@@ -69,6 +68,8 @@ extension Strings {
         pressureWarning: "Attention",
         pressureCritical: "Critique",
         monitorUnavailable: "Capteurs indisponibles sur ce Mac",
+        energyAppsTitle: "Consommation importante",
+        energyAppsIdle: "Aucune consommation importante",
 
         notifySessionEndedTitle: "Session terminée",
         notifySessionEndedBody: "Le temps est écoulé. Le Mac se remettra en veille normalement.",

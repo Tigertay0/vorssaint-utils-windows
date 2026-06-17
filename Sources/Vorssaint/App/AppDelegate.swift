@@ -19,7 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private var onboardingWindow: NSWindow?
     private let popoverOpenDuration: TimeInterval = 0.18
     private let popoverCloseDuration: TimeInterval = 0.14
-    private let popoverSlideOffset: CGFloat = 8
 
     // MARK: - Lifecycle
 
@@ -188,6 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             // Keep the panel alive next to fullscreen apps and on any Space —
             // without this it blinks shut when another display is fullscreen.
             window.collectionBehavior.insert([.fullScreenAuxiliary, .canJoinAllSpaces])
+            window.contentView?.layoutSubtreeIfNeeded()
             window.makeKey()
             animatePopoverOpen(window)
         }
@@ -280,39 +280,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         }
 
         popoverIsClosing = true
-        let startFrame = window.frame
-        let endFrame = startFrame.offsetBy(dx: 0, dy: popoverSlideOffset)
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = popoverCloseDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             window.animator().alphaValue = 0
-            window.animator().setFrame(endFrame, display: true)
         } completionHandler: { [weak self, weak window] in
             window?.alphaValue = 1
-            window?.setFrame(startFrame, display: false)
             self?.finishPopoverClose()
         }
     }
 
     private func animatePopoverOpen(_ window: NSWindow) {
         popoverIsClosing = false
-        let finalFrame = window.frame
-        let startFrame = finalFrame.offsetBy(dx: 0, dy: popoverSlideOffset)
         window.alphaValue = 0
-        window.setFrame(startFrame, display: false)
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = popoverOpenDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             window.animator().alphaValue = 1
-            window.animator().setFrame(finalFrame, display: true)
         } completionHandler: { [weak self, weak window] in
             guard let self,
                   self.popover.isShown,
                   window === self.popover.contentViewController?.view.window else { return }
             window?.alphaValue = 1
-            window?.setFrame(finalFrame, display: false)
         }
     }
 
@@ -567,15 +558,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             // .miniaturizable so the Window menu's Minimize (Cmd+M) actually works.
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
+            window.isRestorable = false
             window.hidesOnDeactivate = false
             window.canHide = false
             window.delegate = self
-            window.center()
+            centerSettingsWindow(window)
             settingsWindow = window
         }
         settingsWindow?.title = L10n.shared.s.settingsTitle
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func centerSettingsWindow(_ window: NSWindow) {
+        window.contentView?.layoutSubtreeIfNeeded()
+        let screen = popover.contentViewController?.view.window?.screen ?? NSScreen.withMouse
+        let visible = screen.visibleFrame
+        let margin: CGFloat = 40
+        let availableWidth = max(1, visible.width - margin)
+        let availableHeight = max(1, visible.height - margin)
+        let width = min(max(window.frame.width, 360), availableWidth)
+        let height = min(max(window.frame.height, 320), availableHeight)
+        var frame = NSRect(x: visible.midX - width / 2,
+                           y: visible.midY - height / 2,
+                           width: width,
+                           height: height)
+
+        if let popoverFrame = popover.contentViewController?.view.window?.frame,
+           frame.intersects(popoverFrame) {
+            let gap: CGFloat = 16
+            let leftOfPopover = popoverFrame.minX - gap - width
+            if leftOfPopover >= visible.minX {
+                frame.origin.x = leftOfPopover
+            } else {
+                let belowPopover = popoverFrame.minY - gap - height
+                if belowPopover >= visible.minY {
+                    frame.origin.y = belowPopover
+                }
+            }
+        }
+        window.setFrame(frame.integral, display: false)
     }
 
     /// Rebuilds the menu bar item so the icon reappears when the OS has dropped it

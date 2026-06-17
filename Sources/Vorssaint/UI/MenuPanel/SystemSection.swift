@@ -5,18 +5,20 @@ import SwiftUI
 
 /// Which per-app breakdown is expanded in the System section.
 enum BreakdownKind {
-    case cpu, gpu, memory
+    case cpu, gpu, memory, energy
 }
 
 /// The "System" section of the panel: component temperatures, hardware usage
 /// and memory pressure — only the readings that matter, presented cleanly.
-/// Tapping CPU, GPU or Memory expands the top consumers of that resource.
+/// Tapping CPU, GPU, Battery or Memory expands the top consumers of that resource.
 struct SystemSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var monitor = SystemMonitor.shared
+    @Environment(\.colorScheme) private var colorScheme
     var collapsible = true
     @State private var expanded: BreakdownKind?
     @State private var breakdownRows: [ProcessUsage] = []
+    @State private var breakdownIsLoading = false
     @State private var lastBreakdownRefresh = Date.distantPast
     @AppStorage(DefaultsKey.monitorGraphCPU) private var graphCPU = true
     @AppStorage(DefaultsKey.monitorGraphGPU) private var graphGPU = true
@@ -55,6 +57,7 @@ struct SystemSection: View {
         .onDisappear {
             expanded = nil
             breakdownRows = []
+            breakdownIsLoading = false
         }
     }
 
@@ -91,6 +94,7 @@ struct SystemSection: View {
         if expanded == kind {
             expanded = nil
             breakdownRows = []
+            breakdownIsLoading = false
         } else {
             expanded = kind
             breakdownRows = []
@@ -101,15 +105,18 @@ struct SystemSection: View {
     private func refreshBreakdown() {
         guard let kind = expanded else { return }
         lastBreakdownRefresh = Date()
+        breakdownIsLoading = true
         DispatchQueue.global(qos: .userInitiated).async {
             let rows: [ProcessUsage]
             switch kind {
             case .cpu: rows = ProcessUsageService.shared.topCPU()
             case .gpu: rows = ProcessUsageService.shared.topGPU()
             case .memory: rows = ProcessUsageService.shared.topMemory()
+            case .energy: rows = ProcessUsageService.shared.topEnergy()
             }
             DispatchQueue.main.async {
                 guard expanded == kind else { return }
+                breakdownIsLoading = false
                 breakdownRows = rows
             }
         }
@@ -120,7 +127,7 @@ struct SystemSection: View {
         if expanded == kind {
             VStack(alignment: .leading, spacing: 4) {
                 if breakdownRows.isEmpty {
-                    Text(l10n.s.breakdownMeasuring)
+                    Text(breakdownIsLoading ? l10n.s.breakdownMeasuring : emptyBreakdownText(for: kind))
                         .font(.system(size: 10.5))
                         .foregroundStyle(.tertiary)
                         .padding(.leading, 38)
@@ -135,8 +142,7 @@ struct SystemSection: View {
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             Spacer()
-                            Text(kind == .memory ? formatMemory(UInt64(row.value))
-                                                 : String(format: "%.1f%%", row.value))
+                            Text(breakdownValue(row, for: kind))
                                 .font(.system(size: 10.5, weight: .medium))
                                 .monospacedDigit()
                                 .foregroundStyle(.secondary)
@@ -149,6 +155,13 @@ struct SystemSection: View {
         }
     }
 
+    private func emptyBreakdownText(for kind: BreakdownKind) -> String {
+        kind == .energy ? l10n.s.energyAppsIdle : l10n.s.breakdownMeasuring
+    }
+
+    private func breakdownValue(_ row: ProcessUsage, for kind: BreakdownKind) -> String {
+        kind == .memory ? formatMemory(UInt64(row.value)) : String(format: "%.1f%%", row.value)
+    }
 
     // MARK: Temperatures
 
@@ -216,7 +229,9 @@ struct SystemSection: View {
             if sysGPU {
                 usageRow(label: l10n.s.gpuLabel, fraction: monitor.snapshot.gpuUsage, kind: .gpu)
                 if graphGPU, monitor.snapshot.gpuHistory.count >= 2 {
-                    Sparkline(values: monitor.snapshot.gpuHistory, color: .cyan, maxValue: 1)
+                    Sparkline(values: monitor.snapshot.gpuHistory,
+                              color: PanelMetricColor.cyan(for: colorScheme),
+                              maxValue: 1)
                         .frame(height: 22)
                 }
                 breakdownList(for: .gpu)
@@ -251,15 +266,41 @@ struct SystemSection: View {
                         .frame(width: 38, alignment: .trailing)
                 }
                 if graphBattery, monitor.snapshot.batteryHistory.count >= 2 {
-                    Sparkline(values: monitor.snapshot.batteryHistory, color: .green, maxValue: 1)
+                    Sparkline(values: monitor.snapshot.batteryHistory,
+                              color: PanelMetricColor.green(for: colorScheme),
+                              maxValue: 1)
                         .frame(height: 22)
                 }
+                energyAppsHeader
+                breakdownList(for: .energy)
             }
         }
     }
 
+    private var energyAppsHeader: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { toggleBreakdown(.energy) }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(expanded == .energy ? 90 : 0))
+                Text(l10n.s.energyAppsTitle)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private func chargeTint(_ charge: Int) -> Color {
-        charge < 20 ? .red : (charge < 40 ? .yellow : .green)
+        if charge < 20 { return PanelMetricColor.red(for: colorScheme) }
+        if charge < 40 { return PanelMetricColor.yellow(for: colorScheme) }
+        return PanelMetricColor.green(for: colorScheme)
     }
 
     private var uptimeRow: some View {
@@ -339,7 +380,9 @@ struct SystemSection: View {
             }
             .buttonStyle(.plain)
             if graphMemory, monitor.snapshot.memoryHistory.count >= 2 {
-                Sparkline(values: monitor.snapshot.memoryHistory, color: .mint, maxValue: 1)
+                Sparkline(values: monitor.snapshot.memoryHistory,
+                          color: PanelMetricColor.mint(for: colorScheme),
+                          maxValue: 1)
                     .frame(height: 22)
             }
             breakdownList(for: .memory)
@@ -361,6 +404,7 @@ struct SystemSection: View {
 
 /// Thin capacity bar for CPU/GPU usage.
 private struct UsageBar: View {
+    @Environment(\.colorScheme) private var colorScheme
     let fraction: Double
     var tint: Color? = nil
 
@@ -381,8 +425,8 @@ private struct UsageBar: View {
     private var barColor: Color {
         switch fraction {
         case ..<0.6: return .accentColor
-        case ..<0.85: return .yellow
-        default: return .red
+        case ..<0.85: return PanelMetricColor.yellow(for: colorScheme)
+        default: return PanelMetricColor.red(for: colorScheme)
         }
     }
 }
@@ -391,6 +435,7 @@ private struct UsageBar: View {
 /// red = critical.
 struct PressureIndicator: View {
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.colorScheme) private var colorScheme
     let pressure: MemoryPressure
 
     var body: some View {
@@ -410,9 +455,9 @@ struct PressureIndicator: View {
 
     private var color: Color {
         switch pressure {
-        case .normal: return .green
-        case .warning: return .yellow
-        case .critical: return .red
+        case .normal: return PanelMetricColor.green(for: colorScheme)
+        case .warning: return PanelMetricColor.yellow(for: colorScheme)
+        case .critical: return PanelMetricColor.red(for: colorScheme)
         case .unknown: return .secondary
         }
     }

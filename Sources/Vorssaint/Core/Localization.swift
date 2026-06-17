@@ -119,7 +119,6 @@ struct Strings {
     // MARK: Panel — header & footer
     let panelAwake: String
     let panelNormalSleep: String
-    let panelActiveBadge: String
     let panelSettings: String
     let panelQuit: String
     let panelHotkeyHint: String
@@ -149,6 +148,8 @@ struct Strings {
     let pressureWarning: String
     let pressureCritical: String
     let monitorUnavailable: String
+    let energyAppsTitle: String
+    let energyAppsIdle: String
 
     // MARK: Notifications
     let notifySessionEndedTitle: String
@@ -531,7 +532,6 @@ extension Strings {
 
         panelAwake: "Mac acordado",
         panelNormalSleep: "Suspensão normal",
-        panelActiveBadge: "ATIVO",
         panelSettings: "Ajustes",
         panelQuit: "Sair",
         panelHotkeyHint: "⌃⌥⌘K alterna",
@@ -559,6 +559,8 @@ extension Strings {
         pressureWarning: "Atenção",
         pressureCritical: "Crítico",
         monitorUnavailable: "Sensores indisponíveis neste Mac",
+        energyAppsTitle: "Uso significativo de energia",
+        energyAppsIdle: "Sem uso significativo de energia",
 
         notifySessionEndedTitle: "Sessão encerrada",
         notifySessionEndedBody: "O tempo acabou. O Mac voltará a suspender normalmente.",
@@ -915,7 +917,6 @@ extension Strings {
 
         panelAwake: "Mac awake",
         panelNormalSleep: "Normal sleep",
-        panelActiveBadge: "ACTIVE",
         panelSettings: "Settings",
         panelQuit: "Quit",
         panelHotkeyHint: "⌃⌥⌘K toggles",
@@ -943,6 +944,8 @@ extension Strings {
         pressureWarning: "Caution",
         pressureCritical: "Critical",
         monitorUnavailable: "Sensors unavailable on this Mac",
+        energyAppsTitle: "Apps using significant energy",
+        energyAppsIdle: "No significant energy use",
 
         notifySessionEndedTitle: "Session ended",
         notifySessionEndedBody: "Time is up. The Mac will sleep normally again.",

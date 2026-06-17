@@ -41,7 +41,6 @@ extension Strings {
 
         panelAwake: "Mac はスリープしません",
         panelNormalSleep: "通常のスリープ",
-        panelActiveBadge: "オン",
         panelSettings: "設定",
         panelQuit: "終了",
         panelHotkeyHint: "⌃⌥⌘K で切り替え",
@@ -69,6 +68,8 @@ extension Strings {
         pressureWarning: "注意",
         pressureCritical: "危険",
         monitorUnavailable: "この Mac ではセンサーを利用できません",
+        energyAppsTitle: "大きなエネルギー使用",
+        energyAppsIdle: "大きなエネルギー使用なし",
 
         notifySessionEndedTitle: "セッションが終了しました",
         notifySessionEndedBody: "時間になりました。Mac は再び通常どおりスリープします。",

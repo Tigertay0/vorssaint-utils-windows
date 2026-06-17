@@ -10,6 +10,8 @@ import SwiftUI
 struct MenuPanelView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var awake = KeepAwakeManager.shared
+    @ObservedObject private var updates = UpdateService.shared
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage(DefaultsKey.monitorShowMixer) private var showMixer = true
     @AppStorage(DefaultsKey.monitorShowSystem) private var showSystem = true
     @AppStorage(DefaultsKey.monitorShowNetwork) private var showNetwork = true
@@ -19,6 +21,7 @@ struct MenuPanelView: View {
     @AppStorage(DefaultsKey.panelSectionOrder) private var sectionOrderRaw = ""
     @State private var contentHeight: CGFloat = 0
     @State private var navigableContentHeight: CGFloat = 0
+    @State private var updateBannerHeight: CGFloat = 0
     @State private var selectedSection: PanelSectionID = .keepAwake
 
     /// Cap the panel to the usable screen height so it never overflows the menu
@@ -37,6 +40,11 @@ struct MenuPanelView: View {
         }
         .onAppear {
             awake.refreshPasswordlessStatus()
+        }
+        .onChange(of: updates.state) { _, state in
+            if !state.showsMenuPanelBanner {
+                updateBannerHeight = 0
+            }
         }
     }
 
@@ -66,6 +74,7 @@ struct MenuPanelView: View {
     private var navigablePanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             UpdateBanner()
+                .reportHeight($updateBannerHeight)
             header
             sectionNavigation
 
@@ -101,7 +110,8 @@ struct MenuPanelView: View {
     }
 
     private var navigableScrollHeight: CGFloat {
-        min(navigableContentHeight == 0 ? 120 : navigableContentHeight, maxHeight - navigableChromeHeight)
+        let measured = navigableContentHeight == 0 ? estimatedNavigableContentHeight : navigableContentHeight
+        return min(measured, max(80, maxHeight - navigableChromeHeight))
     }
 
     private var navigablePanelHeight: CGFloat {
@@ -109,7 +119,22 @@ struct MenuPanelView: View {
     }
 
     private var navigableChromeHeight: CGFloat {
-        166
+        let bannerHeight = updates.state.showsMenuPanelBanner
+            ? (max(updateBannerHeight, 48) + 12)
+            : 0
+        return 166 + bannerHeight
+    }
+
+    private var estimatedNavigableContentHeight: CGFloat {
+        switch activeSection {
+        case .keepAwake: return 250
+        case .mixer: return 190
+        case .system: return 460
+        case .network: return 190
+        case .power: return 170
+        case .fanControl: return 92
+        case .utilities: return 82
+        }
     }
 
     /// Renders the section for an id, honoring its "show in panel" toggle. Each
@@ -182,24 +207,40 @@ struct MenuPanelView: View {
     private var header: some View {
         HStack(spacing: 10) {
             BrandBadge(size: 34)
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(AppInfo.name)
                     .font(.system(size: 15, weight: .bold))
-                Text(awake.isActive ? l10n.s.panelAwake : l10n.s.panelNormalSleep)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                keepAwakeStatusIndicator
             }
             Spacer()
-            if awake.isActive {
-                Text(l10n.s.panelActiveBadge)
-                    .font(.system(size: 9, weight: .bold))
-                    .kerning(0.5)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(Color.green.opacity(0.18)))
-                    .foregroundStyle(.green)
-            }
         }
+    }
+
+    private var keepAwakeStatusIndicator: some View {
+        let color = keepAwakeStatusColor
+        return HStack(spacing: 5) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+                .shadow(color: color.opacity(awake.isActive ? 0.55 : 0), radius: 2)
+            Text(awake.isActive ? l10n.s.panelAwake : l10n.s.panelNormalSleep)
+                .font(.system(size: 10.5, weight: .medium))
+                .lineLimit(1)
+        }
+        .foregroundStyle(awake.isActive ? color : Color.secondary)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(
+            Capsule()
+                .fill(color.opacity(awake.isActive ? 0.15 : 0.09))
+        )
+    }
+
+    private var keepAwakeStatusColor: Color {
+        if !awake.isActive { return .secondary }
+        return awake.clamshellActive
+            ? PanelMetricColor.yellow(for: colorScheme)
+            : PanelMetricColor.green(for: colorScheme)
     }
 
     private var footer: some View {
@@ -371,6 +412,42 @@ private final class HeightReportingHostingView<Content: View>: NSHostingView<Con
     override func layout() {
         super.layout()
         onLayout?()
+    }
+}
+
+private struct MenuPanelHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private extension View {
+    func reportHeight(_ height: Binding<CGFloat>) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: MenuPanelHeightPreferenceKey.self,
+                                       value: proxy.size.height)
+            }
+        )
+        .onPreferenceChange(MenuPanelHeightPreferenceKey.self) { value in
+            guard abs(value - height.wrappedValue) > 0.5 else { return }
+            DispatchQueue.main.async {
+                height.wrappedValue = value
+            }
+        }
+    }
+}
+
+private extension UpdateService.State {
+    var showsMenuPanelBanner: Bool {
+        switch self {
+        case .available, .downloading, .installing:
+            return true
+        default:
+            return false
+        }
     }
 }
 

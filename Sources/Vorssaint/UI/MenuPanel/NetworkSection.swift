@@ -9,6 +9,7 @@ struct NetworkSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var monitor = SystemMonitor.shared
     @ObservedObject private var speed = SpeedTest.shared
+    @Environment(\.colorScheme) private var colorScheme
     var collapsible = true
     @AppStorage(DefaultsKey.monitorGraphNetwork) private var showGraph = true
     @AppStorage(DefaultsKey.monitorNetSpeed) private var netSpeed = true
@@ -63,7 +64,7 @@ struct NetworkSection: View {
                 rateColumn(icon: "arrow.up",
                            label: l10n.s.networkUpload,
                            value: monitor.snapshot.netUpBytesPerSec,
-                           color: .green)
+                           color: PanelMetricColor.green(for: colorScheme))
             }
             if showGraph, monitor.snapshot.netDownHistory.count >= 2 {
                 graph
@@ -97,7 +98,10 @@ struct NetworkSection: View {
         let peak = max(down.max() ?? 0, up.max() ?? 0, 1)
         return ZStack {
             Sparkline(values: down, color: .accentColor, maxValue: peak)
-            Sparkline(values: up, color: .green, maxValue: peak, fillOpacity: 0.08)
+            Sparkline(values: up,
+                      color: PanelMetricColor.green(for: colorScheme),
+                      maxValue: peak,
+                      fillOpacity: 0.08)
         }
         .frame(height: 30)
     }
@@ -148,7 +152,7 @@ struct NetworkSection: View {
             if case .failed = speed.phase {
                 Text(l10n.s.speedTestFailed)
                     .font(.system(size: 10))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(PanelMetricColor.orange(for: colorScheme))
             } else if let latency = speed.latencyMs {
                 Text("\(l10n.s.speedTestLatency): \(Int(latency.rounded())) ms")
                     .font(.system(size: 10))

@@ -9,6 +9,7 @@ import SwiftUI
 struct PowerSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var monitor = SystemMonitor.shared
+    @Environment(\.colorScheme) private var colorScheme
     var collapsible = true
     @AppStorage(DefaultsKey.monitorGraphPower) private var showGraph = true
     @AppStorage(DefaultsKey.monitorPwrSystem) private var pwrSystem = true
@@ -55,10 +56,11 @@ struct PowerSection: View {
     private var content: some View {
         if let power = monitor.snapshot.power, !power.isEmpty {
             if pwrSystem, let watts = power.systemWatts {
-                row(icon: "bolt.fill", color: .orange,
+                row(icon: "bolt.fill", color: PanelMetricColor.orange(for: colorScheme),
                     label: l10n.s.powerSystem, value: MetricFormat.watts(watts))
                 if showGraph, monitor.snapshot.systemPowerHistory.count >= 2 {
-                    Sparkline(values: monitor.snapshot.systemPowerHistory, color: .orange)
+                    Sparkline(values: monitor.snapshot.systemPowerHistory,
+                              color: PanelMetricColor.orange(for: colorScheme))
                         .frame(height: 26)
                 }
             }
@@ -69,13 +71,13 @@ struct PowerSection: View {
             }
             if pwrBattery, power.hasBattery, let flow = power.batteryWatts {
                 row(icon: flow >= 0 ? "battery.100.bolt" : "battery.50",
-                    color: flow >= 0 ? .green : .secondary,
+                    color: flow >= 0 ? PanelMetricColor.green(for: colorScheme) : .secondary,
                     label: l10n.s.powerBattery,
                     value: MetricFormat.watts(abs(flow)),
                     caption: flow >= 0 ? l10n.s.powerCharging : l10n.s.powerOnBattery)
             }
             if pwrHealth, let health = power.healthPercent {
-                row(icon: "heart.fill", color: .pink,
+                row(icon: "heart.fill", color: PanelMetricColor.pink(for: colorScheme),
                     label: l10n.s.powerHealth,
                     value: "\(Int(health.rounded()))%",
                     caption: power.cycleCount.map { "\($0) \(l10n.s.powerCycles)" })
