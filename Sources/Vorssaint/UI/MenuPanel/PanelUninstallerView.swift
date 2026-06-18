@@ -90,9 +90,7 @@ struct PanelUninstallerView: View {
 
     private var appPickerState: some View {
         AppPickerView(compact: true) {
-            withAnimation(.easeInOut(duration: 0.16)) {
-                showingAppPicker = false
-            }
+            showingAppPicker = false
         } onSelect: { url in
             showingAppPicker = false
             uninstaller.select(appURL: url)
@@ -350,9 +348,7 @@ struct PanelUninstallerView: View {
     }
 
     private func choose() {
-        withAnimation(.easeInOut(duration: 0.16)) {
-            showingAppPicker = true
-        }
+        showingAppPicker = true
     }
 
     private func prettyPath(_ url: URL) -> String {

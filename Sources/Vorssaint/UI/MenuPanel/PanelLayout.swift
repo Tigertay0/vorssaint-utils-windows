@@ -102,6 +102,7 @@ struct PanelSection<Content: View>: View {
     private let title: String
     private let collapsible: Bool
     private let supportsEditing: Bool
+    private let editButtonVisible: Bool
     private let content: (Bool) -> Content
     @State private var collapsed: Bool
     @State private var editing = false
@@ -112,17 +113,20 @@ struct PanelSection<Content: View>: View {
         self.title = title
         self.collapsible = collapsible
         self.supportsEditing = false
+        self.editButtonVisible = false
         self.content = { _ in content() }
         _collapsed = State(initialValue: PanelLayout.isCollapsed(id))
     }
 
     init(_ id: PanelSectionID, title: String, collapsible: Bool = true,
          supportsEditing: Bool,
+         editButtonVisible: Bool = true,
          @ViewBuilder content: @escaping (Bool) -> Content) {
         self.id = id
         self.title = title
         self.collapsible = collapsible
         self.supportsEditing = supportsEditing
+        self.editButtonVisible = editButtonVisible
         self.content = content
         _collapsed = State(initialValue: PanelLayout.isCollapsed(id))
     }
@@ -155,6 +159,9 @@ struct PanelSection<Content: View>: View {
             }
             if supportsEditing {
                 editButton
+                    .opacity(editButtonVisible ? 1 : 0)
+                    .disabled(!editButtonVisible)
+                    .accessibilityHidden(!editButtonVisible)
             }
         }
     }
@@ -182,7 +189,7 @@ struct PanelSection<Content: View>: View {
         .help(isEditing ? l10n.s.uninstallerDoneTitle : l10n.s.menuEdit)
     }
 
-    private var isEditing: Bool { supportsEditing && editing }
+    private var isEditing: Bool { supportsEditing && editButtonVisible && editing }
 
     private func toggleEditing() {
         withAnimation(.easeOut(duration: 0.16)) {

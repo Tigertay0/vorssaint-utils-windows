@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.2] - 2026-06-18
+
+### Fixed
+- Opening Clean URL or Uninstaller from the menu panel is now more stable on
+  macOS 15.
+
 ## [3.0.1] - 2026-06-18
 
 ### Fixed

@@ -306,18 +306,15 @@ struct UtilitiesSection: View {
 
     var body: some View {
         PanelSection(.utilities, title: l10n.s.utilitiesSection, collapsible: collapsible,
-                     supportsEditing: !showUninstaller && !showURLCleaner) { editing in
+                     supportsEditing: true,
+                     editButtonVisible: !showUninstaller && !showURLCleaner) { editing in
             if showUninstaller {
                 PanelUninstallerView {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        showUninstaller = false
-                    }
+                    showUninstaller = false
                 }
             } else if showURLCleaner {
                 PanelURLCleanerView {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        showURLCleaner = false
-                    }
+                    showURLCleaner = false
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
@@ -339,9 +336,8 @@ struct UtilitiesSection: View {
                                             isEditing: editing,
                                             visibility: $showCleanURL,
                                             action: {
-                                                withAnimation(.easeInOut(duration: 0.16)) {
-                                                    showURLCleaner = true
-                                                }
+                                                PanelInteractionState.shared.keepsPopoverOpen = true
+                                                showURLCleaner = true
                                             })
                     }
                     if editing || showUninstallerAction {
@@ -351,9 +347,8 @@ struct UtilitiesSection: View {
                                             isEditing: editing,
                                             visibility: $showUninstallerAction,
                                             action: {
-                                                withAnimation(.easeInOut(duration: 0.16)) {
-                                                    showUninstaller = true
-                                                }
+                                                PanelInteractionState.shared.keepsPopoverOpen = true
+                                                showUninstaller = true
                                             })
                     }
                 }
