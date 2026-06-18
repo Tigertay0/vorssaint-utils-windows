@@ -117,7 +117,7 @@ struct MetricsTests {
                "menu bar label style defaults to compact")
         expect(registeredDefaults[DefaultsKey.menuBarMemoryStyle] as? String == "percent",
                "memory menu bar style defaults to percent")
-        expect((registeredDefaults[DefaultsKey.autoQuitExceptions] as? [String]) == ["com.apple.finder"],
+        expect((registeredDefaults[DefaultsKey.autoQuitExceptions] as? [String]) == Defaults.mandatoryAutoQuitExceptionBundleIDs,
                "Finder stays in the default auto-quit exception list")
         expect(registeredDefaults[DefaultsKey.panelCollapsedSections] == nil,
                "panel collapsed sections intentionally has no registered default")
@@ -134,6 +134,9 @@ struct MetricsTests {
         expect(Defaults.sanitizedBundleIdentifierList([" com.example.One ", "", "com.example.One", "com.example.Two"])
                == ["com.example.One", "com.example.Two"],
                "bundle id lists are trimmed and deduplicated")
+        expect(Defaults.sanitizedAutoQuitExceptions(["com.example.One", Defaults.finderBundleIdentifier])
+               == [Defaults.finderBundleIdentifier, "com.example.One"],
+               "Finder is mandatory in the auto-quit exception list")
         expectClose(Defaults.sanitizedAppVolume(1.5), 1.5, "valid app volume is preserved")
         expectClose(Defaults.sanitizedAppVolume(3), 2, "high app volume clamps to boost maximum")
         expectClose(Defaults.sanitizedAppVolume(-1), 0, "negative app volume clamps to mute")

@@ -20,11 +20,14 @@ enum WindowActivator {
         guard let app = NSRunningApplication(processIdentifier: item.pid) else { return }
 
         app.unhide()
-        focusWindow(windowID: item.windowID, pid: item.pid)
+        guard let windowID = item.windowID else {
+            activateApp(app)
+            return
+        }
+        focusWindow(windowID: windowID, pid: item.pid)
         activateApp(app)
 
         let pid = item.pid
-        let windowID = item.windowID
         DispatchQueue.main.asyncAfter(deadline: .now() + focusRetryDelay) {
             guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return }
             focusWindow(windowID: windowID, pid: pid)
@@ -33,7 +36,8 @@ enum WindowActivator {
     }
 
     private static func activateOwnWindow(_ item: SwitcherItem) {
-        guard let window = NSApp.windows.first(where: { $0.windowNumber == Int(item.windowID) }) else { return }
+        guard let windowID = item.windowID,
+              let window = NSApp.windows.first(where: { $0.windowNumber == Int(windowID) }) else { return }
         if window.isMiniaturized {
             window.deminiaturize(nil)
         }

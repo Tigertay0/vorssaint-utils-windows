@@ -97,6 +97,9 @@ enum OnboardingInfo {
 }
 
 enum Defaults {
+    static let finderBundleIdentifier = "com.apple.finder"
+    static let mandatoryAutoQuitExceptionBundleIDs = [finderBundleIdentifier]
+
     static let allowedDurations = [0, 15, 30, 60, 120, 240, 480]
     static let allowedBatteryLimits = [0, 5, 10, 15, 20]
     static let allowedMonitorIntervals = [1, 2, 5]
@@ -115,7 +118,7 @@ enum Defaults {
         DefaultsKey.autoCheckUpdates: true,
         // Finder never benefits from being "quit" (it just relaunches), so
         // it's excepted out of the box.
-        DefaultsKey.autoQuitExceptions: ["com.apple.finder"],
+        DefaultsKey.autoQuitExceptions: mandatoryAutoQuitExceptionBundleIDs,
         // When the shelf is on, the shake gesture is on too (still toggleable).
         DefaultsKey.shelfShakeToOpen: true,
         DefaultsKey.urlCleanerEnabled: false,
@@ -198,6 +201,10 @@ enum Defaults {
             result.append(bundleID)
         }
         return result
+    }
+
+    static func sanitizedAutoQuitExceptions(_ bundleIDs: [String]) -> [String] {
+        sanitizedBundleIdentifierList(mandatoryAutoQuitExceptionBundleIDs + bundleIDs)
     }
 
     static func sanitizedAppVolume(_ volume: Double) -> Double {

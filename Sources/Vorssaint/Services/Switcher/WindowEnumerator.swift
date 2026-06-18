@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import ApplicationServices
 import CoreGraphics
 
 /// Builds the list of switchable windows from the window server.
@@ -30,6 +31,7 @@ enum WindowEnumerator {
             regularApps[app.processIdentifier] = app.localizedName ?? ""
         }
         regularApps[pid_t(ownPid)] = AppInfo.name
+        let liveWindowIDs = accessibilityWindowIDs(for: Set(regularApps.keys).subtracting([pid_t(ownPid)]))
 
         var seen = Set<CGWindowID>()
         var windows: [SwitcherItem] = []
@@ -42,6 +44,9 @@ enum WindowEnumerator {
                   let pid = (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
                   let boundsDict = info[kCGWindowBounds as String] as? [String: Any]
             else { continue }
+            if let liveIDs = liveWindowIDs[pid], !liveIDs.contains(CGWindowID(windowID)) {
+                continue
+            }
 
             let frame = CGRect(x: (boundsDict["X"] as? NSNumber)?.doubleValue ?? 0,
                                y: (boundsDict["Y"] as? NSNumber)?.doubleValue ?? 0,
@@ -80,10 +85,60 @@ enum WindowEnumerator {
                                    isOnScreen: isOnScreen,
                                    frame: frame))
         }
+        appendWindowlessFinder(to: &windows, regularApps: regularApps)
         if UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs) {
             windows = groupWindowsByApp(windows)
         }
         return orderByActivation(windows)
+    }
+
+    /// WindowServer can keep stale, titled surfaces around after some apps close
+    /// tabs or windows. Cross-checking against Accessibility removes those ghosts
+    /// while preserving minimized windows and windows on other Spaces.
+    private static func accessibilityWindowIDs(for pids: Set<pid_t>) -> [pid_t: Set<CGWindowID>] {
+        guard Permissions.shared.accessibility else { return [:] }
+
+        var result: [pid_t: Set<CGWindowID>] = [:]
+        for pid in pids {
+            guard let ids = accessibilityWindowIDs(for: pid) else { continue }
+            result[pid] = ids
+        }
+        return result
+    }
+
+    private static func accessibilityWindowIDs(for pid: pid_t) -> Set<CGWindowID>? {
+        let app = AXUIElementCreateApplication(pid)
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value) == .success,
+              let axWindows = value as? [AXUIElement]
+        else { return nil }
+
+        var ids = Set<CGWindowID>()
+        for window in axWindows {
+            if let id = AXWindowResolver.windowID(for: window) {
+                ids.insert(id)
+            }
+        }
+
+        // If an app reports AX windows but none resolve to WindowServer ids,
+        // keep the old behavior instead of hiding a real window for that app.
+        if axWindows.isEmpty || !ids.isEmpty {
+            return ids
+        }
+        return nil
+    }
+
+    private static func appendWindowlessFinder(to windows: inout [SwitcherItem],
+                                               regularApps: [pid_t: String]) {
+        guard let app = NSWorkspace.shared.runningApplications.first(where: {
+            $0.bundleIdentifier == Defaults.finderBundleIdentifier && $0.activationPolicy == .regular
+        }) else { return }
+        let pid = app.processIdentifier
+        guard windows.contains(where: { $0.pid == pid }) == false,
+              regularApps[pid] != nil else { return }
+
+        let name = app.localizedName ?? "Finder"
+        windows.append(.appOnly(appName: name, pid: pid))
     }
 
     private static func ownWindowTitle(for windowID: CGWindowID) -> String? {

@@ -300,7 +300,9 @@ final class AppSwitcher: ObservableObject {
     private func quitSelectedApp() {
         guard windows.indices.contains(selectedIndex) else { return }
         let pid = windows[selectedIndex].pid
-        NSRunningApplication(processIdentifier: pid)?.terminate()
+        guard let app = NSRunningApplication(processIdentifier: pid),
+              app.bundleIdentifier != Defaults.finderBundleIdentifier else { return }
+        app.terminate()
 
         let removedBeforeSelection = windows[..<selectedIndex].filter { $0.pid == pid }.count
         windows.removeAll { $0.pid == pid }

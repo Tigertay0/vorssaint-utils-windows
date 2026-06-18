@@ -46,13 +46,18 @@ struct AutoQuitSettings: View {
                                 .resizable().frame(width: 20, height: 20)
                             Text(InstalledApps.name(for: bundleID))
                             Spacer()
-                            Button {
-                                service.removeException(bundleID)
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundStyle(.secondary)
+                            if service.isMandatoryException(bundleID) {
+                                Image(systemName: "lock.fill")
+                                    .foregroundStyle(.tertiary)
+                            } else {
+                                Button {
+                                    service.removeException(bundleID)
+                                } label: {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }

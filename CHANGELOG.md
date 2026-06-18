@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.1] - 2026-06-18
+
+### Fixed
+- Quit on close now handles apps that keep delayed window records after the last
+  standard window is closed, including Spotify and Discord.
+- The app switcher no longer shows recently closed Ghostty terminal windows.
+- Finder can now be selected from the app switcher even when no Finder window is
+  open.
+- Finder stays locked in Quit on close exceptions and cannot be quit from the app
+  switcher.
+
 ## [3.0.0] - 2026-06-18
 
 ### Added

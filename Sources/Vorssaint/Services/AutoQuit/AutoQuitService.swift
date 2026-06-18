@@ -20,6 +20,35 @@ final class AutoQuitService: ObservableObject {
     /// Bundle ids never auto-quit; mirrors the persisted list for the UI.
     @Published private(set) var exceptions: [String] = []
 
+    private static let appNotifications = [
+        kAXWindowCreatedNotification,
+        kAXMainWindowChangedNotification,
+        kAXFocusedWindowChangedNotification,
+        kAXApplicationDeactivatedNotification,
+        kAXApplicationHiddenNotification,
+        kAXApplicationShownNotification
+    ]
+    private static let windowNotifications = [
+        kAXUIElementDestroyedNotification,
+        kAXWindowMiniaturizedNotification,
+        kAXWindowDeminiaturizedNotification
+    ]
+    private static let windowRefreshNotifications = Set([
+        kAXWindowCreatedNotification as String,
+        kAXWindowDeminiaturizedNotification as String,
+        kAXApplicationShownNotification as String,
+        kAXMainWindowChangedNotification as String,
+        kAXFocusedWindowChangedNotification as String
+    ])
+    private static let windowLossNotifications = Set([
+        kAXUIElementDestroyedNotification as String,
+        kAXWindowMiniaturizedNotification as String,
+        kAXMainWindowChangedNotification as String,
+        kAXFocusedWindowChangedNotification as String,
+        kAXApplicationDeactivatedNotification as String,
+        kAXApplicationHiddenNotification as String
+    ])
+
     private var running = false
     private var observers: [pid_t: AXObserver] = [:]
     /// Apps that have shown at least one window since we started watching them.
@@ -27,6 +56,11 @@ final class AutoQuitService: ObservableObject {
     private var hadWindows: [pid_t: Bool] = [:]
     private var launchToken: NSObjectProtocol?
     private var terminateToken: NSObjectProtocol?
+    private var closeRequestTap: CFMachPort?
+    private var closeRequestRunLoopSource: CFRunLoopSource?
+    private var recentCloseButtonRequests: [pid_t: Date] = [:]
+
+    private let closeRequestGrace: TimeInterval = 5
 
     private init() {
         reloadExceptions()
@@ -64,6 +98,7 @@ final class AutoQuitService: ObservableObject {
         for app in NSWorkspace.shared.runningApplications {
             attach(app)
         }
+        startCloseRequestMonitor()
     }
 
     private func stop() {
@@ -74,10 +109,12 @@ final class AutoQuitService: ObservableObject {
         if let terminateToken { center.removeObserver(terminateToken) }
         launchToken = nil
         terminateToken = nil
+        stopCloseRequestMonitor()
         // Snapshot the keys — detach(pid:) mutates the dictionary.
         for pid in Array(observers.keys) { detach(pid: pid) }
         observers.removeAll()
         hadWindows.removeAll()
+        recentCloseButtonRequests.removeAll()
     }
 
     // MARK: - Per-app observers
@@ -93,16 +130,14 @@ final class AutoQuitService: ObservableObject {
 
         let appElement = AXUIElementCreateApplication(pid)
         let refcon = Unmanaged.passUnretained(self).toOpaque()
-        AXObserverAddNotification(observer, appElement, kAXWindowCreatedNotification as CFString, refcon)
+        for notification in Self.appNotifications {
+            AXObserverAddNotification(observer, appElement, notification as CFString, refcon)
+        }
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .commonModes)
         observers[pid] = observer
 
         // Watch the windows that already exist and seed the "had windows" flag.
-        let existing = standardWindows(of: appElement)
-        for window in existing {
-            watch(window: window, observer: observer, refcon: refcon)
-        }
-        if !existing.isEmpty { hadWindows[pid] = true }
+        refreshWindows(pid: pid, observer: observer)
     }
 
     private func detach(pid: pid_t) {
@@ -111,6 +146,7 @@ final class AutoQuitService: ObservableObject {
         }
         observers[pid] = nil
         hadWindows[pid] = nil
+        recentCloseButtonRequests[pid] = nil
     }
 
     /// Called from the C observer callback (on the main run loop).
@@ -122,27 +158,20 @@ final class AutoQuitService: ObservableObject {
         }
         guard pid != 0 else { return }
 
-        if notification == (kAXWindowCreatedNotification as String) {
-            if let observer = observers[pid] {
-                let refcon = Unmanaged.passUnretained(self).toOpaque()
-                let appElement = AXUIElementCreateApplication(pid)
-                var windows = standardWindows(of: appElement)
-                if Self.isStandardWindow(element) {
-                    Self.appendUnique(element, to: &windows)
-                }
-                for window in windows {
-                    watch(window: window, observer: observer, refcon: refcon)
-                }
-                if !windows.isEmpty {
-                    hadWindows[pid] = true
-                }
-            }
-        } else if notification == (kAXUIElementDestroyedNotification as String) {
-            // A watched window closed. Recount slightly later — the closing
-            // window can still linger in the window list for a moment.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.checkWindows(pid: pid)
-            }
+        if Self.windowRefreshNotifications.contains(notification), let observer = observers[pid] {
+            refreshWindows(pid: pid, observer: observer)
+        }
+        if Self.windowLossNotifications.contains(notification) {
+            // A close-to-background app can hide its last window without
+            // destroying the AX element, so re-check on focus/main/visibility
+            // changes as well as destroyed-window callbacks.
+            scheduleWindowCheck(pid: pid)
+        }
+    }
+
+    private func scheduleWindowCheck(pid: pid_t) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.checkWindows(pid: pid)
         }
     }
 
@@ -150,9 +179,13 @@ final class AutoQuitService: ObservableObject {
         guard running, hadWindows[pid] == true,
               let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return }
         if let bundleID = app.bundleIdentifier, exceptions.contains(bundleID) { return }
+        let hiddenByCloseRequest = app.isHidden && hasRecentCloseButtonRequest(pid: pid)
+        if app.isHidden && !hiddenByCloseRequest { return }
 
         let appElement = AXUIElementCreateApplication(pid)
-        guard standardWindows(of: appElement).isEmpty else { return }
+        guard !hasUserFacingWindow(pid: pid,
+                                   appElement: appElement,
+                                   includeOffscreenTitled: !hiddenByCloseRequest) else { return }
 
         // Zero windows can be a transient state, most notably when leaving full
         // screen with the green button: the full-screen window is destroyed a
@@ -166,14 +199,33 @@ final class AutoQuitService: ObservableObject {
             return
         }
 
-        guard !hasWindowServerUserWindow(pid: pid) else { return }
+        let stillHiddenByCloseRequest = app.isHidden && hasRecentCloseButtonRequest(pid: pid)
+        if app.isHidden && !stillHiddenByCloseRequest { return }
+        guard !hasUserFacingWindow(pid: pid,
+                                   appElement: appElement,
+                                   includeOffscreenTitled: !stillHiddenByCloseRequest) else { return }
 
         hadWindows[pid] = false
+        recentCloseButtonRequests[pid] = nil
         app.terminate()
     }
 
+    private func refreshWindows(pid: pid_t, observer: AXObserver) {
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
+        let appElement = AXUIElementCreateApplication(pid)
+        let windows = standardWindows(of: appElement)
+        for window in windows {
+            watch(window: window, observer: observer, refcon: refcon)
+        }
+        if !windows.isEmpty || hasWindowServerUserWindow(pid: pid) == true {
+            hadWindows[pid] = true
+        }
+    }
+
     private func watch(window: AXUIElement, observer: AXObserver, refcon: UnsafeMutableRawPointer) {
-        AXObserverAddNotification(observer, window, kAXUIElementDestroyedNotification as CFString, refcon)
+        for notification in Self.windowNotifications {
+            AXObserverAddNotification(observer, window, notification as CFString, refcon)
+        }
     }
 
     private func pidForObserver(_ observer: AXObserver) -> pid_t? {
@@ -229,17 +281,33 @@ final class AutoQuitService: ObservableObject {
         return (value as! AXUIElement)
     }
 
-    private static func boolAttribute(_ element: AXUIElement, _ attribute: String) -> Bool {
+    private static func boolAttribute(_ element: AXUIElement, _ attribute: String, default defaultValue: Bool = false) -> Bool {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
-              let value,
-              CFGetTypeID(value) == CFBooleanGetTypeID() else { return false }
+              let value else { return defaultValue }
+        guard CFGetTypeID(value) == CFBooleanGetTypeID() else {
+            return (value as? Bool) ?? defaultValue
+        }
         return CFBooleanGetValue((value as! CFBoolean))
     }
 
-    private func hasWindowServerUserWindow(pid: pid_t) -> Bool {
+    private func hasUserFacingWindow(pid: pid_t,
+                                     appElement: AXUIElement,
+                                     includeOffscreenTitled: Bool = true) -> Bool {
+        let axWindows = standardWindows(of: appElement)
+        if axWindows.contains(where: { Self.boolAttribute($0, kAXMinimizedAttribute as String) }) {
+            return true
+        }
+        if let hasWindowServerWindow = hasWindowServerUserWindow(pid: pid,
+                                                                 includeOffscreenTitled: includeOffscreenTitled) {
+            return hasWindowServerWindow
+        }
+        return !axWindows.isEmpty
+    }
+
+    private func hasWindowServerUserWindow(pid: pid_t, includeOffscreenTitled: Bool = true) -> Bool? {
         guard let info = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements],
-                                                    kCGNullWindowID) as? [[String: Any]] else { return false }
+                                                    kCGNullWindowID) as? [[String: Any]] else { return nil }
 
         for window in info {
             guard let ownerPID = (window[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
@@ -256,16 +324,162 @@ final class AutoQuitService: ObservableObject {
                 ?? (window[kCGWindowIsOnscreen as String] as? Bool)
                 ?? false
             if !isOnScreen && title.isEmpty { continue }
+            if !isOnScreen && !includeOffscreenTitled { continue }
             return true
         }
         return false
+    }
+
+    // MARK: - Close-request monitor
+
+    private func startCloseRequestMonitor() {
+        guard closeRequestTap == nil else { return }
+        let mask = CGEventMask(1 << CGEventType.leftMouseDown.rawValue)
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .tailAppendEventTap,
+            options: .listenOnly,
+            eventsOfInterest: mask,
+            callback: { _, type, event, userInfo in
+                guard let userInfo else { return Unmanaged.passUnretained(event) }
+                let service = Unmanaged<AutoQuitService>.fromOpaque(userInfo).takeUnretainedValue()
+                return service.handleCloseRequestEvent(type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else { return }
+
+        closeRequestTap = tap
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        closeRequestRunLoopSource = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private func stopCloseRequestMonitor() {
+        if let closeRequestTap {
+            CGEvent.tapEnable(tap: closeRequestTap, enable: false)
+        }
+        if let closeRequestRunLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), closeRequestRunLoopSource, .commonModes)
+        }
+        closeRequestTap = nil
+        closeRequestRunLoopSource = nil
+    }
+
+    private func handleCloseRequestEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let closeRequestTap { CGEvent.tapEnable(tap: closeRequestTap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+
+        guard type == .leftMouseDown,
+              event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift]).isEmpty,
+              let pid = closeButtonPID(at: event.location) else { return Unmanaged.passUnretained(event) }
+        markCloseButtonRequest(pid: pid)
+        return Unmanaged.passUnretained(event)
+    }
+
+    private func markCloseButtonRequest(pid: pid_t) {
+        recentCloseButtonRequests[pid] = Date()
+    }
+
+    private func hasRecentCloseButtonRequest(pid: pid_t) -> Bool {
+        guard let date = recentCloseButtonRequests[pid] else { return false }
+        if Date().timeIntervalSince(date) <= closeRequestGrace {
+            return true
+        }
+        recentCloseButtonRequests[pid] = nil
+        return false
+    }
+
+    private func closeButtonPID(at point: CGPoint) -> pid_t? {
+        guard let element = elementAt(point: point),
+              let window = Self.topLevelWindow(from: element),
+              Self.isStandardWindow(window),
+              let closeButton = Self.windowAttribute(window, kAXCloseButtonAttribute as String),
+              Self.boolAttribute(closeButton, kAXEnabledAttribute as String, default: true),
+              let buttonFrame = Self.frame(of: closeButton),
+              buttonFrame.insetBy(dx: -4, dy: -4).contains(point)
+        else { return nil }
+
+        var pid: pid_t = 0
+        AXUIElementGetPid(window, &pid)
+        guard pid != 0, pid != getpid(), observers[pid] != nil else { return nil }
+        return pid
+    }
+
+    private func elementAt(point: CGPoint) -> AXUIElement? {
+        let system = AXUIElementCreateSystemWide()
+        var element: AXUIElement?
+        guard AXUIElementCopyElementAtPosition(system, Float(point.x), Float(point.y), &element) == .success
+        else { return nil }
+        return element
+    }
+
+    private static func topLevelWindow(from element: AXUIElement) -> AXUIElement? {
+        if role(of: element) == (kAXWindowRole as String) { return element }
+        if let window = windowAttribute(element, kAXWindowAttribute as String),
+           role(of: window) == (kAXWindowRole as String) {
+            return window
+        }
+        if let window = windowAttribute(element, kAXTopLevelUIElementAttribute as String),
+           role(of: window) == (kAXWindowRole as String) {
+            return window
+        }
+
+        var current = element
+        for _ in 0..<8 {
+            guard let parent = windowAttribute(current, kAXParentAttribute as String) else { return nil }
+            if role(of: parent) == (kAXWindowRole as String) { return parent }
+            current = parent
+        }
+        return nil
+    }
+
+    private static func frame(of element: AXUIElement) -> AutoQuitAXFrame? {
+        guard let origin = pointAttribute(element, kAXPositionAttribute as String),
+              let size = sizeAttribute(element, kAXSizeAttribute as String),
+              size.width > 0,
+              size.height > 0 else { return nil }
+        return AutoQuitAXFrame(origin: origin, size: size)
+    }
+
+    private static func pointAttribute(_ element: AXUIElement, _ attribute: String) -> CGPoint? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+              let value,
+              CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+        let axValue = value as! AXValue
+        guard AXValueGetType(axValue) == .cgPoint else { return nil }
+        var point = CGPoint.zero
+        guard AXValueGetValue(axValue, .cgPoint, &point) else { return nil }
+        return point
+    }
+
+    private static func sizeAttribute(_ element: AXUIElement, _ attribute: String) -> CGSize? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+              let value,
+              CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+        let axValue = value as! AXValue
+        guard AXValueGetType(axValue) == .cgSize else { return nil }
+        var size = CGSize.zero
+        guard AXValueGetValue(axValue, .cgSize, &size) else { return nil }
+        return size
+    }
+
+    private static func role(of element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &value) == .success
+        else { return nil }
+        return value as? String
     }
 
     // MARK: - Exceptions
 
     func reloadExceptions() {
         let raw = UserDefaults.standard.stringArray(forKey: DefaultsKey.autoQuitExceptions) ?? []
-        let sanitized = Defaults.sanitizedBundleIdentifierList(raw)
+        let sanitized = Defaults.sanitizedAutoQuitExceptions(raw)
         if raw != sanitized {
             UserDefaults.standard.set(sanitized, forKey: DefaultsKey.autoQuitExceptions)
         }
@@ -275,16 +489,21 @@ final class AutoQuitService: ObservableObject {
     func addException(_ bundleID: String) {
         let bundleID = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !bundleID.isEmpty, !exceptions.contains(bundleID) else { return }
-        var list = Defaults.sanitizedBundleIdentifierList(exceptions)
+        var list = Defaults.sanitizedAutoQuitExceptions(exceptions)
         list.append(bundleID)
         UserDefaults.standard.set(list, forKey: DefaultsKey.autoQuitExceptions)
         reloadExceptions()
     }
 
     func removeException(_ bundleID: String) {
-        let list = Defaults.sanitizedBundleIdentifierList(exceptions.filter { $0 != bundleID })
+        guard !isMandatoryException(bundleID) else { return }
+        let list = Defaults.sanitizedAutoQuitExceptions(exceptions.filter { $0 != bundleID })
         UserDefaults.standard.set(list, forKey: DefaultsKey.autoQuitExceptions)
         reloadExceptions()
+    }
+
+    func isMandatoryException(_ bundleID: String) -> Bool {
+        Defaults.mandatoryAutoQuitExceptionBundleIDs.contains(bundleID)
     }
 }
 
@@ -297,4 +516,23 @@ private func autoQuitAXCallback(_ observer: AXObserver,
     guard let refcon else { return }
     let service = Unmanaged<AutoQuitService>.fromOpaque(refcon).takeUnretainedValue()
     service.handleAX(observer: observer, element: element, notification: notification as String)
+}
+
+private struct AutoQuitAXFrame {
+    var origin: CGPoint
+    var size: CGSize
+
+    var minX: CGFloat { origin.x }
+    var minY: CGFloat { origin.y }
+    var maxX: CGFloat { origin.x + size.width }
+    var maxY: CGFloat { origin.y + size.height }
+
+    func contains(_ point: CGPoint) -> Bool {
+        point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY
+    }
+
+    func insetBy(dx: CGFloat, dy: CGFloat) -> AutoQuitAXFrame {
+        AutoQuitAXFrame(origin: CGPoint(x: origin.x + dx, y: origin.y + dy),
+                        size: CGSize(width: size.width - dx * 2, height: size.height - dy * 2))
+    }
 }
