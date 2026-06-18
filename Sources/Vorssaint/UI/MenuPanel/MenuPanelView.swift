@@ -247,30 +247,30 @@ struct MenuPanelView: View {
     }
 
     private var footer: some View {
-        ZStack {
-            HStack {
-                footerButton(l10n.s.panelSettings, systemImage: "gearshape") {
-                    appDelegate()?.openSettingsWindow()
-                }
-                .frame(maxWidth: 116, alignment: .leading)
-
-                Spacer(minLength: 72)
-
-                footerButton(l10n.s.panelQuit, systemImage: "power") {
-                    NSApp.terminate(nil)
-                }
-                .frame(maxWidth: 92, alignment: .trailing)
+        HStack(spacing: 8) {
+            footerButton(l10n.s.panelSettings,
+                         systemImage: "gearshape",
+                         horizontalPadding: 7) {
+                appDelegate()?.openSettingsWindow()
             }
 
-            footerButton(panelModeTitle, systemImage: panelModeSymbol) {
+            footerButton(panelModeTitle,
+                         systemImage: panelModeSymbol,
+                         horizontalPadding: 7) {
                 withAnimation(.easeInOut(duration: 0.16)) {
                     panelNavigationEnabled.toggle()
                 }
             }
+
+            footerButton(l10n.s.panelQuit,
+                         systemImage: "power",
+                         horizontalPadding: 7) {
+                NSApp.terminate(nil)
+            }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 22)
-        .padding(.top, 2)
+        .frame(height: 30)
+        .padding(.top, 4)
     }
 
     private var panelModeTitle: String {
@@ -282,11 +282,26 @@ struct MenuPanelView: View {
     }
 
     private func footerButton(_ title: String, systemImage: String,
+                              horizontalPadding: CGFloat = 8,
                               action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.system(size: 11))
+                .font(.system(size: 11, weight: .medium))
                 .lineLimit(1)
+                .truncationMode(.tail)
+                .minimumScaleFactor(0.78)
+                .labelStyle(.titleAndIcon)
+                .padding(.horizontal, horizontalPadding)
+                .frame(maxWidth: .infinity, minHeight: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color.primary.opacity(0.055))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.055), lineWidth: 0.8)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)

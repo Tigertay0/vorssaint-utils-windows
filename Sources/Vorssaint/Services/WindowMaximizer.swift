@@ -18,9 +18,11 @@ final class WindowMaximizer: ObservableObject {
     private var runLoopSource: CFRunLoopSource?
     private var pendingClick: ClickTarget?
     private var originalFrames: [CGWindowID: AXFrame] = [:]
+    private var frameAnimations: [CGWindowID: Timer] = [:]
 
     private let clickTolerance: CGFloat = 8
     private let frameTolerance: CGFloat = 4
+    private let zoomAnimationDuration: TimeInterval = 0.22
 
     private init() {}
 
@@ -41,6 +43,8 @@ final class WindowMaximizer: ObservableObject {
         tap = nil
         runLoopSource = nil
         pendingClick = nil
+        for timer in frameAnimations.values { timer.invalidate() }
+        frameAnimations.removeAll()
         originalFrames.removeAll()
         isRunning = false
     }
@@ -115,12 +119,14 @@ final class WindowMaximizer: ObservableObject {
     }
 
     private func target(at point: CGPoint) -> ClickTarget? {
-        guard let element = elementAt(point: point),
+        guard let candidate = WindowServerTrafficLightHitTest.candidate(at: point, button: .zoom),
+              let element = elementAt(point: point),
               let window = topLevelWindow(from: element),
               role(of: window) == (kAXWindowRole as String),
               !boolAttribute(window, "AXFullScreen"),
               let buttonFrame = greenButtonFrame(in: window, containing: point),
               let windowID = AXWindowResolver.windowID(for: window),
+              windowID == candidate.windowID,
               let frame = frame(of: window)
         else { return nil }
 
@@ -142,19 +148,65 @@ final class WindowMaximizer: ObservableObject {
            let original = originalFrames[target.windowID],
            original.size.width > 80,
            original.size.height > 80 {
-            if setFrame(original, on: target.window) {
-                originalFrames.removeValue(forKey: target.windowID)
-                return true
+            return animateFrame(original, on: target.window, windowID: target.windowID) { [weak self] success in
+                if success { self?.originalFrames.removeValue(forKey: target.windowID) }
             }
-            return false
         } else {
             originalFrames[target.windowID] = current
-            if setFrame(maximized, on: target.window) {
+            if animateFrame(maximized, on: target.window, windowID: target.windowID, completion: { _ in }) {
                 return true
             }
             originalFrames.removeValue(forKey: target.windowID)
             return false
         }
+    }
+
+    private func animateFrame(_ targetFrame: AXFrame,
+                              on window: AXUIElement,
+                              windowID: CGWindowID,
+                              completion: @escaping (Bool) -> Void) -> Bool {
+        guard let start = frame(of: window),
+              canSetFrame(on: window) else { return false }
+        frameAnimations[windowID]?.invalidate()
+
+        let startedAt = Date()
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] timer in
+            guard let self else {
+                timer.invalidate()
+                return
+            }
+
+            let elapsed = Date().timeIntervalSince(startedAt)
+            let progress = min(1, elapsed / self.zoomAnimationDuration)
+            let eased = CGFloat(1 - pow(1 - progress, 3))
+            let next = start.interpolated(to: targetFrame, progress: eased)
+            _ = self.applyFrame(next, on: window)
+
+            guard progress >= 1 else { return }
+            timer.invalidate()
+            self.frameAnimations[windowID] = nil
+            let success = self.setFrame(targetFrame, on: window)
+            completion(success)
+        }
+        timer.tolerance = 0.004
+        frameAnimations[windowID] = timer
+        RunLoop.main.add(timer, forMode: .common)
+        return true
+    }
+
+    private func canSetFrame(on window: AXUIElement) -> Bool {
+        var positionSettable = DarwinBoolean(false)
+        var sizeSettable = DarwinBoolean(false)
+        let positionStatus = AXUIElementIsAttributeSettable(window,
+                                                            kAXPositionAttribute as CFString,
+                                                            &positionSettable)
+        let sizeStatus = AXUIElementIsAttributeSettable(window,
+                                                        kAXSizeAttribute as CFString,
+                                                        &sizeSettable)
+        return positionStatus == .success
+            && sizeStatus == .success
+            && positionSettable.boolValue
+            && sizeSettable.boolValue
     }
 
     private func elementAt(point: CGPoint) -> AXUIElement? {
@@ -202,10 +254,7 @@ final class WindowMaximizer: ObservableObject {
         let original = self.frame(of: window)
 
         for _ in 0..<2 {
-            let positioned = setPosition(frame.origin, on: window)
-            let sized = setSize(frame.size, on: window)
-            let repositioned = positioned && setPosition(frame.origin, on: window)
-            guard positioned && sized && repositioned else {
+            guard applyFrame(frame, on: window) else {
                 restoreFrame(original, on: window)
                 return false
             }
@@ -217,6 +266,13 @@ final class WindowMaximizer: ObservableObject {
 
         restoreFrame(original, on: window)
         return false
+    }
+
+    private func applyFrame(_ frame: AXFrame, on window: AXUIElement) -> Bool {
+        let positioned = setPosition(frame.origin, on: window)
+        let sized = setSize(frame.size, on: window)
+        let repositioned = positioned && setPosition(frame.origin, on: window)
+        return positioned && sized && repositioned
     }
 
     private func restoreFrame(_ frame: AXFrame?, on window: AXUIElement) {
@@ -368,6 +424,13 @@ private struct AXFrame: Equatable {
             && abs(origin.y - other.origin.y) <= tolerance
             && abs(size.width - other.size.width) <= tolerance
             && abs(size.height - other.size.height) <= tolerance
+    }
+
+    func interpolated(to other: AXFrame, progress: CGFloat) -> AXFrame {
+        AXFrame(origin: CGPoint(x: origin.x + (other.origin.x - origin.x) * progress,
+                                y: origin.y + (other.origin.y - origin.y) * progress),
+                size: CGSize(width: size.width + (other.size.width - size.width) * progress,
+                             height: size.height + (other.size.height - size.height) * progress))
     }
 }
 

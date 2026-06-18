@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.3] - 2026-06-18
+
+### Changed
+- The Shelf is easier to grab and move from the header and empty space, while
+  still accepting dropped items in the empty area.
+- Shelf close and clear controls now have larger hit areas, clearer spacing and
+  a danger hover state for clearing items.
+- The menu panel footer now uses full button hit areas and handles longer
+  translations without overlapping.
+- Settings now uses a shorter What's New sidebar label, and update controls live
+  in About with the other app details.
+
+### Fixed
+- The custom green-button maximize option now animates window resizing instead
+  of jumping instantly.
+- Window-control click monitoring now avoids slow accessibility checks unless a
+  click is actually on a window control, reducing stalls in other apps.
+
 ## [3.0.2] - 2026-06-18
 
 ### Fixed

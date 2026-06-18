@@ -171,6 +171,7 @@ struct Strings {
     let tabSwitcher: String
     let tabAdvanced: String
     let tabAbout: String
+    let tabReleaseNotes: String
     let settingsGroupFeatures: String
 
     // MARK: Settings — advanced
@@ -607,6 +608,7 @@ extension Strings {
         tabSwitcher: "Alternador",
         tabAdvanced: "Avançado",
         tabAbout: "Sobre",
+        tabReleaseNotes: "Novidades",
         settingsGroupFeatures: "Recursos",
         advancedResetSection: "Permissões",
         advancedResetDescription: "Remove todas as permissões que você concedeu ao Vorssaint (Acessibilidade, Gravação de Tela, Acesso Total ao Disco e outras), o item de início e a regra de tampa fechada. Útil para começar do zero ou antes de desinstalar. O app continua instalado.",
@@ -1019,6 +1021,7 @@ extension Strings {
         tabSwitcher: "Switcher",
         tabAdvanced: "Advanced",
         tabAbout: "About",
+        tabReleaseNotes: "What's New",
         settingsGroupFeatures: "Features",
         advancedResetSection: "Permissions",
         advancedResetDescription: "Removes every permission you granted Vorssaint (Accessibility, Screen Recording, Full Disk Access and others), the login item and the closed-lid rule. Useful to start fresh or before uninstalling. The app stays installed.",

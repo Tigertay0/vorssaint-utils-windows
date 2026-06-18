@@ -87,6 +87,7 @@ extension Strings {
         tabSwitcher: "Commutatore",
         tabAdvanced: "Avanzate",
         tabAbout: "Informazioni",
+        tabReleaseNotes: "Novità",
         settingsGroupFeatures: "Funzioni",
         advancedResetSection: "Autorizzazioni",
         advancedResetDescription: "Rimuove tutte le autorizzazioni concesse a Vorssaint (Accessibilità, Registrazione schermo, Accesso completo al disco e altre), l'elemento di login e la regola del coperchio chiuso. Utile per ripartire da zero o prima di disinstallare. L'app resta installata.",

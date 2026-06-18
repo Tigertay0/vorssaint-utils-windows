@@ -87,6 +87,7 @@ extension Strings {
         tabSwitcher: "スイッチャー",
         tabAdvanced: "詳細",
         tabAbout: "情報",
+        tabReleaseNotes: "新機能",
         settingsGroupFeatures: "機能",
         advancedResetSection: "アクセス権",
         advancedResetDescription: "Vorssaint に許可したすべてのアクセス権（アクセシビリティ、画面収録、フルディスクアクセスなど）、ログイン項目、ふたを閉じたモードのルールを削除します。最初からやり直すときや、アンインストールの前に便利です。アプリはインストールされたまま残ります。",

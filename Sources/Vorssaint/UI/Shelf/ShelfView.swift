@@ -11,6 +11,8 @@ struct ShelfView: View {
     @EnvironmentObject private var shelf: ShelfService
     @ObservedObject private var l10n = L10n.shared
     @State private var targeted = false
+    @State private var clearButtonHovered = false
+    @State private var closeButtonHovered = false
 
     private static let dropTypes: [UTType] = [.fileURL, .image, .url, .text, .plainText]
     private static let panelWidth: CGFloat = 304
@@ -21,9 +23,7 @@ struct ShelfView: View {
             header
             tiles
             if !shelf.items.isEmpty {
-                Text(l10n.s.shelfHint)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
+                bottomBar
             }
         }
         .padding(14)
@@ -32,10 +32,13 @@ struct ShelfView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(targeted ? Color.accentColor : Color.white.opacity(0.12),
-                              lineWidth: targeted ? 2 : 1)
+                .strokeBorder(isDropTargeted ? Color.accentColor : Color.white.opacity(0.12),
+                              lineWidth: isDropTargeted ? 2 : 1)
         )
-        .animation(.easeOut(duration: 0.15), value: targeted)
+        .overlay(alignment: .topLeading) {
+            topMoveHandle
+        }
+        .animation(.easeOut(duration: 0.15), value: isDropTargeted)
         .animation(.easeOut(duration: 0.18), value: shelf.items)
         .onHover { inside in
             shelf.setPointerInsidePanel(inside)
@@ -48,6 +51,10 @@ struct ShelfView: View {
             if accepted { shelf.noteInteraction() }
             return accepted
         }
+    }
+
+    private var isDropTargeted: Bool {
+        targeted || shelf.dropTargeted
     }
 
     private var header: some View {
@@ -73,19 +80,67 @@ struct ShelfView: View {
             .contentShape(Rectangle())
             .overlay(WindowMoveHandle())
 
-            if !shelf.items.isEmpty {
-                Button(action: trashAction) {
-                    Image(systemName: shelf.selection.isEmpty ? "trash" : "trash.fill")
-                        .font(.system(size: 11))
-                }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                .help(shelf.selection.isEmpty ? l10n.s.shelfClearAll : l10n.s.shelfRemoveSelected)
-            }
-            Button { shelf.hide() } label: {
-                Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
-            }
-            .buttonStyle(.plain).foregroundStyle(.secondary)
+            closeButton
         }
+    }
+
+    private var topMoveHandle: some View {
+        WindowMoveHandle(acceptsDrops: true)
+            .frame(width: Self.panelWidth - 58, height: 55)
+    }
+
+    private var closeButton: some View {
+        Button { shelf.hide() } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 30, height: 30)
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(closeButtonHovered ? 0.18 : 0.11))
+                )
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color.white.opacity(closeButtonHovered ? 0.75 : 0.32), lineWidth: 1)
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .onHover { closeButtonHovered = $0 }
+        .help(l10n.s.menuClose)
+    }
+
+    private var bottomBar: some View {
+        HStack(spacing: 8) {
+            Text(l10n.s.shelfHint)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            clearButton
+        }
+        .frame(minHeight: 30)
+    }
+
+    private var clearButton: some View {
+        Button(action: trashAction) {
+            Image(systemName: shelf.selection.isEmpty ? "trash" : "trash.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: 42, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.red.opacity(clearButtonHovered ? 0.20 : 0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(Color.red.opacity(clearButtonHovered ? 0.34 : 0.12), lineWidth: 0.8)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(clearButtonHovered ? Color.red.opacity(0.82) : Color.secondary)
+        .onHover { clearButtonHovered = $0 }
+        .help(shelf.selection.isEmpty ? l10n.s.shelfClearAll : l10n.s.shelfRemoveSelected)
     }
 
     private var title: String {
@@ -123,6 +178,7 @@ struct ShelfView: View {
                         .lineLimit(2)
                 }
             )
+            .overlay(WindowMoveHandle(acceptsDrops: true))
     }
 
     private func trashAction() {

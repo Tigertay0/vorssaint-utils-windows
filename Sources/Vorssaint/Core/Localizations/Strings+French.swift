@@ -87,6 +87,7 @@ extension Strings {
         tabSwitcher: "Sélecteur",
         tabAdvanced: "Avancé",
         tabAbout: "À propos",
+        tabReleaseNotes: "Nouveautés",
         settingsGroupFeatures: "Fonctionnalités",
         advancedResetSection: "Autorisations",
         advancedResetDescription: "Retire toutes les autorisations que vous avez accordées à Vorssaint (Accessibilité, Enregistrement de l’écran, Accès complet au disque et autres), l’élément d’ouverture et la règle d’écran rabattu. Utile pour repartir de zéro ou avant de désinstaller. L’app reste installée.",

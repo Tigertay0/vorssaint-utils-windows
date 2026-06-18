@@ -4,20 +4,82 @@
 import AppKit
 import SwiftUI
 
-/// A transparent strip that moves the whole panel when dragged — placed over the
-/// shelf's header so its title area acts like a window title bar, while the
-/// tiles below stay free to start item drags.
+/// A transparent strip that moves the whole panel when dragged. Used over the
+/// header and empty shelf space; tiles stay free to start item drags.
 struct WindowMoveHandle: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView { MoveView() }
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    var acceptsDrops = false
 
-    private final class MoveView: NSView {
-        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-        override func mouseDown(with event: NSEvent) {
-            ShelfService.shared.beginInteraction()
-            defer { ShelfService.shared.endInteraction() }
-            window?.performDrag(with: event)
+    func makeNSView(context: Context) -> ShelfPanelMoveView {
+        let view = ShelfPanelMoveView()
+        view.acceptsDrops = acceptsDrops
+        return view
+    }
+
+    func updateNSView(_ nsView: ShelfPanelMoveView, context: Context) {
+        nsView.acceptsDrops = acceptsDrops
+    }
+}
+
+class ShelfPanelMoveView: NSView {
+    var acceptsDrops = false {
+        didSet { syncDraggedTypes() }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        syncDraggedTypes()
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        ShelfService.shared.beginInteraction()
+        defer { ShelfService.shared.endInteraction() }
+        window?.performDrag(with: event)
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let operation = dropOperation(for: sender)
+        ShelfService.shared.setDropTargeted(operation != [])
+        return operation
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let operation = dropOperation(for: sender)
+        ShelfService.shared.setDropTargeted(operation != [])
+        return operation
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        ShelfService.shared.setDropTargeted(false)
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let accepted = acceptsDrops && ShelfService.shared.accept(pasteboard: sender.draggingPasteboard)
+        ShelfService.shared.setDropTargeted(false)
+        return accepted
+    }
+
+    override func concludeDragOperation(_ sender: NSDraggingInfo?) {
+        ShelfService.shared.setDropTargeted(false)
+    }
+
+    private func syncDraggedTypes() {
+        unregisterDraggedTypes()
+        if acceptsDrops {
+            registerForDraggedTypes(ShelfService.tileDropTypes)
         }
+    }
+
+    private func dropOperation(for sender: NSDraggingInfo) -> NSDragOperation {
+        guard acceptsDrops,
+              !ShelfService.shared.isInternalDragActive,
+              ShelfService.shared.canAcceptPasteboard(sender.draggingPasteboard) else {
+            return []
+        }
+        return .copy
     }
 }
 
@@ -43,6 +105,7 @@ struct ShelfTilesView: NSViewRepresentable {
         scroll.verticalScrollElasticity = .allowed
         scroll.contentView.drawsBackground = false
         let document = FlippedView()
+        document.acceptsDrops = true
         scroll.documentView = document
         return scroll
     }
@@ -79,7 +142,7 @@ struct ShelfTilesView: NSViewRepresentable {
                                 height: max(contentHeight, scroll.contentSize.height))
     }
 
-    private final class FlippedView: NSView {
+    private final class FlippedView: ShelfPanelMoveView {
         override var isFlipped: Bool { true }
     }
 }

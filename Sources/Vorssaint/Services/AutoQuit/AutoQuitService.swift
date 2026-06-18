@@ -374,7 +374,14 @@ final class AutoQuitService: ObservableObject {
 
         guard type == .leftMouseDown,
               event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift]).isEmpty,
-              let pid = closeButtonPID(at: event.location) else { return Unmanaged.passUnretained(event) }
+              let candidate = WindowServerTrafficLightHitTest.candidate(
+                at: event.location,
+                button: .close,
+                pidIsEligible: { [weak self] pid in self?.observers[pid] != nil }
+              ),
+              let pid = closeButtonPID(at: event.location, candidate: candidate) else {
+            return Unmanaged.passUnretained(event)
+        }
         markCloseButtonRequest(pid: pid)
         return Unmanaged.passUnretained(event)
     }
@@ -392,7 +399,7 @@ final class AutoQuitService: ObservableObject {
         return false
     }
 
-    private func closeButtonPID(at point: CGPoint) -> pid_t? {
+    private func closeButtonPID(at point: CGPoint, candidate: TrafficLightCandidate) -> pid_t? {
         guard let element = elementAt(point: point),
               let window = Self.topLevelWindow(from: element),
               Self.isStandardWindow(window),
@@ -404,7 +411,10 @@ final class AutoQuitService: ObservableObject {
 
         var pid: pid_t = 0
         AXUIElementGetPid(window, &pid)
-        guard pid != 0, pid != getpid(), observers[pid] != nil else { return nil }
+        guard pid == candidate.pid,
+              pid != 0,
+              pid != getpid(),
+              observers[pid] != nil else { return nil }
         return pid
     }
 

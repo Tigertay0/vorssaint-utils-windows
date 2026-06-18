@@ -46,7 +46,7 @@ struct SettingsView: View {
 
                 Label(l10n.s.tabAdvanced, systemImage: "wrench.and.screwdriver").tag(SettingsPage.advanced)
                 Label(l10n.s.tabAbout, systemImage: "info.circle").tag(SettingsPage.about)
-                Label(l10n.s.obWhatsNewTitle, systemImage: "sparkles").tag(SettingsPage.releaseNotes)
+                Label(l10n.s.tabReleaseNotes, systemImage: "sparkles").tag(SettingsPage.releaseNotes)
                 Label(l10n.s.tabSupport, systemImage: "heart.fill").tag(SettingsPage.support)
             }
             .listStyle(.sidebar)
@@ -135,7 +135,6 @@ struct GeneralSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            UpdatesView()
         }
         .formStyle(.grouped)
     }
@@ -373,8 +372,18 @@ struct AboutSettings: View {
     @ObservedObject private var l10n = L10n.shared
 
     var body: some View {
+        Form {
+            Section {
+                aboutContent
+            }
+
+            UpdatesView()
+        }
+        .formStyle(.grouped)
+    }
+
+    private var aboutContent: some View {
         VStack(spacing: 14) {
-            Spacer()
             BrandBadge(size: 76)
             VStack(spacing: 3) {
                 Text(AppInfo.name)
@@ -400,13 +409,12 @@ struct AboutSettings: View {
                 }
                 Link(l10n.s.viewOnGitHub, destination: AppInfo.repositoryURL)
             }
-            Spacer()
             Text(AppInfo.copyright)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
-                .padding(.bottom, 10)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
     }
 }
 

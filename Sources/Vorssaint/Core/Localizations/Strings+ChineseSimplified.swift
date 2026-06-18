@@ -87,6 +87,7 @@ extension Strings {
         tabSwitcher: "切换器",
         tabAdvanced: "高级",
         tabAbout: "关于",
+        tabReleaseNotes: "新功能",
         settingsGroupFeatures: "功能",
         advancedResetSection: "权限",
         advancedResetDescription: "移除你授予 Vorssaint 的所有权限（辅助功能、屏幕录制、完全磁盘访问权限等）、登录项以及合盖规则。适合重新开始或卸载前使用。App 仍保持安装状态。",

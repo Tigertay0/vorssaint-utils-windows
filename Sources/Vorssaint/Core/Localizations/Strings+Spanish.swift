@@ -87,6 +87,7 @@ extension Strings {
         tabSwitcher: "Selector",
         tabAdvanced: "Avanzado",
         tabAbout: "Acerca de",
+        tabReleaseNotes: "Novedades",
         settingsGroupFeatures: "Funciones",
         advancedResetSection: "Permisos",
         advancedResetDescription: "Elimina todos los permisos que concediste a Vorssaint (Accesibilidad, Grabación de pantalla, Acceso total al disco y otros), el ítem de inicio de sesión y la regla de tapa cerrada. Útil para empezar de cero o antes de desinstalar. La app sigue instalada.",

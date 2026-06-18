@@ -78,7 +78,7 @@ final class ShelfService: ObservableObject {
     private var autoHideFadeTimer: Timer?
     private var autoHideFadeStart: Date?
     private var pointerInsidePanel = false
-    private var dropTargeted = false
+    @Published private(set) var dropTargeted = false
     private var interactionDepth = 0
     /// Drag-pasteboard state captured at mouse-down. Finder bumps the change
     /// count after this point; Dock stacks can publish the drag contents first.
@@ -469,6 +469,23 @@ final class ShelfService: ObservableObject {
         return merge(additions, into: targetID)
     }
 
+    func canAcceptPasteboard(_ pasteboard: NSPasteboard) -> Bool {
+        pasteboardCanCreateItem(pasteboard)
+    }
+
+    func accept(pasteboard: NSPasteboard) -> Bool {
+        let fileURLs = fileURLs(from: pasteboard)
+        if fileURLs.count > 1 {
+            addFileBatch(fileURLs)
+            return true
+        }
+        let additions = items(from: pasteboard)
+        guard !additions.isEmpty else { return false }
+        items.append(contentsOf: additions)
+        noteInteraction()
+        return true
+    }
+
     /// The pasteboard representation used when dragging an item out of the shelf.
     func pasteboardWriter(for item: Item) -> NSPasteboardWriting {
         switch item.payload {
@@ -547,14 +564,9 @@ final class ShelfService: ObservableObject {
     }
 
     private func items(from pasteboard: NSPasteboard) -> [Item] {
-        let fileOptions: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
-        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: fileOptions) as? [NSURL],
-           !urls.isEmpty {
-            return unique(urls.map { $0 as URL }.filter(\.isFileURL)).map { fileItem(for: $0) }
-        }
-        if let paths = pasteboard.propertyList(forType: NSPasteboard.PasteboardType("NSFilenamesPboardType")) as? [String],
-           !paths.isEmpty {
-            return unique(paths.map { URL(fileURLWithPath: $0) }).map { fileItem(for: $0) }
+        let fileURLs = fileURLs(from: pasteboard)
+        if !fileURLs.isEmpty {
+            return fileURLs.map { fileItem(for: $0) }
         }
         if let image = NSImage(pasteboard: pasteboard),
            let item = imageItem(for: image) {
@@ -571,14 +583,21 @@ final class ShelfService: ObservableObject {
         return []
     }
 
-    private func pasteboardCanCreateItem(_ pasteboard: NSPasteboard) -> Bool {
+    private func fileURLs(from pasteboard: NSPasteboard) -> [URL] {
         let fileOptions: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: fileOptions) as? [NSURL],
-           urls.contains(where: { ($0 as URL).isFileURL }) {
-            return true
+           !urls.isEmpty {
+            return unique(urls.map { $0 as URL }.filter(\.isFileURL))
         }
         if let paths = pasteboard.propertyList(forType: NSPasteboard.PasteboardType("NSFilenamesPboardType")) as? [String],
-           paths.contains(where: { !$0.isEmpty }) {
+           !paths.isEmpty {
+            return unique(paths.map { URL(fileURLWithPath: $0) })
+        }
+        return []
+    }
+
+    private func pasteboardCanCreateItem(_ pasteboard: NSPasteboard) -> Bool {
+        if !fileURLs(from: pasteboard).isEmpty {
             return true
         }
         if NSImage(pasteboard: pasteboard) != nil {
@@ -858,6 +877,7 @@ final class ShelfService: ObservableObject {
     }
 
     func setDropTargeted(_ targeted: Bool) {
+        guard dropTargeted != targeted else { return }
         dropTargeted = targeted
         if targeted {
             cancelAutoHide()

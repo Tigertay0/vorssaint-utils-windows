@@ -87,6 +87,7 @@ extension Strings {
         tabSwitcher: "Umschalter",
         tabAdvanced: "Erweitert",
         tabAbout: "Über",
+        tabReleaseNotes: "Neues",
         settingsGroupFeatures: "Funktionen",
         advancedResetSection: "Berechtigungen",
         advancedResetDescription: "Entfernt alle Berechtigungen, die du Vorssaint erteilt hast (Bedienungshilfen, Bildschirmaufnahme, Festplattenvollzugriff und weitere), das Anmeldeobjekt und die Regel für den geschlossenen Deckel. Praktisch für einen Neustart oder vor dem Deinstallieren. Die App bleibt installiert.",
