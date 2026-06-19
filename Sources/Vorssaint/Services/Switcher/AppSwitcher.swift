@@ -78,6 +78,11 @@ final class AppSwitcher: ObservableObject {
         }
     }
 
+    /// Force-stops the tap regardless of the preference. Used before the app
+    /// resets its own permissions, so a revoked Accessibility grant can never
+    /// leave a live tap behind.
+    func suspend() { removeTap() }
+
     // MARK: - Event tap
 
     private func installTap() {
@@ -118,6 +123,14 @@ final class AppSwitcher: ObservableObject {
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+
+        // With Accessibility revoked the AX lookups behind a session would hang
+        // inside the tap and freeze input; pass events through and drop any
+        // session that was open.
+        guard AXIsProcessTrusted() else {
+            if sessionActive { cancelSession() }
             return Unmanaged.passUnretained(event)
         }
 
@@ -197,7 +210,7 @@ final class AppSwitcher: ObservableObject {
         selectedIndex = reversed ? max(0, list.count - 1) : (list.count > 1 ? 1 : 0)
         sessionActive = true
 
-        WindowPreviewProvider.shared.refreshPreviews(for: list) { [weak self] windowID, image in
+        WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 640 * PreviewSizing.scale) { [weak self] windowID, image in
             guard let self,
                   self.sessionActive,
                   self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
@@ -426,8 +439,10 @@ struct SwitcherGrid: Equatable {
     let visibleRows: Int
     let panelSize: CGSize
 
-    static let cardWidth: CGFloat = 288
-    static let cardHeight: CGFloat = 214
+    // Base sizes scaled by the user's preview-size preference (Normal/Large/
+    // Extra), so one setting grows the switcher and the Dock preview together.
+    static var cardWidth: CGFloat { 288 * PreviewSizing.scale }
+    static var cardHeight: CGFloat { 214 * PreviewSizing.scale }
     static let spacing: CGFloat = 12
     static let padding: CGFloat = 20
 

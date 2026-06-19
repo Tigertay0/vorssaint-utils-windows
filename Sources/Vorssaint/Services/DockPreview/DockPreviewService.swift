@@ -445,7 +445,7 @@ final class DockPreviewService: ObservableObject {
         selectedWindowID = nil
         desiredPeek = nil
 
-        WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 420) { [weak self] windowID, image in
+        WindowPreviewProvider.shared.refreshPreviews(for: list, maxPixelSize: 420 * PreviewSizing.scale) { [weak self] windowID, image in
             guard let self, self.isVisible, self.windows.contains(where: { $0.previewWindowID == windowID }) else { return }
             self.previews[windowID] = image
         }

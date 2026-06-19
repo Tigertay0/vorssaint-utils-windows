@@ -87,6 +87,11 @@ final class WindowMaximizer: ObservableObject {
             return Unmanaged.passUnretained(event)
         }
 
+        // Never touch Accessibility from inside the tap when it is not granted:
+        // a revoked permission (System Settings, or the app's own "Clear all
+        // permissions") would make the AX hit-test below hang and freeze input.
+        guard AXIsProcessTrusted() else { return Unmanaged.passUnretained(event) }
+
         switch type {
         case .leftMouseDown:
             guard event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift]).isEmpty,

@@ -101,6 +101,11 @@ final class AutoQuitService: ObservableObject {
         startCloseRequestMonitor()
     }
 
+    /// Force-stops all observers and the close-request tap regardless of the
+    /// preference. Used before the app resets its own permissions, so a revoked
+    /// Accessibility grant can never leave a live tap behind.
+    func suspend() { stop() }
+
     private func stop() {
         guard running else { return }
         running = false
@@ -381,6 +386,10 @@ final class AutoQuitService: ObservableObject {
             if let closeRequestTap { CGEvent.tapEnable(tap: closeRequestTap, enable: true) }
             return Unmanaged.passUnretained(event)
         }
+
+        // Accessibility gone (e.g. reset): the AX hit-test below would hang
+        // inside the tap and freeze clicks, so let the click through untouched.
+        guard AXIsProcessTrusted() else { return Unmanaged.passUnretained(event) }
 
         guard type == .leftMouseDown,
               event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift]).isEmpty,

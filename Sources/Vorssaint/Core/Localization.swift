@@ -172,6 +172,12 @@ struct Strings {
     let tabAdvanced: String
     let tabAbout: String
     let tabReleaseNotes: String
+    let releaseNotesOnUpdateToggle: String
+    let whatsNewDontShowAgain: String
+    let previewSizeLabel: String
+    let previewSizeNormal: String
+    let previewSizeLarge: String
+    let previewSizeXLarge: String
     let settingsGroupFeatures: String
 
     // MARK: Settings — advanced
@@ -696,6 +702,12 @@ extension Strings {
         tabAdvanced: "Avançado",
         tabAbout: "Sobre",
         tabReleaseNotes: "Novidades",
+        releaseNotesOnUpdateToggle: "Mostrar novidades ao atualizar",
+        whatsNewDontShowAgain: "Não mostrar novamente",
+        previewSizeLabel: "Tamanho dos previews",
+        previewSizeNormal: "Normal",
+        previewSizeLarge: "Grande",
+        previewSizeXLarge: "Extra grande",
         settingsGroupFeatures: "Recursos",
         advancedResetSection: "Permissões",
         advancedResetDescription: "Remove todas as permissões que você concedeu ao Vorssaint (Acessibilidade, Gravação de Tela, Acesso Total ao Disco e outras), o item de início e a regra de tampa fechada. Útil para começar do zero ou antes de desinstalar. O app continua instalado.",
@@ -725,7 +737,7 @@ extension Strings {
         batteryProtectionCaption: "Evita que uma sessão esquecida drene a bateria do MacBook.",
         clamshellSection: "Tampa fechada",
         configuring: "Configurando…",
-        sudoersFailed: "Não foi possível concluir. Verifique a senha e tente de novo.",
+        sudoersFailed: "Não foi possível ativar. Desligue e ligue de novo para tentar.",
         clamshellExplanation: "“Continuar com a tampa fechada” desativa completamente a suspensão enquanto “Manter acordado” estiver ativo e é revertido automaticamente quando a sessão termina ou o app é encerrado. Prefira usá-lo conectado à energia.",
 
         scrollSection: "Rolagem",
@@ -1195,6 +1207,12 @@ extension Strings {
         tabAdvanced: "Advanced",
         tabAbout: "About",
         tabReleaseNotes: "What's New",
+        releaseNotesOnUpdateToggle: "Show what's new after updating",
+        whatsNewDontShowAgain: "Don't show again",
+        previewSizeLabel: "Preview size",
+        previewSizeNormal: "Normal",
+        previewSizeLarge: "Large",
+        previewSizeXLarge: "Extra large",
         settingsGroupFeatures: "Features",
         advancedResetSection: "Permissions",
         advancedResetDescription: "Removes every permission you granted Vorssaint (Accessibility, Screen Recording, Full Disk Access and others), the login item and the closed-lid rule. Useful to start fresh or before uninstalling. The app stays installed.",
@@ -1224,7 +1242,7 @@ extension Strings {
         batteryProtectionCaption: "Keeps a forgotten session from draining the MacBook battery.",
         clamshellSection: "Closed lid",
         configuring: "Configuring…",
-        sudoersFailed: "Could not finish. Check the password and try again.",
+        sudoersFailed: "Couldn't turn it on. Switch it off and on again to retry.",
         clamshellExplanation: "“Keep going with the lid closed” fully disables sleep while “Keep awake” is active and is reverted automatically when the session ends or the app quits. Prefer using it plugged in.",
 
         scrollSection: "Scrolling",

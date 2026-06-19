@@ -166,7 +166,7 @@ struct UpdatesView: View {
 
                 if case .available = updates.state {
                     Button(l10n.s.updateInstallButton) {
-                        updates.downloadAndInstall()
+                        appDelegate()?.showUpdatePreview()
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -332,6 +332,7 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.switcherEnabled) private var switcherEnabled = true
     @AppStorage(DefaultsKey.switcherMergeTabs) private var switcherMergeTabs = false
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
+    @AppStorage(DefaultsKey.previewSize) private var previewSize = "normal"
 
     var body: some View {
         Form {
@@ -366,6 +367,19 @@ struct SwitcherSettings: View {
                     Text(l10n.s.dockPreviewName)
                     PanelBetaBadge(text: l10n.s.betaBadge)
                 }
+            }
+            Section {
+                Picker(l10n.s.previewSizeLabel, selection: $previewSize) {
+                    Text(l10n.s.previewSizeNormal).tag("normal")
+                    Text(l10n.s.previewSizeLarge).tag("large")
+                    Text(l10n.s.previewSizeXLarge).tag("xlarge")
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: previewSize) { _, _ in
+                    AppSwitcher.shared.syncWithPreferences()
+                }
+            } header: {
+                Text(l10n.s.previewSizeLabel)
             }
             if switcherEnabled || dockPreviewEnabled {
                 if !permissions.accessibility {
@@ -456,6 +470,7 @@ struct AboutSettings: View {
 
 struct ReleaseNotesSettings: View {
     @ObservedObject private var l10n = L10n.shared
+    @AppStorage(DefaultsKey.releaseNotesOnUpdate) private var releaseNotesOnUpdate = true
     private let notes = ReleaseNotes.current
 
     var body: some View {
@@ -469,6 +484,10 @@ struct ReleaseNotesSettings: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
+
+            Toggle(l10n.s.releaseNotesOnUpdateToggle, isOn: $releaseNotesOnUpdate)
+                .toggleStyle(.switch)
+                .padding(.horizontal, 24)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {

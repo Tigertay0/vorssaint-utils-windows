@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import CoreGraphics
 import Foundation
 
 /// Every UserDefaults key used by the app, in one place.
@@ -21,7 +22,9 @@ enum DefaultsKey {
     static let switcherEnabled = "switcherEnabled"
     static let switcherMergeTabs = "switcherMergeTabs"     // show one switcher entry per app (collapse all of an app's windows)
     static let dockPreviewEnabled = "dockPreviewEnabled"
+    static let previewSize = "previewSize"                // app switcher + dock preview thumbnail size
     static let autoCheckUpdates = "autoCheckUpdates"
+    static let releaseNotesOnUpdate = "releaseNotesOnUpdate" // show What's New after an update
     static let appVolumes = "appVolumes"                  // [bundle id: 0...2]
     static let appOutputDevices = "appOutputDevices"      // [bundle id: audio device UID]
     static let preferredInputDevice = "preferredInputDevice" // audio input device UID
@@ -115,6 +118,23 @@ enum DockPreviewIntroInfo {
     static let releaseVersion = "3.0.4"
 }
 
+/// Thumbnail size for the app switcher and Dock preview, scaled from one user
+/// preference so both grow together. Captures scale by the same factor, so
+/// larger previews stay sharp.
+enum PreviewSizing {
+    static func sanitized(_ value: String) -> String {
+        Defaults.allowedPreviewSizes.contains(value) ? value : "normal"
+    }
+
+    static var scale: CGFloat {
+        switch sanitized(UserDefaults.standard.string(forKey: DefaultsKey.previewSize) ?? "normal") {
+        case "large": return 1.4
+        case "xlarge": return 1.8
+        default: return 1.0
+        }
+    }
+}
+
 enum Defaults {
     static let finderBundleIdentifier = "com.apple.finder"
     static let mandatoryAutoQuitExceptionBundleIDs = [finderBundleIdentifier]
@@ -124,6 +144,7 @@ enum Defaults {
     static let allowedMonitorIntervals = [1, 2, 5]
     static let allowedMenuBarLabelStyles = ["compact", "classic"]
     static let allowedMenuBarMemoryStyles = ["dot", "percent", "both"]
+    static let allowedPreviewSizes = ["normal", "large", "xlarge"]
 
     static let registeredDefaults: [String: Any] = [
         DefaultsKey.clamshellPreferred: false,
@@ -135,7 +156,9 @@ enum Defaults {
         DefaultsKey.switcherEnabled: true,
         DefaultsKey.switcherMergeTabs: false,
         DefaultsKey.dockPreviewEnabled: false,
+        DefaultsKey.previewSize: "normal",
         DefaultsKey.autoCheckUpdates: true,
+        DefaultsKey.releaseNotesOnUpdate: true,
         // Finder never benefits from being "quit" (it just relaunches), so
         // it's excepted out of the box.
         DefaultsKey.autoQuitExceptions: mandatoryAutoQuitExceptionBundleIDs,

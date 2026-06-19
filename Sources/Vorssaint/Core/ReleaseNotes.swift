@@ -20,6 +20,30 @@ struct ReleaseNotes {
         return parsed
     }
 
+    /// Every version listed in the changelog, in document order (newest first).
+    /// Used to surface the releases a user skipped between updates.
+    static func allVersions(changelog: String? = bundledChangelog()) -> [String] {
+        guard let changelog else { return [] }
+        return changelog
+            .components(separatedBy: .newlines)
+            .compactMap { header(in: $0)?.version }
+    }
+
+    /// Raw markdown body of a version's changelog section (everything between its
+    /// `## [version]` header and the next one), so the Developer build can feed
+    /// the update preview real notes. Empty when the version is absent.
+    static func rawNotes(for version: String, changelog: String? = bundledChangelog()) -> String {
+        guard let changelog else { return "" }
+        let lines = changelog.components(separatedBy: .newlines)
+        guard let start = lines.firstIndex(where: { header(in: $0)?.version == version }) else { return "" }
+        var body: [String] = []
+        for line in lines.dropFirst(start + 1) {
+            if line.hasPrefix("## [") { break }
+            body.append(line)
+        }
+        return body.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private static func bundledChangelog() -> String? {
         guard let url = Bundle.main.url(forResource: "CHANGELOG", withExtension: "md") else { return nil }
         return try? String(contentsOf: url, encoding: .utf8)

@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private var settingsWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var dockPreviewIntroWindow: NSWindow?
+    private var whatsNewWindow: NSWindow?
+    private var updatePreviewWindow: NSWindow?
     private let popoverOpenDuration: TimeInterval = 0.18
     private let popoverCloseDuration: TimeInterval = 0.14
 
@@ -98,9 +100,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         if !defaults.bool(forKey: DefaultsKey.hasOnboarded) {
             showOnboarding(mode: .full)
         } else {
+            // Capture the version this user last ran *before* overwriting it, so
+            // we can tell which releases they skipped (e.g. 3.0.2 → 3.0.5).
+            let previousVersion = defaults.string(forKey: DefaultsKey.lastUpdateIntroVersion)
             defaults.set(OnboardingInfo.currentFeatureSet, forKey: DefaultsKey.featuresOnboardingVersion)
             defaults.set(AppInfo.version, forKey: DefaultsKey.lastUpdateIntroVersion)
-            showDockPreviewIntroIfNeeded()
+            presentUpdateIntros(previousVersion: previousVersion)
         }
     }
 
@@ -753,10 +758,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         }
     }
 
+    /// On launch after an update, surface what changed. A user who skipped one
+    /// or more releases (e.g. 3.0.2 → 3.0.5) gets a one-time "What's New" window
+    /// covering everything they missed; the Dock Preview intro then follows if
+    /// they have never seen it. A contiguous update or a normal relaunch shows
+    /// nothing extra here.
+    private func presentUpdateIntros(previousVersion: String?) {
+        guard UserDefaults.standard.bool(forKey: DefaultsKey.releaseNotesOnUpdate) else {
+            showDockPreviewIntroIfNeeded()
+            return
+        }
+        let notes = updateReleaseNotes(previousVersion: previousVersion)
+        if notes.isEmpty {
+            showDockPreviewIntroIfNeeded()
+        } else {
+            showWhatsNew(notes)
+        }
+    }
+
+    /// Release notes for every changelog version newer than `previousVersion`, up
+    /// to and including the current one — so every update surfaces what changed
+    /// (and a version-skipper sees everything they missed). Newest first. Empty
+    /// when the previous version is unknown (avoids surprising long-time users)
+    /// or unchanged.
+    private func updateReleaseNotes(previousVersion: String?) -> [ReleaseNotes] {
+        guard let previous = previousVersion else { return [] }
+        let current = AppInfo.version
+        let versions = ReleaseNotes.allVersions().filter { version in
+            UpdateService.isNewer(version, than: previous)
+                && (version == current || UpdateService.isNewer(current, than: version))
+        }
+        return versions
+            .sorted { UpdateService.isNewer($0, than: $1) }
+            .map { ReleaseNotes.notes(for: $0) }
+    }
+
+    /// True on the release that introduced Dock Preview, or any later one.
+    private var isAtLeastDockPreviewRelease: Bool {
+        let current = AppInfo.version
+        let intro = DockPreviewIntroInfo.releaseVersion
+        return current == intro || UpdateService.isNewer(current, than: intro)
+    }
+
     private func showDockPreviewIntroIfNeeded() {
-        guard AppInfo.version == DockPreviewIntroInfo.releaseVersion else { return }
-        let defaults = UserDefaults.standard
-        guard defaults.string(forKey: DefaultsKey.dockPreviewIntroVersion) != AppInfo.version else { return }
+        // Show on the Dock Preview release or any later version, so users who
+        // skip versions still get it once, and never re-show it once seen.
+        guard isAtLeastDockPreviewRelease else { return }
+        guard UserDefaults.standard.string(forKey: DefaultsKey.dockPreviewIntroVersion) == nil else { return }
         showDockPreviewIntro()
     }
 
@@ -833,6 +881,102 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         window.setFrame(frame.integral, display: false)
     }
 
+    private func showWhatsNew(_ releases: [ReleaseNotes]) {
+        closePopover()
+        if let window = whatsNewWindow {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+        let host = NSHostingController(rootView: WhatsNewView(
+            releases: releases,
+            onClose: { [weak self] in
+                self?.whatsNewWindow?.close()
+            },
+            onDontShowAgain: { [weak self] in
+                UserDefaults.standard.set(false, forKey: DefaultsKey.releaseNotesOnUpdate)
+                self?.whatsNewWindow?.close()
+            }
+        ))
+        host.sizingOptions = .preferredContentSize
+        let window = NSWindow(contentViewController: host)
+        window.title = L10n.shared.s.tabReleaseNotes
+        window.styleMask = [.titled, .closable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        window.isRestorable = false
+        window.isMovableByWindowBackground = true
+        window.delegate = self
+        centerWhatsNewWindow(window)
+        whatsNewWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, window === self.whatsNewWindow else { return }
+            self.centerWhatsNewWindow(window)
+        }
+    }
+
+    private func centerWhatsNewWindow(_ window: NSWindow) {
+        window.contentView?.layoutSubtreeIfNeeded()
+        let screen = window.screen ?? popover.contentViewController?.view.window?.screen ?? NSScreen.withMouse
+        let visible = screen.visibleFrame
+        let margin: CGFloat = 40
+        let availableWidth = max(1, visible.width - margin)
+        let availableHeight = max(1, visible.height - margin)
+        let width = min(max(window.frame.width, 640), availableWidth)
+        let height = min(max(window.frame.height, 600), availableHeight)
+        let frame = NSRect(x: visible.midX - width / 2,
+                           y: visible.midY - height / 2,
+                           width: width,
+                           height: height)
+        window.setFrame(frame.integral, display: false)
+    }
+
+    /// The pre-install update preview, shown before any download from BOTH the
+    /// Settings install button and the menu panel's update banner (the blue
+    /// button most people use), so the changelog is always seen first. In the
+    /// Developer build `downloadAndInstall()` is a no-op, so confirming is safe.
+    func showUpdatePreview() {
+        guard case let .available(version) = UpdateService.shared.state else { return }
+        closePopover()
+        if let window = updatePreviewWindow {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+        let host = NSHostingController(rootView: UpdatePreviewView(
+            version: version,
+            notes: UpdateService.shared.availableNotes,
+            onUpdate: { [weak self] in
+                self?.updatePreviewWindow?.close()
+                UpdateService.shared.downloadAndInstall()
+            },
+            onCancel: { [weak self] in
+                self?.updatePreviewWindow?.close()
+            }
+        ))
+        host.sizingOptions = .preferredContentSize
+        let window = NSWindow(contentViewController: host)
+        window.title = L10n.shared.s.tabReleaseNotes
+        window.styleMask = [.titled, .closable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        window.isRestorable = false
+        window.isMovableByWindowBackground = true
+        window.delegate = self
+        centerWhatsNewWindow(window)
+        updatePreviewWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, window === self.updatePreviewWindow else { return }
+            self.centerWhatsNewWindow(window)
+        }
+    }
+
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
         if window === settingsWindow {
@@ -851,6 +995,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             guard !isTerminating else { return }
             markDockPreviewIntroSeen()
         }
+        if window === whatsNewWindow {
+            whatsNewWindow = nil
+            guard !isTerminating else { return }
+            // The Dock Preview intro follows the catch-up notes (never both at
+            // once) for a user who has not seen it yet.
+            showDockPreviewIntroIfNeeded()
+        }
+        if window === updatePreviewWindow {
+            updatePreviewWindow = nil
+        }
     }
 
     /// Marks both the first run and this version's feature tour as seen, so
@@ -863,7 +1017,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     private func markDockPreviewIntroSeenIfCurrentUpdate() {
-        guard AppInfo.version == DockPreviewIntroInfo.releaseVersion else { return }
+        // A clean install that just finished onboarding on the Dock Preview
+        // release (or later) should not then be shown the intro popup.
+        guard isAtLeastDockPreviewRelease else { return }
         markDockPreviewIntroSeen()
     }
 

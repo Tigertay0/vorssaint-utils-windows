@@ -1149,7 +1149,7 @@ struct UpdateBanner: View {
         switch updates.state {
         case let .available(version):
             Button {
-                UpdateService.shared.downloadAndInstall()
+                appDelegate()?.showUpdatePreview()
             } label: {
                 HStack(spacing: 9) {
                     Image(systemName: "arrow.down.circle.fill")

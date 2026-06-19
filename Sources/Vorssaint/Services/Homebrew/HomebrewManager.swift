@@ -225,8 +225,11 @@ final class HomebrewManager: ObservableObject {
             do script \(appleScriptString(command))
         end tell
         """
-        let result = Shell.run("/usr/bin/osascript", ["-e", source])
-        if result.status != 0 {
+        // In-process Apple Events (see AppleScriptRunner): the Terminal Automation
+        // consent is attributed to this app and re-requested if it was lost,
+        // instead of a fragile osascript subprocess. Same permission as before.
+        let result = AppleScriptRunner.run(source)
+        if !result.ok {
             errorMessage = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
             return false
         }

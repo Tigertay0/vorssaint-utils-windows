@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.5] - 2026-06-19
+
+### Added
+- When installing an update, a preview of the new version's changelog is shown
+  first, so you can decide whether the update is worth it before downloading.
+- After updating, a What's New window summarizes everything since your previous
+  version. You can turn it off in Settings > What's New, or with "Don't show
+  again".
+- The app switcher and Dock previews now have a size option (Normal, Large or
+  Extra large) so windows stay easy to identify on large displays.
+
+### Fixed
+- Closed-lid mode now reliably brings up the administrator password prompt when
+  it is being set up on a Mac that has not granted permission yet, and no longer
+  becomes unstable when the request is retried.
+- "Clear all permissions" could freeze the Mac's input; it now stops the app's
+  event taps before resetting permissions, and feature event taps no longer
+  block when Accessibility is revoked.
+- Cut & paste for files in Finder (⌘X) shows its on-screen confirmation again:
+  Finder Automation is now requested in-process and re-requested if it was lost
+  after an update, instead of failing silently.
+- When closed-lid mode cannot be turned on, the message now clearly says to
+  switch it off and on again to try, instead of a confusing note that pointed at
+  your password even when no password was involved.
+
 ## [3.0.4] - 2026-06-18
 
 ### Added
