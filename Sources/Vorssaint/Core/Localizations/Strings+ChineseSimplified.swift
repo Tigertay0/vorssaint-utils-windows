@@ -454,6 +454,8 @@ extension Strings {
         tabMonitor: "监视",
         monitorMenuBarSection: "在菜单栏中",
         monitorMenuBarCaption: "选择菜单栏中图标旁显示的内容。",
+        monitorCombineTemperatures: "合并使用率和温度",
+        monitorCombineTemperaturesCaption: "同一项目的使用率和温度都启用时，在一个区块中显示。",
         monitorShowCPU: "CPU",
         monitorShowMemory: "内存",
         monitorShowNetwork: "网络",
@@ -493,6 +495,9 @@ extension Strings {
         powerUnavailable: "此 Mac 上无可用电源指标",
         powerAdapterMaxFormat: "最高 %@",
         monitorShowGPU: "GPU",
+        monitorShowCPUTemperature: "CPU 温度",
+        monitorShowGPUTemperature: "GPU 温度",
+        monitorShowBatteryTemperature: "电池温度",
         monitorGraphsSection: "图表",
         monitorGraphsCaption: "选择哪些指标显示随时间变化的图表。",
 

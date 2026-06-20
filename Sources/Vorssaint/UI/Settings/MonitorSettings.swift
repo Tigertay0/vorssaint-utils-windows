@@ -12,6 +12,7 @@ struct MonitorSettings: View {
     @ObservedObject private var l10n = L10n.shared
 
     @AppStorage(DefaultsKey.menuBarMemory) private var menuBarMemory = false
+    @AppStorage(DefaultsKey.menuBarCombineTemperatures) private var combineTemperatures = true
     @AppStorage(DefaultsKey.menuBarMemoryStyle) private var memoryStyle = "percent"
     @AppStorage(DefaultsKey.monitorInterval) private var interval = 2
     @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
@@ -29,6 +30,10 @@ struct MonitorSettings: View {
             Section(l10n.s.monitorMenuBarSection) {
                 MenuBarMetricsPreview()
                     .padding(.vertical, 4)
+                Toggle(l10n.s.monitorCombineTemperatures, isOn: $combineTemperatures)
+                Text(l10n.s.monitorCombineTemperaturesCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 MenuBarMetricOrderEditor()
                 if menuBarMemory {
                     Toggle(l10n.s.monitorMemoryPressureDot,
@@ -207,6 +212,9 @@ private extension MenuBarMetric {
         case .cpu: return strings.monitorShowCPU
         case .gpu: return strings.monitorShowGPU
         case .memory: return strings.monitorShowMemory
+        case .cpuTemperature: return strings.monitorShowCPUTemperature
+        case .gpuTemperature: return strings.monitorShowGPUTemperature
+        case .batteryTemperature: return strings.monitorShowBatteryTemperature
         case .network: return strings.monitorShowNetwork
         case .battery: return strings.batteryLabel
         case .power: return strings.monitorShowPowerLabel

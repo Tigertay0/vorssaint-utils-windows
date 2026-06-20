@@ -98,6 +98,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/DockPreview/DockPreviewSupport.swift \
         Sources/Vorssaint/Services/Homebrew/HomebrewSupport.swift \
         Sources/Vorssaint/Services/Metrics/MetricFormat.swift \
+        Sources/Vorssaint/Services/Metrics/TemperatureSensorSelector.swift \
         Sources/Vorssaint/Services/CleaningMode/CleaningUnlockCounter.swift \
         Tests/MetricsTests.swift \
         -o build/metrics-tests
@@ -143,6 +144,10 @@ cp build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png "$STAGE/Co
 if [[ -f Resources/Gifs/dockPreview.gif ]]; then
     mkdir -p "$STAGE/Contents/Resources/Gifs"
     cp Resources/Gifs/dockPreview.gif "$STAGE/Contents/Resources/Gifs/"
+fi
+if [[ -d Resources/Images ]]; then
+    mkdir -p "$STAGE/Contents/Resources/Images"
+    cp Resources/Images/* "$STAGE/Contents/Resources/Images/"
 fi
 xattr -c -r "$STAGE" 2>/dev/null || true
 

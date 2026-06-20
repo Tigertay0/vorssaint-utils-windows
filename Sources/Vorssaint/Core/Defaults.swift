@@ -60,11 +60,16 @@ enum DefaultsKey {
     static let menuBarCPU = "menuBarCPU"
     static let menuBarGPU = "menuBarGPU"
     static let menuBarMemory = "menuBarMemory"
+    static let menuBarCPUTemperature = "menuBarCPUTemperature"
+    static let menuBarGPUTemperature = "menuBarGPUTemperature"
+    static let menuBarBatteryTemperature = "menuBarBatteryTemperature"
+    static let menuBarTemperature = "menuBarTemperature" // legacy Developer key for the old generic temperature metric
     static let menuBarNetwork = "menuBarNetwork"
     static let menuBarBattery = "menuBarBattery"
     static let menuBarPower = "menuBarPower"
     static let menuBarPreset = "menuBarPreset"           // dense
     static let menuBarMetricOrder = "menuBarMetricOrder" // comma-separated MenuBarMetric raw values
+    static let menuBarCombineTemperatures = "menuBarCombineTemperatures" // usage/charge + temperature in one block when possible
     static let menuBarLabelStyle = "menuBarLabelStyle"     // compact | classic
     static let menuBarMemoryStyle = "menuBarMemoryStyle"   // dot | percent | both
     static let monitorInterval = "monitorIntervalSeconds"  // sampling cadence: 1/2/5
@@ -172,6 +177,13 @@ enum Defaults {
     static let allowedBatteryLimits = [0, 5, 10, 15, 20]
     static let allowedMonitorIntervals = [1, 2, 5]
     static let allowedMenuBarPresets = ["dense"]
+    static let defaultMenuBarMetricOrder = [
+        "cpu", "cpuTemperature",
+        "gpu", "gpuTemperature",
+        "memory",
+        "battery", "batteryTemperature",
+        "network", "power",
+    ]
     static let allowedMenuBarLabelStyles = ["compact", "classic"]
     static let allowedMenuBarMemoryStyles = ["dot", "percent", "both"]
     static let allowedPreviewSizes = ["normal", "large", "xlarge"]
@@ -220,8 +232,12 @@ enum Defaults {
         // they don't want.
         DefaultsKey.monitorInterval: 2,
         DefaultsKey.temperatureUnit: TemperatureUnit.celsius.rawValue,
+        DefaultsKey.menuBarCPUTemperature: false,
+        DefaultsKey.menuBarGPUTemperature: false,
+        DefaultsKey.menuBarBatteryTemperature: false,
         DefaultsKey.menuBarPreset: "dense",
-        DefaultsKey.menuBarMetricOrder: "cpu,gpu,memory,network,battery,power",
+        DefaultsKey.menuBarMetricOrder: defaultMenuBarMetricOrder.joined(separator: ","),
+        DefaultsKey.menuBarCombineTemperatures: true,
         DefaultsKey.menuBarLabelStyle: "compact",
         DefaultsKey.menuBarMemoryStyle: "percent",
         DefaultsKey.monitorShowSystem: true,
@@ -273,7 +289,9 @@ enum Defaults {
     ]
 
     static func register() {
-        UserDefaults.standard.register(defaults: registeredDefaults)
+        let defaults = UserDefaults.standard
+        defaults.register(defaults: registeredDefaults)
+        migrateLegacyMenuBarTemperatureMetric(in: defaults)
     }
 
     static func sanitizedDefaultDuration(_ minutes: Int) -> Int {
@@ -293,18 +311,47 @@ enum Defaults {
     }
 
     static func sanitizedMenuBarMetricOrder(_ raw: String) -> [String] {
-        let defaults = ["cpu", "gpu", "memory", "network", "battery", "power"]
+        let defaults = defaultMenuBarMetricOrder
         var seen = Set<String>()
         var result: [String] = []
-        for value in raw.split(separator: ",").map({ String($0) }) {
-            guard defaults.contains(value), !seen.contains(value) else { continue }
-            seen.insert(value)
-            result.append(value)
+        for rawValue in raw.split(separator: ",").map({ String($0) }) {
+            let values = rawValue == "temperature"
+                ? ["cpuTemperature", "gpuTemperature", "batteryTemperature"]
+                : [rawValue]
+            for value in values {
+                guard defaults.contains(value), !seen.contains(value) else { continue }
+                seen.insert(value)
+                result.append(value)
+            }
         }
         for value in defaults where !seen.contains(value) {
             result.append(value)
         }
         return result
+    }
+
+    private static func migrateLegacyMenuBarTemperatureMetric(in defaults: UserDefaults) {
+        guard let domainName = Bundle.main.bundleIdentifier,
+              let domain = defaults.persistentDomain(forName: domainName),
+              let legacyEnabled = domain[DefaultsKey.menuBarTemperature] as? Bool
+        else { return }
+
+        let newKeys = [
+            DefaultsKey.menuBarCPUTemperature,
+            DefaultsKey.menuBarGPUTemperature,
+            DefaultsKey.menuBarBatteryTemperature,
+        ]
+        let alreadyMigrated = newKeys.contains { domain[$0] != nil }
+        if legacyEnabled, !alreadyMigrated {
+            for key in newKeys {
+                defaults.set(true, forKey: key)
+            }
+        }
+        if let rawOrder = domain[DefaultsKey.menuBarMetricOrder] as? String {
+            defaults.set(sanitizedMenuBarMetricOrder(rawOrder).joined(separator: ","),
+                         forKey: DefaultsKey.menuBarMetricOrder)
+        }
+        defaults.removeObject(forKey: DefaultsKey.menuBarTemperature)
     }
 
     static func sanitizedMenuBarLabelStyle(_ style: String) -> String {

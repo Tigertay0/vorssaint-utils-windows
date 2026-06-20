@@ -5,7 +5,7 @@ import AppKit
 
 /// A live reading the user can pin next to the menu bar icon.
 enum MenuBarMetric: String, CaseIterable, Identifiable {
-    case cpu, gpu, memory, network, battery, power
+    case cpu, gpu, memory, cpuTemperature, gpuTemperature, batteryTemperature, network, battery, power
 
     var id: String { rawValue }
 
@@ -14,6 +14,9 @@ enum MenuBarMetric: String, CaseIterable, Identifiable {
         case .cpu: return DefaultsKey.menuBarCPU
         case .gpu: return DefaultsKey.menuBarGPU
         case .memory: return DefaultsKey.menuBarMemory
+        case .cpuTemperature: return DefaultsKey.menuBarCPUTemperature
+        case .gpuTemperature: return DefaultsKey.menuBarGPUTemperature
+        case .batteryTemperature: return DefaultsKey.menuBarBatteryTemperature
         case .network: return DefaultsKey.menuBarNetwork
         case .battery: return DefaultsKey.menuBarBattery
         case .power: return DefaultsKey.menuBarPower
@@ -25,13 +28,22 @@ enum MenuBarMetric: String, CaseIterable, Identifiable {
         case .cpu: return "cpu"
         case .gpu: return "rectangle.connected.to.line.below"
         case .memory: return "memorychip"
+        case .cpuTemperature: return "cpu"
+        case .gpuTemperature: return "rectangle.connected.to.line.below"
+        case .batteryTemperature: return "battery.100"
         case .network: return "network"
         case .battery: return "battery.100"
         case .power: return "powerplug.fill"
         }
     }
 
-    static let defaultOrder: [MenuBarMetric] = [.cpu, .gpu, .memory, .network, .battery, .power]
+    static let defaultOrder: [MenuBarMetric] = [
+        .cpu, .cpuTemperature,
+        .gpu, .gpuTemperature,
+        .memory,
+        .battery, .batteryTemperature,
+        .network, .power,
+    ]
 
     static func order(in defaults: UserDefaults) -> [MenuBarMetric] {
         let raw = defaults.string(forKey: DefaultsKey.menuBarMetricOrder) ?? ""
@@ -93,7 +105,7 @@ enum MenuBarSegment {
     case text(String)
     case symbol(String)
     case largeSymbol(String)
-    case metricBlock(label: String, value: String, style: MenuBarBlockStyle, pressure: MemoryPressure?)
+    case metricBlock(label: String, value: String, minimumValue: String, style: MenuBarBlockStyle, pressure: MemoryPressure?)
     case networkBlock(down: String, up: String, style: MenuBarBlockStyle)
     case batteryBlock(percent: Int, isCharging: Bool, style: MenuBarBlockStyle)
     case dot(MemoryPressure)
@@ -228,6 +240,27 @@ enum MenuBarRenderer {
                 items.append(MetricItem(metric: metric,
                                         segments: segments,
                                         width: reservedWidth(for: metric, preset: preset)))
+            case .cpuTemperature:
+                if let temperature = snapshot.cpuTemperature {
+                    let text = "CPU " + temperatureCompact(temperature)
+                    items.append(MetricItem(metric: metric,
+                                            segments: [.symbol(metric.symbolName), .text(" " + text)],
+                                            width: reservedWidth(for: metric, preset: preset)))
+                }
+            case .gpuTemperature:
+                if let temperature = snapshot.gpuTemperature {
+                    let text = "GPU " + temperatureCompact(temperature)
+                    items.append(MetricItem(metric: metric,
+                                            segments: [.symbol(metric.symbolName), .text(" " + text)],
+                                            width: reservedWidth(for: metric, preset: preset)))
+                }
+            case .batteryTemperature:
+                if let temperature = snapshot.batteryTemperature {
+                    let text = "BAT " + temperatureCompact(temperature)
+                    items.append(MetricItem(metric: metric,
+                                            segments: [.symbol(metric.symbolName), .text(" " + text)],
+                                            width: reservedWidth(for: metric, preset: preset)))
+                }
             case .network:
                 if let down = snapshot.netDownBytesPerSec, let up = snapshot.netUpBytesPerSec {
                     let downText = MetricFormat.bytesPerSecCompact(down)
@@ -261,19 +294,81 @@ enum MenuBarRenderer {
                                       metrics: [MenuBarMetric],
                                       style: MenuBarBlockStyle) -> [MenuBarSegment] {
         var groups: [[MenuBarSegment]] = []
+        let combineTemperatures = UserDefaults.standard.bool(forKey: DefaultsKey.menuBarCombineTemperatures)
+        let enabled = Set(metrics)
+        var renderedCPU = false
+        var renderedGPU = false
+        var renderedBattery = false
+
         for metric in metrics {
             switch metric {
-            case .cpu:
+            case .cpu, .cpuTemperature:
+                if combineTemperatures {
+                    guard !renderedCPU else { break }
+                    renderedCPU = true
+                    let usage = enabled.contains(.cpu) ? snapshot.cpuUsage.map(percent) : nil
+                    let temperature = enabled.contains(.cpuTemperature) ? snapshot.cpuTemperature.map(temperatureCompact) : nil
+                    if let value = combinedComponentValue(primary: usage, temperature: temperature) {
+                        groups.append([.metricBlock(label: combinedComponentLabel("CPU",
+                                                                                  hasPrimary: usage != nil,
+                                                                                  hasTemperature: temperature != nil),
+                                                    value: value,
+                                                    minimumValue: minimumCombinedValue(primary: usage != nil,
+                                                                                       temperature: temperature != nil),
+                                                    style: style,
+                                                    pressure: nil)])
+                    }
+                    break
+                }
+                guard metric == .cpu else {
+                    if let temperature = snapshot.cpuTemperature {
+                        groups.append([.metricBlock(label: temperatureLabel("CPU"),
+                                                    value: temperatureCompact(temperature),
+                                                    minimumValue: "999°",
+                                                    style: style,
+                                                    pressure: nil)])
+                    }
+                    break
+                }
                 if let usage = snapshot.cpuUsage {
                     groups.append([.metricBlock(label: "CPU",
                                                 value: percent(usage),
+                                                minimumValue: "100%",
                                                 style: style,
                                                 pressure: nil)])
                 }
-            case .gpu:
+            case .gpu, .gpuTemperature:
+                if combineTemperatures {
+                    guard !renderedGPU else { break }
+                    renderedGPU = true
+                    let usage = enabled.contains(.gpu) ? snapshot.gpuUsage.map(percent) : nil
+                    let temperature = enabled.contains(.gpuTemperature) ? snapshot.gpuTemperature.map(temperatureCompact) : nil
+                    if let value = combinedComponentValue(primary: usage, temperature: temperature) {
+                        groups.append([.metricBlock(label: combinedComponentLabel("GPU",
+                                                                                  hasPrimary: usage != nil,
+                                                                                  hasTemperature: temperature != nil),
+                                                    value: value,
+                                                    minimumValue: minimumCombinedValue(primary: usage != nil,
+                                                                                       temperature: temperature != nil),
+                                                    style: style,
+                                                    pressure: nil)])
+                    }
+                    break
+                }
+                guard metric == .gpu else {
+                    if let temperature = snapshot.gpuTemperature {
+                        groups.append([.metricBlock(label: temperatureLabel("GPU"),
+                                                    value: temperatureCompact(temperature),
+                                                    minimumValue: "999°",
+                                                    style: style,
+                                                    pressure: nil)])
+                    }
+                    break
+                }
                 if let usage = snapshot.gpuUsage {
                     groups.append([.metricBlock(label: "GPU",
                                                 value: percent(usage),
+                                                minimumValue: "100%",
                                                 style: style,
                                                 pressure: nil)])
                 }
@@ -281,6 +376,7 @@ enum MenuBarRenderer {
                 guard let used = snapshot.memoryUsed, let total = snapshot.memoryTotal, total > 0 else { break }
                 groups.append([.metricBlock(label: "RAM",
                                             value: percent(Double(used) / Double(total)),
+                                            minimumValue: "100%",
                                             style: style,
                                             pressure: MemoryMenuBarStyle.current.showsDot ? snapshot.memoryPressure : nil)])
             case .network:
@@ -289,7 +385,46 @@ enum MenuBarRenderer {
                                                  up: MetricFormat.bytesPerSecCompact(up),
                                                  style: style)])
                 }
-            case .battery:
+            case .battery, .batteryTemperature:
+                if combineTemperatures {
+                    guard !renderedBattery else { break }
+                    renderedBattery = true
+                    let charge = enabled.contains(.battery)
+                        ? snapshot.power?.chargePercent.map { "\(max(0, min(100, $0)))%" }
+                        : nil
+                    let temperature = enabled.contains(.batteryTemperature)
+                        ? snapshot.batteryTemperature.map(temperatureCompact)
+                        : nil
+                    if charge != nil, temperature != nil,
+                       let value = combinedComponentValue(primary: charge, temperature: temperature) {
+                        groups.append([.metricBlock(label: "BAT",
+                                                    value: value,
+                                                    minimumValue: "100% 999°",
+                                                    style: style,
+                                                    pressure: nil)])
+                    } else if let chargePercent = enabled.contains(.battery) ? snapshot.power?.chargePercent : nil {
+                        groups.append([.batteryBlock(percent: chargePercent,
+                                                     isCharging: snapshot.power?.isCharging ?? false,
+                                                     style: style)])
+                    } else if let temperature {
+                        groups.append([.metricBlock(label: temperatureLabel("BAT"),
+                                                    value: temperature,
+                                                    minimumValue: "999°",
+                                                    style: style,
+                                                    pressure: nil)])
+                    }
+                    break
+                }
+                guard metric == .battery else {
+                    if let temperature = snapshot.batteryTemperature {
+                        groups.append([.metricBlock(label: temperatureLabel("BAT"),
+                                                    value: temperatureCompact(temperature),
+                                                    minimumValue: "999°",
+                                                    style: style,
+                                                    pressure: nil)])
+                    }
+                    break
+                }
                 if let charge = snapshot.power?.chargePercent {
                     groups.append([.batteryBlock(percent: charge,
                                                  isCharging: snapshot.power?.isCharging ?? false,
@@ -299,6 +434,7 @@ enum MenuBarRenderer {
                 if let watts = snapshot.power?.systemWatts {
                     groups.append([.metricBlock(label: "PWR",
                                                 value: MetricFormat.wattsCompact(watts),
+                                                minimumValue: "99W",
                                                 style: style,
                                                 pressure: nil)])
                 }
@@ -340,6 +476,8 @@ enum MenuBarRenderer {
             return 11      // symbol + " CPU 100%"
         case (_, .memory):
             return MemoryMenuBarStyle.current.showsDot ? 13 : 11
+        case (_, .cpuTemperature), (_, .gpuTemperature), (_, .batteryTemperature):
+            return 11      // symbol + " CPU 999°" / " GPU 999°" / " BAT 999°"
         case (_, .network):
             return 15      // down symbol + 1.0G + up symbol + 1.0G
         case (_, .battery), (_, .power):
@@ -391,12 +529,18 @@ enum MenuBarRenderer {
                 result.append(symbolAttachment(named: name, stacked: stacked))
             case let .largeSymbol(name):
                 result.append(symbolAttachment(named: name, stacked: stacked, enlarged: true))
-            case let .metricBlock(label, value, style, pressure):
-                result.append(metricBlockAttachment(label: label, value: value, style: style, pressure: pressure))
+            case let .metricBlock(label, value, minimumValue, style, pressure):
+                result.append(metricBlockAttachment(label: label,
+                                                    value: value,
+                                                    minimumValue: minimumValue,
+                                                    style: style,
+                                                    pressure: pressure))
             case let .networkBlock(down, up, style):
                 result.append(networkBlockAttachment(down: down, up: up, style: style))
             case let .batteryBlock(percent, isCharging, style):
-                result.append(batteryBlockAttachment(percent: percent, isCharging: isCharging, style: style))
+                result.append(batteryBlockAttachment(percent: percent,
+                                                     isCharging: isCharging,
+                                                     style: style))
             case let .dot(pressure):
                 result.append(NSAttributedString(string: "●", attributes: [.foregroundColor: nsColor(for: pressure)]))
             case .separator:
@@ -425,9 +569,14 @@ enum MenuBarRenderer {
 
     private static func metricBlockAttachment(label: String,
                                               value: String,
+                                              minimumValue: String,
                                               style: MenuBarBlockStyle,
                                               pressure: MemoryPressure?) -> NSAttributedString {
-        let image = metricBlockImage(label: label, value: value, style: style, pressure: pressure)
+        let image = metricBlockImage(label: label,
+                                     value: value,
+                                     minimumValue: minimumValue,
+                                     style: style,
+                                     pressure: pressure)
         let attachment = NSTextAttachment()
         attachment.image = image
         attachment.bounds = NSRect(x: 0, y: -4.4, width: image.size.width, height: image.size.height)
@@ -445,7 +594,9 @@ enum MenuBarRenderer {
     private static func batteryBlockAttachment(percent: Int,
                                                isCharging: Bool,
                                                style: MenuBarBlockStyle) -> NSAttributedString {
-        let image = batteryBlockImage(percent: percent, isCharging: isCharging, style: style)
+        let image = batteryBlockImage(percent: percent,
+                                      isCharging: isCharging,
+                                      style: style)
         let attachment = NSTextAttachment()
         attachment.image = image
         attachment.bounds = NSRect(x: 0, y: -4.2, width: image.size.width, height: image.size.height)
@@ -454,6 +605,7 @@ enum MenuBarRenderer {
 
     private static func metricBlockImage(label: String,
                                          value: String,
+                                         minimumValue: String,
                                          style: MenuBarBlockStyle,
                                          pressure: MemoryPressure?) -> NSImage {
         let labelFont = NSFont.systemFont(ofSize: style == .readable ? 7.2 : 6.6, weight: .medium)
@@ -463,7 +615,7 @@ enum MenuBarRenderer {
         let valueAttrs: [NSAttributedString.Key: Any] = [.font: valueFont, .foregroundColor: NSColor.white]
         let labelSize = (label as NSString).size(withAttributes: labelAttrs)
         let valueSize = (value as NSString).size(withAttributes: valueAttrs)
-        let minimumValueSize = (minimumMetricValue(for: label) as NSString).size(withAttributes: valueAttrs)
+        let minimumValueSize = (minimumValue as NSString).size(withAttributes: valueAttrs)
         let dotDiameter: CGFloat = pressure == nil ? 0 : (style == .readable ? 5.2 : 4.8)
         let dotGap: CGFloat = pressure == nil ? 0 : 4
         let reservedValueWidth = max(valueSize.width, minimumValueSize.width)
@@ -493,17 +645,6 @@ enum MenuBarRenderer {
         image.unlockFocus()
         image.isTemplate = true
         return image
-    }
-
-    private static func minimumMetricValue(for label: String) -> String {
-        switch label {
-        case "CPU", "GPU", "RAM":
-            return "99%"
-        case "PWR":
-            return "99W"
-        default:
-            return ""
-        }
     }
 
     private static func networkBlockImage(down: String, up: String, style: MenuBarBlockStyle) -> NSImage {
@@ -537,7 +678,7 @@ enum MenuBarRenderer {
         let value = "\(max(0, min(100, percent)))%"
         let valueAttrs: [NSAttributedString.Key: Any] = [.font: valueFont, .foregroundColor: NSColor.white]
         let valueSize = (value as NSString).size(withAttributes: valueAttrs)
-        let reservedValueSize = max(valueSize.width, ("99%" as NSString).size(withAttributes: valueAttrs).width)
+        let reservedValueSize = max(valueSize.width, ("100%" as NSString).size(withAttributes: valueAttrs).width)
         let symbolWidth: CGFloat = style == .readable ? 20 : 18
         let gap: CGFloat = style == .readable ? 5 : 4
         let height: CGFloat = style == .readable ? 22 : 20
@@ -582,6 +723,9 @@ enum MenuBarRenderer {
         snapshot.memoryUsed = 100
         snapshot.memoryTotal = 100
         snapshot.memoryPressure = .normal
+        snapshot.cpuTemperature = 125
+        snapshot.gpuTemperature = 125
+        snapshot.batteryTemperature = 125
         snapshot.netDownBytesPerSec = 1_000_000_000
         snapshot.netUpBytesPerSec = 1_000_000_000
         var power = PowerReading()
@@ -605,5 +749,40 @@ enum MenuBarRenderer {
     private static func percent(_ fraction: Double) -> String {
         let value = Int((max(0, min(1, fraction)) * 100).rounded())
         return "\(value)%"
+    }
+
+    private static func temperatureCompact(_ celsius: Double) -> String {
+        let unit = TemperatureUnit(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.temperatureUnit) ?? "")
+            ?? .celsius
+        return MetricFormat.temperatureCompact(celsius, unit: unit)
+    }
+
+    private static func temperatureLabel(_ component: String) -> String {
+        let unit = TemperatureUnit(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.temperatureUnit) ?? "")
+            ?? .celsius
+        return component + MetricFormat.temperatureUnitSuffix(unit)
+    }
+
+    private static func combinedComponentLabel(_ component: String,
+                                               hasPrimary: Bool,
+                                               hasTemperature: Bool) -> String {
+        if hasPrimary { return component }
+        return hasTemperature ? temperatureLabel(component) : component
+    }
+
+    private static func combinedComponentValue(primary: String?, temperature: String?) -> String? {
+        var values: [String] = []
+        if let primary { values.append(primary) }
+        if let temperature { values.append(temperature) }
+        return values.isEmpty ? nil : values.joined(separator: " ")
+    }
+
+    private static func minimumCombinedValue(primary: Bool, temperature: Bool) -> String {
+        switch (primary, temperature) {
+        case (true, true): return "100% 999°"
+        case (true, false): return "100%"
+        case (false, true): return "999°"
+        case (false, false): return ""
+        }
     }
 }

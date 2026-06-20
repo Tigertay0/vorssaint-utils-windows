@@ -53,9 +53,9 @@ struct SystemSnapshot {
 }
 
 /// Reads temperatures (SMC), CPU/GPU usage, memory, network and power on a
-/// background queue. Runs while the panel is visible (full readings, including
-/// temperatures and GPU) and/or while a menu bar metric is enabled (light
-/// readings only). When nothing needs it, the timer stops — zero idle cost.
+/// background queue. Runs while the panel is visible (full readings) and/or
+/// while a menu bar metric is enabled (only the readings that metric needs).
+/// When nothing needs it, the timer stops — zero idle cost.
 final class SystemMonitor: ObservableObject {
     static let shared = SystemMonitor()
 
@@ -76,6 +76,7 @@ final class SystemMonitor: ObservableObject {
     private var gpuKeys: [SMCClient.Key] = []
     private var batteryKeys: [SMCClient.Key] = []
     private var tempKeysPrepared = false
+    private var cpuTemperaturePlatform: CPUTemperaturePlatform = .generic
 
     // Samplers
     private let networkSampler = NetworkSampler()
@@ -197,9 +198,13 @@ final class SystemMonitor: ObservableObject {
         let needNetwork = full || defaults.bool(forKey: DefaultsKey.menuBarNetwork)
         let needPower = full || defaults.bool(forKey: DefaultsKey.menuBarPower) || defaults.bool(forKey: DefaultsKey.menuBarBattery)
         let needGPU = full || defaults.bool(forKey: DefaultsKey.menuBarGPU)
+        let needCPUTemperature = full || defaults.bool(forKey: DefaultsKey.menuBarCPUTemperature)
+        let needGPUTemperature = full || defaults.bool(forKey: DefaultsKey.menuBarGPUTemperature)
+        let needBatteryTemperature = full || defaults.bool(forKey: DefaultsKey.menuBarBatteryTemperature)
+        let needTemperature = needCPUTemperature || needGPUTemperature || needBatteryTemperature
         queue.async { [weak self] in
             guard let self else { return }
-            self.prepareIfNeeded(full: full)
+            self.prepareIfNeeded(needTemperature: needTemperature)
             let tick = self.tickCount
             self.tickCount &+= 1
 
@@ -236,10 +241,10 @@ final class SystemMonitor: ObservableObject {
                 if let charge = power.chargePercent { self.batteryHistory.push(Double(charge) / 100.0) }
             }
 
-            // GPU usage is also wanted when pinned to the menu bar; temperatures
-            // only matter while the panel is open. The GPU read is the priciest,
-            // so in menu-bar-only mode it is throttled (gpuLightStride) and the
-            // last value carried forward so the menu bar number stays stable.
+            // GPU usage is also wanted when pinned to the menu bar. The GPU read
+            // is the priciest, so in menu-bar-only mode it is throttled
+            // (gpuLightStride) and the last value carried forward so the menu
+            // bar number stays stable.
             if needGPU {
                 if full || tick % self.gpuLightStride == 0 {
                     self.lastGPUUsage = Self.readGPUUsage()
@@ -247,9 +252,13 @@ final class SystemMonitor: ObservableObject {
                 }
                 next.gpuUsage = self.lastGPUUsage
             }
-            if full {
-                next.cpuTemperature = self.maxTemperature(of: self.cpuKeys)
+            if needCPUTemperature {
+                next.cpuTemperature = self.cpuTemperature()
+            }
+            if needGPUTemperature {
                 next.gpuTemperature = self.maxTemperature(of: self.gpuKeys)
+            }
+            if needBatteryTemperature {
                 next.batteryTemperature = self.maxTemperature(of: self.batteryKeys)
             }
 
@@ -276,14 +285,16 @@ final class SystemMonitor: ObservableObject {
     // MARK: - Sensor preparation
 
     /// Opens the SMC lazily. Temperature key discovery is heavier (it enumerates
-    /// every SMC key) so it waits until a full panel sample.
-    private func prepareIfNeeded(full: Bool) {
+    /// every SMC key) so it waits until the panel or a pinned temperature metric
+    /// actually needs it.
+    private func prepareIfNeeded(needTemperature: Bool) {
         if !smcTried {
             smcTried = true
             smc = SMCClient()
+            cpuTemperaturePlatform = TemperatureSensorSelector.currentPlatform()
             powerSampler = PowerSampler(smc: smc)
         }
-        guard full, !tempKeysPrepared else { return }
+        guard needTemperature, !tempKeysPrepared else { return }
         tempKeysPrepared = true
         guard let client = smc else { return }
 
@@ -294,6 +305,16 @@ final class SystemMonitor: ObservableObject {
         cpuKeys = all.filter { $0.name.hasPrefix("Tp") || $0.name.hasPrefix("Te") }
         gpuKeys = all.filter { $0.name.hasPrefix("Tg") }
         batteryKeys = all.filter { $0.name.hasPrefix("TB") }
+    }
+
+    private func cpuTemperature() -> Double? {
+        guard let smc else { return nil }
+        let readings = cpuKeys.compactMap { key -> (key: String, value: Double)? in
+            guard let value = smc.readValue(key) else { return nil }
+            return (key.name, value)
+        }
+        return TemperatureSensorSelector.displayedCPUTemperature(readings: readings,
+                                                                 platform: cpuTemperaturePlatform)
     }
 
     private func maxTemperature(of keys: [SMCClient.Key]) -> Double? {

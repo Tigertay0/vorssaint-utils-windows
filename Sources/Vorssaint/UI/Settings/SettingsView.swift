@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import ServiceManagement
 import SwiftUI
 
@@ -551,18 +552,59 @@ struct ReleaseNotesSettings: View {
                     .tracking(1.2)
             }
             ForEach(Array(section.items.enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .top, spacing: 9) {
-                    Image(systemName: iconName(for: section.title))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                        .frame(width: 18, alignment: .center)
-                    Text(item)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                releaseItem(item, sectionTitle: section.title)
             }
         }
+    }
+
+    @ViewBuilder
+    private func releaseItem(_ item: ReleaseNoteItem, sectionTitle: String) -> some View {
+        switch item {
+        case let .bullet(text):
+            HStack(alignment: .top, spacing: 9) {
+                Image(systemName: iconName(for: sectionTitle))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 18, alignment: .center)
+                Text(text)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case let .image(image):
+            if let nsImage = releaseNoteImage(image) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(.quaternary, lineWidth: 1)
+                    )
+                    .accessibilityLabel(image.alt)
+                    .padding(.leading, 27)
+            }
+        }
+    }
+
+    private func releaseNoteImage(_ image: ReleaseNoteImage) -> NSImage? {
+        var path = image.path
+        if let resourcesRange = path.range(of: "Resources/") {
+            path = String(path[resourcesRange.lowerBound...])
+        }
+        if path.hasPrefix("Resources/") {
+            path.removeFirst("Resources/".count)
+        }
+        let nsPath = path as NSString
+        let ext = nsPath.pathExtension
+        let name = (nsPath.deletingPathExtension as NSString).lastPathComponent
+        let directory = nsPath.deletingLastPathComponent
+        guard !name.isEmpty, !ext.isEmpty else { return nil }
+        let subdirectory = directory.isEmpty || directory == "." ? nil : directory
+        guard let url = Bundle.main.url(forResource: name,
+                                        withExtension: ext,
+                                        subdirectory: subdirectory) else { return nil }
+        return NSImage(contentsOf: url)
     }
 
     private func iconName(for title: String) -> String {

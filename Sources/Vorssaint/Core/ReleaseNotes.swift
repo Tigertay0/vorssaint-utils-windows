@@ -56,7 +56,7 @@ struct ReleaseNotes {
 
         var sections: [ReleaseNoteSection] = []
         var currentTitle = ""
-        var currentItems: [String] = []
+        var currentItems: [ReleaseNoteItem] = []
 
         func flushSection() {
             guard !currentItems.isEmpty, shouldDisplaySection(currentTitle) else { return }
@@ -74,9 +74,12 @@ struct ReleaseNotes {
 
             let trimmed = rawLine.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("- ") {
-                currentItems.append(clean(String(trimmed.dropFirst(2))))
-            } else if rawLine.hasPrefix("  "), !currentItems.isEmpty, !trimmed.isEmpty {
-                currentItems[currentItems.count - 1] += " " + clean(trimmed)
+                currentItems.append(.bullet(clean(String(trimmed.dropFirst(2)))))
+            } else if let image = image(in: trimmed) {
+                currentItems.append(.image(image))
+            } else if rawLine.hasPrefix("  "), !currentItems.isEmpty, !trimmed.isEmpty,
+                      case let .bullet(text) = currentItems[currentItems.count - 1] {
+                currentItems[currentItems.count - 1] = .bullet(text + " " + clean(trimmed))
             }
         }
         flushSection()
@@ -112,6 +115,23 @@ struct ReleaseNotes {
             .trimmingCharacters(in: .whitespaces)
     }
 
+    private static func image(in line: String) -> ReleaseNoteImage? {
+        guard line.hasPrefix("!["),
+              let altEnd = line[line.index(line.startIndex, offsetBy: 2)...].firstIndex(of: "]") else {
+            return nil
+        }
+        let linkStartIndex = line.index(after: altEnd)
+        guard linkStartIndex < line.endIndex,
+              line[linkStartIndex] == "(",
+              let linkEnd = line[line.index(after: linkStartIndex)...].firstIndex(of: ")") else {
+            return nil
+        }
+        let alt = String(line[line.index(line.startIndex, offsetBy: 2)..<altEnd])
+        let path = String(line[line.index(after: linkStartIndex)..<linkEnd])
+        guard !path.isEmpty else { return nil }
+        return ReleaseNoteImage(alt: alt, path: path)
+    }
+
     private static func shouldDisplaySection(_ title: String) -> Bool {
         let normalized = title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         return normalized != "website" && normalized != "links"
@@ -120,5 +140,22 @@ struct ReleaseNotes {
 
 struct ReleaseNoteSection {
     let title: String
-    let items: [String]
+    let items: [ReleaseNoteItem]
+
+    var bulletItems: [String] {
+        items.compactMap {
+            if case let .bullet(text) = $0 { return text }
+            return nil
+        }
+    }
+}
+
+enum ReleaseNoteItem: Equatable {
+    case bullet(String)
+    case image(ReleaseNoteImage)
+}
+
+struct ReleaseNoteImage: Equatable {
+    let alt: String
+    let path: String
 }

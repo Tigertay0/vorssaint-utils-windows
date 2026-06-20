@@ -64,6 +64,65 @@ struct MetricsTests {
         expectEqual(MetricFormat.temperature(0, unit: .celsius), "0 °C", "celsius freezing")
         expectEqual(MetricFormat.temperature(0, unit: .fahrenheit), "32 °F", "fahrenheit freezing")
         expectEqual(MetricFormat.temperature(41, unit: .fahrenheit), "106 °F", "fahrenheit rounds")
+        expectEqual(MetricFormat.temperatureCompact(49.6, unit: .celsius), "50°", "compact celsius rounds")
+        expectEqual(MetricFormat.temperatureCompact(49.6, unit: .fahrenheit), "121°", "compact fahrenheit rounds")
+        expectEqual(MetricFormat.temperatureUnitSuffix(.celsius), "°C", "celsius suffix is explicit")
+        expectEqual(MetricFormat.temperatureUnitSuffix(.fahrenheit), "°F", "fahrenheit suffix is explicit")
+
+        // MARK: Temperature sensor selection
+
+        expect(TemperatureSensorSelector.platform(brandString: "Apple M1") == .appleM1Family,
+               "Apple M1 uses the mapped CPU core sensor set")
+        expect(TemperatureSensorSelector.platform(brandString: "Apple M2 Pro") == .appleM2Family,
+               "Apple M2 Pro uses the mapped CPU core sensor set")
+        expect(TemperatureSensorSelector.platform(brandString: "Apple M3 Max") == .appleM3Family,
+               "Apple M3 Max uses the mapped CPU core sensor set")
+        expect(TemperatureSensorSelector.platform(brandString: "Apple M4 Ultra") == .appleM4Family,
+               "Apple M4 Ultra uses the mapped CPU core sensor set")
+        expect(TemperatureSensorSelector.platform(brandString: "Apple M5") == .appleM5Family,
+               "Apple M5 uses the mapped CPU core sensor set")
+        expect(TemperatureSensorSelector.platform(brandString: "Apple M10") == .generic,
+               "future unmapped Apple Silicon generations keep the generic CPU sensor path")
+        let m1CPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp09", 43.0), ("Tp01", 49.0), ("Tp02", 70.0)],
+            platform: .appleM1Family
+        )
+        expectClose(m1CPU ?? -1, 49.0, "M1 family uses hottest mapped CPU core")
+        let m2CPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp1h", 42.0), ("Tp0j", 52.0), ("Tp0k", 75.0)],
+            platform: .appleM2Family
+        )
+        expectClose(m2CPU ?? -1, 52.0, "M2 family uses hottest mapped CPU core")
+        let m3CPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Te05", 44.0), ("Tf4E", 53.0), ("Tf4F", 76.0)],
+            platform: .appleM3Family
+        )
+        expectClose(m3CPU ?? -1, 53.0, "M3 family uses hottest mapped CPU core")
+        let m4CPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp00", 44.5), ("Tp01", 51.6), ("Tp0W", 67.0), ("Te04", 43.2)],
+            platform: .appleM4Family
+        )
+        expectClose(m4CPU ?? -1, 51.6, "M4 family uses hottest mapped CPU core instead of auxiliary hotspots")
+        let m5CPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp00", 45.0), ("Tp0y", 54.0), ("Tp0z", 80.0)],
+            platform: .appleM5Family
+        )
+        expectClose(m5CPU ?? -1, 54.0, "M5 family uses hottest mapped CPU core")
+        let m4InvalidCPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp01", 0.5), ("Tp05", 130.0), ("Tp09", 49.25), ("Tp0W", 67.0)],
+            platform: .appleM4Family
+        )
+        expectClose(m4InvalidCPU ?? -1, 49.25, "mapped CPU core selection ignores invalid temperatures")
+        let m4FallbackCPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp00", 44.5), ("Tp0W", 67.0)],
+            platform: .appleM4Family
+        )
+        expectClose(m4FallbackCPU ?? -1, 67.0, "mapped CPU core selection falls back when no mapped sensor is available")
+        let genericCPU = TemperatureSensorSelector.displayedCPUTemperature(
+            readings: [("Tp00", 44.5), ("Tp01", 51.6)],
+            platform: .generic
+        )
+        expectClose(genericCPU ?? -1, 51.6, "generic CPU sensor selection preserves previous hottest behavior")
 
         // MARK: Uptime formatting
 
@@ -146,6 +205,17 @@ struct MetricsTests {
                "monitor default interval stays at 2 seconds")
         expect(registeredDefaults[DefaultsKey.temperatureUnit] as? String == TemperatureUnit.celsius.rawValue,
                "temperature defaults to Celsius")
+        expect(registeredDefaults[DefaultsKey.menuBarCPUTemperature] as? Bool == false,
+               "menu bar CPU temperature is opt-in")
+        expect(registeredDefaults[DefaultsKey.menuBarGPUTemperature] as? Bool == false,
+               "menu bar GPU temperature is opt-in")
+        expect(registeredDefaults[DefaultsKey.menuBarBatteryTemperature] as? Bool == false,
+               "menu bar battery temperature is opt-in")
+        expect(registeredDefaults[DefaultsKey.menuBarMetricOrder] as? String
+               == "cpu,cpuTemperature,gpu,gpuTemperature,memory,battery,batteryTemperature,network,power",
+               "menu bar metric order keeps temperature sensors next to their components")
+        expect(registeredDefaults[DefaultsKey.menuBarCombineTemperatures] as? Bool == true,
+               "menu bar combines usage and temperature by default")
         expect(registeredDefaults[DefaultsKey.menuBarLabelStyle] as? String == "compact",
                "menu bar label style defaults to compact")
         expect(registeredDefaults[DefaultsKey.menuBarMemoryStyle] as? String == "percent",
@@ -172,6 +242,14 @@ struct MetricsTests {
         expect(Defaults.sanitizedMenuBarLabelStyle("bad") == "compact", "invalid label style falls back to compact")
         expect(Defaults.sanitizedMenuBarMemoryStyle("dot") == "dot", "valid memory style is preserved")
         expect(Defaults.sanitizedMenuBarMemoryStyle("bad") == "percent", "invalid memory style falls back to percent")
+        expect(Defaults.sanitizedMenuBarMetricOrder("cpu,gpu,memory,network,battery,power")
+               == ["cpu", "gpu", "memory", "network", "battery", "power",
+                   "cpuTemperature", "gpuTemperature", "batteryTemperature"],
+               "menu bar metric order appends temperature sensors without rewriting existing saved order")
+        expect(Defaults.sanitizedMenuBarMetricOrder("temperature,cpu,cpu,bad")
+               == ["cpuTemperature", "gpuTemperature", "batteryTemperature",
+                   "cpu", "gpu", "memory", "battery", "network", "power"],
+               "menu bar metric order migrates the old generic temperature value")
         expect(Defaults.sanitizedBundleIdentifierList([" com.example.One ", "", "com.example.One", "com.example.Two"])
                == ["com.example.One", "com.example.Two"],
                "bundle id lists are trimmed and deduplicated")
@@ -427,6 +505,7 @@ struct MetricsTests {
 
         ### Added
         - Coffee shortcut in the menu panel.
+        ![Menu bar temperature metrics](Resources/Images/menu-bar-temperature-metrics.png)
 
         ### Website
         - Official site: [vorssaint.com](https://vorssaint.com).
@@ -441,12 +520,15 @@ struct MetricsTests {
         expect(notes.date == "2026-06-17", "release notes date is parsed")
         expect(notes.sections.count == 2, "release notes keep sections for the requested version")
         expect(notes.sections.first?.title == "Fixed", "release notes first section title is parsed")
-        expect(notes.sections.first?.items.first == "Shelf no longer shows an extra outline.",
+        expect(notes.sections.first?.bulletItems.first == "Shelf no longer shows an extra outline.",
                "release notes strip simple markdown emphasis")
-        expect(notes.sections.first?.items.dropFirst().first == "The update window opens centered on the visible screen.",
+        expect(notes.sections.first?.bulletItems.dropFirst().first == "The update window opens centered on the visible screen.",
                "release notes join continuation lines")
-        expect(notes.sections.last?.items == ["Coffee shortcut in the menu panel."],
+        expect(notes.sections.last?.bulletItems == ["Coffee shortcut in the menu panel."],
                "release notes stop before the next version")
+        expect(notes.sections.last?.items.last == .image(ReleaseNoteImage(alt: "Menu bar temperature metrics",
+                                                                          path: "Resources/Images/menu-bar-temperature-metrics.png")),
+               "release notes parse changelog images")
         expect(!notes.sections.contains(where: { $0.title == "Website" }),
                "release notes hide website sections from the feature list")
 

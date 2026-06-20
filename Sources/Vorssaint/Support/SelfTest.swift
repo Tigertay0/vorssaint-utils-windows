@@ -92,7 +92,9 @@ enum SensorDump {
             name.hasPrefix("Tp") || name.hasPrefix("Te") || name.hasPrefix("Tg")
                 || name.range(of: "^TB[0-9]T$", options: .regularExpression) != nil
         }
-        print("component  key   type   °C")
+        let cpuPlatform = TemperatureSensorSelector.currentPlatform()
+        let hasCPUCoreSet = TemperatureSensorSelector.hasCPUCoreSet(platform: cpuPlatform)
+        print("component    key   type   °C")
         for key in keys.sorted(by: { $0.name < $1.name }) {
             guard let value = smc.readValue(key), value > 1, value < 125 else { continue }
             let component: String
@@ -100,10 +102,12 @@ enum SensorDump {
                 component = "battery"
             } else if key.name.hasPrefix("Tg") {
                 component = "gpu"
+            } else if hasCPUCoreSet {
+                component = TemperatureSensorSelector.isCPUCoreKey(key.name, platform: cpuPlatform) ? "cpu-core" : "cpu-aux"
             } else {
                 component = "cpu"
             }
-            print(String(format: "%-9@  %@  %@  %6.2f",
+            print(String(format: "%-11@  %@  %@  %6.2f",
                          component as NSString, key.name, key.dataType, value))
         }
         exit(0)

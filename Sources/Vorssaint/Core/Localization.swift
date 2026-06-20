@@ -558,6 +558,8 @@ struct Strings {
     let tabMonitor: String
     let monitorMenuBarSection: String
     let monitorMenuBarCaption: String
+    let monitorCombineTemperatures: String
+    let monitorCombineTemperaturesCaption: String
     let monitorShowCPU: String
     let monitorShowMemory: String
     let monitorShowNetwork: String
@@ -599,6 +601,9 @@ struct Strings {
     let powerUnavailable: String
     let powerAdapterMaxFormat: String   // + rated watts, e.g. "30 W max"
     let monitorShowGPU: String
+    let monitorShowCPUTemperature: String
+    let monitorShowGPUTemperature: String
+    let monitorShowBatteryTemperature: String
     let monitorGraphsSection: String
     let monitorGraphsCaption: String
 
@@ -1134,6 +1139,8 @@ extension Strings {
         tabMonitor: "Monitor",
         monitorMenuBarSection: "Na barra de menus",
         monitorMenuBarCaption: "Escolha o que aparece ao lado do ícone na barra de menus.",
+        monitorCombineTemperatures: "Combinar uso e temperatura",
+        monitorCombineTemperaturesCaption: "Quando uso e temperatura do mesmo item estiverem ativos, mostra tudo em um bloco só.",
         monitorShowCPU: "CPU",
         monitorShowMemory: "Memória",
         monitorShowNetwork: "Rede",
@@ -1173,6 +1180,9 @@ extension Strings {
         powerUnavailable: "Métricas de energia indisponíveis neste Mac",
         powerAdapterMaxFormat: "%@ máx.",
         monitorShowGPU: "GPU",
+        monitorShowCPUTemperature: "Temperatura da CPU",
+        monitorShowGPUTemperature: "Temperatura da GPU",
+        monitorShowBatteryTemperature: "Temperatura da bateria",
         monitorGraphsSection: "Gráficos",
         monitorGraphsCaption: "Escolha quais métricas mostram um gráfico ao longo do tempo.",
 
@@ -1702,6 +1712,8 @@ extension Strings {
         tabMonitor: "Monitor",
         monitorMenuBarSection: "In the menu bar",
         monitorMenuBarCaption: "Choose what appears next to the icon in the menu bar.",
+        monitorCombineTemperatures: "Combine usage and temperature",
+        monitorCombineTemperaturesCaption: "When usage and temperature for the same item are enabled, show them in one block.",
         monitorShowCPU: "CPU",
         monitorShowMemory: "Memory",
         monitorShowNetwork: "Network",
@@ -1741,6 +1753,9 @@ extension Strings {
         powerUnavailable: "Power metrics unavailable on this Mac",
         powerAdapterMaxFormat: "%@ max",
         monitorShowGPU: "GPU",
+        monitorShowCPUTemperature: "CPU temperature",
+        monitorShowGPUTemperature: "GPU temperature",
+        monitorShowBatteryTemperature: "Battery temperature",
         monitorGraphsSection: "Graphs",
         monitorGraphsCaption: "Choose which metrics show a graph over time.",
 

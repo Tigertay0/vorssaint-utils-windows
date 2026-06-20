@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.8] - 2026-06-20
+
+### Added
+- CPU, GPU and battery temperatures can now be pinned to the menu bar as
+  metrics, using the selected Celsius or Fahrenheit setting.
+- Menu bar temperatures now combine with matching usage or battery charge by
+  default, with a setting to split them into separate CPU°C, GPU°C and BAT°C
+  blocks.
+
+![Menu bar temperature metrics](https://raw.githubusercontent.com/vorssaint/vorssaint-utils/main/Resources/Images/menu-bar-temperature-metrics.png)
+
 ## [3.0.7] - 2026-06-20
 
 ### Added

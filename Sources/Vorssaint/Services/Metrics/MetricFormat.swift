@@ -104,6 +104,24 @@ enum MetricFormat {
         }
     }
 
+    /// Compact temperature for tight surfaces like the menu bar. The settings
+    /// page still makes the active unit explicit.
+    static func temperatureCompact(_ celsius: Double, unit: TemperatureUnit) -> String {
+        switch unit {
+        case .celsius:
+            return String(format: "%.0f°", celsius)
+        case .fahrenheit:
+            return String(format: "%.0f°", celsius * 9 / 5 + 32)
+        }
+    }
+
+    static func temperatureUnitSuffix(_ unit: TemperatureUnit) -> String {
+        switch unit {
+        case .celsius: return "°C"
+        case .fahrenheit: return "°F"
+        }
+    }
+
     static func uptime(_ seconds: Int) -> String {
         let total = max(0, seconds)
         let days = total / 86_400

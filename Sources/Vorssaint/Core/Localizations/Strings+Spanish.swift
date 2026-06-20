@@ -454,6 +454,8 @@ extension Strings {
         tabMonitor: "Monitor",
         monitorMenuBarSection: "En la barra de menús",
         monitorMenuBarCaption: "Elige qué aparece junto al icono en la barra de menús.",
+        monitorCombineTemperatures: "Combinar uso y temperatura",
+        monitorCombineTemperaturesCaption: "Cuando el uso y la temperatura del mismo elemento estén activos, se muestran en un solo bloque.",
         monitorShowCPU: "CPU",
         monitorShowMemory: "Memoria",
         monitorShowNetwork: "Red",
@@ -493,6 +495,9 @@ extension Strings {
         powerUnavailable: "Métricas de energía no disponibles en este Mac",
         powerAdapterMaxFormat: "%@ máx.",
         monitorShowGPU: "GPU",
+        monitorShowCPUTemperature: "Temperatura de CPU",
+        monitorShowGPUTemperature: "Temperatura de GPU",
+        monitorShowBatteryTemperature: "Temperatura de batería",
         monitorGraphsSection: "Gráficas",
         monitorGraphsCaption: "Elige qué métricas muestran una gráfica a lo largo del tiempo.",
 
