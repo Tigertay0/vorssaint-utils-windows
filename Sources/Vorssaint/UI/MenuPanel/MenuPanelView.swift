@@ -72,6 +72,7 @@ struct MenuPanelView: View {
             .frame(width: 332)
         }
         .frame(width: 332, height: min(contentHeight == 0 ? 480 : contentHeight, maxHeight))
+        .panelGlassSurface()
     }
 
     private var navigablePanel: some View {
@@ -93,6 +94,7 @@ struct MenuPanelView: View {
         }
         .padding(12)
         .frame(width: 332, height: navigablePanelHeight)
+        .panelGlassSurface()
     }
 
     /// The major sections in the user's saved order. Reading `sectionOrderRaw`
@@ -197,7 +199,11 @@ struct MenuPanelView: View {
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(0.055))
+                .fill(PanelSurface.cardFill(for: colorScheme))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
         )
     }
 
@@ -298,11 +304,11 @@ struct MenuPanelView: View {
                 .frame(maxWidth: .infinity, minHeight: 28)
                 .background(
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Color.primary.opacity(0.055))
+                        .fill(PanelSurface.cardFill(for: colorScheme))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.055), lineWidth: 0.8)
+                        .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.8)
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
@@ -312,7 +318,7 @@ struct MenuPanelView: View {
 }
 
 private enum UtilityPanelItem: String, PanelOrderItem, Identifiable {
-    case homebrew, uninstaller, cleanURL, cleaning
+    case homebrew, media, uninstaller, cleanURL, cleaning
 
     var id: String { rawValue }
 }
@@ -323,10 +329,12 @@ struct UtilitiesSection: View {
     @State private var showUninstaller = false
     @State private var showURLCleaner = false
     @State private var showHomebrewPanel = false
+    @State private var showMediaPanel = false
     @AppStorage(DefaultsKey.panelUtilityCleaning) private var showCleaning = true
     @AppStorage(DefaultsKey.panelUtilityURLCleaner) private var showCleanURL = true
     @AppStorage(DefaultsKey.panelUtilityUninstaller) private var showUninstallerAction = true
     @AppStorage(DefaultsKey.panelUtilityHomebrew) private var showHomebrew = true
+    @AppStorage(DefaultsKey.panelUtilityMedia) private var showMedia = true
     @AppStorage(DefaultsKey.panelUtilityOrder) private var utilityOrderRaw = ""
     @State private var draggingItem: UtilityPanelItem?
     var collapsible = true
@@ -335,7 +343,7 @@ struct UtilitiesSection: View {
     var body: some View {
         PanelSection(.utilities, title: l10n.s.utilitiesSection, collapsible: collapsible,
                      supportsEditing: true,
-                     editButtonVisible: !showUninstaller && !showURLCleaner && !showHomebrewPanel,
+                     editButtonVisible: !showUninstaller && !showURLCleaner && !showHomebrewPanel && !showMediaPanel,
                      resetAction: resetPanelDefaults) { editing in
             if showUninstaller {
                 PanelUninstallerView {
@@ -349,6 +357,11 @@ struct UtilitiesSection: View {
                 PanelHomebrewView {
                     PanelInteractionState.shared.keepsPopoverOpen = false
                     showHomebrewPanel = false
+                }
+            } else if showMediaPanel {
+                PanelMediaView {
+                    PanelInteractionState.shared.keepsPopoverOpen = false
+                    showMediaPanel = false
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
@@ -366,12 +379,19 @@ struct UtilitiesSection: View {
         .onChange(of: showHomebrewPanel) { _, shown in
             if shown {
                 PanelInteractionState.shared.keepsPopoverOpen = true
-            } else if !showUninstaller && !showURLCleaner {
+            } else if !showUninstaller && !showURLCleaner && !showMediaPanel {
+                PanelInteractionState.shared.keepsPopoverOpen = false
+            }
+        }
+        .onChange(of: showMediaPanel) { _, shown in
+            if shown {
+                PanelInteractionState.shared.keepsPopoverOpen = true
+            } else if !showUninstaller && !showURLCleaner && !showHomebrewPanel {
                 PanelInteractionState.shared.keepsPopoverOpen = false
             }
         }
         .onDisappear {
-            if !showUninstaller && !showURLCleaner && !showHomebrewPanel {
+            if !showUninstaller && !showURLCleaner && !showHomebrewPanel && !showMediaPanel {
                 PanelInteractionState.shared.keepsPopoverOpen = false
             }
         }
@@ -407,6 +427,7 @@ struct UtilitiesSection: View {
     private func isVisible(_ item: UtilityPanelItem) -> Bool {
         switch item {
         case .homebrew: return showHomebrew
+        case .media: return showMedia
         case .uninstaller: return showUninstallerAction
         case .cleanURL: return showCleanURL
         case .cleaning: return showCleaning
@@ -427,6 +448,17 @@ struct UtilitiesSection: View {
                                 action: {
                                     PanelInteractionState.shared.keepsPopoverOpen = true
                                     showHomebrewPanel = true
+                                })
+        case .media:
+            UtilityActionButton(title: l10n.s.mediaName,
+                                caption: l10n.s.mediaEnableCaption,
+                                systemImage: "photo.on.rectangle.angled",
+                                isEditing: editing,
+                                showsDragHandle: true,
+                                visibility: $showMedia,
+                                action: {
+                                    PanelInteractionState.shared.keepsPopoverOpen = true
+                                    showMediaPanel = true
                                 })
         case .uninstaller:
             UtilityActionButton(title: l10n.s.uninstallerName,
@@ -468,6 +500,7 @@ struct UtilitiesSection: View {
         PanelLayout.resetItemOrder(key: DefaultsKey.panelUtilityOrder)
         utilityOrderRaw = ""
         showHomebrew = true
+        showMedia = true
         showUninstallerAction = true
         showCleanURL = true
         showCleaning = true

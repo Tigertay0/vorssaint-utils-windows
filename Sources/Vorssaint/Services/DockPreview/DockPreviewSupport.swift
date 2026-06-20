@@ -50,6 +50,14 @@ struct DockPreviewAvailability: Equatable {
     let blockedReason: DockPreviewBlockedReason?
 }
 
+struct DockPreviewCloseState: Equatable {
+    let remainingWindowIDs: [CGWindowID]
+    let selectedWindowID: CGWindowID?
+    let activePeekWindowID: CGWindowID?
+    let desiredWindowID: CGWindowID?
+    let shouldEndSession: Bool
+}
+
 /// A thin keep-alive region connecting a Dock icon to its preview panel.
 ///
 /// Intentionally *not* the padded union of the icon and panel: a union spans the
@@ -221,5 +229,23 @@ enum DockPreviewSupport {
 
     static func shouldRestoreOnEnd(committed: Bool) -> Bool {
         !committed
+    }
+
+    static func closeState(afterRemoving closedWindowID: CGWindowID,
+                           windowIDs: [CGWindowID],
+                           selectedWindowID: CGWindowID?,
+                           activePeekWindowID: CGWindowID?,
+                           desiredWindowID: CGWindowID?) -> DockPreviewCloseState {
+        let remaining = windowIDs.filter { $0 != closedWindowID }
+        let removedSelection = selectedWindowID == closedWindowID
+        let removedPeek = activePeekWindowID == closedWindowID
+        let removedDesired = desiredWindowID == closedWindowID
+        return DockPreviewCloseState(
+            remainingWindowIDs: remaining,
+            selectedWindowID: removedSelection ? nil : selectedWindowID,
+            activePeekWindowID: removedPeek ? nil : activePeekWindowID,
+            desiredWindowID: removedDesired ? nil : desiredWindowID,
+            shouldEndSession: remaining.isEmpty
+        )
     }
 }

@@ -206,6 +206,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             // Keep the panel alive next to fullscreen apps and on any Space —
             // without this it blinks shut when another display is fullscreen.
             window.collectionBehavior.insert([.fullScreenAuxiliary, .canJoinAllSpaces])
+            if let panel = window as? NSPanel {
+                panel.hidesOnDeactivate = false
+            }
             window.contentView?.layoutSubtreeIfNeeded()
             window.makeKey()
             animatePopoverOpen(window)

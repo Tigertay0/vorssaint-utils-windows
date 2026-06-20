@@ -43,6 +43,7 @@ enum DefaultsKey {
     static let panelUtilityURLCleaner = "panelUtilityURLCleaner"
     static let panelUtilityUninstaller = "panelUtilityUninstaller"
     static let panelUtilityHomebrew = "panelUtilityHomebrew"
+    static let panelUtilityMedia = "panelUtilityMedia"
     static let panelControlMouseScroll = "panelControlMouseScroll"
     static let panelControlSwitcher = "panelControlSwitcher"
     static let panelControlDockPreview = "panelControlDockPreview"
@@ -62,6 +63,8 @@ enum DefaultsKey {
     static let menuBarNetwork = "menuBarNetwork"
     static let menuBarBattery = "menuBarBattery"
     static let menuBarPower = "menuBarPower"
+    static let menuBarPreset = "menuBarPreset"           // dense
+    static let menuBarMetricOrder = "menuBarMetricOrder" // comma-separated MenuBarMetric raw values
     static let menuBarLabelStyle = "menuBarLabelStyle"     // compact | classic
     static let menuBarMemoryStyle = "menuBarMemoryStyle"   // dot | percent | both
     static let monitorInterval = "monitorIntervalSeconds"  // sampling cadence: 1/2/5
@@ -106,6 +109,28 @@ enum DefaultsKey {
     static let panelCollapsedSections = "panelCollapsedSections"
     static let panelCollapsedResetVersion = "panelCollapsedResetVersion"
 
+    // Media utility — local video, GIF, image and OCR tools.
+    static let mediaLastTool = "mediaLastTool"
+    static let mediaVideoStart = "mediaVideoStart"
+    static let mediaVideoEnd = "mediaVideoEnd"
+    static let mediaVideoQuality = "mediaVideoQuality"
+    static let mediaVideoMaxDimension = "mediaVideoMaxDimension"
+    static let mediaVideoFPS = "mediaVideoFPS"
+    static let mediaVideoKeepAudio = "mediaVideoKeepAudio"
+    static let mediaVideoCodec = "mediaVideoCodec"
+    static let mediaGIFStart = "mediaGIFStart"
+    static let mediaGIFEnd = "mediaGIFEnd"
+    static let mediaGIFQuality = "mediaGIFQuality"
+    static let mediaGIFWidth = "mediaGIFWidth"
+    static let mediaGIFFPS = "mediaGIFFPS"
+    static let mediaGIFLoops = "mediaGIFLoops"
+    static let mediaImageQuality = "mediaImageQuality"
+    static let mediaImageMaxDimension = "mediaImageMaxDimension"
+    static let mediaImageFormat = "mediaImageFormat"
+    static let mediaImageStripMetadata = "mediaImageStripMetadata"
+    static let mediaTextAccurate = "mediaTextAccurate"
+    static let mediaTextLanguageCorrection = "mediaTextLanguageCorrection"
+
     // Dev-build only: force the "update available" UI for local testing.
     static let simulateUpdate = "simulateUpdate"
 }
@@ -146,6 +171,7 @@ enum Defaults {
     static let allowedDurations = [0, 15, 30, 60, 120, 240, 480]
     static let allowedBatteryLimits = [0, 5, 10, 15, 20]
     static let allowedMonitorIntervals = [1, 2, 5]
+    static let allowedMenuBarPresets = ["dense"]
     static let allowedMenuBarLabelStyles = ["compact", "classic"]
     static let allowedMenuBarMemoryStyles = ["dot", "percent", "both"]
     static let allowedPreviewSizes = ["normal", "large", "xlarge"]
@@ -178,6 +204,7 @@ enum Defaults {
         DefaultsKey.panelUtilityURLCleaner: true,
         DefaultsKey.panelUtilityUninstaller: true,
         DefaultsKey.panelUtilityHomebrew: true,
+        DefaultsKey.panelUtilityMedia: true,
         DefaultsKey.panelControlMouseScroll: true,
         DefaultsKey.panelControlSwitcher: true,
         DefaultsKey.panelControlDockPreview: true,
@@ -193,6 +220,8 @@ enum Defaults {
         // they don't want.
         DefaultsKey.monitorInterval: 2,
         DefaultsKey.temperatureUnit: TemperatureUnit.celsius.rawValue,
+        DefaultsKey.menuBarPreset: "dense",
+        DefaultsKey.menuBarMetricOrder: "cpu,gpu,memory,network,battery,power",
         DefaultsKey.menuBarLabelStyle: "compact",
         DefaultsKey.menuBarMemoryStyle: "percent",
         DefaultsKey.monitorShowSystem: true,
@@ -221,6 +250,26 @@ enum Defaults {
         DefaultsKey.monitorPwrAdapter: true,
         DefaultsKey.monitorPwrBattery: true,
         DefaultsKey.monitorPwrHealth: true,
+        DefaultsKey.mediaLastTool: MediaTool.videoCompressor.rawValue,
+        DefaultsKey.mediaVideoStart: 0.0,
+        DefaultsKey.mediaVideoEnd: 0.0,
+        DefaultsKey.mediaVideoQuality: 0.68,
+        DefaultsKey.mediaVideoMaxDimension: 1280,
+        DefaultsKey.mediaVideoFPS: 30.0,
+        DefaultsKey.mediaVideoKeepAudio: true,
+        DefaultsKey.mediaVideoCodec: MediaVideoCodec.h264.rawValue,
+        DefaultsKey.mediaGIFStart: 0.0,
+        DefaultsKey.mediaGIFEnd: 0.0,
+        DefaultsKey.mediaGIFQuality: 0.74,
+        DefaultsKey.mediaGIFWidth: 720,
+        DefaultsKey.mediaGIFFPS: 12.0,
+        DefaultsKey.mediaGIFLoops: true,
+        DefaultsKey.mediaImageQuality: 0.72,
+        DefaultsKey.mediaImageMaxDimension: 1600,
+        DefaultsKey.mediaImageFormat: MediaImageFormat.jpeg.rawValue,
+        DefaultsKey.mediaImageStripMetadata: true,
+        DefaultsKey.mediaTextAccurate: true,
+        DefaultsKey.mediaTextLanguageCorrection: true,
     ]
 
     static func register() {
@@ -237,6 +286,25 @@ enum Defaults {
 
     static func sanitizedMonitorInterval(_ seconds: Int) -> Int {
         allowedMonitorIntervals.contains(seconds) ? seconds : 2
+    }
+
+    static func sanitizedMenuBarPreset(_ preset: String) -> String {
+        allowedMenuBarPresets.contains(preset) ? preset : "dense"
+    }
+
+    static func sanitizedMenuBarMetricOrder(_ raw: String) -> [String] {
+        let defaults = ["cpu", "gpu", "memory", "network", "battery", "power"]
+        var seen = Set<String>()
+        var result: [String] = []
+        for value in raw.split(separator: ",").map({ String($0) }) {
+            guard defaults.contains(value), !seen.contains(value) else { continue }
+            seen.insert(value)
+            result.append(value)
+        }
+        for value in defaults where !seen.contains(value) {
+            result.append(value)
+        }
+        return result
     }
 
     static func sanitizedMenuBarLabelStyle(_ style: String) -> String {

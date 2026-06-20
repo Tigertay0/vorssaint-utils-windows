@@ -332,7 +332,9 @@ private struct MenuBarSetupStep: View {
 
             Spacer()
         }
-        .onAppear { SystemMonitor.shared.panelDidAppear() }
+        .onAppear {
+            SystemMonitor.shared.panelDidAppear()
+        }
         .onDisappear { SystemMonitor.shared.panelDidDisappear() }
     }
 

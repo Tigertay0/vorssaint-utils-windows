@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import CoreGraphics
 import Foundation
 
 // Standalone unit tests for pure helpers. Compiled without IOKit or UI by
@@ -119,6 +120,8 @@ struct MetricsTests {
                "panel uninstaller utility is visible by default")
         expect(registeredDefaults[DefaultsKey.panelUtilityHomebrew] as? Bool == true,
                "panel Homebrew utility is visible by default")
+        expect(registeredDefaults[DefaultsKey.panelUtilityMedia] as? Bool == true,
+               "panel Media utility is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlMouseScroll] as? Bool == true,
                "panel mouse scroll control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlSwitcher] as? Bool == true,
@@ -147,6 +150,12 @@ struct MetricsTests {
                "menu bar label style defaults to compact")
         expect(registeredDefaults[DefaultsKey.menuBarMemoryStyle] as? String == "percent",
                "memory menu bar style defaults to percent")
+        expect(registeredDefaults[DefaultsKey.mediaLastTool] as? String == MediaTool.videoCompressor.rawValue,
+               "Media defaults to video compressor")
+        expect(registeredDefaults[DefaultsKey.mediaVideoCodec] as? String == MediaVideoCodec.h264.rawValue,
+               "Media video codec defaults to H.264")
+        expect(registeredDefaults[DefaultsKey.mediaImageFormat] as? String == MediaImageFormat.jpeg.rawValue,
+               "Media image format defaults to JPEG")
         expect((registeredDefaults[DefaultsKey.autoQuitExceptions] as? [String]) == Defaults.mandatoryAutoQuitExceptionBundleIDs,
                "Finder stays in the default auto-quit exception list")
         expect(registeredDefaults[DefaultsKey.panelCollapsedSections] == nil,
@@ -170,9 +179,39 @@ struct MetricsTests {
                == [Defaults.finderBundleIdentifier, "com.example.One"],
                "Finder is mandatory in the auto-quit exception list")
         expect(Defaults.sanitizedPanelItemOrder("uninstaller,homebrew,homebrew,bad",
-                                                defaultOrder: ["homebrew", "uninstaller", "cleanURL", "cleaning"])
-               == ["uninstaller", "homebrew", "cleanURL", "cleaning"],
+                                                defaultOrder: ["homebrew", "media", "uninstaller", "cleanURL", "cleaning"])
+               == ["uninstaller", "homebrew", "media", "cleanURL", "cleaning"],
                "panel item order keeps saved valid items first and appends defaults")
+        let trim = MediaSupport.sanitizedTrim(start: -5, end: 3, assetDuration: 10)
+        expect(trim == MediaTrimRange(start: 0, end: 3),
+               "Media trim clamps negative start")
+        let fullTrim = MediaSupport.sanitizedTrim(start: 2, end: 0, assetDuration: 10)
+        expect(fullTrim == MediaTrimRange(start: 2, end: 10),
+               "Media trim treats zero end as the source duration")
+        expectClose(MediaSupport.sanitizedQuality(.infinity), 0.7,
+                    "Media invalid quality falls back")
+        expectClose(MediaSupport.sanitizedQuality(0.02), 0.1,
+                    "Media quality clamps low")
+        expectClose(MediaSupport.sanitizedQuality(2), 1,
+                    "Media quality clamps high")
+        expectClose(MediaSupport.sanitizedFPS(90), 60,
+                    "Media FPS clamps high")
+        expectClose(MediaSupport.sanitizedFPS(-1), 12,
+                    "Media FPS falls back when invalid")
+        expect(MediaSupport.sanitizedPixelDimension(641, fallback: 1280) == 640,
+               "Media pixel dimensions stay even")
+        expect(MediaSupport.scaledEvenSize(source: CGSize(width: 1920, height: 1080), maxDimension: 1000)
+               == CGSize(width: 1000, height: 562),
+               "Media scaling keeps aspect ratio with even dimensions")
+        expect(MediaSupport.scaledVideoSize(source: CGSize(width: 320, height: 180), maxDimension: 180)
+               == CGSize(width: 176, height: 96),
+               "Media video scaling uses encoder-friendly dimensions")
+        let mediaInput = URL(fileURLWithPath: "/tmp/Clip.mov")
+        expect(MediaSupport.outputURL(for: mediaInput, suffix: "-compressed", fileExtension: "mp4").path
+               == "/tmp/Clip-compressed.mp4",
+               "Media output names keep clear suffixes")
+        expect(MediaSupport.recognitionLanguages(for: "pt-BR") == ["pt-BR", "en-US"],
+               "Media OCR language defaults include the app language and English")
         expectClose(Defaults.sanitizedAppVolume(1.5), 1.5, "valid app volume is preserved")
         expectClose(Defaults.sanitizedAppVolume(3), 2, "high app volume clamps to boost maximum")
         expectClose(Defaults.sanitizedAppVolume(-1), 0, "negative app volume clamps to mute")
@@ -340,6 +379,39 @@ struct MetricsTests {
         expect(DockPreviewSupport.dockProximityBand(tileSize: 200)
                > DockPreviewSupport.dockProximityBand(tileSize: 64),
                "Dock proximity band grows with the Dock tile size")
+        let onePreviewSize = DockPreviewSupport.panelSize(itemCount: 1, screenVisibleFrame: screen)
+        let twoPreviewSize = DockPreviewSupport.panelSize(itemCount: 2, screenVisibleFrame: screen)
+        expect(twoPreviewSize.width > onePreviewSize.width,
+               "Dock Preview panel size shrinks when a card is removed")
+        let closeMiddle = DockPreviewSupport.closeState(afterRemoving: 22,
+                                                        windowIDs: [11, 22, 33],
+                                                        selectedWindowID: 22,
+                                                        activePeekWindowID: 22,
+                                                        desiredWindowID: 22)
+        expect(closeMiddle.remainingWindowIDs == [11, 33],
+               "Dock Preview close removes only the closed window")
+        expect(closeMiddle.selectedWindowID == nil
+               && closeMiddle.activePeekWindowID == nil
+               && closeMiddle.desiredWindowID == nil,
+               "Dock Preview close clears selection and peek for the closed window")
+        expect(!closeMiddle.shouldEndSession,
+               "Dock Preview close keeps the panel open when other windows remain")
+        let closeUnselected = DockPreviewSupport.closeState(afterRemoving: 22,
+                                                            windowIDs: [11, 22, 33],
+                                                            selectedWindowID: 11,
+                                                            activePeekWindowID: 33,
+                                                            desiredWindowID: 33)
+        expect(closeUnselected.selectedWindowID == 11
+               && closeUnselected.activePeekWindowID == 33
+               && closeUnselected.desiredWindowID == 33,
+               "Dock Preview close preserves selection and peek for other windows")
+        let closeLast = DockPreviewSupport.closeState(afterRemoving: 44,
+                                                      windowIDs: [44],
+                                                      selectedWindowID: 44,
+                                                      activePeekWindowID: nil,
+                                                      desiredWindowID: nil)
+        expect(closeLast.shouldEndSession && closeLast.remainingWindowIDs.isEmpty,
+               "Dock Preview close ends the panel when the last window is removed")
 
         // MARK: Release notes parsing
 

@@ -236,6 +236,7 @@ struct Strings {
     let dockPreviewMagnificationBlocked: String
     let dockPreviewDockUnavailable: String
     let dockPreviewAutohideBeta: String
+    let dockPreviewCloseWindow: String
     let dockPreviewIntroPeek: String
     let dockPreviewIntroSettingsHint: String
     let dockPreviewIntroLater: String
@@ -254,6 +255,7 @@ struct Strings {
     let cutPasteAutomationNote: String
     let cutReadyTitle: String
     let cutReadyHint: String
+    let cutCancel: String
     let cutDoneTitle: String
     let cutMovedSingular: String
     let cutMovedPluralFormat: String      // + count
@@ -390,6 +392,57 @@ struct Strings {
     let homebrewOperationHideDetails: String
     let homebrewOperationTechnicalLog: String
     let homebrewOperationProgressUnknown: String
+
+    // MARK: Feature — local media tools
+    let mediaName: String
+    let mediaEnableCaption: String
+    let mediaLocalNote: String
+    let mediaToolVideo: String
+    let mediaToolGIF: String
+    let mediaToolImage: String
+    let mediaToolText: String
+    let mediaSelectFile: String
+    let mediaDropHint: String
+    let mediaOutput: String
+    let mediaOutputAutomatic: String
+    let mediaChooseOutput: String
+    let mediaStartVideo: String
+    let mediaStartGIF: String
+    let mediaStartImage: String
+    let mediaStartText: String
+    let mediaCancel: String
+    let mediaStartTime: String
+    let mediaEndTime: String
+    let mediaQuality: String
+    let mediaCompressionLow: String
+    let mediaCompressionMedium: String
+    let mediaCompressionHigh: String
+    let mediaMaxSize: String
+    let mediaWidth: String
+    let mediaFPS: String
+    let mediaKeepAudio: String
+    let mediaCodec: String
+    let mediaFormat: String
+    let mediaStripMetadata: String
+    let mediaLoopGIF: String
+    let mediaOCRMode: String
+    let mediaOCRAccurate: String
+    let mediaOCRFast: String
+    let mediaLanguageCorrection: String
+    let mediaTextOutputNote: String
+    let mediaRunning: String
+    let mediaCompleted: String
+    let mediaCancelled: String
+    let mediaOpenInFinder: String
+    let mediaCopyText: String
+    let mediaRunAgain: String
+    let mediaEmptyText: String
+    let mediaResultSavedFormat: String
+    let mediaResultSizeFormat: String
+    let mediaErrorNoFile: String
+    let mediaErrorNoVideo: String
+    let mediaErrorSameOutput: String
+    let mediaErrorUnsupported: String
 
     // MARK: Feature — temporary shelf
     let shelfName: String
@@ -555,10 +608,14 @@ struct Strings {
     let obStepMenuBarTitle: String
     let obStepMenuBarBody: String
     let obStepMenuBarNote: String
+    let monitorMenuBarPresetLabel: String
+    let menuBarPresetReadable: String
+    let menuBarPresetDense: String
     let monitorLabelStyleLabel: String
     let menuBarLabelStyleCompact: String
     let menuBarLabelStyleClassic: String
     let monitorMemoryStyleLabel: String
+    let monitorMemoryPressureDot: String
     let memoryStyleDot: String
     let memoryStylePercent: String
     let memoryStyleBoth: String
@@ -769,6 +826,7 @@ extension Strings {
         dockPreviewMagnificationBlocked: "Desative a ampliação do Dock para usar.",
         dockPreviewDockUnavailable: "Não foi possível ler os itens do Dock.",
         dockPreviewAutohideBeta: "Beta. Você pode encontrar alguns bugs.",
+        dockPreviewCloseWindow: "Fechar janela",
         dockPreviewIntroPeek: "Passe o mouse em uma miniatura para espiar. Clique para abrir a janela.",
         dockPreviewIntroSettingsHint: "Você pode mudar isso depois em Ajustes › Switcher.",
         dockPreviewIntroLater: "Agora não",
@@ -786,6 +844,7 @@ extension Strings {
         cutPasteAutomationNote: "Na primeira vez, o macOS pede permissão para controlar o Finder.",
         cutReadyTitle: "Recortado",
         cutReadyHint: "na pasta de destino para mover",
+        cutCancel: "Cancelar recorte",
         cutDoneTitle: "Movido!",
         cutMovedSingular: "1 item movido",
         cutMovedPluralFormat: "%d itens movidos",
@@ -918,6 +977,56 @@ extension Strings {
         homebrewOperationHideDetails: "Ocultar detalhes",
         homebrewOperationTechnicalLog: "Detalhes técnicos",
         homebrewOperationProgressUnknown: "O Homebrew ainda não informou uma porcentagem.",
+
+        mediaName: "Media",
+        mediaEnableCaption: "Comprima vídeos e imagens, crie GIFs e extraia texto localmente.",
+        mediaLocalNote: "Local. Sem rede.",
+        mediaToolVideo: "Vídeo",
+        mediaToolGIF: "GIF",
+        mediaToolImage: "Imagem",
+        mediaToolText: "Texto",
+        mediaSelectFile: "Escolher arquivo",
+        mediaDropHint: "Arraste um arquivo aqui ou clique para escolher.",
+        mediaOutput: "Saída",
+        mediaOutputAutomatic: "Automática",
+        mediaChooseOutput: "Destino",
+        mediaStartVideo: "Comprimir vídeo",
+        mediaStartGIF: "Criar GIF",
+        mediaStartImage: "Comprimir imagem",
+        mediaStartText: "Extrair texto",
+        mediaCancel: "Cancelar",
+        mediaStartTime: "Início",
+        mediaEndTime: "Fim",
+        mediaQuality: "Compressão",
+        mediaCompressionLow: "Baixa",
+        mediaCompressionMedium: "Média",
+        mediaCompressionHigh: "Alta",
+        mediaMaxSize: "Tamanho",
+        mediaWidth: "Largura",
+        mediaFPS: "FPS",
+        mediaKeepAudio: "Manter áudio",
+        mediaCodec: "Codec",
+        mediaFormat: "Formato",
+        mediaStripMetadata: "Remover metadados",
+        mediaLoopGIF: "Repetir GIF",
+        mediaOCRMode: "OCR",
+        mediaOCRAccurate: "Preciso",
+        mediaOCRFast: "Rápido",
+        mediaLanguageCorrection: "Correção de idioma",
+        mediaTextOutputNote: "O texto extraído pode ser copiado e salvo em TXT.",
+        mediaRunning: "Processando",
+        mediaCompleted: "Concluído",
+        mediaCancelled: "Cancelado.",
+        mediaOpenInFinder: "Mostrar",
+        mediaCopyText: "Copiar texto",
+        mediaRunAgain: "Rodar de novo",
+        mediaEmptyText: "Nenhum texto encontrado.",
+        mediaResultSavedFormat: "Salvo como %@",
+        mediaResultSizeFormat: "%@ para %@",
+        mediaErrorNoFile: "Escolha um arquivo primeiro.",
+        mediaErrorNoVideo: "Este arquivo não tem trilha de vídeo.",
+        mediaErrorSameOutput: "Escolha um destino diferente do arquivo original.",
+        mediaErrorUnsupported: "Formato não suportado pelo macOS.",
 
         shelfName: "Área temporária",
         shelfEnable: "Área temporária para arrastar arquivos",
@@ -1072,10 +1181,14 @@ extension Strings {
         obStepMenuBarTitle: "Métricas na barra de menus",
         obStepMenuBarBody: "Escolha o que mostrar ao lado do ícone. A prévia acima muda em tempo real.",
         obStepMenuBarNote: "Novidade: blocos de Rede e Energia e gráficos no painel. Ajuste tudo depois em Ajustes › Monitor.",
+        monitorMenuBarPresetLabel: "Estilo",
+        menuBarPresetReadable: "Legível",
+        menuBarPresetDense: "Denso",
         monitorLabelStyleLabel: "Rótulos",
         menuBarLabelStyleCompact: "Compactos",
         menuBarLabelStyleClassic: "Clássicos",
         monitorMemoryStyleLabel: "Mostrar memória como",
+        monitorMemoryPressureDot: "Ponto de pressão",
         memoryStyleDot: "Ponto",
         memoryStylePercent: "%",
         memoryStyleBoth: "Ambos",
@@ -1281,6 +1394,7 @@ extension Strings {
         dockPreviewMagnificationBlocked: "Turn off Dock magnification to use this.",
         dockPreviewDockUnavailable: "Could not read Dock items.",
         dockPreviewAutohideBeta: "Beta. You may run into some bugs.",
+        dockPreviewCloseWindow: "Close window",
         dockPreviewIntroPeek: "Hover over a thumbnail to peek. Click to open the window.",
         dockPreviewIntroSettingsHint: "You can change this later in Settings › Switcher.",
         dockPreviewIntroLater: "Not now",
@@ -1298,6 +1412,7 @@ extension Strings {
         cutPasteAutomationNote: "The first time, macOS asks for permission to control Finder.",
         cutReadyTitle: "Cut",
         cutReadyHint: "in the destination folder to move",
+        cutCancel: "Cancel cut",
         cutDoneTitle: "Moved!",
         cutMovedSingular: "1 item moved",
         cutMovedPluralFormat: "%d items moved",
@@ -1430,6 +1545,56 @@ extension Strings {
         homebrewOperationHideDetails: "Hide details",
         homebrewOperationTechnicalLog: "Technical details",
         homebrewOperationProgressUnknown: "Homebrew has not reported a percentage yet.",
+
+        mediaName: "Media",
+        mediaEnableCaption: "Compress videos and images, make GIFs and extract text locally.",
+        mediaLocalNote: "Local. No network.",
+        mediaToolVideo: "Video",
+        mediaToolGIF: "GIF",
+        mediaToolImage: "Image",
+        mediaToolText: "Text",
+        mediaSelectFile: "Choose file",
+        mediaDropHint: "Drop a file here or click to choose one.",
+        mediaOutput: "Output",
+        mediaOutputAutomatic: "Automatic",
+        mediaChooseOutput: "Destination",
+        mediaStartVideo: "Compress video",
+        mediaStartGIF: "Make GIF",
+        mediaStartImage: "Compress image",
+        mediaStartText: "Extract text",
+        mediaCancel: "Cancel",
+        mediaStartTime: "Start",
+        mediaEndTime: "End",
+        mediaQuality: "Compression",
+        mediaCompressionLow: "Low",
+        mediaCompressionMedium: "Medium",
+        mediaCompressionHigh: "High",
+        mediaMaxSize: "Size",
+        mediaWidth: "Width",
+        mediaFPS: "FPS",
+        mediaKeepAudio: "Keep audio",
+        mediaCodec: "Codec",
+        mediaFormat: "Format",
+        mediaStripMetadata: "Remove metadata",
+        mediaLoopGIF: "Loop GIF",
+        mediaOCRMode: "OCR",
+        mediaOCRAccurate: "Accurate",
+        mediaOCRFast: "Fast",
+        mediaLanguageCorrection: "Language correction",
+        mediaTextOutputNote: "Extracted text can be copied and saved as TXT.",
+        mediaRunning: "Processing",
+        mediaCompleted: "Done",
+        mediaCancelled: "Cancelled.",
+        mediaOpenInFinder: "Show",
+        mediaCopyText: "Copy text",
+        mediaRunAgain: "Run again",
+        mediaEmptyText: "No text found.",
+        mediaResultSavedFormat: "Saved as %@",
+        mediaResultSizeFormat: "%@ to %@",
+        mediaErrorNoFile: "Choose a file first.",
+        mediaErrorNoVideo: "This file has no video track.",
+        mediaErrorSameOutput: "Choose a destination different from the original file.",
+        mediaErrorUnsupported: "Format not supported by macOS.",
 
         shelfName: "Shelf",
         shelfEnable: "Temporary area for dragging files",
@@ -1584,10 +1749,14 @@ extension Strings {
         obStepMenuBarTitle: "Metrics in the menu bar",
         obStepMenuBarBody: "Pick what to show next to the icon. The preview above updates live.",
         obStepMenuBarNote: "New: Network and Power blocks and graphs in the panel. Fine-tune it all later in Settings › Monitor.",
+        monitorMenuBarPresetLabel: "Style",
+        menuBarPresetReadable: "Readable",
+        menuBarPresetDense: "Dense",
         monitorLabelStyleLabel: "Labels",
         menuBarLabelStyleCompact: "Compact",
         menuBarLabelStyleClassic: "Classic",
         monitorMemoryStyleLabel: "Show memory as",
+        monitorMemoryPressureDot: "Pressure dot",
         memoryStyleDot: "Dot",
         memoryStylePercent: "%",
         memoryStyleBoth: "Both",

@@ -87,6 +87,7 @@ if (( TEST )); then
     rm -rf build
     mkdir -p build
     swiftc -O -target "$TARGET" -sdk "$SDK" \
+        Sources/Vorssaint/Services/Media/MediaSupport.swift \
         Sources/Vorssaint/Core/Defaults.swift \
         Sources/Vorssaint/Core/AppInfo.swift \
         Sources/Vorssaint/Core/Localization.swift \

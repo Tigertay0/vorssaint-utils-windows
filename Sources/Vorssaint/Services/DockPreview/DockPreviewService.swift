@@ -45,6 +45,8 @@ final class DockPreviewService: ObservableObject {
     private var hasEnteredPanel = false
     private var activePanelFrame: CGRect?
     private var activeCorridor: HoverCorridor?
+    private var activeIconFrame: CGRect?
+    private var activeDockPreferences: DockPreviewPreferences?
     private var activePeekWindowID: CGWindowID?
     /// The card the cursor is currently over, reconciled into an actual peek on a
     /// short debounce so moving between cards never flickers through the origin.
@@ -160,6 +162,26 @@ final class DockPreviewService: ObservableObject {
         desiredPeek = nil
         endSession(restore: false)
         WindowActivator.activate(item)
+    }
+
+    func close(_ item: SwitcherItem) {
+        guard isVisible,
+              windows.contains(item),
+              let windowID = item.windowID,
+              WindowActivator.closeWindow(windowID: windowID, pid: item.pid)
+        else { return }
+
+        cancelPendingPeekReconcile()
+        if desiredPeek?.id == item.id {
+            desiredPeek = nil
+        }
+        if selectedWindowID == windowID {
+            selectedWindowID = nil
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+            self?.finishClosing(item, windowID: windowID, attempt: 0)
+        }
     }
 
     // MARK: - Event tap
@@ -484,6 +506,8 @@ final class DockPreviewService: ObservableObject {
         currentSessionPID = nil
         activePanelFrame = nil
         activeCorridor = nil
+        activeIconFrame = nil
+        activeDockPreferences = nil
         activePeekWindowID = nil
         desiredPeek = nil
         self.touchedWindows = [:]
@@ -540,6 +564,57 @@ final class DockPreviewService: ObservableObject {
         }
     }
 
+    private func finishClosing(_ item: SwitcherItem, windowID: CGWindowID, attempt: Int) {
+        guard isVisible,
+              currentSessionPID == item.pid,
+              windows.contains(where: { $0.windowID == windowID })
+        else { return }
+
+        let refreshed = WindowEnumerator.listWindows(for: item.pid, maximumCount: 12)
+        guard !refreshed.contains(where: { $0.windowID == windowID }) else {
+            guard attempt < 2 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.finishClosing(item, windowID: windowID, attempt: attempt + 1)
+            }
+            return
+        }
+
+        applyClosedWindowRemoval(windowID)
+    }
+
+    private func applyClosedWindowRemoval(_ closedWindowID: CGWindowID) {
+        let wasActivePreview = activePeekWindowID == closedWindowID || desiredPeek?.windowID == closedWindowID
+        let state = DockPreviewSupport.closeState(
+            afterRemoving: closedWindowID,
+            windowIDs: windows.compactMap(\.windowID),
+            selectedWindowID: selectedWindowID,
+            activePeekWindowID: activePeekWindowID,
+            desiredWindowID: desiredPeek?.windowID
+        )
+        let remaining = Set(state.remainingWindowIDs)
+
+        windows = windows.filter { item in
+            guard let windowID = item.windowID else { return false }
+            return remaining.contains(windowID)
+        }
+        previews = previews.filter { remaining.contains($0.key) }
+        selectedWindowID = state.selectedWindowID
+        activePeekWindowID = state.activePeekWindowID
+        if state.desiredWindowID == nil {
+            desiredPeek = nil
+        }
+        touchedWindows.removeValue(forKey: closedWindowID)
+
+        if state.shouldEndSession {
+            endSession(restore: true)
+        } else {
+            resizePanelForCurrentWindows()
+            if wasActivePreview {
+                restoreOrigin(retry: false)
+            }
+        }
+    }
+
     // MARK: - Panel
 
     private func showPanel(for hit: DockHit, itemCount: Int) {
@@ -558,10 +633,37 @@ final class DockPreviewService: ObservableObject {
             panelFrame: frame,
             orientation: hit.preferences.orientation
         )
+        activeIconFrame = hit.iconFrame
+        activeDockPreferences = hit.preferences
 
         panel.setFrame(frame, display: true, animate: false)
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
         panel.orderFrontRegardless()
+    }
+
+    private func resizePanelForCurrentWindows() {
+        guard let panel,
+              panel.isVisible,
+              let iconFrame = activeIconFrame,
+              let preferences = activeDockPreferences
+        else { return }
+
+        let screen = screen(containing: iconFrame)
+        let size = DockPreviewSupport.panelSize(itemCount: windows.count, screenVisibleFrame: screen.visibleFrame)
+        let gap = preferences.autohide ? DockPreviewSupport.autohidePanelGap : DockPreviewSupport.panelGap
+        let frame = DockPreviewSupport.panelFrame(anchor: iconFrame,
+                                                  panelSize: size,
+                                                  screenVisibleFrame: screen.visibleFrame,
+                                                  orientation: preferences.orientation,
+                                                  gap: gap)
+        activePanelFrame = frame
+        activeCorridor = DockPreviewSupport.hoverCorridor(
+            iconFrame: iconFrame,
+            panelFrame: frame,
+            orientation: preferences.orientation
+        )
+        panel.setFrame(frame, display: true, animate: true)
+        panel.contentViewController?.view.layoutSubtreeIfNeeded()
     }
 
     private func ensurePanel() -> NSPanel {

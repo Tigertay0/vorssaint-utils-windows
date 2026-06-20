@@ -13,7 +13,13 @@ struct DockPreviewPanelView: View {
                     DockPreviewCard(
                         window: window,
                         preview: window.previewWindowID.flatMap { service.previews[$0] },
-                        isSelected: service.selectedWindowID == window.windowID
+                        isSelected: service.selectedWindowID == window.windowID,
+                        onCommit: {
+                            service.commit(window)
+                        },
+                        onClose: {
+                            service.close(window)
+                        }
                     )
                     .onHover { hovering in
                         if hovering {
@@ -21,9 +27,6 @@ struct DockPreviewPanelView: View {
                         } else {
                             service.endPreview(window)
                         }
-                    }
-                    .onTapGesture {
-                        service.commit(window)
                     }
                 }
             }
@@ -44,6 +47,17 @@ private struct DockPreviewCard: View {
     let window: SwitcherItem
     let preview: CGImage?
     let isSelected: Bool
+    let onCommit: () -> Void
+    let onClose: () -> Void
+
+    @ObservedObject private var l10n = L10n.shared
+    @State private var isHovering = false
+    @State private var isCloseHovering = false
+    @State private var suppressNextCommit = false
+
+    private var showsCloseButton: Bool {
+        isHovering || isSelected
+    }
 
     var body: some View {
         VStack(spacing: 7) {
@@ -77,6 +91,15 @@ private struct DockPreviewCard: View {
                         }
                     }
                 }
+
+                VStack {
+                    HStack {
+                        closeButton
+                            .padding(5)
+                        Spacer()
+                    }
+                    Spacer()
+                }
             }
             .frame(width: DockPreviewSupport.cardWidth - 18,
                    height: DockPreviewSupport.cardHeight - 42)
@@ -99,7 +122,37 @@ private struct DockPreviewCard: View {
                 .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
         )
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onTapGesture {
+            guard !suppressNextCommit else { return }
+            onCommit()
+        }
+        .onHover { isHovering = $0 }
         .animation(.spring(response: 0.2, dampingFraction: 0.82), value: isSelected)
+        .animation(.easeOut(duration: 0.12), value: showsCloseButton)
         .accessibilityLabel(window.displayTitle)
+    }
+
+    private var closeButton: some View {
+        Button {
+            suppressNextCommit = true
+            onClose()
+            DispatchQueue.main.async {
+                suppressNextCommit = false
+            }
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 18, weight: .medium))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.white.opacity(isCloseHovering ? 0.95 : 0.72),
+                                 Color(red: 1.0, green: 0.38, blue: 0.33).opacity(isCloseHovering ? 1 : 0.92))
+                .frame(width: 24, height: 24)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .opacity(showsCloseButton ? 1 : 0)
+        .allowsHitTesting(showsCloseButton)
+        .onHover { isCloseHovering = $0 }
+        .help(l10n.s.dockPreviewCloseWindow)
+        .accessibilityLabel(l10n.s.dockPreviewCloseWindow)
     }
 }

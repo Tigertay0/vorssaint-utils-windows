@@ -288,11 +288,28 @@ final class FinderCutPaste: ObservableObject {
 
     func clearMarks() {
         guard !marked.isEmpty || lastResult != nil else { return }
+        resetCutState(clearOwnedPasteboard: false)
+    }
+
+    func cancelPendingCut() {
+        guard !marked.isEmpty || lastResult != nil else { return }
+        resetCutState(clearOwnedPasteboard: true)
+    }
+
+    private func resetCutState(clearOwnedPasteboard: Bool) {
+        resultDismiss?.cancel()
+        resultDismiss = nil
+        let shouldClearPasteboard = clearOwnedPasteboard
+            && !marked.isEmpty
+            && NSPasteboard.general.changeCount == markedChangeCount
         operationGeneration += 1
         moveInProgress = false
         marked = []
         markedChangeCount = 0
         lastResult = nil
+        if shouldClearPasteboard {
+            NSPasteboard.general.clearContents()
+        }
         refreshPanel()
     }
 

@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.7] - 2026-06-20
+
+### Added
+- Utilities now includes Media for local video compression, GIF creation, image
+  compression and text extraction from images, with drag and drop, simple
+  controls and local-only processing.
+- Dock Preview cards now include a red close button on the left for closing the
+  real window directly from its preview, and the panel stays correctly sized as
+  windows are closed.
+- Pending Finder cut operations now include a close button to cancel the cut and
+  dismiss the floating HUD.
+
+### Changed
+- Menu bar metrics now use a cleaner compact layout with clearer CPU, GPU, RAM,
+  battery, power and network readings, custom ordering, persisted choices and
+  steadier widths.
+- The menu panel uses a subtler glass surface so text and controls stay readable
+  across different backgrounds.
+
 ## [3.0.6] - 2026-06-20
 
 ### Added

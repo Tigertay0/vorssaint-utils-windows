@@ -77,6 +77,23 @@ enum WindowActivator {
                                      minimized ? kCFBooleanTrue : kCFBooleanFalse)
     }
 
+    static func closeWindow(windowID: CGWindowID, pid: pid_t) -> Bool {
+        if pid == ProcessInfo.processInfo.processIdentifier {
+            guard let window = NSApp.windows.first(where: { $0.windowNumber == Int(windowID) }) else { return false }
+            window.close()
+            return true
+        }
+
+        guard Permissions.shared.accessibility else { return false }
+        let axApp = AXUIElementCreateApplication(pid)
+        guard let axWindow = axElement(windowID: windowID, in: axApp),
+              let closeButton = elementAttribute(axWindow, kAXCloseButtonAttribute as String),
+              boolAttribute(closeButton, kAXEnabledAttribute as String, default: true)
+        else { return false }
+
+        return AXUIElementPerformAction(closeButton, kAXPressAction as CFString) == .success
+    }
+
     private static func activateOwnWindow(_ item: SwitcherItem) {
         guard let windowID = item.windowID,
               let window = NSApp.windows.first(where: { $0.windowNumber == Int(windowID) }) else { return }
@@ -134,5 +151,22 @@ enum WindowActivator {
             }
         }
         return nil
+    }
+
+    private static func elementAttribute(_ element: AXUIElement, _ attribute: String) -> AXUIElement? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+              let value,
+              CFGetTypeID(value) == AXUIElementGetTypeID()
+        else { return nil }
+        return (value as! AXUIElement)
+    }
+
+    private static func boolAttribute(_ element: AXUIElement, _ attribute: String, default defaultValue: Bool) -> Bool {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+              let value
+        else { return defaultValue }
+        return (value as? Bool) ?? defaultValue
     }
 }
