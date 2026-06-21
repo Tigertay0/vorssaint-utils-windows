@@ -129,6 +129,11 @@ enum MenuBarRenderer {
     private static let countdownColumns = 7
     private static let glyphAndButtonChrome: CGFloat = 26
     private static let separatorWidth = 3
+    private static let blockImageCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 300
+        return cache
+    }()
 
     private struct MetricItem {
         var metric: MenuBarMetric
@@ -608,6 +613,10 @@ enum MenuBarRenderer {
                                          minimumValue: String,
                                          style: MenuBarBlockStyle,
                                          pressure: MemoryPressure?) -> NSImage {
+        let pressureKey = pressure.map(String.init(describing:)) ?? "none"
+        let cacheKey = "metric|\(label)|\(value)|\(minimumValue)|\(style)|\(pressureKey)" as NSString
+        if let cached = blockImageCache.object(forKey: cacheKey) { return cached }
+
         let labelFont = NSFont.systemFont(ofSize: style == .readable ? 7.2 : 6.6, weight: .medium)
         let valueFont = NSFont.monospacedDigitSystemFont(ofSize: style == .readable ? 13.0 : 12.0,
                                                          weight: .semibold)
@@ -644,10 +653,14 @@ enum MenuBarRenderer {
                                  withAttributes: valueAttrs)
         image.unlockFocus()
         image.isTemplate = true
+        blockImageCache.setObject(image, forKey: cacheKey)
         return image
     }
 
     private static func networkBlockImage(down: String, up: String, style: MenuBarBlockStyle) -> NSImage {
+        let cacheKey = "network|\(down)|\(up)|\(style)" as NSString
+        if let cached = blockImageCache.object(forKey: cacheKey) { return cached }
+
         let font = NSFont.monospacedSystemFont(ofSize: style == .readable ? 8.6 : 8.0,
                                                weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.white]
@@ -665,17 +678,22 @@ enum MenuBarRenderer {
         }
         image.unlockFocus()
         image.isTemplate = true
+        blockImageCache.setObject(image, forKey: cacheKey)
         return image
     }
 
     private static func batteryBlockImage(percent: Int,
                                           isCharging: Bool,
                                           style: MenuBarBlockStyle) -> NSImage {
+        let clampedPercent = max(0, min(100, percent))
+        let cacheKey = "battery|\(clampedPercent)|\(isCharging)|\(style)" as NSString
+        if let cached = blockImageCache.object(forKey: cacheKey) { return cached }
+
         let symbolName = batterySymbol(for: percent, isCharging: isCharging)
         let symbolPointSize: CGFloat = style == .readable ? 17.0 : 15.5
         let valueFont = NSFont.monospacedDigitSystemFont(ofSize: style == .readable ? 13.0 : 12.0,
                                                          weight: .semibold)
-        let value = "\(max(0, min(100, percent)))%"
+        let value = "\(clampedPercent)%"
         let valueAttrs: [NSAttributedString.Key: Any] = [.font: valueFont, .foregroundColor: NSColor.white]
         let valueSize = (value as NSString).size(withAttributes: valueAttrs)
         let reservedValueSize = max(valueSize.width, ("100%" as NSString).size(withAttributes: valueAttrs).width)
@@ -702,6 +720,7 @@ enum MenuBarRenderer {
                                  withAttributes: valueAttrs)
         image.unlockFocus()
         image.isTemplate = true
+        blockImageCache.setObject(image, forKey: cacheKey)
         return image
     }
 

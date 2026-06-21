@@ -61,6 +61,14 @@ struct MetricsTests {
         expectEqual(MetricFormat.percent(1), "100%", "percent full")
         expectEqual(MetricFormat.percent(1.4), "100%", "percent clamps high")
         expectEqual(MetricFormat.percent(-0.2), "0%", "percent clamps low")
+        expectClose(MetricFormat.stabilizedGPUUsage(previous: 0.03, current: 0.80), 0.23,
+                    "GPU usage readout caps one-tick upward spikes")
+        expectClose(MetricFormat.stabilizedGPUUsage(previous: 0.23, current: 0.80), 0.43,
+                    "GPU usage readout still climbs during sustained load")
+        expectClose(MetricFormat.stabilizedGPUUsage(previous: 0.60, current: 0.10), 0.275,
+                    "GPU usage readout falls quickly after transient load")
+        expectClose(MetricFormat.stabilizedGPUUsage(previous: nil, current: 1.4), 1.0,
+                    "GPU usage readout clamps first sample")
         expectEqual(MetricFormat.temperature(0, unit: .celsius), "0 °C", "celsius freezing")
         expectEqual(MetricFormat.temperature(0, unit: .fahrenheit), "32 °F", "fahrenheit freezing")
         expectEqual(MetricFormat.temperature(41, unit: .fahrenheit), "106 °F", "fahrenheit rounds")
@@ -311,6 +319,23 @@ struct MetricsTests {
         ])
         expect(savedRoutes == ["com.apple.Safari": "BuiltInSpeakerDevice"],
                "app output device routes keep only valid app and device ids")
+        let savedMixerVolumes = ["com.apple.Safari": 0.35, "com.apple.Music": 1.4]
+        let successfulUniversalOutput = MixerRoutingSupport.preferencesAfterUniversalOutputSwitch(
+            outputDeviceUIDs: savedRoutes,
+            volumes: savedMixerVolumes,
+            switchSucceeded: true)
+        expect(successfulUniversalOutput.outputDeviceUIDs.isEmpty,
+               "universal output clears per-app routes after a successful switch")
+        expect(successfulUniversalOutput.volumes == savedMixerVolumes,
+               "universal output preserves saved app volumes")
+        let failedUniversalOutput = MixerRoutingSupport.preferencesAfterUniversalOutputSwitch(
+            outputDeviceUIDs: savedRoutes,
+            volumes: savedMixerVolumes,
+            switchSucceeded: false)
+        expect(failedUniversalOutput.outputDeviceUIDs == savedRoutes,
+               "failed universal output keeps per-app routes")
+        expect(failedUniversalOutput.volumes == savedMixerVolumes,
+               "failed universal output keeps saved app volumes")
         expect(!MixerRoutingSupport.requiresEngine(volume: 1,
                                                    selectedOutputDeviceUID: nil,
                                                    targetOutputDeviceUID: "BuiltInSpeakerDevice",
@@ -490,7 +515,6 @@ struct MetricsTests {
                                                       desiredWindowID: nil)
         expect(closeLast.shouldEndSession && closeLast.remainingWindowIDs.isEmpty,
                "Dock Preview close ends the panel when the last window is removed")
-
         // MARK: Release notes parsing
 
         let changelog = """

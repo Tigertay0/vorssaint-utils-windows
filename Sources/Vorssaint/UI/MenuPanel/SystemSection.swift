@@ -400,6 +400,12 @@ struct SystemSection: View {
         return MetricFormat.uptime(total)
     }
 
+    private static let memoryFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .memory
+        return formatter
+    }()
+
     private func usageRow(label: String, fraction: Double?, kind: BreakdownKind,
                           editing: Bool, visible: Binding<Bool>) -> some View {
         Group {
@@ -513,9 +519,7 @@ struct SystemSection: View {
     }
 
     private func formatMemory(_ bytes: UInt64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .memory
-        return formatter.string(fromByteCount: Int64(bytes))
+        Self.memoryFormatter.string(fromByteCount: Int64(bytes))
     }
 }
 

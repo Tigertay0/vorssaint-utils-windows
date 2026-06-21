@@ -9,6 +9,11 @@ struct MixerInputRouteResolution: Equatable {
     let shouldApplyPreferred: Bool
 }
 
+struct MixerOutputPreferences: Equatable {
+    let outputDeviceUIDs: [String: String]
+    let volumes: [String: Double]
+}
+
 enum MixerRoutingSupport {
     static let systemDefaultSelectionID = "__system_default__"
 
@@ -51,6 +56,13 @@ enum MixerRoutingSupport {
                                           availableUIDs: Set<String>) -> Bool {
         guard let selectedUID else { return false }
         return !availableUIDs.contains(selectedUID)
+    }
+
+    static func preferencesAfterUniversalOutputSwitch(outputDeviceUIDs: [String: String],
+                                                      volumes: [String: Double],
+                                                      switchSucceeded: Bool) -> MixerOutputPreferences {
+        MixerOutputPreferences(outputDeviceUIDs: switchSucceeded ? [:] : outputDeviceUIDs,
+                               volumes: volumes)
     }
 
     static func requiresEngine(volume: Double,

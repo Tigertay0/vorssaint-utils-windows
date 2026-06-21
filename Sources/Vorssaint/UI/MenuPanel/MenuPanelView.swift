@@ -5,6 +5,10 @@ import AppKit
 import Combine
 import SwiftUI
 
+extension Notification.Name {
+    static let menuPanelWillShow = Notification.Name("VorssaintMenuPanelWillShow")
+}
+
 /// Content of the menu bar popover: keep-awake controls, the volume mixer and
 /// the system monitor.
 struct MenuPanelView: View {
@@ -43,12 +47,40 @@ struct MenuPanelView: View {
         }
         .onAppear {
             awake.refreshPasswordlessStatus()
+            syncMonitorSampling()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .menuPanelWillShow)) { _ in
+            syncMonitorSampling()
+        }
+        .onDisappear {
+            SystemMonitor.shared.setMenuPanelNeeds(.none)
+        }
+        .onChange(of: monitorNeeds) { _, _ in
+            syncMonitorSampling()
         }
         .onChange(of: updates.state) { _, state in
             if !state.showsMenuPanelBanner {
                 updateBannerHeight = 0
             }
         }
+    }
+
+    private var monitorNeeds: SystemMonitorPanelNeeds {
+        if panelNavigationEnabled {
+            switch activeSection {
+            case .system: return SystemMonitorPanelNeeds(system: true)
+            case .network: return SystemMonitorPanelNeeds(network: true)
+            case .power: return SystemMonitorPanelNeeds(power: true)
+            default: return .none
+            }
+        }
+        return SystemMonitorPanelNeeds(system: showSystem,
+                                       network: showNetwork,
+                                       power: showPower)
+    }
+
+    private func syncMonitorSampling() {
+        SystemMonitor.shared.setMenuPanelNeeds(monitorNeeds)
     }
 
     private var classicPanel: some View {

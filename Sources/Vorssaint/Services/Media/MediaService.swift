@@ -175,14 +175,15 @@ final class MediaService: ObservableObject {
                                    operationID: UUID, token: MediaCancellationToken) throws {
         let started = Date()
         try prepareOutput(inputURL: inputURL, outputURL: outputURL)
-        let asset = AVAsset(url: inputURL)
-        guard let videoTrack = asset.tracks(withMediaType: .video).first else { throw MediaFailureBox(.noVideoTrack) }
-        let duration = asset.duration.seconds
-        let trim = MediaSupport.sanitizedTrim(start: options.start, end: options.end, assetDuration: duration)
+        let asset = AVURLAsset(url: inputURL)
+        let metadata = try loadVideoMetadata(from: asset, includeDisplaySize: true)
+        let trim = MediaSupport.sanitizedTrim(start: options.start,
+                                              end: options.end,
+                                              assetDuration: metadata.duration)
         guard trim.duration > 0 else { throw MediaFailureBox(.unsupported) }
 
-        let sourceSize = displaySize(for: videoTrack)
-        let outSize = MediaSupport.scaledVideoSize(source: sourceSize, maxDimension: options.maxDimension)
+        let outSize = MediaSupport.scaledVideoSize(source: metadata.displaySize,
+                                                   maxDimension: options.maxDimension)
         let preset = avconvertPreset(codec: options.codec,
                                      maxDimension: max(Int(outSize.width), Int(outSize.height)),
                                      quality: options.quality)
@@ -248,10 +249,11 @@ final class MediaService: ObservableObject {
                              operationID: UUID, token: MediaCancellationToken) throws {
         let started = Date()
         try prepareOutput(inputURL: inputURL, outputURL: outputURL)
-        let asset = AVAsset(url: inputURL)
-        guard asset.tracks(withMediaType: .video).first != nil else { throw MediaFailureBox(.noVideoTrack) }
-        let duration = asset.duration.seconds
-        let trim = MediaSupport.sanitizedTrim(start: options.start, end: options.end, assetDuration: duration)
+        let asset = AVURLAsset(url: inputURL)
+        let metadata = try loadVideoMetadata(from: asset, includeDisplaySize: false)
+        let trim = MediaSupport.sanitizedTrim(start: options.start,
+                                              end: options.end,
+                                              assetDuration: metadata.duration)
         guard trim.duration > 0 else { throw MediaFailureBox(.unsupported) }
         let fps = MediaSupport.sanitizedFPS(options.fps, fallback: 12, maxFPS: 30)
         let frameCount = max(1, Int((trim.duration * fps).rounded(.up)))
@@ -276,7 +278,7 @@ final class MediaService: ObservableObject {
         for index in 0..<frameCount {
             try checkCancellation(token)
             let second = min(trim.end, trim.start + Double(index) / fps)
-            let image = try generator.copyCGImage(at: seconds(second), actualTime: nil)
+            let image = try generateCGImage(from: generator, at: seconds(second))
             let resized = resize(image, maxDimension: options.width) ?? image
             CGImageDestinationAddImage(destination, resized, [
                 kCGImagePropertyGIFDictionary: [
@@ -397,11 +399,6 @@ final class MediaService: ObservableObject {
         }
     }
 
-    private func displaySize(for track: AVAssetTrack) -> CGSize {
-        let transformed = CGRect(origin: .zero, size: track.naturalSize).applying(track.preferredTransform)
-        return CGSize(width: abs(transformed.width), height: abs(transformed.height))
-    }
-
     private func resize(_ image: CGImage, maxDimension: Int) -> CGImage? {
         let size = MediaSupport.scaledEvenSize(source: CGSize(width: image.width, height: image.height),
                                                maxDimension: maxDimension)
@@ -442,6 +439,71 @@ final class MediaService: ObservableObject {
 
     private func seconds(_ value: Double) -> CMTime {
         CMTime(seconds: value, preferredTimescale: 600)
+    }
+
+    private struct VideoMetadata {
+        let duration: Double
+        let displaySize: CGSize
+    }
+
+    private func loadVideoMetadata(from asset: AVAsset,
+                                   includeDisplaySize: Bool) throws -> VideoMetadata {
+        try runAsync {
+            let tracks = try await asset.loadTracks(withMediaType: .video)
+            guard let track = tracks.first else { throw MediaFailureBox(.noVideoTrack) }
+
+            let duration = try await asset.load(.duration).seconds
+            guard includeDisplaySize else {
+                return VideoMetadata(duration: duration, displaySize: .zero)
+            }
+
+            let naturalSize = try await track.load(.naturalSize)
+            let preferredTransform = try await track.load(.preferredTransform)
+            let transformed = CGRect(origin: .zero, size: naturalSize).applying(preferredTransform)
+            let displaySize = CGSize(width: abs(transformed.width), height: abs(transformed.height))
+            return VideoMetadata(duration: duration, displaySize: displaySize)
+        }
+    }
+
+    private func generateCGImage(from generator: AVAssetImageGenerator,
+                                 at time: CMTime) throws -> CGImage {
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: Result<CGImage, Error>?
+
+        generator.generateCGImageAsynchronously(for: time) { image, _, error in
+            if let image {
+                result = .success(image)
+            } else {
+                result = .failure(error ?? MediaFailureBox(.failed("Video frame unavailable.")))
+            }
+            semaphore.signal()
+        }
+
+        semaphore.wait()
+        guard let result else {
+            throw MediaFailureBox(.failed("Video frame unavailable."))
+        }
+        return try result.get()
+    }
+
+    private func runAsync<T>(_ operation: @escaping () async throws -> T) throws -> T {
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: Result<T, Error>?
+
+        Task {
+            do {
+                result = .success(try await operation())
+            } catch {
+                result = .failure(error)
+            }
+            semaphore.signal()
+        }
+
+        semaphore.wait()
+        guard let result else {
+            throw MediaFailureBox(.failed("Video metadata unavailable."))
+        }
+        return try result.get()
     }
 
     private func typeIdentifier(for format: MediaImageFormat) -> String {

@@ -78,6 +78,7 @@ struct MediaWorkspaceView: View {
     @State private var outputWasChosenManually = false
     @State private var isDropTargeted = false
     @State private var localMessage: String?
+    @State private var mediaDefaultsTask: Task<Void, Never>?
 
     var compact: Bool
     var onClose: (() -> Void)? = nil
@@ -124,6 +125,9 @@ struct MediaWorkspaceView: View {
         .onChange(of: imageFormatRaw) { _, _ in
             guard selectedTool == .imageCompressor, !outputWasChosenManually else { return }
             outputURL = defaultOutputURL(for: inputURL, tool: .imageCompressor)
+        }
+        .onDisappear {
+            mediaDefaultsTask?.cancel()
         }
     }
 
@@ -582,6 +586,7 @@ struct MediaWorkspaceView: View {
     }
 
     private func clearInput() {
+        mediaDefaultsTask?.cancel()
         inputURL = nil
         outputURL = nil
         outputWasChosenManually = false
@@ -590,22 +595,29 @@ struct MediaWorkspaceView: View {
     }
 
     private func applyMediaDefaults(for url: URL?, tool: MediaTool) {
-        guard let url, tool == .videoCompressor || tool == .gifMaker,
-              let duration = mediaDuration(for: url) else { return }
-        switch tool {
-        case .videoCompressor:
-            videoStart = 0
-            videoEnd = duration
-        case .gifMaker:
-            gifStart = 0
-            gifEnd = duration
-        case .imageCompressor, .textExtractor:
-            break
+        mediaDefaultsTask?.cancel()
+        guard let url, tool == .videoCompressor || tool == .gifMaker else { return }
+        mediaDefaultsTask = Task {
+            guard let duration = await Self.mediaDuration(for: url),
+                  !Task.isCancelled else { return }
+            await MainActor.run {
+                guard inputURL == url, selectedTool == tool else { return }
+                switch tool {
+                case .videoCompressor:
+                    videoStart = 0
+                    videoEnd = duration
+                case .gifMaker:
+                    gifStart = 0
+                    gifEnd = duration
+                case .imageCompressor, .textExtractor:
+                    break
+                }
+            }
         }
     }
 
-    private func mediaDuration(for url: URL) -> Double? {
-        let duration = AVAsset(url: url).duration.seconds
+    private static func mediaDuration(for url: URL) async -> Double? {
+        guard let duration = try? await AVURLAsset(url: url).load(.duration).seconds else { return nil }
         guard duration.isFinite, duration > 0 else { return nil }
         return (duration * 10).rounded() / 10
     }

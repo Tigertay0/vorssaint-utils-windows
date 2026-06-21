@@ -19,6 +19,7 @@ struct MixerSection: View {
     var body: some View {
         PanelSection(.mixer, title: l10n.s.mixerSection, collapsible: collapsible) {
             VStack(alignment: .leading, spacing: 8) {
+                universalOutputPicker
                 microphonePicker
                 if AppVolumeMixer.isSupported, (!mixer.apps.isEmpty || mixer.needsPermission) {
                     Divider()
@@ -42,6 +43,66 @@ struct MixerSection: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NSSystemColorsDidChangeNotification"))) { _ in
             refreshSliderTint()
         }
+    }
+
+    private var universalOutputPicker: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Label {
+                    Text(l10n.s.mixerSystemOutputTitle)
+                        .font(.system(size: 11.5, weight: .medium))
+                } icon: {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 10.5, weight: .semibold))
+                }
+                .foregroundStyle(.secondary)
+
+                Spacer(minLength: 6)
+
+                Picker(l10n.s.mixerSystemOutputTooltip, selection: universalOutputSelectionBinding) {
+                    if mixer.currentOutputDeviceUID == nil {
+                        Text(l10n.s.mixerOutputUnavailable)
+                            .tag(MixerRoutingSupport.systemDefaultSelectionID)
+                    }
+                    ForEach(universalOutputDevices) { device in
+                        Text(outputDeviceTitle(device))
+                            .tag(device.uid)
+                    }
+                    if let selected = mixer.currentOutputDeviceUID,
+                       !universalOutputDevices.contains(where: { $0.uid == selected }) {
+                        Text(l10n.s.mixerOutputUnavailable)
+                            .tag(selected)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .frame(width: 164)
+                .disabled(universalOutputDevices.isEmpty)
+                .help(l10n.s.mixerSystemOutputTooltip)
+            }
+
+            if universalOutputDevices.isEmpty {
+                inputMessage(l10n.s.mixerSystemOutputNoDevices, systemImage: "speaker.slash")
+            } else if let outputSwitchError = mixer.outputSwitchError {
+                inputMessage(String(format: l10n.s.mixerSystemOutputErrorFormat, outputSwitchError),
+                             systemImage: "exclamationmark.triangle")
+            }
+        }
+    }
+
+    private var universalOutputDevices: [MixerOutputDevice] {
+        mixer.outputDevices.filter(\.canBeDefaultOutput)
+    }
+
+    private var universalOutputSelectionBinding: Binding<String> {
+        Binding(
+            get: { mixer.currentOutputDeviceUID ?? MixerRoutingSupport.systemDefaultSelectionID },
+            set: { selection in
+                guard selection != MixerRoutingSupport.systemDefaultSelectionID else { return }
+                mixer.setUniversalOutputDeviceUID(selection)
+            }
+        )
     }
 
     private var microphonePicker: some View {
@@ -101,6 +162,10 @@ struct MixerSection: View {
     }
 
     private func inputDeviceTitle(_ device: MixerInputDevice) -> String {
+        device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name
+    }
+
+    private func outputDeviceTitle(_ device: MixerOutputDevice) -> String {
         device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name
     }
 

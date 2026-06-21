@@ -480,6 +480,10 @@ struct Strings {
     let mixerOutputUnavailable: String
     let mixerOutputFallback: String
     let mixerOutputTooltip: String
+    let mixerSystemOutputTitle: String
+    let mixerSystemOutputNoDevices: String
+    let mixerSystemOutputTooltip: String
+    let mixerSystemOutputErrorFormat: String
     let mixerInputTitle: String
     let mixerInputNoDevices: String
     let mixerInputUnavailable: String
@@ -1066,6 +1070,10 @@ extension Strings {
         mixerOutputUnavailable: "Saída indisponível",
         mixerOutputFallback: "Usando o padrão até esse dispositivo voltar.",
         mixerOutputTooltip: "Escolher saída",
+        mixerSystemOutputTitle: "Saída",
+        mixerSystemOutputNoDevices: "Nenhuma saída encontrada",
+        mixerSystemOutputTooltip: "Escolher saída do sistema",
+        mixerSystemOutputErrorFormat: "Não foi possível trocar: %@",
         mixerInputTitle: "Microfone",
         mixerInputNoDevices: "Nenhum microfone encontrado",
         mixerInputUnavailable: "Microfone indisponível",
@@ -1639,6 +1647,10 @@ extension Strings {
         mixerOutputUnavailable: "Output unavailable",
         mixerOutputFallback: "Using default until this device returns.",
         mixerOutputTooltip: "Choose output",
+        mixerSystemOutputTitle: "Output",
+        mixerSystemOutputNoDevices: "No outputs found",
+        mixerSystemOutputTooltip: "Choose system output",
+        mixerSystemOutputErrorFormat: "Could not switch: %@",
         mixerInputTitle: "Microphone",
         mixerInputNoDevices: "No microphones found",
         mixerInputUnavailable: "Microphone unavailable",

@@ -396,10 +396,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         completions.forEach { $0() }
     }
 
-    // While the panel is on screen the monitor samples everything (temperatures,
-    // GPU, graphs); when it closes it keeps going only if a menu bar metric needs it.
+    // The SwiftUI panel reports which monitor sections are actually visible; the
+    // popover callback only handles update freshness.
     func popoverWillShow(_ notification: Notification) {
-        SystemMonitor.shared.panelDidAppear()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .menuPanelWillShow, object: nil)
+        }
+        SystemMonitor.shared.suppressGPUReadsForTransientUI()
         UpdateService.shared.checkIfStale()
     }
 
@@ -408,7 +411,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     func popoverDidClose(_ notification: Notification) {
-        SystemMonitor.shared.panelDidDisappear()
+        SystemMonitor.shared.setMenuPanelNeeds(.none)
         removePopoverDismissMonitor()
         PanelInteractionState.shared.keepsPopoverOpen = false
         popoverClosedAt = Date()

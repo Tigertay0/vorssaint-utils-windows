@@ -341,10 +341,6 @@ private struct MenuBarSetupStep: View {
 
             Spacer()
         }
-        .onAppear {
-            SystemMonitor.shared.panelDidAppear()
-        }
-        .onDisappear { SystemMonitor.shared.panelDidDisappear() }
     }
 
     private func toggle(_ title: String, _ isOn: Binding<Bool>) -> some View {

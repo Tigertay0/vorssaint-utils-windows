@@ -4,6 +4,38 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.9] - 2026-06-20
+
+### Summary
+- This update focuses on making Vorssaint feel lighter, steadier and more
+  reliable during everyday use.
+- Menu bar readings for CPU, GPU, RAM and temperatures stay visible through
+  brief refresh gaps, while the monitor does less background work when the panel
+  is closed or only a few metrics are visible.
+- The Volume Mixer is easier to control with one output selection for the system
+  and apps, while per-app volume, mute and boost settings stay intact.
+- Media tools are more responsive with larger videos and more reliable when
+  reading video details or creating GIFs.
+
+### Changed
+- The Volume Mixer can now send the whole system and apps to one audio output at
+  once.
+- The system monitor and menu bar now do less background work, especially when
+  the panel is closed or only a few metrics are visible.
+- Live monitor updates are smoother and avoid unnecessary redraws while values
+  are refreshing.
+- Media tools are more responsive with large videos and handle video details and
+  GIF creation more reliably.
+
+### Fixed
+- GPU temperature, RAM and CPU readings in the menu bar now stay visible through
+  quick moments when a value is unavailable instead of disappearing and coming
+  back.
+- The Network panel now starts measuring correctly when opened directly on
+  Network.
+- GPU usage in the menu bar now avoids brief spikes when opening the panel,
+  while still showing real sustained activity.
+
 ## [3.0.8] - 2026-06-20
 
 ### Added

@@ -93,6 +93,18 @@ enum MetricFormat {
         "\(Int((max(0, min(1, fraction)) * 100).rounded()))%"
     }
 
+    /// Smooths the GPU usage readout enough to hide one-sample compositor spikes
+    /// from opening the menu panel, without hiding sustained load.
+    static func stabilizedGPUUsage(previous: Double?, current: Double) -> Double {
+        let value = current.isFinite ? max(0, min(1, current)) : 0
+        guard let previous, previous.isFinite else { return value }
+        let baseline = max(0, min(1, previous))
+        if value > baseline {
+            return min(value, baseline + 0.20)
+        }
+        return baseline * 0.35 + value * 0.65
+    }
+
     /// Temperature, stored internally as Celsius and formatted in the user's
     /// preferred display unit.
     static func temperature(_ celsius: Double, unit: TemperatureUnit) -> String {
