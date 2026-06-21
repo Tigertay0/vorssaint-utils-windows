@@ -42,12 +42,17 @@ struct SystemSnapshot {
     // Power
     var power: PowerReading?
 
+    // Disk
+    var disk: DiskReading?
+
     // History (oldest → newest) for the graphs
     var cpuHistory: [Double] = []          // 0...1
     var gpuHistory: [Double] = []          // 0...1
     var memoryHistory: [Double] = []       // 0...1
     var netDownHistory: [Double] = []      // bytes/sec
     var netUpHistory: [Double] = []        // bytes/sec
+    var diskReadHistory: [Double] = []     // bytes/sec
+    var diskWriteHistory: [Double] = []    // bytes/sec
     var systemPowerHistory: [Double] = []  // watts
     var batteryHistory: [Double] = []      // 0...1 charge level
 }
@@ -58,11 +63,12 @@ struct SystemSnapshot {
 struct SystemMonitorPanelNeeds: Equatable {
     var system = false
     var network = false
+    var disk = false
     var power = false
 
     static let none = SystemMonitorPanelNeeds()
 
-    var any: Bool { system || network || power }
+    var any: Bool { system || network || disk || power }
 }
 
 /// Reads temperatures (SMC), CPU/GPU usage, memory, network and power on a
@@ -96,6 +102,7 @@ final class SystemMonitor: ObservableObject {
 
     // Samplers
     private let networkSampler = NetworkSampler()
+    private let diskSampler = DiskSampler()
     private var powerSampler: PowerSampler?
 
     // Running state
@@ -117,6 +124,8 @@ final class SystemMonitor: ObservableObject {
     private var memoryHistory: MetricHistory
     private var netDownHistory: MetricHistory
     private var netUpHistory: MetricHistory
+    private var diskReadHistory: MetricHistory
+    private var diskWriteHistory: MetricHistory
     private var powerHistory: MetricHistory
     private var batteryHistory: MetricHistory
 
@@ -126,6 +135,8 @@ final class SystemMonitor: ObservableObject {
         memoryHistory = MetricHistory(capacity: historyCapacity)
         netDownHistory = MetricHistory(capacity: historyCapacity)
         netUpHistory = MetricHistory(capacity: historyCapacity)
+        diskReadHistory = MetricHistory(capacity: historyCapacity)
+        diskWriteHistory = MetricHistory(capacity: historyCapacity)
         powerHistory = MetricHistory(capacity: historyCapacity)
         batteryHistory = MetricHistory(capacity: historyCapacity)
     }
@@ -260,6 +271,7 @@ final class SystemMonitor: ObservableObject {
         var needCPU = false
         var needMemory = false
         var needNetwork = false
+        var needDisk = false
         var needPower = false
         var needGPUUsage = false
         var gpuEveryTick = false
@@ -274,7 +286,7 @@ final class SystemMonitor: ObservableObject {
         }
 
         var any: Bool {
-            needCPU || needMemory || needNetwork || needPower || needGPUUsage || needTemperature
+            needCPU || needMemory || needNetwork || needDisk || needPower || needGPUUsage || needTemperature
         }
     }
 
@@ -296,6 +308,7 @@ final class SystemMonitor: ObservableObject {
         var plan = SamplingPlan()
         let panelNeedsSystem = fullMonitorVisible || menuPanelNeeds.system
         let panelNeedsNetwork = fullMonitorVisible || menuPanelNeeds.network
+        let panelNeedsDisk = fullMonitorVisible || menuPanelNeeds.disk
         let panelNeedsPower = fullMonitorVisible || menuPanelNeeds.power
 
         let panelCPU = panelNeedsSystem && defaults.bool(forKey: DefaultsKey.monitorSysCPU)
@@ -307,6 +320,7 @@ final class SystemMonitor: ObservableObject {
         plan.needCPU = panelCPU || defaults.bool(forKey: DefaultsKey.menuBarCPU)
         plan.needMemory = panelMemory || defaults.bool(forKey: DefaultsKey.menuBarMemory)
         plan.needNetwork = panelNeedsNetwork || defaults.bool(forKey: DefaultsKey.menuBarNetwork)
+        plan.needDisk = panelNeedsDisk
         plan.needPower = panelNeedsPower || panelBattery
             || defaults.bool(forKey: DefaultsKey.menuBarPower)
             || defaults.bool(forKey: DefaultsKey.menuBarBattery)
@@ -411,6 +425,20 @@ final class SystemMonitor: ObservableObject {
                 if let up = network.upBytesPerSec { self.netUpHistory.push(up) }
             }
 
+            if plan.needDisk {
+                let disk = self.diskSampler.sample(now: now)
+                next.disk = disk
+                let ioDevices = disk.uniqueIODevices
+                let readValues = ioDevices.compactMap(\.readBytesPerSec)
+                let writeValues = ioDevices.compactMap(\.writeBytesPerSec)
+                if !readValues.isEmpty {
+                    self.diskReadHistory.push(readValues.reduce(0, +))
+                }
+                if !writeValues.isEmpty {
+                    self.diskWriteHistory.push(writeValues.reduce(0, +))
+                }
+            }
+
             if plan.needPower, let powerSampler = self.powerSampler {
                 let power = powerSampler.sample()
                 next.power = power
@@ -460,6 +488,8 @@ final class SystemMonitor: ObservableObject {
             next.memoryHistory = plan.needMemory ? self.memoryHistory.values : []
             next.netDownHistory = plan.needNetwork ? self.netDownHistory.values : []
             next.netUpHistory = plan.needNetwork ? self.netUpHistory.values : []
+            next.diskReadHistory = plan.needDisk ? self.diskReadHistory.values : []
+            next.diskWriteHistory = plan.needDisk ? self.diskWriteHistory.values : []
             next.systemPowerHistory = plan.needPower ? self.powerHistory.values : []
             next.batteryHistory = plan.needPower ? self.batteryHistory.values : []
 

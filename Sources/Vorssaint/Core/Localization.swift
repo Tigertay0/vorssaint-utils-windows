@@ -229,6 +229,8 @@ struct Strings {
     let switcherNoWindows: String
     let switcherMergeTabs: String
     let switcherMergeTabsCaption: String
+    let switcherShowFinder: String
+    let switcherShowFinderCaption: String
     let dockPreviewName: String
     let dockPreviewEnable: String
     let dockPreviewEnableCaption: String
@@ -594,6 +596,36 @@ struct Strings {
     let networkThisSession: String
     let networkMeasuring: String
 
+    // MARK: Panel — disk
+    let diskSection: String
+    let diskUsed: String
+    let diskFree: String
+    let diskInternal: String
+    let diskExternal: String
+    let diskSelect: String
+    let diskRead: String
+    let diskWrite: String
+    let diskSMARTStatus: String
+    let diskSMARTUnavailable: String
+    let diskTotalRead: String
+    let diskTotalWritten: String
+    let diskTemperature: String
+    let diskHealth: String
+    let diskPowerCycles: String
+    let diskPowerOnHours: String
+    let diskUnsafeShutdowns: String
+    let diskMediaErrors: String
+    let diskEject: String
+    let diskEjectAll: String
+    let diskEjecting: String
+    let diskReadyToRemove: String
+    let diskEjectFailed: String
+    let diskProtectionCaption: String
+    let diskNoExternal: String
+    let diskOpenInFinder: String
+    let diskStorageSettings: String
+    let diskNoDisks: String
+
     // MARK: Panel — power
     let powerSection: String
     let powerSystem: String
@@ -648,6 +680,11 @@ struct Strings {
     let monitorItemNetSpeed: String
     let monitorItemNetTotals: String
     let monitorItemNetTest: String
+    let monitorItemDiskUsage: String
+    let monitorItemDiskActivity: String
+    let monitorItemDiskSMART: String
+    let monitorItemDiskProtection: String
+    let monitorItemDiskTools: String
     let monitorPanelConfigHint: String
     let monitorOrderSection: String
     let monitorOrderHint: String
@@ -828,6 +865,8 @@ extension Strings {
         switcherNoWindows: "Nenhuma janela aberta",
         switcherMergeTabs: "Mostrar uma entrada por app",
         switcherMergeTabsCaption: "Junta todas as janelas de um app em uma só entrada no alternador, em vez de uma por janela.",
+        switcherShowFinder: "Mostrar Finder sem janelas",
+        switcherShowFinderCaption: "Mostra o Finder no alternador mesmo quando nenhuma janela do Finder estiver aberta.",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Pré-visualizar janelas no Dock",
         dockPreviewEnableCaption: "Passe o mouse em um app aberto no Dock para ver e espiar suas janelas.",
@@ -1178,6 +1217,35 @@ extension Strings {
         networkThisSession: "Nesta sessão",
         networkMeasuring: "Medindo…",
 
+        diskSection: "Discos",
+        diskUsed: "usado",
+        diskFree: "livre",
+        diskInternal: "Interno",
+        diskExternal: "Externo",
+        diskSelect: "Selecionar disco",
+        diskRead: "Leitura",
+        diskWrite: "Escrita",
+        diskSMARTStatus: "Status",
+        diskSMARTUnavailable: "SMART indisponível para este disco",
+        diskTotalRead: "Total lido",
+        diskTotalWritten: "Total escrito",
+        diskTemperature: "Temperatura",
+        diskHealth: "Saúde",
+        diskPowerCycles: "Ciclos",
+        diskPowerOnHours: "Horas ligado",
+        diskUnsafeShutdowns: "Desligamentos inseguros",
+        diskMediaErrors: "Erros de mídia",
+        diskEject: "Ejetar",
+        diskEjectAll: "Ejetar todos",
+        diskEjecting: "Ejetando…",
+        diskReadyToRemove: "Pronto para remover",
+        diskEjectFailed: "Não foi possível ejetar",
+        diskProtectionCaption: "Ejete antes de desconectar.",
+        diskNoExternal: "Nenhum disco externo pronto para ejeção.",
+        diskOpenInFinder: "Abrir",
+        diskStorageSettings: "Armazenamento",
+        diskNoDisks: "Nenhum disco montado encontrado.",
+
         powerSection: "Energia",
         powerSystem: "Sistema",
         powerAdapter: "Adaptador",
@@ -1228,6 +1296,11 @@ extension Strings {
         monitorItemNetSpeed: "Velocidade ao vivo",
         monitorItemNetTotals: "Totais da sessão",
         monitorItemNetTest: "Teste de velocidade",
+        monitorItemDiskUsage: "Uso do disco",
+        monitorItemDiskActivity: "Atividade ao vivo",
+        monitorItemDiskSMART: "SMART",
+        monitorItemDiskProtection: "Proteção externa",
+        monitorItemDiskTools: "Ferramentas",
         monitorPanelConfigHint: "Abra um bloco para escolher o que ele mostra.",
         monitorOrderSection: "Ordem das seções",
         monitorOrderHint: "Arraste para reordenar as seções do painel e use o olho para mostrar ou ocultar cada uma.",
@@ -1405,6 +1478,8 @@ extension Strings {
         switcherNoWindows: "No open windows",
         switcherMergeTabs: "Show one entry per app",
         switcherMergeTabsCaption: "Collapses all of an app's windows into one entry in the switcher, instead of one entry per window.",
+        switcherShowFinder: "Show Finder without windows",
+        switcherShowFinderCaption: "Shows Finder in the switcher even when no Finder window is open.",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Preview windows from the Dock",
         dockPreviewEnableCaption: "Hover over an open app in the Dock to preview and peek at its windows.",
@@ -1755,6 +1830,35 @@ extension Strings {
         networkThisSession: "This session",
         networkMeasuring: "Measuring…",
 
+        diskSection: "Disks",
+        diskUsed: "used",
+        diskFree: "free",
+        diskInternal: "Internal",
+        diskExternal: "External",
+        diskSelect: "Select disk",
+        diskRead: "Read",
+        diskWrite: "Write",
+        diskSMARTStatus: "Status",
+        diskSMARTUnavailable: "SMART unavailable for this disk",
+        diskTotalRead: "Total read",
+        diskTotalWritten: "Total written",
+        diskTemperature: "Temperature",
+        diskHealth: "Health",
+        diskPowerCycles: "Power cycles",
+        diskPowerOnHours: "Power on hours",
+        diskUnsafeShutdowns: "Unsafe shutdowns",
+        diskMediaErrors: "Media errors",
+        diskEject: "Eject",
+        diskEjectAll: "Eject all",
+        diskEjecting: "Ejecting…",
+        diskReadyToRemove: "Ready to remove",
+        diskEjectFailed: "Could not eject",
+        diskProtectionCaption: "Eject before unplugging.",
+        diskNoExternal: "No external disk ready to eject.",
+        diskOpenInFinder: "Open",
+        diskStorageSettings: "Storage",
+        diskNoDisks: "No mounted disks found.",
+
         powerSection: "Power",
         powerSystem: "System",
         powerAdapter: "Adapter",
@@ -1805,6 +1909,11 @@ extension Strings {
         monitorItemNetSpeed: "Live speed",
         monitorItemNetTotals: "Session totals",
         monitorItemNetTest: "Speed test",
+        monitorItemDiskUsage: "Disk usage",
+        monitorItemDiskActivity: "Live activity",
+        monitorItemDiskSMART: "SMART",
+        monitorItemDiskProtection: "External protection",
+        monitorItemDiskTools: "Tools",
         monitorPanelConfigHint: "Open a block to choose what it shows.",
         monitorOrderSection: "Section order",
         monitorOrderHint: "Drag to reorder the panel sections and use the eye to show or hide each one.",

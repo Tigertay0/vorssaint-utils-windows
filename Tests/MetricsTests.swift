@@ -42,6 +42,11 @@ struct MetricsTests {
         expectEqual(MetricFormat.bytes(10 * 1024), "10 KB", "bytes 10K drops decimal")
         expectEqual(MetricFormat.bytes(1024 * 1024), "1.0 MB", "bytes 1M")
         expectEqual(MetricFormat.bytes(3 * 1024 * 1024 * 1024), "3.0 GB", "bytes 3G")
+        expectEqual(MetricFormat.diskBytes(245_107_195_904), "245 GB", "disk bytes use decimal storage units")
+        expectEqual(MetricFormat.diskBytes(1_000_204_845_056), "1.0 TB", "disk bytes show decimal terabytes")
+        expectEqual(MetricFormat.diskBytes(123_456_789_000), "123 GB", "disk bytes match Finder-style GB")
+        expectEqual(MetricFormat.diskBytesPrecise(14_878_047_232_000), "14.88 TB",
+                    "precise disk bytes keep SMART totals readable")
 
         expectEqual(MetricFormat.bytesPerSec(0), "0 B/s", "rate zero")
         expectEqual(MetricFormat.bytesPerSec(2 * 1024 * 1024), "2.0 MB/s", "rate 2M")
@@ -50,6 +55,59 @@ struct MetricsTests {
         expectEqual(MetricFormat.bytesPerSecCompact(0), "0B", "compact zero")
         expectEqual(MetricFormat.bytesPerSecCompact(320 * 1024), "320K", "compact 320K")
         expectEqual(MetricFormat.bytesPerSecCompact(1.2 * 1024 * 1024), "1.2M", "compact 1.2M")
+
+        // MARK: Disk helpers
+
+        expect(DiskSupport.nvmeBytes(low: 2, high: nil) == 1_024_000,
+               "NVMe data units convert to 512,000 byte units")
+        expect(DiskSupport.nvmeBytes(low: 1, high: 1) == 2_199_023_256_064_000,
+               "NVMe high data unit word is included")
+        expectClose(DiskSupport.celsius(fromSMARTTemperature: 302) ?? -1, 28.85,
+                    "SMART Kelvin temperature converts to Celsius")
+        expectClose(DiskSupport.celsius(fromSMARTTemperature: 33) ?? -1, 33,
+                    "SMART Celsius temperature is preserved")
+        expect(DiskSupport.celsius(fromSMARTTemperature: 999) == nil,
+               "SMART invalid temperature is ignored")
+        expect(DiskSupport.healthPercent(fromPercentageUsed: 1) == 99,
+               "SMART health subtracts percentage used")
+        expect(DiskSupport.healthPercent(fromPercentageUsed: 150) == 0,
+               "SMART health clamps exhausted drives")
+        let diskRate = MetricFormat.diskSpeed(
+            previous: DiskIOCounters(read: 1_000, written: 500),
+            current: DiskIOCounters(read: 3_048, written: 1_524),
+            elapsed: 2
+        )
+        expectClose(diskRate.read, 1_024, "disk read speed uses elapsed time")
+        expectClose(diskRate.write, 512, "disk write speed uses elapsed time")
+        let resetDiskRate = MetricFormat.diskSpeed(
+            previous: DiskIOCounters(read: 3_048, written: 1_524),
+            current: DiskIOCounters(read: 2_000, written: 800),
+            elapsed: 2
+        )
+        expectClose(resetDiskRate.read, 0, "disk read counter reset does not spike")
+        expectClose(resetDiskRate.write, 0, "disk write counter reset does not spike")
+        let smart = DiskSupport.smartReading(
+            status: "Verified",
+            vendorKeys: [
+                "DATA_UNITS_READ_0": 2,
+                "DATA_UNITS_WRITTEN_0": 4,
+                "TEMPERATURE": 302,
+                "PERCENTAGE_USED": 7,
+                "POWER_CYCLES_0": 11,
+                "POWER_ON_HOURS_0": 12,
+                "UNSAFE_SHUTDOWNS_0": 13,
+                "MEDIA_ERRORS_0": 14,
+            ]
+        )
+        expect(smart?.status == "Verified", "SMART status is preserved")
+        expect(smart?.totalReadBytes == 1_024_000, "SMART total read uses NVMe units")
+        expect(smart?.totalWrittenBytes == 2_048_000, "SMART total written uses NVMe units")
+        expectClose(smart?.temperatureCelsius ?? -1, 28.85, "SMART reading includes temperature")
+        expect(smart?.healthPercent == 93, "SMART reading includes estimated health")
+        expect(smart?.powerCycles == 11, "SMART reading includes power cycles")
+        expect(smart?.powerOnHours == 12, "SMART reading includes power-on hours")
+        expect(smart?.unsafeShutdowns == 13, "SMART reading includes unsafe shutdowns")
+        expect(smart?.mediaErrors == 14, "SMART reading includes media errors")
 
         // MARK: Watts & percent
 
@@ -165,6 +223,8 @@ struct MetricsTests {
                "window switcher is on for clean installs")
         expect(registeredDefaults[DefaultsKey.switcherShortcut] as? String == "command:48",
                "switcher shortcut defaults to Cmd+Tab")
+        expect(registeredDefaults[DefaultsKey.switcherShowWindowlessFinder] as? Bool == true,
+               "Finder without windows stays visible in the switcher by default")
         expect(registeredDefaults[DefaultsKey.dockPreviewEnabled] as? Bool == false,
                "Dock Preview is opt-in for clean installs")
         expect(registeredDefaults[DefaultsKey.autoCheckUpdates] as? Bool == true,
@@ -211,6 +271,20 @@ struct MetricsTests {
                "Quick Controls panel section is shown by default")
         expect(registeredDefaults[DefaultsKey.monitorInterval] as? Int == 2,
                "monitor default interval stays at 2 seconds")
+        expect(registeredDefaults[DefaultsKey.monitorShowDisk] as? Bool == true,
+               "disk monitor panel section is shown by default")
+        expect(registeredDefaults[DefaultsKey.monitorGraphDisk] as? Bool == true,
+               "disk monitor graph is shown by default")
+        expect(registeredDefaults[DefaultsKey.monitorDiskUsage] as? Bool == true,
+               "disk usage block is shown by default")
+        expect(registeredDefaults[DefaultsKey.monitorDiskActivity] as? Bool == true,
+               "disk activity block is shown by default")
+        expect(registeredDefaults[DefaultsKey.monitorDiskSMART] as? Bool == true,
+               "disk SMART block is shown by default")
+        expect(registeredDefaults[DefaultsKey.monitorDiskProtection] as? Bool == true,
+               "disk protection block is shown by default")
+        expect(registeredDefaults[DefaultsKey.monitorDiskTools] as? Bool == true,
+               "disk tools block is shown by default")
         expect(registeredDefaults[DefaultsKey.temperatureUnit] as? String == TemperatureUnit.celsius.rawValue,
                "temperature defaults to Celsius")
         expect(registeredDefaults[DefaultsKey.menuBarCPUTemperature] as? Bool == false,

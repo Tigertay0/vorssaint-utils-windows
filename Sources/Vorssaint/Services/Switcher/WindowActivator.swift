@@ -10,8 +10,12 @@ import ApplicationServices
 /// are asynchronous and some apps settle their main window one run-loop later.
 enum WindowActivator {
     private static let focusRetryDelay: TimeInterval = 0.12
+    private static let fullscreenFocusRetryDelays: [TimeInterval] = [0.18, 0.38, 0.68]
 
-    static func activate(_ item: SwitcherItem, retry: Bool = true) {
+    static func activate(_ item: SwitcherItem,
+                         retry: Bool = true,
+                         sourceWasFullscreen: Bool = false,
+                         sourcePID: pid_t? = nil) {
         if item.pid == ProcessInfo.processInfo.processIdentifier {
             activateOwnWindow(item)
             return
@@ -24,17 +28,34 @@ enum WindowActivator {
             activateApp(app)
             return
         }
+        let activateAllWindows = !item.isMinimized && !item.isFullscreen
+        if sourceWasFullscreen || item.isFullscreen {
+            activateApp(app, allWindows: activateAllWindows)
+            guard retry else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.fullscreenFocusRetryDelays[0]) {
+                    guard let app = NSRunningApplication(processIdentifier: item.pid), !app.isTerminated else { return }
+                    activateApp(app, allWindows: activateAllWindows)
+                    focusWindow(windowID: windowID, pid: item.pid)
+                }
+                return
+            }
+            scheduleFocusRetries(windowID: windowID,
+                                  pid: item.pid,
+                                  sourcePID: sourcePID,
+                                  activateAllWindows: activateAllWindows,
+                                  delays: Self.fullscreenFocusRetryDelays)
+            return
+        }
+
+        activateApp(app, allWindows: activateAllWindows)
         focusWindow(windowID: windowID, pid: item.pid)
-        activateApp(app, allWindows: !item.isMinimized)
 
         guard retry else { return }
-        let pid = item.pid
-        let activateAllWindows = !item.isMinimized
-        DispatchQueue.main.asyncAfter(deadline: .now() + focusRetryDelay) {
-            guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return }
-            focusWindow(windowID: windowID, pid: pid)
-            activateApp(app, allWindows: activateAllWindows)
-        }
+        scheduleFocusRetries(windowID: windowID,
+                              pid: item.pid,
+                              sourcePID: sourcePID,
+                              activateAllWindows: activateAllWindows,
+                              delays: [focusRetryDelay])
     }
 
     static func activate(pid: pid_t, windowID: CGWindowID?, appName: String, retry: Bool = true) {
@@ -116,6 +137,31 @@ enum WindowActivator {
                 app.activate(options: [])
             }
         }
+    }
+
+    private static func scheduleFocusRetries(windowID: CGWindowID,
+                                             pid: pid_t,
+                                             sourcePID: pid_t?,
+                                             activateAllWindows: Bool,
+                                             delays: [TimeInterval]) {
+        for delay in delays {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                guard shouldContinueFocusRetry(targetPID: pid, sourcePID: sourcePID),
+                      let app = NSRunningApplication(processIdentifier: pid),
+                      !app.isTerminated else { return }
+                activateApp(app, allWindows: activateAllWindows)
+                focusWindow(windowID: windowID, pid: pid)
+            }
+        }
+    }
+
+    private static func shouldContinueFocusRetry(targetPID: pid_t, sourcePID: pid_t?) -> Bool {
+        guard let sourcePID,
+              let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        else { return true }
+        return frontmostPID == targetPID
+            || frontmostPID == sourcePID
+            || frontmostPID == ProcessInfo.processInfo.processIdentifier
     }
 
     @discardableResult

@@ -26,7 +26,7 @@ enum WindowEnumerator {
     static func listWindows() -> [SwitcherItem] {
         listWindows(filterPID: nil,
                     maximumCount: maximumCount,
-                    includeWindowlessFinder: true,
+                    includeWindowlessFinder: UserDefaults.standard.bool(forKey: DefaultsKey.switcherShowWindowlessFinder),
                     groupByApp: UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs))
     }
 
@@ -67,12 +67,12 @@ enum WindowEnumerator {
             if accessibilityWindows[pid] != nil, axWindow == nil {
                 continue
             }
-            let isMinimized = axWindow?.isMinimized ?? false
-
             let cgFrame = CGRect(x: (boundsDict["X"] as? NSNumber)?.doubleValue ?? 0,
                                  y: (boundsDict["Y"] as? NSNumber)?.doubleValue ?? 0,
                                  width: (boundsDict["Width"] as? NSNumber)?.doubleValue ?? 0,
                                  height: (boundsDict["Height"] as? NSNumber)?.doubleValue ?? 0)
+            let isMinimized = axWindow?.isMinimized ?? false
+            let isFullscreen = (axWindow?.isFullscreen ?? false) || frameLooksFullscreen(cgFrame)
             guard let frame = switchableFrame(cgFrame, fallback: axWindow?.frame, isMinimized: isMinimized) else {
                 continue
             }
@@ -112,6 +112,7 @@ enum WindowEnumerator {
                                    pid: pid,
                                    isOnScreen: isOnScreen,
                                    isMinimized: isMinimized,
+                                   isFullscreen: isFullscreen,
                                    frame: frame))
         }
         appendAccessibilityOnlyWindows(to: &windows,
@@ -136,6 +137,7 @@ enum WindowEnumerator {
         let title: String
         let frame: CGRect?
         let isMinimized: Bool
+        let isFullscreen: Bool
     }
 
     private struct AccessibilityWindowSnapshotList {
@@ -175,9 +177,12 @@ enum WindowEnumerator {
         var ordered: [(id: CGWindowID, snapshot: AccessibilityWindowSnapshot)] = []
         for window in axWindows {
             if let id = AXWindowResolver.windowID(for: window) {
+                let frame = accessibilityFrame(for: window)
                 let snapshot = AccessibilityWindowSnapshot(title: accessibilityTitle(for: window),
-                                                           frame: accessibilityFrame(for: window),
-                                                           isMinimized: boolAttribute(window, kAXMinimizedAttribute as String))
+                                                           frame: frame,
+                                                           isMinimized: boolAttribute(window, kAXMinimizedAttribute as String),
+                                                           isFullscreen: isFullscreenWindow(window)
+                                                            || frameLooksFullscreen(frame))
                 byID[id] = snapshot
                 ordered.append((id, snapshot))
             }
@@ -227,6 +232,7 @@ enum WindowEnumerator {
                                        pid: pid,
                                        isOnScreen: false,
                                        isMinimized: entry.snapshot.isMinimized,
+                                       isFullscreen: entry.snapshot.isFullscreen,
                                        frame: frame))
             }
         }
@@ -272,8 +278,16 @@ enum WindowEnumerator {
         return CGRect(origin: .zero, size: minimumSize)
     }
 
+    private static func frameLooksFullscreen(_ frame: CGRect?) -> Bool {
+        guard let frame else { return false }
+        return NSScreen.screens.contains { screen in
+            abs(frame.width - screen.frame.width) <= 2
+                && abs(frame.height - screen.frame.height) <= 2
+        }
+    }
+
     private static func isUserFacingWindow(_ window: AXUIElement) -> Bool {
-        if boolAttribute(window, "AXFullScreen") { return true }
+        if isFullscreenWindow(window) { return true }
         if boolAttribute(window, kAXMinimizedAttribute as String),
            stringAttribute(window, kAXRoleAttribute as String) == (kAXWindowRole as String) {
             return true
@@ -282,6 +296,11 @@ enum WindowEnumerator {
             return subrole == "AXStandardWindow" || subrole == "AXFullScreenWindow"
         }
         return stringAttribute(window, kAXRoleAttribute as String) == "AXWindow"
+    }
+
+    private static func isFullscreenWindow(_ window: AXUIElement) -> Bool {
+        if boolAttribute(window, "AXFullScreen") { return true }
+        return stringAttribute(window, kAXSubroleAttribute as String) == "AXFullScreenWindow"
     }
 
     private static func appendUnique(_ window: AXUIElement, to windows: inout [AXUIElement]) {
@@ -361,7 +380,8 @@ enum WindowEnumerator {
             if let index = indexByPid[window.pid] {
                 // Another window of the same app: prefer an on-screen window as
                 // the representative when the one we kept is off-screen.
-                if window.isOnScreen && !grouped[index].isOnScreen {
+                if (window.isOnScreen && !grouped[index].isOnScreen)
+                    || (window.isFullscreen && !grouped[index].isFullscreen) {
                     grouped[index] = window
                 }
             } else {

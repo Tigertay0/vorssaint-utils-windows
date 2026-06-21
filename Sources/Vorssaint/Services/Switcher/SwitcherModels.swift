@@ -16,6 +16,7 @@ struct SwitcherItem: Identifiable, Equatable {
     let windowID: CGWindowID?
     let isOnScreen: Bool
     let isMinimized: Bool
+    let isFullscreen: Bool
     let frame: CGRect
 
     /// The window whose thumbnail represents this entry.
@@ -31,15 +32,17 @@ struct SwitcherItem: Identifiable, Equatable {
     }
 
     static func window(id: CGWindowID, title: String, appName: String, pid: pid_t,
-                       isOnScreen: Bool, isMinimized: Bool = false, frame: CGRect) -> SwitcherItem {
+                       isOnScreen: Bool, isMinimized: Bool = false,
+                       isFullscreen: Bool = false, frame: CGRect) -> SwitcherItem {
         SwitcherItem(id: "w:\(id)", title: title, appName: appName,
                      pid: pid, windowID: id, isOnScreen: isOnScreen,
-                     isMinimized: isMinimized, frame: frame)
+                     isMinimized: isMinimized, isFullscreen: isFullscreen,
+                     frame: frame)
     }
 
     static func appOnly(appName: String, pid: pid_t) -> SwitcherItem {
         SwitcherItem(id: "a:\(pid)", title: appName, appName: appName,
                      pid: pid, windowID: nil, isOnScreen: false,
-                     isMinimized: false, frame: .zero)
+                     isMinimized: false, isFullscreen: false, frame: .zero)
     }
 }

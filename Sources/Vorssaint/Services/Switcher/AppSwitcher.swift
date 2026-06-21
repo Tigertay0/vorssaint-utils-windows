@@ -346,11 +346,13 @@ final class AppSwitcher: ObservableObject {
     func commitSession() {
         guard sessionActive else { return }
         let selection = windows.indices.contains(selectedIndex) ? windows[selectedIndex] : nil
+        let source = windows.first { $0.id == sessionStartItemID }
         endSession()
         if let selection {
             recordUse(selection.id)
-            // Activate synchronously: the raise is immediate.
-            WindowActivator.activate(selection)
+            WindowActivator.activate(selection,
+                                     sourceWasFullscreen: source?.isFullscreen ?? false,
+                                     sourcePID: source?.pid)
         }
     }
 

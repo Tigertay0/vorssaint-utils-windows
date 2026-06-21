@@ -55,6 +55,15 @@ enum SelfTest {
             failures.append("network counters decreased")
         }
 
+        let diskCounters = DiskSampler.readCounters()
+        let disks = DiskSampler().sample(now: ProcessInfo.processInfo.systemUptime)
+        if diskCounters.isEmpty {
+            warnings.append("disk counters unavailable")
+        }
+        if disks.isEmpty {
+            warnings.append("no mounted disk volumes found")
+        }
+
         // Power: laptops report battery/adapter flow; some desktops report nothing.
         if PowerSampler(smc: SMCClient()).sample().isEmpty {
             warnings.append("no power metrics on this Mac")

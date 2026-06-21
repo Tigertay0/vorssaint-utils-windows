@@ -343,6 +343,7 @@ struct SwitcherSettings: View {
     @ObservedObject private var dockPreview = DockPreviewService.shared
     @AppStorage(DefaultsKey.switcherEnabled) private var switcherEnabled = true
     @AppStorage(DefaultsKey.switcherMergeTabs) private var switcherMergeTabs = false
+    @AppStorage(DefaultsKey.switcherShowWindowlessFinder) private var switcherShowWindowlessFinder = true
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
     @AppStorage(DefaultsKey.previewSize) private var previewSize = "normal"
 
@@ -369,6 +370,13 @@ struct SwitcherSettings: View {
                 Text(l10n.s.switcherMergeTabsCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if switcherEnabled {
+                    Toggle(l10n.s.switcherShowFinder, isOn: $switcherShowWindowlessFinder)
+                    Text(l10n.s.switcherShowFinderCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Section {
                 Toggle(l10n.s.dockPreviewEnable, isOn: $dockPreviewEnabled)

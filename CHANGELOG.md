@@ -4,6 +4,33 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.10] - 2026-06-21
+
+### Summary
+- This update adds disk monitoring to the System Monitor, with per-disk storage,
+  activity, SMART details when available and safe eject controls for external
+  drives.
+- App Switcher is steadier with multiple windows and fullscreen apps, including
+  games.
+- App Switcher now has a Finder visibility option for users who prefer not to
+  show Finder when it has no open windows.
+
+### Added
+- System Monitor now has a Disks section with storage usage, live read/write
+  activity, session totals, SMART details when macOS exposes them, per-disk
+  selection and Finder-style decimal storage values.
+- Disks can now be selected individually, with per-disk details, an Eject action,
+  an Eject all action for external drives and safety guards that block eject
+  actions for the internal system disk.
+- App Switcher can now hide Finder when it has no open windows, while keeping
+  Finder windows visible when they exist.
+
+### Fixed
+- App Switcher now returns to the exact window you last used in apps with
+  multiple windows, instead of letting the app choose a different window.
+- App Switcher now switches more reliably when entering or leaving fullscreen
+  apps and games.
+
 ## [3.0.9] - 2026-06-20
 
 ### Summary

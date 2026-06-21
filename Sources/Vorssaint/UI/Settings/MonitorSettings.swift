@@ -22,6 +22,7 @@ struct MonitorSettings: View {
     @AppStorage(DefaultsKey.monitorGraphGPU) private var graphGPU = true
     @AppStorage(DefaultsKey.monitorGraphMemory) private var graphMemory = true
     @AppStorage(DefaultsKey.monitorGraphNetwork) private var graphNetwork = true
+    @AppStorage(DefaultsKey.monitorGraphDisk) private var graphDisk = true
     @AppStorage(DefaultsKey.monitorGraphPower) private var graphPower = true
     @AppStorage(DefaultsKey.monitorGraphBattery) private var graphBattery = true
 
@@ -79,6 +80,7 @@ struct MonitorSettings: View {
                 Toggle(l10n.s.monitorShowGPU, isOn: $graphGPU)
                 Toggle(l10n.s.monitorShowMemory, isOn: $graphMemory)
                 Toggle(l10n.s.monitorShowNetwork, isOn: $graphNetwork)
+                Toggle(l10n.s.diskSection, isOn: $graphDisk)
                 Toggle(l10n.s.monitorShowPowerLabel, isOn: $graphPower)
                 Toggle(l10n.s.batteryLabel, isOn: $graphBattery)
                 Text(l10n.s.monitorGraphsCaption)

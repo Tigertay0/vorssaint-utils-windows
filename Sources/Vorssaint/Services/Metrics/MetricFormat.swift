@@ -10,6 +10,11 @@ struct NetworkCounters: Equatable {
     var sent: UInt64 = 0
 }
 
+struct DiskIOCounters: Equatable {
+    var read: UInt64 = 0
+    var written: UInt64 = 0
+}
+
 /// Pure, deterministic helpers for the system monitor: number formatting, the
 /// fixed-size history buffer, network speed math and interface filtering.
 ///
@@ -60,6 +65,40 @@ enum MetricFormat {
     static func bytes(_ bytes: UInt64) -> String {
         let (value, unit) = scale(Double(bytes))
         return "\(number(value, unit: unit)) \(unit)"
+    }
+
+    static func diskBytes(_ bytes: UInt64) -> String {
+        let units = ["B", "KB", "MB", "GB", "TB", "PB"]
+        var value = max(0, Double(bytes))
+        var index = 0
+        while value >= 1000, index < units.count - 1 {
+            value /= 1000
+            index += 1
+        }
+        if units[index] == "B" {
+            return String(format: "%.0f B", value)
+        }
+        return value < 10 ? String(format: "%.1f %@", value, units[index])
+            : String(format: "%.0f %@", value, units[index])
+    }
+
+    static func diskBytesPrecise(_ bytes: UInt64) -> String {
+        let units = ["B", "KB", "MB", "GB", "TB", "PB"]
+        var value = max(0, Double(bytes))
+        var index = 0
+        while value >= 1000, index < units.count - 1 {
+            value /= 1000
+            index += 1
+        }
+        let unit = units[index]
+        if unit == "B" {
+            return String(format: "%.0f B", value)
+        }
+        if unit == "TB" || unit == "PB" {
+            return String(format: "%.2f %@", value, unit)
+        }
+        return value < 10 ? String(format: "%.1f %@", value, unit)
+            : String(format: "%.0f %@", value, unit)
     }
 
     /// A throughput, e.g. "1.2 MB/s". Used in the panel.
@@ -158,6 +197,17 @@ enum MetricFormat {
         let up = current.sent >= previous.sent
             ? Double(current.sent - previous.sent) / elapsed : 0
         return (down, up)
+    }
+
+    static func diskSpeed(previous: DiskIOCounters,
+                          current: DiskIOCounters,
+                          elapsed: Double) -> (read: Double, write: Double) {
+        guard elapsed > 0 else { return (0, 0) }
+        let read = current.read >= previous.read
+            ? Double(current.read - previous.read) / elapsed : 0
+        let write = current.written >= previous.written
+            ? Double(current.written - previous.written) / elapsed : 0
+        return (read, write)
     }
 
     /// Whether an interface counts toward "real" network throughput. Loopback and

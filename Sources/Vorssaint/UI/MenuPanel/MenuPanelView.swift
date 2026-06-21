@@ -19,6 +19,7 @@ struct MenuPanelView: View {
     @AppStorage(DefaultsKey.monitorShowMixer) private var showMixer = true
     @AppStorage(DefaultsKey.monitorShowSystem) private var showSystem = true
     @AppStorage(DefaultsKey.monitorShowNetwork) private var showNetwork = true
+    @AppStorage(DefaultsKey.monitorShowDisk) private var showDisk = true
     @AppStorage(DefaultsKey.monitorShowPower) private var showPower = true
     @AppStorage(DefaultsKey.monitorShowFanControlBeta) private var showFanControlBeta = false
     @AppStorage(DefaultsKey.panelShowKeepAwake) private var showKeepAwake = true
@@ -70,12 +71,14 @@ struct MenuPanelView: View {
             switch activeSection {
             case .system: return SystemMonitorPanelNeeds(system: true)
             case .network: return SystemMonitorPanelNeeds(network: true)
+            case .disk: return SystemMonitorPanelNeeds(disk: true)
             case .power: return SystemMonitorPanelNeeds(power: true)
             default: return .none
             }
         }
         return SystemMonitorPanelNeeds(system: showSystem,
                                        network: showNetwork,
+                                       disk: showDisk,
                                        power: showPower)
     }
 
@@ -168,6 +171,7 @@ struct MenuPanelView: View {
         case .mixer: return 250
         case .system: return 460
         case .network: return 190
+        case .disk: return 360
         case .power: return 170
         case .fanControl: return 92
         case .utilities: return 500
@@ -185,6 +189,7 @@ struct MenuPanelView: View {
         case .mixer: if showMixer { MixerSection(collapsible: collapsible) }
         case .system: if showSystem { SystemSection(collapsible: collapsible) }
         case .network: if showNetwork { NetworkSection(collapsible: collapsible) }
+        case .disk: if showDisk { DiskSection(collapsible: collapsible) }
         case .power: if showPower { PowerSection(collapsible: collapsible) }
         case .fanControl: if showFanControlBeta { FanControlSection(collapsible: collapsible) }
         case .utilities: UtilitiesSection(collapsible: collapsible, startCleaning: startCleaning)
@@ -198,6 +203,7 @@ struct MenuPanelView: View {
         case .mixer: return showMixer
         case .system: return showSystem
         case .network: return showNetwork
+        case .disk: return showDisk
         case .power: return showPower
         case .fanControl: return showFanControlBeta
         case .utilities: return showUtilities
@@ -561,6 +567,7 @@ struct QuickControlsSection: View {
     @ObservedObject private var windowMaximizer = WindowMaximizer.shared
     @AppStorage(DefaultsKey.scrollInverterEnabled) private var scrollEnabled = false
     @AppStorage(DefaultsKey.switcherEnabled) private var switcherEnabled = true
+    @AppStorage(DefaultsKey.switcherShowWindowlessFinder) private var switcherShowWindowlessFinder = true
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
     @AppStorage(DefaultsKey.finderCutPasteEnabled) private var cutPasteEnabled = false
     @AppStorage(DefaultsKey.autoQuitEnabled) private var autoQuitEnabled = false
@@ -670,26 +677,31 @@ struct QuickControlsSection: View {
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .switcher:
-            PanelToggleRow(title: l10n.s.switcherSection,
-                           caption: switcherCaption,
-                           systemImage: "rectangle.on.rectangle",
-                           isOn: $switcherEnabled,
-                           isEditing: editing,
-                           showsDragHandle: true,
-                           visibility: $showSwitcher,
-                           isActive: switcherEnabled && switcher.isRunning,
-                           needsAttention: switcherEnabled && (!permissions.accessibility || !permissions.screenRecording),
-                           permissionButtonTitle: l10n.s.permissionRequest,
-                           permissionAction: switcherPermissionAction)
-                .onChange(of: switcherEnabled) { _, enabled in
-                    AppSwitcher.shared.syncWithPreferences()
-                    guard enabled else { return }
-                    if !permissions.accessibility {
-                        grantAccessibility()
-                    } else if !permissions.screenRecording {
-                        grantScreenRecording()
+            VStack(alignment: .leading, spacing: 5) {
+                PanelToggleRow(title: l10n.s.switcherSection,
+                               caption: switcherCaption,
+                               systemImage: "rectangle.on.rectangle",
+                               isOn: $switcherEnabled,
+                               isEditing: editing,
+                               showsDragHandle: true,
+                               visibility: $showSwitcher,
+                               isActive: switcherEnabled && switcher.isRunning,
+                               needsAttention: switcherEnabled && (!permissions.accessibility || !permissions.screenRecording),
+                               permissionButtonTitle: l10n.s.permissionRequest,
+                               permissionAction: switcherPermissionAction)
+                    .onChange(of: switcherEnabled) { _, enabled in
+                        AppSwitcher.shared.syncWithPreferences()
+                        guard enabled else { return }
+                        if !permissions.accessibility {
+                            grantAccessibility()
+                        } else if !permissions.screenRecording {
+                            grantScreenRecording()
+                        }
                     }
+                if switcherEnabled && !editing {
+                    switcherFinderOption
                 }
+            }
         case .cutPaste:
             PanelToggleRow(title: l10n.s.cutPasteName,
                            caption: caption(l10n.s.cutPasteEnableCaption, needsAccessibility: cutPasteEnabled),
@@ -809,6 +821,30 @@ struct QuickControlsSection: View {
     private func accessibilityPermissionAction(_ enabled: Bool) -> (() -> Void)? {
         guard enabled, !permissions.accessibility else { return nil }
         return { grantAccessibility() }
+    }
+
+    private var switcherFinderOption: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text(l10n.s.switcherShowFinder)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Toggle("", isOn: $switcherShowWindowlessFinder)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+            }
+            Text(l10n.s.switcherShowFinderCaption)
+                .font(.system(size: 9.5))
+                .foregroundStyle(.tertiary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.leading, 31)
+        .padding(.trailing, 4)
+        .padding(.bottom, 2)
     }
 
     private var switcherPermissionAction: (() -> Void)? {

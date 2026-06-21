@@ -23,6 +23,7 @@ enum DefaultsKey {
     static let switcherEnabled = "switcherEnabled"
     static let switcherShortcut = "switcherShortcut"      // GlobalShortcut storage value
     static let switcherMergeTabs = "switcherMergeTabs"     // show one switcher entry per app (collapse all of an app's windows)
+    static let switcherShowWindowlessFinder = "switcherShowWindowlessFinder"
     static let dockPreviewEnabled = "dockPreviewEnabled"
     static let previewSize = "previewSize"                // app switcher + dock preview thumbnail size
     static let autoCheckUpdates = "autoCheckUpdates"
@@ -77,6 +78,7 @@ enum DefaultsKey {
     // System monitor — which blocks appear in the panel.
     static let monitorShowSystem = "monitorShowSystem"
     static let monitorShowNetwork = "monitorShowNetwork"
+    static let monitorShowDisk = "monitorShowDisk"
     static let monitorShowPower = "monitorShowPower"
     static let monitorShowMixer = "monitorShowMixer"
     static let monitorShowFanControlBeta = "monitorShowFanControlBeta"
@@ -85,6 +87,7 @@ enum DefaultsKey {
     static let monitorGraphGPU = "monitorGraphGPU"
     static let monitorGraphMemory = "monitorGraphMemory"
     static let monitorGraphNetwork = "monitorGraphNetwork"
+    static let monitorGraphDisk = "monitorGraphDisk"
     static let monitorGraphPower = "monitorGraphPower"
     static let monitorGraphBattery = "monitorGraphBattery"
     // System monitor — per-item visibility inside each panel section.
@@ -97,6 +100,11 @@ enum DefaultsKey {
     static let monitorNetSpeed = "monitorNetSpeed"
     static let monitorNetTotals = "monitorNetTotals"
     static let monitorNetTest = "monitorNetTest"
+    static let monitorDiskUsage = "monitorDiskUsage"
+    static let monitorDiskActivity = "monitorDiskActivity"
+    static let monitorDiskSMART = "monitorDiskSMART"
+    static let monitorDiskProtection = "monitorDiskProtection"
+    static let monitorDiskTools = "monitorDiskTools"
     static let monitorPwrSystem = "monitorPwrSystem"
     static let monitorPwrAdapter = "monitorPwrAdapter"
     static let monitorPwrBattery = "monitorPwrBattery"
@@ -109,6 +117,7 @@ enum DefaultsKey {
     static let panelControlOrder = "panelControlOrder"
     static let panelSystemOrder = "panelSystemOrder"
     static let panelNetworkOrder = "panelNetworkOrder"
+    static let panelDiskOrder = "panelDiskOrder"
     static let panelPowerOrder = "panelPowerOrder"
     static let panelNavigationEnabled = "panelNavigationEnabled"
     static let panelCollapsedSections = "panelCollapsedSections"
@@ -199,6 +208,7 @@ enum Defaults {
         DefaultsKey.switcherEnabled: true,
         DefaultsKey.switcherShortcut: "command:48",
         DefaultsKey.switcherMergeTabs: false,
+        DefaultsKey.switcherShowWindowlessFinder: true,
         DefaultsKey.dockPreviewEnabled: false,
         DefaultsKey.previewSize: "normal",
         DefaultsKey.autoCheckUpdates: true,
@@ -242,6 +252,7 @@ enum Defaults {
         DefaultsKey.menuBarMemoryStyle: "percent",
         DefaultsKey.monitorShowSystem: true,
         DefaultsKey.monitorShowNetwork: true,
+        DefaultsKey.monitorShowDisk: true,
         DefaultsKey.monitorShowPower: true,
         DefaultsKey.monitorShowMixer: true,
         DefaultsKey.monitorShowFanControlBeta: false,
@@ -250,6 +261,7 @@ enum Defaults {
         DefaultsKey.monitorGraphGPU: true,
         DefaultsKey.monitorGraphMemory: true,
         DefaultsKey.monitorGraphNetwork: true,
+        DefaultsKey.monitorGraphDisk: true,
         DefaultsKey.monitorGraphPower: true,
         DefaultsKey.monitorGraphBattery: true,
         // Every per-item block shows by default; users hide what they don't want.
@@ -262,6 +274,11 @@ enum Defaults {
         DefaultsKey.monitorNetSpeed: true,
         DefaultsKey.monitorNetTotals: true,
         DefaultsKey.monitorNetTest: true,
+        DefaultsKey.monitorDiskUsage: true,
+        DefaultsKey.monitorDiskActivity: true,
+        DefaultsKey.monitorDiskSMART: true,
+        DefaultsKey.monitorDiskProtection: true,
+        DefaultsKey.monitorDiskTools: true,
         DefaultsKey.monitorPwrSystem: true,
         DefaultsKey.monitorPwrAdapter: true,
         DefaultsKey.monitorPwrBattery: true,
