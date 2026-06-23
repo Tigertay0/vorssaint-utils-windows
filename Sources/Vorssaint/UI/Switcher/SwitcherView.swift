@@ -41,14 +41,17 @@ struct SwitcherView: View {
                     ForEach(Array(switcher.windows.enumerated()), id: \.element.id) { index, window in
                         WindowCard(window: window,
                                    preview: window.previewWindowID.flatMap { switcher.previews[$0] },
-                                   isSelected: index == switcher.selectedIndex)
+                                   isSelected: index == switcher.selectedIndex,
+                                   onCommit: {
+                                       switcher.select(index: index)
+                                       switcher.commitSession()
+                                   },
+                                   onClose: {
+                                       switcher.closeWindow(window)
+                                   })
                             .id(window.id)
                             .onHover { hovering in
                                 if hovering { switcher.hoverSelect(index: index) }
-                            }
-                            .onTapGesture {
-                                switcher.select(index: index)
-                                switcher.commitSession()
                             }
                     }
                 }
@@ -68,6 +71,17 @@ private struct WindowCard: View {
     let window: SwitcherItem
     let preview: CGImage?
     let isSelected: Bool
+    let onCommit: () -> Void
+    let onClose: () -> Void
+
+    @ObservedObject private var l10n = L10n.shared
+    @State private var isHovering = false
+    @State private var isCloseHovering = false
+    @State private var suppressNextCommit = false
+
+    private var showsCloseButton: Bool {
+        isHovering && window.windowID != nil
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -102,6 +116,15 @@ private struct WindowCard: View {
                         }
                     }
                 }
+
+                VStack {
+                    HStack {
+                        closeButton
+                            .padding(6)
+                        Spacer()
+                    }
+                    Spacer()
+                }
             }
             .frame(width: SwitcherGrid.cardWidth - 20,
                    height: SwitcherGrid.cardHeight - 58)
@@ -123,7 +146,39 @@ private struct WindowCard: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
         )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .onTapGesture {
+            guard !suppressNextCommit else { return }
+            onCommit()
+        }
+        .onHover { isHovering = $0 }
         .scaleEffect(isSelected ? 1.0 : 0.97)
         .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isSelected)
+        .animation(.easeOut(duration: 0.12), value: showsCloseButton)
+        .accessibilityLabel(window.displayTitle)
+    }
+
+    private var closeButton: some View {
+        Button {
+            suppressNextCommit = true
+            onClose()
+            DispatchQueue.main.async {
+                suppressNextCommit = false
+            }
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 19, weight: .medium))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.white.opacity(isCloseHovering ? 0.95 : 0.72),
+                                 Color(red: 1.0, green: 0.38, blue: 0.33).opacity(isCloseHovering ? 1 : 0.92))
+                .frame(width: 26, height: 26)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .opacity(showsCloseButton ? 1 : 0)
+        .allowsHitTesting(showsCloseButton)
+        .onHover { isCloseHovering = $0 }
+        .help(l10n.s.dockPreviewCloseWindow)
+        .accessibilityLabel(l10n.s.dockPreviewCloseWindow)
     }
 }

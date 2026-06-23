@@ -304,6 +304,21 @@ final class AppSwitcher: ObservableObject {
         select(index: index)
     }
 
+    func closeWindow(_ item: SwitcherItem) {
+        guard sessionActive,
+              windows.contains(where: { $0.id == item.id }),
+              let windowID = item.windowID,
+              WindowActivator.closeWindow(windowID: windowID, pid: item.pid)
+        else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+            self?.finishClosingWindow(itemID: item.id,
+                                      windowID: windowID,
+                                      pid: item.pid,
+                                      attempt: 0)
+        }
+    }
+
     private func advanceSelection(by delta: Int) {
         guard !windows.isEmpty else { return }
         userNavigated = true
@@ -329,6 +344,51 @@ final class AppSwitcher: ObservableObject {
             return
         }
         selectedIndex = min(max(0, selectedIndex - removedBeforeSelection), windows.count - 1)
+        grid = SwitcherGrid.compute(count: windows.count, on: NSScreen.withMouse)
+        resizePanel()
+    }
+
+    private func finishClosingWindow(itemID: String, windowID: CGWindowID, pid: pid_t, attempt: Int) {
+        guard sessionActive,
+              windows.contains(where: { $0.id == itemID })
+        else { return }
+
+        let refreshed = WindowEnumerator.listWindows(for: pid, maximumCount: 64)
+        guard !refreshed.contains(where: { $0.windowID == windowID }) else {
+            guard attempt < 2 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.finishClosingWindow(itemID: itemID,
+                                          windowID: windowID,
+                                          pid: pid,
+                                          attempt: attempt + 1)
+            }
+            return
+        }
+
+        applyClosedWindowRemoval(itemID: itemID, windowID: windowID)
+    }
+
+    private func applyClosedWindowRemoval(itemID: String, windowID: CGWindowID) {
+        let state = SwitcherSupport.closeState(afterRemoving: itemID,
+                                               itemIDs: windows.map(\.id),
+                                               selectedIndex: selectedIndex)
+        guard state.didRemove else { return }
+
+        let remaining = Set(state.remainingItemIDs)
+        windows = windows.filter { remaining.contains($0.id) }
+        let remainingPreviews = Set(windows.compactMap(\.previewWindowID))
+        previews = previews.filter { remainingPreviews.contains($0.key) && $0.key != windowID }
+        itemMRU.removeAll { $0 == itemID }
+        if sessionStartItemID == itemID {
+            sessionStartItemID = nil
+        }
+
+        guard !state.shouldEndSession else {
+            endSession()
+            return
+        }
+
+        selectedIndex = state.selectedIndex
         grid = SwitcherGrid.compute(count: windows.count, on: NSScreen.withMouse)
         resizePanel()
     }

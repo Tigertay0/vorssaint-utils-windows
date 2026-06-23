@@ -425,6 +425,22 @@ enum HomebrewParser {
         }
     }
 
+    static func parseInfoCommandOutput(_ output: String) throws -> [HomebrewPackage] {
+        let data = Data(output.utf8)
+        do {
+            return try parseInfoJSON(data)
+        } catch {
+            for json in balancedJSONObjects(in: output) {
+                let jsonData = Data(json.utf8)
+                guard isInfoJSONObject(jsonData) else { continue }
+                if let packages = try? parseInfoJSON(jsonData) {
+                    return packages
+                }
+            }
+            throw error
+        }
+    }
+
     static func parseSearchOutput(_ output: String,
                                   kind: HomebrewPackageKind,
                                   installed: [HomebrewPackage]) -> [HomebrewPackage] {
@@ -480,5 +496,66 @@ enum HomebrewParser {
                                installedVersion: installed?.isEmpty == false ? installed : nil,
                                stableVersion: item["version"] as? String,
                                homepage: item["homepage"] as? String)
+    }
+
+    private static func isInfoJSONObject(_ data: Data) -> Bool {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return false
+        }
+        return root["formulae"] != nil || root["casks"] != nil
+    }
+
+    private static func balancedJSONObjects(in output: String) -> [String] {
+        var objects: [String] = []
+        var start: String.Index?
+        var depth = 0
+        var inString = false
+        var escaping = false
+
+        var index = output.startIndex
+        while index < output.endIndex {
+            let character = output[index]
+
+            if start == nil {
+                if character == "{" {
+                    start = index
+                    depth = 1
+                    inString = false
+                    escaping = false
+                }
+                index = output.index(after: index)
+                continue
+            }
+
+            if inString {
+                if escaping {
+                    escaping = false
+                } else if character == "\\" {
+                    escaping = true
+                } else if character == "\"" {
+                    inString = false
+                }
+            } else if character == "\"" {
+                inString = true
+            } else if character == "{" {
+                depth += 1
+            } else if character == "}" {
+                depth -= 1
+                if depth == 0, let objectStart = start {
+                    let end = output.index(after: index)
+                    objects.append(String(output[objectStart..<end]))
+                    start = nil
+                    depth = 0
+                }
+                if depth < 0 {
+                    start = nil
+                    depth = 0
+                }
+            }
+
+            index = output.index(after: index)
+        }
+
+        return objects
     }
 }

@@ -70,12 +70,12 @@ final class HomebrewManager: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.isLoadingInstalled = false
-                guard status == 0, let data = output.data(using: .utf8) else {
+                guard status == 0 else {
                     self.errorMessage = output.trimmingCharacters(in: .whitespacesAndNewlines)
                     return
                 }
                 do {
-                    self.installed = try HomebrewParser.parseInfoJSON(data).map(self.packageApplyingPopularity)
+                    self.installed = try HomebrewParser.parseInfoCommandOutput(output).map(self.packageApplyingPopularity)
                     self.didOpenInstaller = false
                     if let selected = self.selectedPackage {
                         self.selectedPackage = self.packageApplyingPopularity(self.installed.first { $0.id == selected.id } ?? selected)
@@ -139,12 +139,12 @@ final class HomebrewManager: ObservableObject {
             DispatchQueue.main.async {
                 guard let self, generation == self.detailsGeneration else { return }
                 self.isLoadingDetails = false
-                guard status == 0, let data = output.data(using: .utf8) else {
+                guard status == 0 else {
                     self.errorMessage = output.trimmingCharacters(in: .whitespacesAndNewlines)
                     return
                 }
                 do {
-                    if let detail = try HomebrewParser.parseInfoJSON(data).first {
+                    if let detail = try HomebrewParser.parseInfoCommandOutput(output).first {
                         self.selectedPackage = self.packageApplyingPopularity(detail)
                     }
                 } catch {

@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.1.1] - 2026-06-23
+
+### Summary
+Vorssaint 3.1.1 makes Homebrew package loading more reliable, keeps Clipboard History from disrupting the app you are pasting into and adds direct window closing in App Switcher.
+
+### Added
+- App Switcher cards now show a close button on hover, so you can close a
+  specific window without leaving the switcher.
+
+### Fixed
+- Clipboard History no longer activates Vorssaint when opening the quick history
+  window, so paste actions keep their target in apps like Excel.
+- Closing a window from Dock Preview or App Switcher now triggers Quit on Close
+  when that was the app's last window.
+- Homebrew now keeps loading installed packages when Homebrew prints warnings
+  before or after its package list.
+
 ## [3.1.0] - 2026-06-23
 
 ### Summary

@@ -767,6 +767,33 @@ struct MetricsTests {
                                                       desiredWindowID: nil)
         expect(closeLast.shouldEndSession && closeLast.remainingWindowIDs.isEmpty,
                "Dock Preview close ends the panel when the last window is removed")
+        let switcherCloseSelected = SwitcherSupport.closeState(afterRemoving: "b",
+                                                               itemIDs: ["a", "b", "c"],
+                                                               selectedIndex: 1)
+        expect(switcherCloseSelected.remainingItemIDs == ["a", "c"]
+               && switcherCloseSelected.selectedIndex == 1
+               && !switcherCloseSelected.shouldEndSession,
+               "App Switcher close selects the next window after closing the selected one")
+        let switcherCloseBeforeSelection = SwitcherSupport.closeState(afterRemoving: "a",
+                                                                      itemIDs: ["a", "b", "c"],
+                                                                      selectedIndex: 2)
+        expect(switcherCloseBeforeSelection.remainingItemIDs == ["b", "c"]
+               && switcherCloseBeforeSelection.selectedIndex == 1,
+               "App Switcher close preserves the same logical selection after removing an earlier window")
+        let switcherCloseLast = SwitcherSupport.closeState(afterRemoving: "only",
+                                                           itemIDs: ["only"],
+                                                           selectedIndex: 0)
+        expect(switcherCloseLast.didRemove
+               && switcherCloseLast.shouldEndSession
+               && switcherCloseLast.remainingItemIDs.isEmpty,
+               "App Switcher close ends the session after the last item is removed")
+        let switcherCloseMissing = SwitcherSupport.closeState(afterRemoving: "missing",
+                                                              itemIDs: ["a", "b"],
+                                                              selectedIndex: 1)
+        expect(!switcherCloseMissing.didRemove
+               && switcherCloseMissing.remainingItemIDs == ["a", "b"]
+               && switcherCloseMissing.selectedIndex == 1,
+               "App Switcher close leaves selection intact when the item is not present")
         // MARK: Release notes parsing
 
         let changelog = """
@@ -928,6 +955,22 @@ struct MetricsTests {
                "Homebrew parser reads installed formula version")
         expect(homebrewPackages.first(where: { $0.name == "visual-studio-code" })?.displayName == "Visual Studio Code",
                "Homebrew parser reads cask display name")
+        let cleanCommandPackages = (try? HomebrewParser.parseInfoCommandOutput(homebrewJSON)) ?? []
+        expect(cleanCommandPackages.count == 2,
+               "Homebrew command output parser keeps clean JSON")
+        let noisyHomebrewOutput = """
+        Warning: Skipping some beta metadata
+        {"notice": "not package data"}
+        \(homebrewJSON)
+        Warning: A newer Homebrew beta changed an optional field
+        """
+        let noisyCommandPackages = (try? HomebrewParser.parseInfoCommandOutput(noisyHomebrewOutput)) ?? []
+        expect(noisyCommandPackages.count == 2,
+               "Homebrew command output parser accepts warnings around JSON")
+        expect(noisyCommandPackages.first(where: { $0.name == "visual-studio-code" })?.installedVersion == "1.107.0",
+               "Homebrew command output parser keeps package data from noisy output")
+        expect((try? HomebrewParser.parseInfoCommandOutput("Warning: no JSON here")) == nil,
+               "Homebrew command output parser rejects output without valid JSON")
         let searchPackages = HomebrewParser.parseSearchOutput("jq\nbad token\nwget\nvisual-studio-code\n",
                                                               kind: .formula,
                                                               installed: homebrewPackages)

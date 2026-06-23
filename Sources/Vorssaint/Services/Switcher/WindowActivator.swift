@@ -112,6 +112,7 @@ enum WindowActivator {
               boolAttribute(closeButton, kAXEnabledAttribute as String, default: true)
         else { return false }
 
+        AutoQuitService.shared.recordProgrammaticCloseRequest(pid: pid)
         return AXUIElementPerformAction(closeButton, kAXPressAction as CFString) == .success
     }
 

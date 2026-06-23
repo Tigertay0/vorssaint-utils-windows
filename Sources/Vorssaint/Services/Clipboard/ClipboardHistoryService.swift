@@ -65,6 +65,9 @@ final class ClipboardHistoryService: ObservableObject {
     private var lastChangeCount = NSPasteboard.general.changeCount
     private var panel: NSPanel?
     private var keyMonitor: Any?
+    private var localClickMonitor: Any?
+    private var outsideClickMonitor: Any?
+    private var activationObserver: NSObjectProtocol?
     private var hotKeyRef: EventHotKeyRef?
     private var hotKeyHandler: EventHandlerRef?
     private var registeredShortcut: GlobalShortcut?
@@ -367,14 +370,15 @@ final class ClipboardHistoryService: ObservableObject {
         quickQuery = ""
         position(panel)
         installKeyMonitor(for: panel)
+        installDismissMonitors(for: panel)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
-        NSApp.activate(ignoringOtherApps: true)
         panel.makeKey()
     }
 
     func hideHistoryWindow() {
         removeKeyMonitor()
+        removeDismissMonitors()
         panel?.orderOut(nil)
     }
 
@@ -417,7 +421,7 @@ final class ClipboardHistoryService: ObservableObject {
     private func ensurePanel() -> NSPanel {
         if let panel { return panel }
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 520, height: 560),
-                            styleMask: [.titled, .closable, .fullSizeContentView],
+                            styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
                             backing: .buffered,
                             defer: false)
         panel.title = FeatureStrings.clipboard(L10n.shared.language).title
@@ -425,9 +429,9 @@ final class ClipboardHistoryService: ObservableObject {
         panel.titleVisibility = .hidden
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = true
-        panel.hidesOnDeactivate = true
+        panel.hidesOnDeactivate = false
         panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         let host = NSHostingController(rootView: ClipboardQuickPanelView())
         host.sizingOptions = .preferredContentSize
         panel.contentViewController = host
@@ -467,6 +471,54 @@ final class ClipboardHistoryService: ObservableObject {
                 return nil
             }
             return event
+        }
+    }
+
+    private func installDismissMonitors(for panel: NSPanel) {
+        removeDismissMonitors()
+        let mouseEvents: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: mouseEvents) { [weak self, weak panel] event in
+            guard let self, let panel, panel.isVisible else { return event }
+            if event.window !== panel, !Self.mouseIsInside(panel) {
+                self.hideHistoryWindow()
+            }
+            return event
+        }
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: mouseEvents) { [weak self, weak panel] event in
+            guard let self, let panel, panel.isVisible else { return }
+            if event.windowNumber != panel.windowNumber, !Self.mouseIsInside(panel) {
+                self.hideHistoryWindow()
+            }
+        }
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                  let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier != Bundle.main.bundleIdentifier
+            else { return }
+            self.hideHistoryWindow()
+        }
+    }
+
+    private static func mouseIsInside(_ panel: NSPanel) -> Bool {
+        panel.frame.insetBy(dx: -2, dy: -2).contains(NSEvent.mouseLocation)
+    }
+
+    private func removeDismissMonitors() {
+        if let localClickMonitor {
+            NSEvent.removeMonitor(localClickMonitor)
+            self.localClickMonitor = nil
+        }
+        if let outsideClickMonitor {
+            NSEvent.removeMonitor(outsideClickMonitor)
+            self.outsideClickMonitor = nil
+        }
+        if let activationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
+            self.activationObserver = nil
         }
     }
 

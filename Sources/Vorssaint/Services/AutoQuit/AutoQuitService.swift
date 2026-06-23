@@ -435,6 +435,11 @@ final class AutoQuitService: ObservableObject {
         scheduleCloseRequestChecks(pid: pid)
     }
 
+    func recordProgrammaticCloseRequest(pid: pid_t) {
+        guard running, observers[pid] != nil else { return }
+        markCloseButtonRequest(pid: pid)
+    }
+
     private func hasRecentCloseButtonRequest(pid: pid_t) -> Bool {
         guard let date = recentCloseButtonRequests[pid] else { return false }
         if Date().timeIntervalSince(date) <= closeRequestGrace {
