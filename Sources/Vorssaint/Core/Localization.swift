@@ -49,7 +49,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         if p.hasPrefix("zh-tw") || p.hasPrefix("zh-hant-tw") || p.hasPrefix("zh-hant") {
             return .zhTW
         }
-        
+
         let matches: [(String, AppLanguage)] = [
             ("pt", .ptBR), ("tr", .tr), ("es", .es), ("de", .de), ("fr", .fr),
             ("it", .it), ("ja", .ja), ("zh", .zhHans),

@@ -164,8 +164,8 @@ struct MetricsTests {
             (.it, "Appunti", "Layout finestre", "Utilità", "Avvisi"),
             (.ja, "クリップボード", "ウインドウ配置", "ユーティリティ", "アラート"),
             (.zhHans, "剪贴板", "窗口布局", "实用工具", "提醒"),
-            (.zhTW, "剪貼簿", "視窗佈局", "工具程式", "提醒事項"),
-            (.zhHK, "剪貼簿", "視窗排列", "工具程式", "提醒事項"),
+            (.zhTW, "剪貼簿", "視窗排列", "工具程式", "提醒"),
+            (.zhHK, "剪貼簿", "視窗排列", "工具", "提示"),
         ]
         for (language, clipboardTitle, windowTitle, utilitiesTitle, alertsTitle) in featureTitles {
             expect(FeatureStrings.clipboard(language).title == clipboardTitle,

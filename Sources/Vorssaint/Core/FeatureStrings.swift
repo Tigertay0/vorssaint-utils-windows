@@ -137,14 +137,14 @@ struct SettingsCategoryStrings {
         utilities: "实用工具",
         app: "App"
     )
-    
+
     static let zhTW = SettingsCategoryStrings(
         essentials: "基本功能",
         windowsControls: "視窗與控制",
         utilities: "工具程式",
         app: "App"
     )
-    
+
     static let zhHK = SettingsCategoryStrings(
         essentials: "基本功能",
         windowsControls: "視窗及控制",
@@ -521,7 +521,7 @@ struct ClipboardFeatureStrings {
         newestFirst: "最新优先",
         active: "正在保存新文本"
     )
-    
+
     static let zhTW = ClipboardFeatureStrings(
         title: "剪貼簿",
         enable: "儲存剪貼簿紀錄",
@@ -558,7 +558,7 @@ struct ClipboardFeatureStrings {
         newestFirst: "最新優先",
         active: "正在儲存新文字"
     )
-    
+
     static let zhHK = ClipboardFeatureStrings(
         title: "剪貼簿",
         enable: "儲存剪貼簿記錄",
@@ -965,7 +965,7 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "下一台显示器",
         restore: "恢复"
     )
-    
+
     static let zhTW = WindowLayoutFeatureStrings(
         title: "視窗排列",
         caption: "將目前視窗移到半邊、三等分、角落、另一台顯示器、置中位置或可用螢幕範圍。",
@@ -1002,7 +1002,7 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "下一台顯示器",
         restore: "還原"
     )
-    
+
     static let zhHK = WindowLayoutFeatureStrings(
         title: "視窗排列",
         caption: "將目前視窗移到半邊、三等分、角落、另一部顯示器、置中位置或可用螢幕範圍。",
@@ -1329,7 +1329,7 @@ struct MonitorAlertFeatureStrings {
         batteryTitle: "电池电量低",
         batteryBodyFormat: "电池电量为 %d%%。"
     )
-    
+
     static let zhTW = MonitorAlertFeatureStrings(
         section: "提醒",
         caption: "預設為關閉。開啟後，監控功能只會在出現需要注意的狀態時提醒，並依照提醒間隔發送通知。",
@@ -1358,7 +1358,7 @@ struct MonitorAlertFeatureStrings {
         batteryTitle: "電池電量偏低",
         batteryBodyFormat: "電池電量為 %d%%。"
     )
-    
+
     static let zhHK = MonitorAlertFeatureStrings(
         section: "提示",
         caption: "預設為關閉。開啟後，監察功能只會在出現需要注意的狀態時提示，並會遵循提示間隔。",
