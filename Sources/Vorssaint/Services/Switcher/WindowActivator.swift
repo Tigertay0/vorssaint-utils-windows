@@ -115,11 +115,20 @@ enum WindowActivator {
     }
 
     static func windowIsMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
-        guard Permissions.shared.accessibility else { return false }
+        windowMinimizedState(windowID: windowID, pid: pid) == true
+    }
+
+    /// Three-state minimized check for guards that must fail closed: nil means
+    /// the window could not be resolved or asked, so the caller cannot assume
+    /// "not minimized" — hover peek treats that as hands-off, because peeking
+    /// an unverifiable window is how a stale panel yanks a just-minimized
+    /// window back out.
+    static func windowMinimizedState(windowID: CGWindowID, pid: pid_t) -> Bool? {
+        guard Permissions.shared.accessibility else { return nil }
         let axApp = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(axApp, 0.35)
-        guard let axWindow = axElement(windowID: windowID, in: axApp) else { return false }
-        return minimizedState(of: axWindow) == true
+        guard let axWindow = axElement(windowID: windowID, in: axApp) else { return nil }
+        return minimizedState(of: axWindow)
     }
 
     @discardableResult

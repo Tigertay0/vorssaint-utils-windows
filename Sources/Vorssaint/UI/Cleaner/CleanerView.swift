@@ -72,14 +72,14 @@ struct CleanerView: View {
     /// judgment calls under optional, unchecked and collapsed.
     private enum DisplayGroup: Int, CaseIterable, Identifiable {
         case loginItems, safeCaches, logs, developer
-        case leftovers, otherCaches, trash
+        case leftovers, otherCaches, deviceBackups, trash
 
         var id: Int { rawValue }
 
         var isSafe: Bool {
             switch self {
             case .loginItems, .safeCaches, .logs, .developer: return true
-            case .leftovers, .otherCaches, .trash: return false
+            case .leftovers, .otherCaches, .deviceBackups, .trash: return false
             }
         }
 
@@ -90,6 +90,7 @@ struct CleanerView: View {
             case .logs: return [.logs]
             case .developer: return [.developer]
             case .leftovers: return [.leftovers]
+            case .deviceBackups: return [.deviceBackups]
             case .trash: return [.trash]
             }
         }
@@ -102,6 +103,7 @@ struct CleanerView: View {
             case .developer: return "hammer"
             case .leftovers: return "puzzlepiece"
             case .otherCaches: return "internaldrive"
+            case .deviceBackups: return "iphone"
             case .trash: return "trash"
             }
         }
@@ -123,6 +125,7 @@ struct CleanerView: View {
         case .developer: return l10n.s.cleanerCatDeveloper
         case .leftovers: return l10n.s.cleanerCatLeftovers
         case .otherCaches: return l10n.s.cleanerCatOtherCaches
+        case .deviceBackups: return l10n.s.cleanerCatDeviceBackups
         case .trash: return l10n.s.cleanerCatTrash
         }
     }
@@ -135,6 +138,7 @@ struct CleanerView: View {
         case .developer: return l10n.s.cleanerDeveloperCaption
         case .leftovers: return l10n.s.cleanerLeftoversCaption
         case .otherCaches: return l10n.s.cleanerOtherCachesCaption
+        case .deviceBackups: return l10n.s.cleanerDeviceBackupsCaption
         case .trash: return l10n.s.cleanerTrashNote
         }
     }

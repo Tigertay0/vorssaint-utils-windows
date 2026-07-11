@@ -122,6 +122,7 @@ final class JunkCleaner: ObservableObject {
                 (.logs, { Self.scanLogs(excluding: claimed) }),
                 (.developer, { Self.scanDeveloperJunk() }),
                 (.trash, { Self.scanTrash() }),
+                (.deviceBackups, { Self.scanDeviceBackups() }),
             ]
             for (category, run) in categories {
                 DispatchQueue.main.async { [weak self] in
@@ -450,6 +451,36 @@ final class JunkCleaner: ObservableObject {
             found.append(Item(url: url, category: .developer, size: size,
                               detail: url.lastPathComponent,
                               recommended: CleanerPolicy.precheckDeveloper))
+        }
+        return sorted(found)
+    }
+
+    /// Old iPhone and iPad backups under MobileSync: with caches, the other
+    /// classic tenant of the storage macOS files under "Other". They are the
+    /// user's safety net, so every find starts unchecked and names the
+    /// device and the backup date. Without Full Disk Access the folder is
+    /// unreadable and nothing is offered.
+    private static func scanDeviceBackups() -> [Item] {
+        let fm = FileManager.default
+        let root = NSHomeDirectory() + "/Library/Application Support/MobileSync/Backup"
+        guard let entries = try? fm.contentsOfDirectory(atPath: root) else { return [] }
+        var found: [Item] = []
+        for entry in entries where !entry.hasPrefix(".") {
+            let url = URL(fileURLWithPath: root).appendingPathComponent(entry)
+            var isDirectory: ObjCBool = false
+            guard fm.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else { continue }
+            let size = directorySize(of: url, fm: fm)
+            guard size > 0 else { continue }
+            let info = NSDictionary(contentsOf: url.appendingPathComponent("Info.plist"))
+            let device = info?["Device Name"] as? String
+            let date = (info?["Last Backup Date"] as? Date).map {
+                DateFormatter.localizedString(from: $0, dateStyle: .medium, timeStyle: .none)
+            }
+            let detail = [device, date].compactMap { $0 }.joined(separator: ", ")
+            found.append(Item(url: url, category: .deviceBackups, size: size,
+                              detail: detail.isEmpty ? entry : detail,
+                              recommended: CleanerPolicy.precheckDeviceBackups))
         }
         return sorted(found)
     }

@@ -67,7 +67,8 @@ final class DockPreviewService: ObservableObject {
     }
 
     func syncWithPreferences() {
-        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.dockPreviewEnabled)
+        let enabled = AppFeature.dockPreview.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.dockPreviewEnabled)
         cachedPreferences = readDockPreferences()
         dockAutohide = cachedPreferences?.autohide ?? false
         dockMagnification = cachedPreferences?.magnification ?? false
@@ -187,19 +188,24 @@ final class DockPreviewService: ObservableObject {
             // A minimized window is only pulled out by an explicit click, never
             // by a hover. The card can also go stale while the panel is open
             // (the window can minimize underneath us — ⌘M, another utility…),
-            // so trust a live check over the captured item.
-            if let windowID = item.windowID,
-               item.isMinimized || WindowActivator.windowIsMinimized(windowID: windowID, pid: item.pid) {
-                if !item.isMinimized {
-                    windows = windows.map {
-                        $0.windowID == windowID ? $0.withMinimized(true) : $0
+            // so trust a live check over the captured item — and when the live
+            // check cannot even resolve the window, fail closed: skipping a
+            // peek is invisible, peeking an unverifiable window restores it.
+            if let windowID = item.windowID {
+                let liveMinimized = WindowActivator.windowMinimizedState(windowID: windowID,
+                                                                         pid: item.pid)
+                if item.isMinimized || liveMinimized != false {
+                    if liveMinimized == true, !item.isMinimized {
+                        windows = windows.map {
+                            $0.windowID == windowID ? $0.withMinimized(true) : $0
+                        }
                     }
+                    if activePeekWindowID != nil {
+                        activePeekWindowID = nil
+                        restoreOrigin(retry: false)
+                    }
+                    return
                 }
-                if activePeekWindowID != nil {
-                    activePeekWindowID = nil
-                    restoreOrigin(retry: false)
-                }
-                return
             }
             recordTouch(item)
             activePeekWindowID = item.windowID
@@ -351,10 +357,33 @@ final class DockPreviewService: ObservableObject {
         }
 
         let point = event.location
+        // The tap sees every mouse move on the whole screen, and nearly all of
+        // them happen far from the Dock with nothing open — paying a closure
+        // allocation and a main-queue hop for each one keeps the CPU warm all
+        // day. The tap's run-loop source lives on the main run loop, so this
+        // callback already runs on the main thread and may read panel state
+        // and settle those moves synchronously for free.
+        if type == .mouseMoved, discardFarMouseMove(axPoint: point) {
+            return Unmanaged.passUnretained(event)
+        }
         DispatchQueue.main.async { [weak self] in
             self?.handleOnMain(type: type, axPoint: point)
         }
         return Unmanaged.passUnretained(event)
+    }
+
+    /// The synchronous twin of handleMouseMoved's cheapest path: no session on
+    /// screen, no hover pending and the cursor outside the Dock's edge strip
+    /// means the move only needs its position recorded (the deferred hide and
+    /// switch re-confirmations read these) — everything else falls through to
+    /// the full handler.
+    private func discardFarMouseMove(axPoint: CGPoint) -> Bool {
+        guard isRunning, !isVisible, pendingHover == nil else { return false }
+        let point = appKitPoint(fromAX: axPoint)
+        guard !isNearDock(point) else { return false }
+        lastAXMousePoint = axPoint
+        lastAppKitMousePoint = point
+        return true
     }
 
     private func handleOnMain(type: CGEventType, axPoint: CGPoint) {
@@ -1079,10 +1108,21 @@ final class DockPreviewService: ObservableObject {
 
     private func startSettingsTimer() {
         guard settingsTimer == nil else { return }
-        let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
-            self?.syncWithPreferences()
+        // This only tracks the user editing the Dock itself (position, size,
+        // autohide, magnification) — rare events with no notification API.
+        // Each poll copies the whole com.apple.dock domain, so it runs on a
+        // slow beat and the full (tap/session/pid) resync below only happens
+        // when something actually changed.
+        let timer = Timer(timeInterval: 10, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let fresh = self.readDockPreferences()
+            // Resync on a real change — or while blocked, so a Dock that was
+            // restarting (or briefly unavailable) still brings the tap back.
+            if fresh != self.cachedPreferences || !self.isRunning {
+                self.syncWithPreferences()
+            }
         }
-        timer.tolerance = 0.5
+        timer.tolerance = 2.5
         RunLoop.main.add(timer, forMode: .common)
         settingsTimer = timer
     }

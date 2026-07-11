@@ -10,6 +10,7 @@ import UniformTypeIdentifiers
 /// they find useful.
 struct MonitorSettings: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
 
     @AppStorage(DefaultsKey.menuBarCombineTemperatures) private var combineTemperatures = true
     @AppStorage(DefaultsKey.menuBarSeparateMetrics) private var separateMetrics = false
@@ -79,20 +80,26 @@ struct MonitorSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Section(l10n.s.monitorOrderSection) {
-                PanelOrderEditor()
-                Text(l10n.s.monitorOrderHint)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
             Section(l10n.s.monitorGraphsSection) {
-                Toggle(l10n.s.monitorShowCPU, isOn: $graphCPU)
-                Toggle(l10n.s.monitorShowGPU, isOn: $graphGPU)
-                Toggle(l10n.s.monitorShowMemory, isOn: $graphMemory)
-                Toggle(l10n.s.monitorShowNetwork, isOn: $graphNetwork)
-                Toggle(l10n.s.diskSection, isOn: $graphDisk)
-                Toggle(l10n.s.monitorShowPowerLabel, isOn: $graphPower)
-                Toggle(l10n.s.batteryLabel, isOn: $graphBattery)
+                if AppFeature.monitorCPU.isAvailable {
+                    Toggle(l10n.s.monitorShowCPU, isOn: $graphCPU)
+                }
+                if AppFeature.monitorGPU.isAvailable {
+                    Toggle(l10n.s.monitorShowGPU, isOn: $graphGPU)
+                }
+                if AppFeature.monitorMemory.isAvailable {
+                    Toggle(l10n.s.monitorShowMemory, isOn: $graphMemory)
+                }
+                if AppFeature.monitorNetwork.isAvailable {
+                    Toggle(l10n.s.monitorShowNetwork, isOn: $graphNetwork)
+                }
+                if AppFeature.monitorDisk.isAvailable {
+                    Toggle(l10n.s.diskSection, isOn: $graphDisk)
+                }
+                if AppFeature.monitorPower.isAvailable {
+                    Toggle(l10n.s.monitorShowPowerLabel, isOn: $graphPower)
+                    Toggle(l10n.s.batteryLabel, isOn: $graphBattery)
+                }
                 Text(l10n.s.monitorGraphsCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -123,13 +130,14 @@ struct MonitorSettings: View {
 /// independent from which metrics are visible, so toggles do not reshuffle it.
 private struct MenuBarMetricOrderEditor: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.menuBarMetricOrder) private var metricOrder = ""
     @State private var order: [MenuBarMetric] = MenuBarMetric.order(in: .standard)
     @State private var dragging: MenuBarMetric?
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(order) { metric in
+            ForEach(visibleOrder) { metric in
                 VStack(spacing: 0) {
                     HStack(spacing: 8) {
                         HStack(spacing: 8) {
@@ -167,7 +175,7 @@ private struct MenuBarMetricOrderEditor: View {
                         NetworkMenuBarOrderOption()
                     }
 
-                    if metric != order.last {
+                    if metric != visibleOrder.last {
                         Divider()
                     }
                 }
@@ -176,6 +184,12 @@ private struct MenuBarMetricOrderEditor: View {
         .padding(.vertical, 2)
         .onAppear { order = MenuBarMetric.order(in: .standard) }
         .onChange(of: metricOrder) { _, _ in order = MenuBarMetric.order(in: .standard) }
+    }
+
+    /// Metrics whose family left the hub keep their saved slot but stay out
+    /// of the editor until they return.
+    private var visibleOrder: [MenuBarMetric] {
+        order.filter { $0.feature.isAvailable }
     }
 }
 
@@ -310,8 +324,11 @@ private struct MenuBarMetricOrderDropDelegate: DropDelegate {
 /// order to `PanelLayout` and each section's visibility to its own key, both of
 /// which the live panel observes. A bounded, non-scrolling list so it sits inside
 /// the grouped Form without its own scroll area.
-private struct PanelOrderEditor: View {
+/// Lives on the General page (the panel hosts more than monitoring); also
+/// consulted by the Monitor page for the fan beta toggle placement.
+struct PanelOrderEditor: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.monitorShowFanControlBeta) private var showFanControlBeta = false
     @State private var order: [PanelSectionID] = PanelLayout.order
     @State private var dragging: PanelSectionID?
@@ -366,7 +383,7 @@ private struct PanelOrderEditor: View {
     }
 
     private var editableOrder: [PanelSectionID] {
-        order.filter { $0 != .fanControl || showFanControlBeta }
+        order.filter { ($0 != .fanControl || showFanControlBeta) && $0.isAvailable }
     }
 
     private func isShown(_ id: PanelSectionID) -> Bool {

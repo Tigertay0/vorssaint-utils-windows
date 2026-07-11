@@ -26,7 +26,7 @@ final class CleanerScheduler: ObservableObject {
     func syncWithPreferences() {
         let frequency = CleanerSchedule.Frequency.sanitized(
             UserDefaults.standard.string(forKey: DefaultsKey.cleanerScheduleFrequency) ?? "off")
-        guard frequency != .off else {
+        guard AppFeature.cleaner.isAvailable, frequency != .off else {
             stop()
             return
         }

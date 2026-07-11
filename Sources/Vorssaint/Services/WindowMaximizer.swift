@@ -27,7 +27,8 @@ final class WindowMaximizer: ObservableObject {
     private init() {}
 
     func syncWithPreferences() {
-        let wanted = UserDefaults.standard.bool(forKey: DefaultsKey.windowMaximizeEnabled)
+        let wanted = AppFeature.windowMaximizer.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.windowMaximizeEnabled)
         if wanted, Permissions.shared.accessibility {
             start()
         } else {

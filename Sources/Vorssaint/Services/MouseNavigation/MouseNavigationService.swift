@@ -23,7 +23,8 @@ final class MouseNavigationService: ObservableObject {
     private init() {}
 
     func syncWithPreferences() {
-        let wanted = UserDefaults.standard.bool(forKey: DefaultsKey.mouseNavigationEnabled)
+        let wanted = AppFeature.mouseNavigation.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.mouseNavigationEnabled)
         if wanted, Permissions.shared.accessibility {
             start()
         } else {

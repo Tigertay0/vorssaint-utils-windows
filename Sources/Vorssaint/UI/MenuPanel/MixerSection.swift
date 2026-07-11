@@ -30,7 +30,9 @@ struct MixerSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 universalOutputPicker
                 headphoneDisconnectProtectionToggle
-                soundOutputSwitcherControls
+                if AppFeature.soundOutputSwitcher.isAvailable {
+                    soundOutputSwitcherControls
+                }
                 microphonePicker
                 if AppVolumeMixer.isSupported, (!mixer.apps.isEmpty || mixer.needsPermission) {
                     Divider()
@@ -365,8 +367,7 @@ struct MixerSection: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button(l10n.s.permissionOpenSettings) {
-                let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!
-                NSWorkspace.shared.open(url)
+                Permissions.shared.openAudioCaptureSettings()
             }
             .controlSize(.small)
         }

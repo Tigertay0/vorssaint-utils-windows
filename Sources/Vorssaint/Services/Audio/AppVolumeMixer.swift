@@ -73,6 +73,10 @@ final class AppVolumeMixer: ObservableObject {
     private var buildingEngines = Set<String>()
     private var lastAudibleVolume: [String: Double] = [:]
     private var listenerInstalled = false
+    /// The global HAL listeners (devices, default output, process list), kept
+    /// so stop() can hand the blocks back to
+    /// AudioObjectRemovePropertyListenerBlock when the mixer leaves the hub.
+    private var globalListeners: [(selector: AudioObjectPropertySelector, block: AudioObjectPropertyListenerBlock)] = []
     /// One IsRunningOutput listener per live process object, kept so the block
     /// can be handed back to AudioObjectRemovePropertyListenerBlock when the
     /// process disappears. Without removal, a week of app churn leaves
@@ -87,6 +91,16 @@ final class AppVolumeMixer: ObservableObject {
     private init() {}
 
     // MARK: - Lifecycle
+
+    /// The whole mixer follows its hub availability: switched off means no
+    /// HAL listeners, no taps and no published state at all.
+    func syncWithPreferences() {
+        if AppFeature.mixer.isAvailable {
+            start()
+        } else {
+            stop()
+        }
+    }
 
     /// Starts watching audio processes. Saved volumes re-apply as soon as the
     /// matching app produces sound — no panel interaction needed.
@@ -113,13 +127,41 @@ final class AppVolumeMixer: ObservableObject {
         engines.removeAll()
     }
 
+    /// Full teardown for the hub: taps, per-process listeners and the global
+    /// HAL listeners all go away, and the published state empties out.
+    func stop() {
+        stopAll()
+        pruneRunningListeners(keeping: [])
+        removeGlobalListeners()
+        if !apps.isEmpty { apps = [] }
+        if !outputDevices.isEmpty { outputDevices = [] }
+        if currentOutputDeviceUID != nil { currentOutputDeviceUID = nil }
+        if outputSwitchError != nil { outputSwitchError = nil }
+        if needsPermission { needsPermission = false }
+    }
+
     private func installListener(selector: AudioObjectPropertySelector) {
         var address = AudioObjectPropertyAddress(mSelector: selector,
                                                  mScope: kAudioObjectPropertyScopeGlobal,
                                                  mElement: kAudioObjectPropertyElementMain)
-        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main) { [weak self] _, _ in
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
             self?.scheduleListenerRefresh()
         }
+        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main, block)
+        globalListeners.append((selector, block))
+    }
+
+    private func removeGlobalListeners() {
+        guard listenerInstalled else { return }
+        listenerInstalled = false
+        for entry in globalListeners {
+            var address = AudioObjectPropertyAddress(mSelector: entry.selector,
+                                                     mScope: kAudioObjectPropertyScopeGlobal,
+                                                     mElement: kAudioObjectPropertyElementMain)
+            AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject),
+                                                   &address, .main, entry.block)
+        }
+        globalListeners.removeAll()
     }
 
     private func subscribeToRunningChanges(of object: AudioObjectID) {
@@ -397,6 +439,8 @@ final class AppVolumeMixer: ObservableObject {
     // MARK: - Process discovery
 
     private func refreshApps() {
+        // A throttled refresh can land after stop(); watching is over.
+        guard listenerInstalled else { return }
         let defaultUID = Self.defaultOutputDeviceUID()
         let nextOutputDevices = Self.outputDevices(defaultUID: defaultUID)
         let availableUIDs = Set(nextOutputDevices.map(\.uid))

@@ -4,6 +4,67 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.1.12] - 2026-07-11
+
+### Highlight
+Vorssaint is massively optimized, with up to 95 percent less CPU and
+energy use than 3.1.11. Cooler, quieter and easier on your battery.
+
+### Summary
+Vorssaint 3.1.12 adds a Features hub with one click bundles and honest
+energy badges, an onboarding that sets the app up from one answer, a
+floating permission guide, text snippets, settings backup and a cleaner
+that reaches the storage macOS calls Other. It is also far lighter on
+CPU and fixes extra brightness during HDR video, Dock icon dragging and
+Dock clicks on Java apps.
+
+### Added
+- A Features hub in Settings installs and uninstalls whole features.
+  What you uninstall disappears from the entire app and stops loading,
+  so it uses no CPU, memory or energy. Nothing is deleted and installing
+  brings it back as it was. Its Permissions tab shows which features use
+  each permission and flags granted ones nothing is using.
+- Start with a bundle. Three one click packs in the hub shape the app
+  for volume, windows or battery, and every feature now wears an honest
+  energy badge telling what it keeps alive while on.
+- Onboarding now ends asking what brought you here. One answer applies
+  the matching bundle and setup finishes already shaped for it.
+- A small floating guide appears when a permission needs a trip to
+  System Settings. It shows the three steps and notices the grant by
+  itself.
+- Text snippets turn a short trigger into your text, right away or
+  after a space, with date, time and clipboard variables. Off by
+  default, in the panel's keyboard controls and in Settings.
+- The cleaner now reaches the storage macOS calls Other. Old iPhone and
+  iPad backups appear with device and date, never preselected, and
+  stale Xcode DeviceSupport caches join the developer junk.
+- Settings backup exports your whole setup to a file and imports it on
+  another Mac. In the Advanced settings.
+
+### Changed
+- Deep energy work across the app. Mouse movement, typing, menu bar
+  metrics and permission checks stop repeating work they had already
+  done. Everything looks and behaves exactly the same, just cooler.
+
+### Fixed
+- Extra brightness no longer flickers or drops out while HDR video plays
+  or goes fullscreen. The boost now holds steady and follows the panel
+  smoothly.
+- Clicking the Dock icon to minimize now works with Java apps such as
+  DBeaver. Windows the system reports slowly or not at all get a second
+  look, and apps without a Minimize All menu use their plain Minimize.
+- Dock icons can be dragged and reordered again while Dock clicks are
+  on. The click now acts when the button lifts, so press and hold turns
+  into a normal drag.
+- The side buttons option no longer shows the invert scrolling text
+  while active.
+- The menu bar panel opens centered under the app icon again. Newer
+  macOS builds could strand it against the screen edge until the tabs
+  changed.
+- Hovering a Dock preview can no longer pull a minimized window back
+  out. A window whose state cannot be verified now stays untouched, and
+  a Dock that restarts while previews are blocked is picked up again.
+
 ## [3.1.11] - 2026-07-10
 
 ### Summary

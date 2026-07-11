@@ -255,6 +255,7 @@ struct Strings {
     let invertMouseScrollCaption: String
     let scrollTrackpadNote: String
     let scrollActiveNow: String
+    let mouseNavigationActiveNow: String
     let smoothScrollName: String
     let smoothScrollCaption: String
     let smoothScrollStepLabel: String
@@ -716,6 +717,9 @@ struct Strings {
     let obWhatsNewFallback: String
     let obLanguageUpdateTitle: String
     let obLanguageUpdateBody: String
+    let obPurposeTitle: String
+    let obPurposeBody: String
+    let obPurposeSkip: String
 
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
@@ -956,6 +960,8 @@ struct Strings {
     let cleanerLeftoversNote: String
     let cleanerLoginItemsNote: String
     let cleanerTrashNote: String
+    let cleanerCatDeviceBackups: String
+    let cleanerDeviceBackupsCaption: String
     let cleanerNothingFound: String
     let cleanerClean: String
     let cleanerDoneNote: String
@@ -1128,6 +1134,7 @@ extension Strings {
         invertMouseScrollCaption: "Inverte a direção da roda do mouse.",
         scrollTrackpadNote: "O trackpad não muda: continua com a rolagem natural do macOS.",
         scrollActiveNow: "Invertendo a rolagem do mouse agora",
+        mouseNavigationActiveNow: "Botões laterais ativos agora",
         smoothScrollName: "Rolagem suave",
         smoothScrollCaption: "Transforma cada passo da rodinha do mouse em um deslize curto e macio. O trackpad não muda.",
         smoothScrollStepLabel: "Distância por passo",
@@ -1575,6 +1582,9 @@ extension Strings {
         obWhatsNewFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
         obLanguageUpdateTitle: "Agora no seu idioma",
         obLanguageUpdateBody: "O Vorssaint agora fala vários idiomas. Escolha o que você prefere usar; dá para mudar quando quiser nos Ajustes.",
+        obPurposeTitle: "O que te trouxe aqui?",
+        obPurposeBody: "Escolha uma opção e o app se monta sozinho. O resto continua a um clique nos Ajustes.",
+        obPurposeSkip: "Deixar tudo à mão",
 
         tabMonitor: "Monitor",
         monitorMenuBarSection: "Na barra de menus",
@@ -1800,6 +1810,8 @@ extension Strings {
         cleanerLeftoversNote: "Encontrados por análise e começam desmarcados. Confira o caminho antes de marcar.",
         cleanerLoginItemsNote: "A entrada em Itens de Início some depois de reiniciar o Mac.",
         cleanerTrashNote: "Esvaziar a Lixeira é permanente.",
+        cleanerCatDeviceBackups: "Backups de iPhone",
+        cleanerDeviceBackupsCaption: "Backups antigos de iPhone e iPad ocupam boa parte do que o macOS chama de Outros. Remova só os que você não precisa mais; um novo backup é feito quando o aparelho for conectado de novo.",
         cleanerNothingFound: "Nada para limpar. Seu Mac está em ordem.",
         cleanerClean: "Limpar",
         cleanerDoneNote: "Os itens foram para a Lixeira e podem ser recuperados de lá.",
@@ -1973,6 +1985,7 @@ extension Strings {
         invertMouseScrollCaption: "Reverses the mouse wheel direction.",
         scrollTrackpadNote: "The trackpad is untouched: it keeps macOS natural scrolling.",
         scrollActiveNow: "Inverting mouse scrolling right now",
+        mouseNavigationActiveNow: "Side buttons active right now",
         smoothScrollName: "Smooth scrolling",
         smoothScrollCaption: "Turns each mouse wheel step into a short, gentle glide. The trackpad is not affected.",
         smoothScrollStepLabel: "Distance per step",
@@ -2420,6 +2433,9 @@ extension Strings {
         obWhatsNewFallback: "This update includes the latest fixes and improvements.",
         obLanguageUpdateTitle: "Now in your language",
         obLanguageUpdateBody: "Vorssaint now speaks several languages. Choose the one you’d like to use; you can change it anytime in Settings.",
+        obPurposeTitle: "What brought you here?",
+        obPurposeBody: "Pick one and the app sets itself up. Everything else stays one click away in Settings.",
+        obPurposeSkip: "Keep everything at hand",
 
         tabMonitor: "Monitor",
         monitorMenuBarSection: "In the menu bar",
@@ -2645,6 +2661,8 @@ extension Strings {
         cleanerLeftoversNote: "Found by analysis and left unchecked. Check the path before ticking.",
         cleanerLoginItemsNote: "The entry under Login Items disappears after restarting the Mac.",
         cleanerTrashNote: "Emptying the Trash is permanent.",
+        cleanerCatDeviceBackups: "iPhone backups",
+        cleanerDeviceBackupsCaption: "Old iPhone and iPad backups take a big slice of the storage macOS calls Other. Remove only the ones you no longer need; a new backup is made when you plug the device in again.",
         cleanerNothingFound: "Nothing to clean. Your Mac is tidy.",
         cleanerClean: "Clean",
         cleanerDoneNote: "Items went to the Trash and can be recovered from there.",

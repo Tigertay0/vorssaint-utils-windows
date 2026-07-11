@@ -62,6 +62,32 @@ enum PanelSectionID: String, CaseIterable, Identifiable {
 
     /// Fan Control is a beta opt-in (default hidden); everything else shows by default.
     var shownByDefault: Bool { self != .fanControl }
+
+    /// Hub features that keep this section alive: with all of them off, the
+    /// section leaves the panel, the section navigation and the layout
+    /// editors, regardless of its visibility key (which is preserved for the
+    /// feature's return).
+    var featureGate: [AppFeature] {
+        switch self {
+        case .keepAwake: return [.keepAwake]
+        case .mixer: return [.mixer]
+        case .system: return [.monitorCPU, .monitorGPU, .monitorMemory]
+        case .network: return [.monitorNetwork]
+        case .disk: return [.monitorDisk]
+        case .power: return [.monitorPower]
+        // The fan curves read the same thermal picture as the monitor, so the
+        // beta rides on the monitor family being present at all.
+        case .fanControl: return FeatureVisibilitySupport.monitorFeatures
+        case .utilities: return [.quickLauncher, .cleaner, .homebrew, .mediaTools, .clipboardHistory,
+                                 .windowLayout, .uninstaller, .urlCleaner, .cleaningMode, .screenOCR,
+                                 .colorPicker, .micMute]
+        case .controls: return [.scrollInverter, .mouseNavigation, .switcher, .finderCutPaste, .autoQuit,
+                                .shelf, .windowMaximizer, .dockPreview, .keyboardDebounce, .dockClick,
+                                .middleClick]
+        }
+    }
+
+    var isAvailable: Bool { featureGate.contains(where: \.isAvailable) }
 }
 
 /// Persisted panel layout: the order the sections appear in and which ones are

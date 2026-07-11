@@ -24,7 +24,7 @@ final class URLCleanerService: ObservableObject {
     private init() {}
 
     func syncWithPreferences() {
-        if UserDefaults.standard.bool(forKey: DefaultsKey.urlCleanerEnabled) {
+        if AppFeature.urlCleaner.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.urlCleanerEnabled) {
             start()
         } else {
             stop()

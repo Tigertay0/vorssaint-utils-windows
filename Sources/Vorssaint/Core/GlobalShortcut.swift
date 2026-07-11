@@ -475,10 +475,31 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         }
     }
 
+    /// The hub feature behind each shortcut; a feature switched off in the
+    /// hub takes its shortcut off the overview page (the hotkey itself is
+    /// already dead through the service's own availability guard).
+    var feature: AppFeature {
+        switch self {
+        case .keepAwake: return .keepAwake
+        case .shelf: return .shelf
+        case .switcher, .switcherWindow: return .switcher
+        case .clipboard: return .clipboardHistory
+        case .soundOutputSwitcher: return .soundOutputSwitcher
+        case .pastePlain: return .pastePlain
+        case .colorPicker: return .colorPicker
+        case .screenOCR: return .screenOCR
+        case .micMute: return .micMute
+        case .quickLauncher: return .quickLauncher
+        }
+    }
+
     /// Roles whose shortcut is live given a defaults reader, for the keyboard
-    /// shortcuts overview page. Injected reader so the harness can test the
+    /// shortcuts overview page. Injected readers so the harness can test the
     /// gating without touching real defaults.
-    static func activeRoles(isOn: (String) -> Bool) -> [GlobalShortcutRole] {
-        allCases.filter { role in role.requiredEnableKeys.allSatisfy(isOn) }
+    static func activeRoles(isOn: (String) -> Bool,
+                            isAvailable: (AppFeature) -> Bool = { _ in true }) -> [GlobalShortcutRole] {
+        allCases.filter { role in
+            isAvailable(role.feature) && role.requiredEnableKeys.allSatisfy(isOn)
+        }
     }
 }

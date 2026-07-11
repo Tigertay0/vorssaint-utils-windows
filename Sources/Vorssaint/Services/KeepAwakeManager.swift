@@ -87,8 +87,17 @@ final class KeepAwakeManager: ObservableObject {
         }
     }
 
+    /// Keep Awake leaving the hub ends any running session; everything else
+    /// (saved duration, tint, shortcut setting) stays for its return.
+    func syncWithFeatures() {
+        if !AppFeature.keepAwake.isAvailable, isActive {
+            deactivate(reason: .manual)
+        }
+    }
+
     /// `minutes <= 0` activates indefinitely.
     func activate(minutes: Int) {
+        guard AppFeature.keepAwake.isAvailable else { return }
         let minutes = Defaults.sanitizedDefaultDuration(minutes)
         endTimer?.invalidate()
         endTimer = nil
@@ -109,7 +118,8 @@ final class KeepAwakeManager: ObservableObject {
     }
 
     func activateOnLaunchIfNeeded() {
-        guard UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeAutoStart),
+        guard AppFeature.keepAwake.isAvailable,
+              UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakeAutoStart),
               !isActive else { return }
         activate(minutes: Defaults.sanitizedDefaultDuration(
             UserDefaults.standard.integer(forKey: DefaultsKey.defaultDuration)))

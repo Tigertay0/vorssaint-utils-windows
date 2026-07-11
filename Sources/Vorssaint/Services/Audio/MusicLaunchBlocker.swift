@@ -25,7 +25,7 @@ final class MusicLaunchBlocker: ObservableObject {
     private init() {}
 
     func syncWithPreferences() {
-        if UserDefaults.standard.bool(forKey: DefaultsKey.musicBlockEnabled) {
+        if AppFeature.musicBlock.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.musicBlockEnabled) {
             start()
         } else {
             stop()

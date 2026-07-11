@@ -203,7 +203,7 @@ final class ShelfService: ObservableObject {
 
     func syncWithPreferences() {
         reloadAutomaticExclusions()
-        if UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) {
+        if AppFeature.shelf.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) {
             syncHotkey()
             syncDragMonitor()
         } else {
@@ -480,7 +480,8 @@ final class ShelfService: ObservableObject {
     var dockedVisible: Bool { dockedPanel?.isVisible == true }
 
     private var dockedFeatureOn: Bool {
-        UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled)
+        AppFeature.shelf.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled)
             && UserDefaults.standard.bool(forKey: DefaultsKey.shelfDropZoneEnabled)
     }
 

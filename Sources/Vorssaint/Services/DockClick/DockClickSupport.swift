@@ -32,6 +32,19 @@ enum DockClickSupport {
     /// our own record instead of trusting the still-settling AX state.
     static let toggleIntentWindow: TimeInterval = 1.5
 
+    /// How far the cursor may wander during a press and still count as a
+    /// click. Past this the press is a Dock icon drag: the down is replayed
+    /// to the Dock and no action runs. Clicks jitter a pixel or two; a real
+    /// drag crosses this within its first frames.
+    static let dragSlop: CGFloat = 6
+
+    /// Whether a press that started at `origin` has moved far enough at
+    /// `point` to be a drag rather than a click.
+    static func isDragMovement(from origin: CGPoint, to point: CGPoint) -> Bool {
+        let dx = point.x - origin.x, dy = point.y - origin.y
+        return (dx * dx + dy * dy).squareRoot() > dragSlop
+    }
+
     /// Delay before sweeping up windows the Minimize All shortcut left behind
     /// (apps without the standard binding). Long enough for the batched
     /// animation to finish so the sweep sees the settled state.
@@ -61,6 +74,19 @@ enum DockClickSupport {
     /// app, ⌃ opens the menu). Fullscreen windows can't minimize, and restoring
     /// siblings from inside a fullscreen Space would yank the user to another
     /// Space, so any fullscreen window means hands off.
+    /// Whether the click should treat the app as having windows to minimize.
+    /// Apps with a busy or unresponsive accessibility server (Java and
+    /// Eclipse apps like DBeaver, issue #200) answer the AX window list with
+    /// nothing while the window server plainly shows their windows on
+    /// screen. In that blind spot the minimize path must still engage — it
+    /// runs through the app's own Minimize All menu item, which needs no
+    /// per-window AX at all.
+    static func effectiveHasUnminimized(unminimizedCount: Int,
+                                        minimizedCount: Int,
+                                        windowServerSeesWindows: Bool) -> Bool {
+        unminimizedCount > 0 || (minimizedCount == 0 && windowServerSeesWindows)
+    }
+
     static func action(appIsFrontmost: Bool,
                        hasUnminimizedWindows: Bool,
                        hasMinimizedWindows: Bool,

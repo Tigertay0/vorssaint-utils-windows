@@ -63,6 +63,7 @@ struct MenuPanelView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var updates = UpdateService.shared
     @ObservedObject private var panelFocus = MenuPanelFocus.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(DefaultsKey.monitorShowMixer) private var showMixer = true
     @AppStorage(DefaultsKey.monitorShowSystem) private var showSystem = true
@@ -283,6 +284,7 @@ struct MenuPanelView: View {
     }
 
     private func isSectionVisible(_ id: PanelSectionID) -> Bool {
+        guard id.isAvailable else { return false }
         switch id {
         case .keepAwake: return showKeepAwake
         case .mixer: return showMixer
@@ -459,11 +461,31 @@ private enum UtilityPanelItem: String, PanelOrderItem, Identifiable {
          cleaning, screenOCR, colorPicker, micMute
 
     var id: String { rawValue }
+
+    /// The hub feature behind the tile; off in the hub removes it everywhere,
+    /// including the edit and hidden lists.
+    var feature: AppFeature {
+        switch self {
+        case .quickLauncher: return .quickLauncher
+        case .cleaner: return .cleaner
+        case .homebrew: return .homebrew
+        case .media: return .mediaTools
+        case .clipboard: return .clipboardHistory
+        case .windowLayout: return .windowLayout
+        case .uninstaller: return .uninstaller
+        case .cleanURL: return .urlCleaner
+        case .cleaning: return .cleaningMode
+        case .screenOCR: return .screenOCR
+        case .colorPicker: return .colorPicker
+        case .micMute: return .micMute
+        }
+    }
 }
 
 struct UtilitiesSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @State private var showUninstaller = false
     @State private var showCleanerPanel = false
     @State private var showURLCleaner = false
@@ -612,7 +634,7 @@ struct UtilitiesSection: View {
     }
 
     private func items(editing: Bool) -> [UtilityPanelItem] {
-        orderedItems.filter { editing || isVisible($0) }
+        orderedItems.filter { $0.feature.isAvailable && (editing || isVisible($0)) }
     }
 
     private func isVisible(_ item: UtilityPanelItem) -> Bool {
@@ -831,9 +853,28 @@ struct UtilitiesSection: View {
 
 private enum ControlPanelItem: String, PanelOrderItem, Identifiable {
     case mouseScroll, mouseNavigation, switcher, cutPaste, autoQuit, shelf, windowMaximize, dockPreview, keyDebounce,
-         dockClick, dockClickCycle, middleClick
+         dockClick, dockClickCycle, middleClick, textSnippets
 
     var id: String { rawValue }
+
+    /// The hub feature behind the toggle; off in the hub removes the row
+    /// everywhere, including the edit and hidden lists.
+    var feature: AppFeature {
+        switch self {
+        case .mouseScroll: return .scrollInverter
+        case .mouseNavigation: return .mouseNavigation
+        case .switcher: return .switcher
+        case .cutPaste: return .finderCutPaste
+        case .autoQuit: return .autoQuit
+        case .shelf: return .shelf
+        case .windowMaximize: return .windowMaximizer
+        case .dockPreview: return .dockPreview
+        case .keyDebounce: return .keyboardDebounce
+        case .dockClick, .dockClickCycle: return .dockClick
+        case .middleClick: return .middleClick
+        case .textSnippets: return .textSnippets
+        }
+    }
 }
 
 /// Groups the quick controls so the section stays short: categories start
@@ -847,7 +888,7 @@ private enum ControlCategory: String, CaseIterable, Identifiable {
         switch item {
         case .switcher, .dockPreview, .dockClick, .dockClickCycle, .windowMaximize, .autoQuit:
             return .windows
-        case .mouseScroll, .mouseNavigation, .middleClick, .keyDebounce:
+        case .mouseScroll, .mouseNavigation, .middleClick, .keyDebounce, .textSnippets:
             return .inputDevices
         case .cutPaste, .shelf:
             return .files
@@ -858,6 +899,7 @@ private enum ControlCategory: String, CaseIterable, Identifiable {
 struct QuickControlsSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var inverter = ScrollInverter.shared
     @ObservedObject private var switcher = AppSwitcher.shared
     @ObservedObject private var dockPreview = DockPreviewService.shared
@@ -882,6 +924,7 @@ struct QuickControlsSection: View {
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickEnabled = false
     @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleEnabled = false
     @AppStorage(DefaultsKey.middleClickEnabled) private var middleClickEnabled = false
+    @AppStorage(DefaultsKey.textSnippetsEnabled) private var textSnippetsEnabled = false
     @AppStorage(DefaultsKey.panelControlMouseScroll) private var showScroll = true
     @AppStorage(DefaultsKey.panelControlMouseNavigation) private var showMouseNavigation = true
     @AppStorage(DefaultsKey.panelControlSwitcher) private var showSwitcher = true
@@ -894,6 +937,7 @@ struct QuickControlsSection: View {
     @AppStorage(DefaultsKey.panelControlDockClick) private var showDockClick = true
     @AppStorage(DefaultsKey.panelControlDockClickCycle) private var showDockClickCycle = true
     @AppStorage(DefaultsKey.panelControlMiddleClick) private var showMiddleClick = true
+    @AppStorage(DefaultsKey.panelControlTextSnippets) private var showTextSnippets = true
     @AppStorage(DefaultsKey.panelControlWindowsExpanded) private var windowsExpanded = false
     @AppStorage(DefaultsKey.panelControlInputExpanded) private var inputExpanded = false
     @AppStorage(DefaultsKey.panelControlFilesExpanded) private var filesExpanded = false
@@ -1005,6 +1049,7 @@ struct QuickControlsSection: View {
         case .dockClick: return dockClickEnabled
         case .dockClickCycle: return dockClickCycleEnabled
         case .middleClick: return middleClickEnabled
+        case .textSnippets: return textSnippetsEnabled
         }
     }
 
@@ -1058,7 +1103,7 @@ struct QuickControlsSection: View {
     }
 
     private func items(editing: Bool) -> [ControlPanelItem] {
-        orderedItems.filter { editing || isVisible($0) }
+        orderedItems.filter { $0.feature.isAvailable && (editing || isVisible($0)) }
     }
 
     private func isVisible(_ item: ControlPanelItem) -> Bool {
@@ -1075,6 +1120,7 @@ struct QuickControlsSection: View {
         case .dockClick: return showDockClick
         case .dockClickCycle: return showDockClickCycle
         case .middleClick: return showMiddleClick
+        case .textSnippets: return showTextSnippets
         }
     }
 
@@ -1284,6 +1330,27 @@ struct QuickControlsSection: View {
                            permissionAction: accessibilityPermissionAction(middleClickEnabled))
                 .onChange(of: middleClickEnabled) { _, enabled in
                     MiddleClickService.shared.syncWithPreferences()
+                    requestAccessibilityIfNeeded(enabled)
+                }
+        case .textSnippets:
+            let snippetStrings = FeatureStrings.snippets(l10n.language)
+            PanelToggleRow(title: snippetStrings.pageTitle,
+                           caption: caption(snippetStrings.enableCaption, needsAccessibility: textSnippetsEnabled),
+                           systemImage: "text.append",
+                           isOn: $textSnippetsEnabled,
+                           isEditing: editing,
+                           showsDragHandle: true,
+                           visibility: $showTextSnippets,
+                           needsAttention: textSnippetsEnabled && !permissions.accessibility,
+                           permissionButtonTitle: l10n.s.permissionRequest,
+                           permissionAction: accessibilityPermissionAction(textSnippetsEnabled),
+                           accessoryTitle: textSnippetsEnabled ? snippetStrings.manageButton : nil,
+                           accessoryAction: {
+                               SettingsRouter.shared.page = .textSnippets
+                               appDelegate()?.openSettingsWindow()
+                           })
+                .onChange(of: textSnippetsEnabled) { _, enabled in
+                    TextSnippetService.shared.syncWithPreferences()
                     requestAccessibilityIfNeeded(enabled)
                 }
         }

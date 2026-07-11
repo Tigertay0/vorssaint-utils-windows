@@ -49,20 +49,33 @@ final class ExtraBrightnessService: ObservableObject {
     /// nextDrawable would stall the main thread, so presents pause and a
     /// fresh render happens on wake.
     private var screensAsleep = false
+    /// The factor currently on screen, moved one smoothing step per tick
+    /// toward the instantaneous target (see the ramp constants in
+    /// ExtraBrightnessSupport): the grant wobbles while HDR video plays and
+    /// rendering it raw flashed the whole screen in visible steps.
+    private var renderedFactor = 1.0
+    /// Consecutive poll ticks that read no engaged headroom.
+    private var disengagedTicks = 0
+    /// The display the overlay was built for. Fullscreen video makes the
+    /// same panel re-announce itself (refresh rate and EDR mode changes);
+    /// those must reuse the live windows, not rebuild them.
+    private var overlayDisplayID: UInt32?
 
     private init() {}
 
     func syncWithPreferences() {
         refreshSupported()
-        let wanted = UserDefaults.standard.bool(forKey: DefaultsKey.extraBrightnessEnabled)
+        let wanted = AppFeature.extraBrightness.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.extraBrightnessEnabled)
             && supported
         if wanted { start() } else { stop() }
     }
 
     /// Re-applies a level change immediately instead of waiting for the poll.
+    /// The slider is user feedback, so it bypasses the smoothing ramp.
     func levelDidChange() {
         guard pollTimer != nil else { return }
-        renderIfNeeded()
+        renderIfNeeded(immediate: true)
     }
 
     // MARK: - Detection
@@ -123,11 +136,14 @@ final class ExtraBrightnessService: ObservableObject {
         overlayWindow?.orderOut(nil)
         overlayWindow = nil
         overlayLayer = nil
+        overlayDisplayID = nil
         triggerWindow?.orderOut(nil)
         triggerWindow = nil
         triggerLayer = nil
         commandQueue = nil
         metalDevice = nil
+        renderedFactor = 1.0
+        disengagedTicks = 0
         if boosting { boosting = false }
     }
 
@@ -171,8 +187,30 @@ final class ExtraBrightnessService: ObservableObject {
             syncWithPreferences()
             return
         }
-        showOverlay(on: screen)
-        renderIfNeeded()
+        // The same panel re-announces itself in storms: an EDR headroom ramp
+        // alone fires this notification over a hundred times in two seconds
+        // (measured), and HDR video starting or going fullscreen ramps the
+        // headroom every time. Rebuilding the overlay for each one blinked
+        // the boost off and on; with the panel and frame unchanged nothing
+        // happens here at all and the poll keeps its own pace.
+        if let window = overlayWindow, overlayDisplayID == Self.displayID(of: screen) {
+            if window.frame != screen.frame {
+                window.setFrame(screen.frame, display: false)
+                triggerWindow?.setFrame(Self.triggerFrame(on: screen), display: false)
+                renderIfNeeded()
+            }
+        } else {
+            showOverlay(on: screen)
+            renderIfNeeded()
+        }
+    }
+
+    private static func displayID(of screen: NSScreen) -> UInt32? {
+        (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+    }
+
+    private static func triggerFrame(on screen: NSScreen) -> NSRect {
+        NSRect(x: screen.frame.maxX - 1, y: screen.frame.minY, width: 1, height: 1)
     }
 
     // MARK: - Overlay
@@ -217,12 +255,16 @@ final class ExtraBrightnessService: ObservableObject {
         view.wantsLayer = true
         view.layer = layer
         window.contentView = view
-        window.orderFrontRegardless()
 
         overlayWindow = window
         overlayLayer = layer
+        overlayDisplayID = Self.displayID(of: screen)
         metalDevice = device
         commandQueue = queue
+        // First frame before the window shows: a rebuild mid-boost must come
+        // up already multiplying, never with an empty (neutral) layer.
+        render(factor: renderedFactor)
+        window.orderFrontRegardless()
         showTrigger(on: screen, device: device, queue: queue)
     }
 
@@ -235,8 +277,7 @@ final class ExtraBrightnessService: ObservableObject {
         triggerWindow = nil
         triggerLayer = nil
 
-        let frame = NSRect(x: screen.frame.maxX - 1, y: screen.frame.minY, width: 1, height: 1)
-        let window = NSWindow(contentRect: frame, styleMask: [.borderless],
+        let window = NSWindow(contentRect: Self.triggerFrame(on: screen), styleMask: [.borderless],
                               backing: .buffered, defer: false)
         window.level = .screenSaver
         window.isOpaque = false
@@ -261,10 +302,10 @@ final class ExtraBrightnessService: ObservableObject {
         view.wantsLayer = true
         view.layer = layer
         window.contentView = view
-        window.orderFrontRegardless()
         triggerWindow = window
         triggerLayer = layer
         presentTrigger()
+        window.orderFrontRegardless()
     }
 
     /// One clear pass of the extended range pixel. Called on every poll tick
@@ -293,18 +334,34 @@ final class ExtraBrightnessService: ObservableObject {
     /// macOS grants the panel's headroom in response to presented extended
     /// range content and revokes it moments after presents stop, which
     /// visibly dropped the boost after a second on XDR hardware. Two tiny
-    /// clear passes per tick cost nothing measurable.
-    private func renderIfNeeded() {
+    /// clear passes per tick cost nothing measurable. The rendered factor
+    /// moves one smoothing step per tick (with a grace window over transient
+    /// dropouts), so a grant wobbling under HDR video reads as a gentle
+    /// drift instead of stepped flashes; `immediate` (the level slider)
+    /// snaps straight to the target.
+    private func renderIfNeeded(immediate: Bool = false) {
         guard !screensAsleep else { return }
         guard let screen = Self.builtInXDRScreen(), overlayLayer != nil else { return }
         presentTrigger()
         let level = Double(UserDefaults.standard.integer(forKey: DefaultsKey.extraBrightnessLevel)) / 100.0
         let headroom = Double(screen.maximumExtendedDynamicRangeColorComponentValue)
         let potential = Double(screen.maximumPotentialExtendedDynamicRangeColorComponentValue)
-        let factor = ExtraBrightnessSupport.renderFactor(level: level, currentEDR: headroom,
-                                                         potentialEDR: potential,
-                                                         reference: Self.panelReference)
-        render(factor: factor)
+        let engaged = headroom > ExtraBrightnessSupport.headroomThreshold
+        disengagedTicks = engaged ? 0 : disengagedTicks + 1
+        let instantaneous = ExtraBrightnessSupport.renderFactor(level: level, currentEDR: headroom,
+                                                                potentialEDR: potential,
+                                                                reference: Self.panelReference)
+        if immediate {
+            renderedFactor = instantaneous
+        } else {
+            let target = ExtraBrightnessSupport.gracedTarget(instantaneous: instantaneous,
+                                                             previous: renderedFactor,
+                                                             engaged: engaged,
+                                                             disengagedTicks: disengagedTicks)
+            renderedFactor = ExtraBrightnessSupport.rampedFactor(previous: renderedFactor,
+                                                                 target: target)
+        }
+        render(factor: renderedFactor)
     }
 
     /// One clear-only render pass, no shaders: the drawable is a uniform gray

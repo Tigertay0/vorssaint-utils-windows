@@ -12,9 +12,10 @@ import Foundation
 /// app's, and no installed app owns it or any of its prefixes. Everything
 /// else it cleans (caches, logs) is content the owning app can rebuild.
 enum CleanerSupport {
-    /// What the cleaner can find, in display order.
+    /// What the cleaner can find, in display order. New cases append at the
+    /// end: the raw value is a stable identity.
     enum Category: Int, CaseIterable, Identifiable {
-        case leftovers, loginItems, caches, logs, developer, trash
+        case leftovers, loginItems, caches, logs, developer, trash, deviceBackups
 
         var id: Int { rawValue }
     }

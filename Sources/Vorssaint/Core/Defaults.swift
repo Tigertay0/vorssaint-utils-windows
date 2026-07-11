@@ -106,6 +106,7 @@ enum DefaultsKey {
     static let panelControlDockClick = "panelControlDockClick"
     static let panelControlDockClickCycle = "panelControlDockClickCycle"
     static let panelControlMiddleClick = "panelControlMiddleClick"
+    static let panelControlTextSnippets = "panelControlTextSnippets"
     // Quick-control categories start collapsed and remember being opened.
     static let panelControlWindowsExpanded = "panelControlWindowsExpanded"
     static let panelControlInputExpanded = "panelControlInputExpanded"
@@ -282,8 +283,17 @@ enum DefaultsKey {
     static let windowLayoutShortcutBottomCenterSixth = "windowLayoutShortcutBottomCenterSixth"
     static let windowLayoutShortcutBottomRightSixth = "windowLayoutShortcutBottomRightSixth"
 
+    // Text snippets: type a trigger, get the expansion.
+    static let textSnippetsEnabled = "textSnippetsEnabled"
+    static let textSnippets = "textSnippets"              // Data: [TextSnippet] JSON
+
     // Dev-build only: force the "update available" UI for local testing.
     static let simulateUpdate = "simulateUpdate"
+
+    /// Features hub availability layer, one key per AppFeature raw value.
+    /// Registered true: unavailable features vanish from every surface and
+    /// hold no resources, without ever touching their own enable keys.
+    static func featureAvailable(_ id: String) -> String { "featureAvailable.\(id)" }
 }
 
 /// Bump `currentFeatureSet` when first-run feature defaults need a quiet marker.
@@ -302,8 +312,8 @@ enum SupportUpdateIntroInfo {
     /// The single release whose first launch shows the support window (star,
     /// follow, coffee). It used to track AppInfo.version, which re-showed the
     /// ask on EVERY update; now a release only asks when this constant is
-    /// deliberately bumped to it. Bumped to 3.1.8 on the owner's call.
-    static let releaseVersion = "3.1.8"
+    /// deliberately bumped to it. Bumped to 3.1.12 on the owner's call.
+    static let releaseVersion = "3.1.12"
 }
 
 enum KeepAwakeIconTint: String, CaseIterable, Identifiable {
@@ -436,6 +446,7 @@ enum Defaults {
         DefaultsKey.cleanerLastAutoFreed: 0,
         DefaultsKey.cleanerBadgeSeen: false,
         DefaultsKey.urlCleanerEnabled: false,
+        DefaultsKey.textSnippetsEnabled: false,
         DefaultsKey.windowMaximizeEnabled: false,
         DefaultsKey.keyboardDebounceEnabled: false,
         DefaultsKey.keyboardDebounceWindowMs: defaultKeyboardDebounceWindowMs,
@@ -460,6 +471,7 @@ enum Defaults {
         DefaultsKey.panelControlDockClick: true,
         DefaultsKey.panelControlDockClickCycle: true,
         DefaultsKey.panelControlMiddleClick: true,
+        DefaultsKey.panelControlTextSnippets: true,
         DefaultsKey.panelControlWindowsExpanded: false,
         DefaultsKey.panelControlInputExpanded: false,
         DefaultsKey.panelControlFilesExpanded: false,
@@ -607,6 +619,7 @@ enum Defaults {
     static func register() {
         let defaults = UserDefaults.standard
         defaults.register(defaults: registeredDefaults)
+        defaults.register(defaults: AppFeature.availabilityDefaults)
         migrateLegacyMenuBarTemperatureMetric(in: defaults)
         migrateLegacySwitcherWindowShortcut(in: defaults)
         migrateLegacyKeyboardDebounceWindow(in: defaults)

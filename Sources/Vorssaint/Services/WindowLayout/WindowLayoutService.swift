@@ -38,7 +38,8 @@ final class WindowLayoutService: ObservableObject {
     private init() {}
 
     func syncWithPreferences() {
-        let wanted = UserDefaults.standard.bool(forKey: DefaultsKey.windowLayoutShortcutsEnabled)
+        let wanted = AppFeature.windowLayout.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.windowLayoutShortcutsEnabled)
             && AXIsProcessTrusted()
         wanted ? registerHotkeys() : unregisterHotkeys()
     }

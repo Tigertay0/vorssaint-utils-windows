@@ -89,6 +89,14 @@ if (( TEST )); then
     swiftc -O -target "$TARGET" -sdk "$SDK" \
         Sources/Vorssaint/Services/Media/MediaSupport.swift \
         Sources/Vorssaint/Core/Defaults.swift \
+        Sources/Vorssaint/Core/FeatureCatalog.swift \
+        Sources/Vorssaint/Core/FeaturePresets.swift \
+        Sources/Vorssaint/Core/FeatureHubStrings.swift \
+        Sources/Vorssaint/Core/SettingsBackupSupport.swift \
+        Sources/Vorssaint/Core/BackupStrings.swift \
+        Sources/Vorssaint/Core/SnippetStrings.swift \
+        Sources/Vorssaint/Core/PermissionGuideStrings.swift \
+        Sources/Vorssaint/Services/Snippets/TextSnippetSupport.swift \
         Sources/Vorssaint/Core/AppInfo.swift \
         Sources/Vorssaint/Core/GlobalShortcut.swift \
         Sources/Vorssaint/Core/Localization.swift \
@@ -104,7 +112,9 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Shelf/ShelfSupport.swift \
         Sources/Vorssaint/Services/Update/UpdateInstallerSupport.swift \
         Sources/Vorssaint/UI/Settings/SettingsSearchSupport.swift \
+        Sources/Vorssaint/UI/Settings/FeatureVisibilitySupport.swift \
         Sources/Vorssaint/App/MenuBarSpacingSupport.swift \
+        Sources/Vorssaint/App/StatusItemAnchorSupport.swift \
         Sources/Vorssaint/Services/DockClick/DockClickSupport.swift \
         Sources/Vorssaint/Services/Finder/CutPasteProgressSupport.swift \
         Sources/Vorssaint/Services/MiddleClick/MiddleClickSupport.swift \

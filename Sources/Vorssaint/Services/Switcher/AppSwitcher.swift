@@ -85,7 +85,8 @@ final class AppSwitcher: ObservableObject {
 
     /// Applies the persisted preference; safe to call repeatedly.
     func syncWithPreferences() {
-        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.switcherEnabled)
+        let enabled = AppFeature.switcher.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.switcherEnabled)
         if enabled, Permissions.shared.accessibility {
             installTap()
             // Build the panel and its SwiftUI tree now: the first hosting-view
@@ -154,8 +155,11 @@ final class AppSwitcher: ObservableObject {
 
         // With Accessibility revoked the AX lookups behind a session would hang
         // inside the tap and freeze input; pass events through and drop any
-        // session that was open.
-        guard AXIsProcessTrusted() else {
+        // session that was open. The cached flag keeps a live TCC round-trip
+        // off this per-keystroke path (typing was paying one per key press);
+        // the hang-prone moment — actually starting a session — re-checks
+        // live below, where it runs once per ⌘Tab instead of once per key.
+        guard Permissions.shared.accessibility else {
             if sessionActive { cancelSession() }
             return Unmanaged.passUnretained(event)
         }
@@ -188,6 +192,9 @@ final class AppSwitcher: ObservableObject {
             guard shortcut.matches(event: event, allowingExtraShift: true)
             else { return Unmanaged.passUnretained(event) }
 
+            // Live check at the one point that starts AX work: revoked-but-
+            // cached-true here would hang the lookups inside the tap.
+            guard AXIsProcessTrusted() else { return Unmanaged.passUnretained(event) }
             let reversed = shortcut.shiftIsNavigationModifier && flags.contains(.maskShift)
             return beginSession(reversed: reversed, shortcut: shortcut)
                 ? nil

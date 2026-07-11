@@ -44,9 +44,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         PanelLayout.resetCollapsedSectionsOnce(for: "2.15.1")
 
         statusController = StatusItemController()
-        statusController.onLeftClick = { [weak self] in self?.toggleMainPopover() }
+        statusController.onLeftClick = { [weak self] in
+            self?.captureStatusClick()
+            self?.toggleMainPopover()
+        }
         statusController.onRightClick = { [weak self] in self?.showContextMenu() }
         statusController.onMetricClick = { [weak self] metric, button in
+            self?.captureStatusClick()
             self?.showMetricPanel(for: metric, anchoredTo: button)
         }
         // The shelf drop zone chip anchors itself under the menu bar icon.
@@ -65,35 +69,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         KeepAwakeManager.shared.recoverIfNeeded {
             KeepAwakeManager.shared.activateOnLaunchIfNeeded()
         }
-        AppActivationTracker.shared.start()
-        ScrollInverter.shared.syncWithPreferences()
-        SmoothScrollService.shared.syncWithPreferences()
-        MouseNavigationService.shared.syncWithPreferences()
-        AppSwitcher.shared.syncWithPreferences()
-        DockPreviewService.shared.syncWithPreferences()
-        FinderCutPaste.shared.syncWithPreferences()
-        AutoQuitService.shared.syncWithPreferences()
-        DockClickService.shared.syncWithPreferences()
-        MiddleClickService.shared.syncWithPreferences()
-        PastePlainService.shared.syncWithPreferences()
-        ColorSamplerService.shared.syncWithPreferences()
-        ScreenTextService.shared.syncWithPreferences()
-        MicMuteService.shared.syncWithPreferences()
-        QuickLauncherService.shared.syncWithPreferences()
-        ShelfService.shared.syncWithPreferences()
-        ExtraBrightnessService.shared.syncWithPreferences()
-        MusicLaunchBlocker.shared.syncWithPreferences()
-        CleanerScheduler.shared.syncWithPreferences()
-        URLCleanerService.shared.syncWithPreferences()
-        WindowMaximizer.shared.syncWithPreferences()
-        KeyboardDebounceService.shared.syncWithPreferences()
-        WindowLayoutService.shared.syncWithPreferences()
-        ClipboardHistoryService.shared.syncWithPreferences()
-        MonitorAlertService.shared.start()
-        MaxCapacityProbe.shared.refreshIfStale()
-        AudioInputDeviceManager.shared.start()
-        AppVolumeMixer.shared.start()
-        SoundOutputSwitcher.shared.syncWithPreferences()
+        // One binding per feature: only available features are touched, so a
+        // feature switched off in the hub never even instantiates here.
+        FeatureRuntime.shared.syncAtLaunch()
+        if AppFeature.monitorPower.isAvailable {
+            MaxCapacityProbe.shared.refreshIfStale()
+        }
         UpdateService.shared.startAutomaticChecks()
         NotificationCenter.default.addObserver(self, selector: #selector(appBecameActive),
                                                name: NSApplication.didBecomeActiveNotification, object: nil)
@@ -104,18 +85,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { _ in
-                ScrollInverter.shared.syncWithPreferences()
-                SmoothScrollService.shared.syncWithPreferences()
-                MouseNavigationService.shared.syncWithPreferences()
-                AppSwitcher.shared.syncWithPreferences()
-                DockPreviewService.shared.syncWithPreferences()
-                FinderCutPaste.shared.syncWithPreferences()
-                AutoQuitService.shared.syncWithPreferences()
-                DockClickService.shared.syncWithPreferences()
-                MiddleClickService.shared.syncWithPreferences()
-                WindowMaximizer.shared.syncWithPreferences()
-                KeyboardDebounceService.shared.syncWithPreferences()
-                WindowLayoutService.shared.syncWithPreferences()
+                FeatureRuntime.shared.sync([
+                    .scrollInverter, .smoothScroll, .mouseNavigation, .switcher,
+                    .dockPreview, .finderCutPaste, .autoQuit, .dockClick,
+                    .middleClick, .windowMaximizer, .keyboardDebounce, .windowLayout,
+                    .textSnippets,
+                ])
             }
             .store(in: &cancellables)
 
@@ -123,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { _ in
-                DockPreviewService.shared.syncWithPreferences()
+                FeatureRuntime.shared.sync([.dockPreview])
             }
             .store(in: &cancellables)
 
@@ -153,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         URLCleanerService.shared.stop()
         WindowMaximizer.shared.stop()
         KeyboardDebounceService.shared.suspend()
+        TextSnippetService.shared.suspend()
         MiddleClickService.shared.suspend()
         SmoothScrollService.shared.suspend()
         MouseNavigationService.shared.suspend()
@@ -170,13 +146,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         guard !flag else { return true }
         // A deliberate reopen with no windows showing is the user's recovery action.
-        // Rebuild the menu bar item, but only sacrifice the saved Cmd+drag position
-        // when the icon is actually missing: the pre-rebuild item has a settled
-        // frame, so iconIsOnScreen() is trustworthy here (the not-ready-frame
-        // caveat below only applies to a freshly created item). A dropped icon
-        // reads off-screen/zero and still gets fresh placement, so recovery works;
-        // a visible icon keeps its autosave name and position.
-        statusController?.recreateStatusItem(resetPlacement: !iconIsOnScreen())
+        // Rebuild the menu bar item only when it is actually missing: the
+        // pre-rebuild item has a settled frame, so iconIsOnScreen() is trustworthy
+        // here (the not-ready-frame caveat below only applies to a freshly created
+        // item), and a dropped icon reads off-screen/zero, so recovery still gets
+        // its rebuild with fresh placement. A healthy icon is left alone: on
+        // macOS 27 a rebuilt item's window can keep reporting the slot it was
+        // born in (the far right of the status area) while the icon draws at the
+        // user's arranged spot, and that mismatch strands the panel against the
+        // screen edge and survives relaunches.
+        if !iconIsOnScreen() {
+            statusController?.recreateStatusItem(resetPlacement: true)
+        }
         // Decide on the next run-loop turn: a freshly rebuilt status item has no
         // laid-out on-screen frame yet this turn, so iconIsOnScreen() would read a
         // not-ready frame and wrongly skip the panel. After layout: pop the panel
@@ -294,6 +275,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         let expectedMidX = statusButtonMidX(button)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+        if let window = popover.contentViewController?.view.window,
+           let targetMidX = correctedPopoverMidX(for: button) {
+            beginPopoverDriftCorrection(window: window, targetMidX: targetMidX)
+        } else {
+            endPopoverDriftCorrection()
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self, weak button] in
             guard let self,
                   let button,
@@ -318,6 +305,84 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private func statusButtonMidX(_ button: NSStatusBarButton) -> CGFloat? {
         guard let window = button.window else { return nil }
         return window.convertToScreen(button.convert(button.bounds, to: nil)).midX
+    }
+
+    /// Where the user last physically clicked a status button, captured at
+    /// action time. The deferred metric re-shows fire up to ~0.2s after the
+    /// click, and re-reading the pointer there would chase a flicked-away
+    /// cursor; the captured point is immune to that. Accessibility presses
+    /// (no mouse event) capture nothing, so they never "correct" toward a
+    /// pointer parked anywhere on screen.
+    private var lastStatusClick: (x: CGFloat, at: Date)?
+    private var popoverDriftTargetMidX: CGFloat?
+    private var popoverDriftObservers: [NSObjectProtocol] = []
+
+    private func captureStatusClick() {
+        guard let event = NSApp.currentEvent,
+              Self.statusClickEventTypes.contains(event.type) else { return }
+        lastStatusClick = (NSEvent.mouseLocation.x, Date())
+    }
+
+    /// The on-screen midX the open panel must center on, or nil when the
+    /// button's reported frame can be trusted. A fresh physical click landing
+    /// clearly outside the frame the button claims to occupy is the macOS 27
+    /// stale-frame mismatch (see StatusItemAnchorSupport): the click marks
+    /// where the icon is actually drawn, so the panel centers there. The
+    /// positioning rect cannot express this (AppKit intersects it with the
+    /// button's bounds), so the correction moves the popover's window instead.
+    private func correctedPopoverMidX(for button: NSStatusBarButton) -> CGFloat? {
+        guard let click = lastStatusClick,
+              Date().timeIntervalSince(click.at) < 0.5,
+              let reportedMidX = statusButtonMidX(button),
+              StatusItemAnchorSupport.anchorDriftX(clickX: click.x,
+                                                   reportedMidX: reportedMidX,
+                                                   buttonWidth: button.bounds.width) != nil
+        else { return nil }
+        return click.x
+    }
+
+    private static let statusClickEventTypes: Set<NSEvent.EventType> = [
+        .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp,
+    ]
+
+    /// Slides the popover window so its center (and thus the arrow tip, which
+    /// keeps its offset from the window) lands on the real icon, and keeps it
+    /// there: NSPopover re-derives the window frame from the stale button
+    /// frame on every content resize (switching panel tabs), which would
+    /// fling the panel back to the phantom slot.
+    private func beginPopoverDriftCorrection(window: NSWindow, targetMidX: CGFloat) {
+        endPopoverDriftCorrection()
+        popoverDriftTargetMidX = targetMidX
+        applyPopoverDriftFrame(window)
+        for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+            popoverDriftObservers.append(NotificationCenter.default.addObserver(
+                forName: name, object: window, queue: .main
+            ) { [weak self, weak window] _ in
+                guard let window else { return }
+                self?.applyPopoverDriftFrame(window)
+            })
+        }
+    }
+
+    private func applyPopoverDriftFrame(_ window: NSWindow) {
+        guard let targetMidX = popoverDriftTargetMidX else { return }
+        var frame = window.frame
+        var midX = targetMidX
+        if let visible = (window.screen ?? NSScreen.main)?.visibleFrame {
+            let margin: CGFloat = 8
+            midX = min(max(midX, visible.minX + frame.width / 2 + margin),
+                       visible.maxX - frame.width / 2 - margin)
+        }
+        // The 2pt tolerance breaks the loop with our own setFrame's didMove.
+        guard abs(frame.midX - midX) > 2 else { return }
+        frame.origin.x = (midX - frame.width / 2).rounded()
+        window.setFrame(frame, display: true)
+    }
+
+    private func endPopoverDriftCorrection() {
+        popoverDriftObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        popoverDriftObservers.removeAll()
+        popoverDriftTargetMidX = nil
     }
 
     private func switchMetricPopover(to detailKind: MetricDetailKind, anchoredTo button: NSStatusBarButton) {
@@ -366,6 +431,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             }
             window.contentView?.layoutSubtreeIfNeeded()
             window.makeKey()
+            if let targetMidX = correctedPopoverMidX(for: button) {
+                beginPopoverDriftCorrection(window: window, targetMidX: targetMidX)
+            } else {
+                endPopoverDriftCorrection()
+            }
             if animate {
                 animatePopoverOpen(window)
             } else {
@@ -590,6 +660,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             ResponsibleProcess.clearIconCache()
         }
         removePopoverDismissMonitor()
+        endPopoverDriftCorrection()
         PanelInteractionState.shared.keepsPopoverOpen = false
         popoverClosedAt = popoverIsSwitchingAnchor ? .distantPast : Date()
         popoverIsClosing = false
@@ -615,13 +686,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         let strings = L10n.shared.s
         let menu = NSMenu()
 
-        let toggleItem = NSMenuItem(title: manager.isActive ? strings.menuDisableAwake : strings.menuEnableAwake,
-                                    action: #selector(menuToggleAwake),
-                                    keyEquivalent: "")
-        toggleItem.target = self
-        menu.addItem(toggleItem)
+        if AppFeature.keepAwake.isAvailable {
+            let toggleItem = NSMenuItem(title: manager.isActive ? strings.menuDisableAwake : strings.menuEnableAwake,
+                                        action: #selector(menuToggleAwake),
+                                        keyEquivalent: "")
+            toggleItem.target = self
+            menu.addItem(toggleItem)
+        }
 
-        if !manager.isActive {
+        if AppFeature.keepAwake.isAvailable, !manager.isActive {
             let durationsItem = NSMenuItem(title: strings.menuActivateFor, action: nil, keyEquivalent: "")
             let submenu = NSMenu()
             let options: [(String, Int)] = [(strings.minutes15, 15), (strings.minutes30, 30),
@@ -638,12 +711,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             menu.addItem(durationsItem)
         }
 
-        let cleaningItem = NSMenuItem(title: strings.cleaningMenuItem,
-                                      action: #selector(menuCleaningMode), keyEquivalent: "")
-        cleaningItem.target = self
-        menu.addItem(cleaningItem)
+        if AppFeature.cleaningMode.isAvailable {
+            let cleaningItem = NSMenuItem(title: strings.cleaningMenuItem,
+                                          action: #selector(menuCleaningMode), keyEquivalent: "")
+            cleaningItem.target = self
+            menu.addItem(cleaningItem)
+        }
 
-        menu.addItem(.separator())
+        if menu.items.isEmpty == false {
+            menu.addItem(.separator())
+        }
 
         let settingsItem = NSMenuItem(title: strings.menuSettings, action: #selector(menuOpenSettings), keyEquivalent: ",")
         settingsItem.target = self
@@ -653,12 +730,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         aboutItem.target = self
         menu.addItem(aboutItem)
 
-        let uninstallItem = NSMenuItem(title: strings.uninstallerMenuItem,
-                                       action: #selector(menuOpenUninstaller), keyEquivalent: "")
-        uninstallItem.target = self
-        menu.addItem(uninstallItem)
+        if AppFeature.uninstaller.isAvailable {
+            let uninstallItem = NSMenuItem(title: strings.uninstallerMenuItem,
+                                           action: #selector(menuOpenUninstaller), keyEquivalent: "")
+            uninstallItem.target = self
+            menu.addItem(uninstallItem)
+        }
 
-        if UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) {
+        if AppFeature.shelf.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) {
             let shelfItem = NSMenuItem(title: strings.shelfMenuItem,
                                        action: #selector(menuOpenShelf), keyEquivalent: "")
             shelfItem.target = self

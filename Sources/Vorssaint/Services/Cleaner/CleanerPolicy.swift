@@ -24,12 +24,23 @@ enum CleanerPolicy {
     /// Build products and simulator caches regenerate on the next build.
     static let precheckDeveloper = true
 
-    /// Relative to the home folder. Only ever offered when they exist.
+    /// Relative to the home folder. Only ever offered when they exist. The
+    /// DeviceSupport folders are debug symbol caches Xcode rebuilds on the
+    /// next device connection; they quietly grow to tens of gigabytes and
+    /// are a classic slice of the storage macOS files under "Other".
     static let developerJunkPaths: [String] = [
         "/Library/Developer/Xcode/DerivedData",
         "/Library/Developer/Xcode/DocumentationCache",
         "/Library/Developer/CoreSimulator/Caches",
+        "/Library/Developer/Xcode/iOS DeviceSupport",
+        "/Library/Developer/Xcode/watchOS DeviceSupport",
+        "/Library/Developer/Xcode/tvOS DeviceSupport",
     ]
+
+    /// Device backups are the user's safety net: enormous, ancient, and the
+    /// other classic tenant of "Other" storage, but never a machine's call
+    /// to delete. Every find waits unchecked for the user's eye.
+    static let precheckDeviceBackups = false
 
     /// Cache folders that never appear in the list at all: this app's own
     /// data and entries known to break things when removed (audio output

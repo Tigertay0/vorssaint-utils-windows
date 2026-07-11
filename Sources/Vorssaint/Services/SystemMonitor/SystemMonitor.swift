@@ -108,6 +108,12 @@ final class SystemMonitor: ObservableObject {
     private var smc: SMCClient?
     private var smcTried = false
     private var cpuKeys: [SMCClient.Key] = []
+    /// The platform's known CPU core sensors (what the displayed value is
+    /// actually computed from) and everything else, split once at discovery:
+    /// each SMC read is a kernel call, so the per-tick read sticks to the
+    /// core set and only sweeps the rest when the core set goes silent.
+    private var preferredCPUKeys: [SMCClient.Key] = []
+    private var fallbackCPUKeys: [SMCClient.Key] = []
     private var gpuKeys: [SMCClient.Key] = []
     private var batteryKeys: [SMCClient.Key] = []
     private var tempKeysPrepared = false
@@ -288,6 +294,12 @@ final class SystemMonitor: ObservableObject {
         refresh()
     }
 
+    /// The hub switching a metric on or off changes the plan without touching
+    /// any activation flag; resample right away like any settings change.
+    func planDidChange() {
+        runOnMain { [weak self] in self?.resyncIfPlanChanged() }
+    }
+
     /// Changes the sampling cadence (seconds). Restarts a running timer.
     func setInterval(seconds: Int) {
         runOnMain { [weak self] in
@@ -406,6 +418,28 @@ final class SystemMonitor: ObservableObject {
             defaults.bool(forKey: DefaultsKey.menuBarGPUTemperature)
         plan.needBatteryTemperature = panelTemps || menuPanelNeeds.batteryTemperature ||
             defaults.bool(forKey: DefaultsKey.menuBarBatteryTemperature)
+
+        // The hub gates whole metric families: an unavailable metric never
+        // samples, no matter what is pinned, shown or alerting.
+        func available(_ feature: AppFeature) -> Bool {
+            defaults.bool(forKey: feature.availabilityKey)
+        }
+        if !available(.monitorCPU) {
+            plan.needCPU = false
+            plan.needCPUTemperature = false
+        }
+        if !available(.monitorGPU) {
+            plan.needGPUUsage = false
+            plan.needGPUTemperature = false
+        }
+        if !available(.monitorMemory) { plan.needMemory = false }
+        if !available(.monitorNetwork) { plan.needNetwork = false }
+        if !available(.monitorDisk) { plan.needDisk = false }
+        if !available(.monitorPower) {
+            plan.needPower = false
+            plan.needPeripheralBattery = false
+            plan.needBatteryTemperature = false
+        }
         return plan
     }
 
@@ -759,18 +793,38 @@ final class SystemMonitor: ObservableObject {
                 || name.range(of: "^TB[0-9]T$", options: .regularExpression) != nil
         }
         cpuKeys = all.filter { $0.name.hasPrefix("Tp") || $0.name.hasPrefix("Te") }
+        preferredCPUKeys = cpuKeys.filter {
+            TemperatureSensorSelector.isCPUCoreKey($0.name, platform: cpuTemperaturePlatform)
+        }
+        let preferredNames = Set(preferredCPUKeys.map(\.name))
+        fallbackCPUKeys = cpuKeys.filter { !preferredNames.contains($0.name) }
         gpuKeys = all.filter { $0.name.hasPrefix("Tg") }
         batteryKeys = all.filter { $0.name.hasPrefix("TB") }
     }
 
     private func cpuTemperature() -> Double? {
-        guard let smc else { return nil }
-        let readings = cpuKeys.compactMap { key -> (key: String, value: Double)? in
+        guard smc != nil else { return nil }
+        // The core set decides the displayed value whenever it answers, so a
+        // normal tick reads only those keys; the remaining Tp/Te keys are
+        // swept exactly when they would have mattered before the split —
+        // unknown platforms (empty core set) or a tick with no plausible
+        // core reading.
+        var readings = temperatureReadings(of: preferredCPUKeys)
+        if let value = TemperatureSensorSelector.displayedCPUTemperature(readings: readings,
+                                                                         platform: cpuTemperaturePlatform) {
+            return value
+        }
+        readings += temperatureReadings(of: fallbackCPUKeys)
+        return TemperatureSensorSelector.displayedCPUTemperature(readings: readings,
+                                                                 platform: cpuTemperaturePlatform)
+    }
+
+    private func temperatureReadings(of keys: [SMCClient.Key]) -> [(key: String, value: Double)] {
+        guard let smc else { return [] }
+        return keys.compactMap { key -> (key: String, value: Double)? in
             guard let value = smc.readValue(key) else { return nil }
             return (key.name, value)
         }
-        return TemperatureSensorSelector.displayedCPUTemperature(readings: readings,
-                                                                 platform: cpuTemperaturePlatform)
     }
 
     private func maxTemperature(of keys: [SMCClient.Key]) -> Double? {

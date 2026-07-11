@@ -14,6 +14,25 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
          cleaning, homebrew, media, urlCleaner, uninstaller
 
     var id: String { rawValue }
+
+    /// The hub feature behind the tile; off in the hub removes it from the
+    /// grid, the hidden list and edit mode until it returns.
+    var feature: AppFeature {
+        switch self {
+        case .keepAwake: return .keepAwake
+        case .cleaner: return .cleaner
+        case .micMute: return .micMute
+        case .screenOCR: return .screenOCR
+        case .colorPicker: return .colorPicker
+        case .clipboard: return .clipboardHistory
+        case .windowLayout: return .windowLayout
+        case .cleaning: return .cleaningMode
+        case .homebrew: return .homebrew
+        case .media: return .mediaTools
+        case .urlCleaner: return .urlCleaner
+        case .uninstaller: return .uninstaller
+        }
+    }
 }
 
 /// The floating quick panel: a small, pretty launcher with the user's
@@ -52,7 +71,8 @@ final class QuickLauncherService: ObservableObject {
     }
 
     func syncWithPreferences() {
-        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.quickLauncherShortcutEnabled)
+        let enabled = AppFeature.quickLauncher.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.quickLauncherShortcutEnabled)
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.quickLauncherShortcut,
                                             fallback: .quickLauncherDefault)
         shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut)
@@ -81,6 +101,7 @@ final class QuickLauncherService: ObservableObject {
 
     private var orderedItems: [QuickLauncherItem] {
         PanelLayout.itemOrder(QuickLauncherItem.self, key: DefaultsKey.quickLauncherItemOrder)
+            .filter { $0.feature.isAvailable }
     }
 
     var itemOrderBinding: Binding<[QuickLauncherItem]> {

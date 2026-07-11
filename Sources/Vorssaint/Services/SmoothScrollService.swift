@@ -41,7 +41,8 @@ final class SmoothScrollService: ObservableObject {
 
     /// Applies the persisted preference; safe to call repeatedly.
     func syncWithPreferences() {
-        let wanted = UserDefaults.standard.bool(forKey: DefaultsKey.smoothScrollEnabled)
+        let wanted = AppFeature.smoothScroll.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.smoothScrollEnabled)
         if wanted, Permissions.shared.accessibility {
             start()
         } else {

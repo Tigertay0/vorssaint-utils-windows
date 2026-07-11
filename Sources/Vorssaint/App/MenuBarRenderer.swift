@@ -78,12 +78,32 @@ enum MenuBarMetric: String, CaseIterable, Identifiable {
         defaults.set(raw, forKey: DefaultsKey.menuBarMetricOrder)
     }
 
+    /// The hub feature this metric belongs to; temperatures ride with their
+    /// parent metric. A pinned metric whose feature is off in the hub stays
+    /// pinned in defaults but stops rendering (and sampling) until it returns.
+    var feature: AppFeature {
+        switch self {
+        case .cpu, .cpuTemperature: return .monitorCPU
+        case .gpu, .gpuTemperature: return .monitorGPU
+        case .memory: return .monitorMemory
+        case .network: return .monitorNetwork
+        case .diskUsage, .diskActivity: return .monitorDisk
+        case .battery, .batteryTemperature, .peripheralBattery, .power: return .monitorPower
+        }
+    }
+
     static func enabled(in defaults: UserDefaults) -> [MenuBarMetric] {
-        order(in: defaults).filter { defaults.bool(forKey: $0.defaultsKey) }
+        order(in: defaults).filter {
+            defaults.bool(forKey: $0.defaultsKey)
+                && defaults.bool(forKey: $0.feature.availabilityKey)
+        }
     }
 
     static func anyEnabled(in defaults: UserDefaults) -> Bool {
-        allCases.contains { defaults.bool(forKey: $0.defaultsKey) }
+        allCases.contains {
+            defaults.bool(forKey: $0.defaultsKey)
+                && defaults.bool(forKey: $0.feature.availabilityKey)
+        }
     }
 }
 

@@ -65,7 +65,8 @@ final class ClipboardHistoryService: ObservableObject {
     }
 
     func syncWithPreferences() {
-        if UserDefaults.standard.bool(forKey: DefaultsKey.clipboardHistoryEnabled) {
+        if AppFeature.clipboardHistory.isAvailable,
+           UserDefaults.standard.bool(forKey: DefaultsKey.clipboardHistoryEnabled) {
             start()
             syncHotkey()
         } else {

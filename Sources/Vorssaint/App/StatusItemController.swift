@@ -320,11 +320,21 @@ final class StatusItemController {
             }
         }
 
-        statusItem.length = NSStatusItem.variableLength
+        // Every write below invalidates the button's layout and redraws the
+        // status window even when the value is identical — and this runs on
+        // every monitor tick and defaults change. Rounded metric strings
+        // repeat most ticks, so skipping no-op writes skips that churn.
+        if statusItem.length != NSStatusItem.variableLength {
+            statusItem.length = NSStatusItem.variableLength
+        }
 
         if title.length == 0 {
-            button.attributedTitle = NSAttributedString(string: "")
-            button.imagePosition = .imageOnly
+            if button.attributedTitle.length != 0 {
+                button.attributedTitle = NSAttributedString(string: "")
+            }
+            if button.imagePosition != .imageOnly {
+                button.imagePosition = .imageOnly
+            }
         } else {
             // The leading space separates the glyph from the text; with the
             // glyph hidden by the metrics-only option it would be pure dead
@@ -363,19 +373,27 @@ final class StatusItemController {
                                   value: -0.4,
                                   range: NSRange(location: 0, length: full.length))
             }
-            button.font = font
-            button.attributedTitle = full
-            button.imagePosition = .imageLeading
+            if !full.isEqual(to: button.attributedTitle) {
+                button.font = font
+                button.attributedTitle = full
+            }
+            if button.imagePosition != .imageLeading {
+                button.imagePosition = .imageLeading
+            }
         }
 
+        let toolTip: String
         if manager.isActive {
             if let end = manager.endDate {
-                button.toolTip = "\(strings.statusActiveUntil) \(Self.timeFormatter.string(from: end))"
+                toolTip = "\(strings.statusActiveUntil) \(Self.timeFormatter.string(from: end))"
             } else {
-                button.toolTip = strings.statusActiveIndefinite
+                toolTip = strings.statusActiveIndefinite
             }
         } else {
-            button.toolTip = strings.statusIdleTooltip
+            toolTip = strings.statusIdleTooltip
+        }
+        if button.toolTip != toolTip {
+            button.toolTip = toolTip
         }
 
         // The icon decision depends on the title just written (the glyph may

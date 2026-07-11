@@ -114,4 +114,45 @@ enum ExtraBrightnessSupport {
         return min(boostFactor(level: level, maxEDR: currentEDR, reference: reference),
                    max(currentEDR, 1.0))
     }
+
+    // MARK: - Smoothing between poll ticks
+
+    /// While HDR video plays, the granted headroom moves constantly: the
+    /// video spends the same headroom the boost uses, and the boost itself
+    /// raises panel power, so macOS keeps revising its grant. Rendering each
+    /// reading as-is turned that into brightness steps four times a second
+    /// (the reported flashing). Downward moves take a share of the gap per
+    /// tick, so a real revocation is respected within a couple of seconds;
+    /// upward moves are one small fixed step, so the boost never chases the
+    /// grant back up fast enough to trigger the next revocation.
+    static let rampUpStep: Double = 0.03
+    static let rampDownShare: Double = 0.25
+    static let rampMinStep: Double = 0.01
+
+    /// Consecutive no-headroom readings to ride out before believing them.
+    /// Entering fullscreen video briefly reports no headroom at all; acting
+    /// on that slammed the boost to the engagement nudge and back, a hard
+    /// flash. Holding is safe: the compositor clamps the overlay to the
+    /// range that is really available, so a held factor never over-asks.
+    static let dropoutGraceTicks = 3
+
+    /// The factor to put on screen this tick, one smoothing step from
+    /// `previous` toward `target`.
+    static func rampedFactor(previous: Double, target: Double) -> Double {
+        if target > previous { return min(previous + rampUpStep, target) }
+        if target < previous {
+            let step = max((previous - target) * rampDownShare, rampMinStep)
+            return max(previous - step, target)
+        }
+        return previous
+    }
+
+    /// The target for this tick: a grant that vanished moments ago keeps the
+    /// previous factor through the grace window; a persistent dropout (or
+    /// one with no boost worth protecting) is taken at face value.
+    static func gracedTarget(instantaneous: Double, previous: Double,
+                             engaged: Bool, disengagedTicks: Int) -> Double {
+        guard !engaged, disengagedTicks <= dropoutGraceTicks else { return instantaneous }
+        return max(instantaneous, previous)
+    }
 }

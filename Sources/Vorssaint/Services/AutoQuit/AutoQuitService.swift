@@ -65,7 +65,8 @@ final class AutoQuitService: ObservableObject {
     // MARK: - Lifecycle
 
     func syncWithPreferences() {
-        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.autoQuitEnabled)
+        let enabled = AppFeature.autoQuit.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.autoQuitEnabled)
         if enabled, Permissions.shared.accessibility {
             start()
         } else {
@@ -483,7 +484,10 @@ final class AutoQuitService: ObservableObject {
 
         // Accessibility gone (e.g. reset): the AX hit-test below would hang
         // inside the tap and freeze clicks, so let the click through untouched.
-        guard AXIsProcessTrusted() else { return Unmanaged.passUnretained(event) }
+        // Cached for the every-click fast path; the live check runs right
+        // before the AX hit-test, only for clicks that landed on an eligible
+        // window's close-button area.
+        guard Permissions.shared.accessibility else { return Unmanaged.passUnretained(event) }
 
         guard type == .leftMouseDown,
               event.flags.intersection([.maskCommand, .maskControl, .maskAlternate, .maskShift]).isEmpty,
@@ -492,6 +496,7 @@ final class AutoQuitService: ObservableObject {
                 button: .close,
                 pidIsEligible: { [weak self] pid in self?.observers[pid] != nil }
               ),
+              AXIsProcessTrusted(),
               let pid = closeButtonPID(at: event.location, candidate: candidate) else {
             return Unmanaged.passUnretained(event)
         }

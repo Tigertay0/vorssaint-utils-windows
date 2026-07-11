@@ -816,14 +816,14 @@ struct MetricsTests {
                "update showcase intro starts unseen")
         expect(registeredDefaults[DefaultsKey.updateShowcaseMediaOverride] as? String == "",
                "update showcase media override is empty by default")
-        expect(SupportUpdateIntroInfo.releaseVersion == "3.1.8",
-               "support prompt is deliberately pinned to 3.1.8 (owner's call); 3.1.9 through 3.1.11 do not ask again")
+        expect(SupportUpdateIntroInfo.releaseVersion == "3.1.12",
+               "support prompt is deliberately pinned to 3.1.12 (owner's call for this release)")
         // AppInfo.version falls back to "dev" in this bare harness, so read
         // the plist the shipped app will actually carry. The pin is a
         // per-release decision: this check fails on every version bump so the
         // decision above is made consciously, never by omission.
         let plistVersion = (NSDictionary(contentsOfFile: "Resources/Info.plist")?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.1.11",
+        expect(plistVersion == "3.1.12",
                "bumping the app version requires re-deciding the support prompt pin above")
         expect(registeredDefaults[DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect] as? Bool == false,
                "headphone disconnect volume lowering is opt-in")
@@ -931,6 +931,18 @@ struct MetricsTests {
                "compact dense spacing joins blocks with a hair space")
         expect(MenuBarSpacingSupport.blockGlue(readableStyle: true, spacing: .compact) == " ",
                "compact readable spacing tightens the double space to a single one")
+        expect(StatusItemAnchorSupport.anchorDriftX(clickX: 1135, reportedMidX: 1452, buttonWidth: 38) == -317,
+               "a click far left of the status item's reported frame re-anchors the panel at the click")
+        expect(StatusItemAnchorSupport.anchorDriftX(clickX: 1452, reportedMidX: 1135, buttonWidth: 38) == 317,
+               "a click far right of the status item's reported frame re-anchors the panel at the click")
+        expect(StatusItemAnchorSupport.anchorDriftX(clickX: 1150, reportedMidX: 1144, buttonWidth: 38) == nil,
+               "a click inside the status button never counts as drift")
+        expect(StatusItemAnchorSupport.anchorDriftX(clickX: 1186, reportedMidX: 1144, buttonWidth: 38) == nil,
+               "a sloppy click just past the button edge stays within the drift slack")
+        expect(StatusItemAnchorSupport.anchorDriftX(clickX: 1188, reportedMidX: 1144, buttonWidth: 38) == 44,
+               "a click beyond the slack re-anchors by the full offset")
+        expect(StatusItemAnchorSupport.anchorDriftX(clickX: 1240, reportedMidX: 1144, buttonWidth: 197) == nil,
+               "clicks near the edge of a wide metrics item stay anchored to the item")
         expect(registeredDefaults[DefaultsKey.menuBarHideIconWithMetrics] as? Bool == false,
                "the menu bar icon stays visible by default")
         expect(MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: false,
@@ -985,6 +997,8 @@ struct MetricsTests {
                "panel window maximize control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlKeyDebounce] as? Bool == true,
                "panel keyboard debounce control is visible by default")
+        expect(registeredDefaults[DefaultsKey.panelControlTextSnippets] as? Bool == true,
+               "panel text snippets control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelShowKeepAwake] as? Bool == true,
                "Keep Awake panel section is shown by default")
         expect(registeredDefaults[DefaultsKey.panelShowUtilities] as? Bool == true,
@@ -1228,6 +1242,72 @@ struct MetricsTests {
         expect(!ExtraBrightnessSupport.isXDRPanelName("Built-in Liquid Retina Display")
                && !ExtraBrightnessSupport.isXDRPanelName("Built-in Retina Display"),
                "generic built-in panel names do not qualify by name")
+        expect(abs(ExtraBrightnessSupport.rampedFactor(previous: 1.0, target: 1.48) - 1.03) < 0.0001,
+               "the factor climbs one small step per tick")
+        expect(ExtraBrightnessSupport.rampedFactor(previous: 1.46, target: 1.48) == 1.48,
+               "the last upward step lands exactly on the target")
+        expect(abs(ExtraBrightnessSupport.rampedFactor(previous: 1.48, target: 1.10) - 1.385) < 0.0001,
+               "downward moves take a share of the gap, never the whole drop at once")
+        expect(ExtraBrightnessSupport.rampedFactor(previous: 1.105, target: 1.10) == 1.10,
+               "tiny downward gaps snap to the target instead of hovering")
+        expect(ExtraBrightnessSupport.rampedFactor(previous: 1.48, target: 1.48) == 1.48,
+               "a settled factor stays put")
+        expect(ExtraBrightnessSupport.gracedTarget(instantaneous: 1.10, previous: 1.48,
+                                                   engaged: false, disengagedTicks: 1) == 1.48
+               && ExtraBrightnessSupport.gracedTarget(instantaneous: 1.10, previous: 1.48,
+                                                      engaged: false,
+                                                      disengagedTicks: ExtraBrightnessSupport.dropoutGraceTicks) == 1.48,
+               "a grant that just vanished keeps the previous factor through the grace window")
+        expect(ExtraBrightnessSupport.gracedTarget(instantaneous: 1.10, previous: 1.48,
+                                                   engaged: false,
+                                                   disengagedTicks: ExtraBrightnessSupport.dropoutGraceTicks + 1) == 1.10,
+               "a dropout that outlives the grace window is believed")
+        expect(ExtraBrightnessSupport.gracedTarget(instantaneous: 1.40, previous: 1.48,
+                                                   engaged: true, disengagedTicks: 0) == 1.40,
+               "an engaged reading is always taken at face value")
+        expect(ExtraBrightnessSupport.gracedTarget(instantaneous: 1.10, previous: 1.0,
+                                                   engaged: false, disengagedTicks: 1) == 1.10,
+               "grace never lifts a factor that had no boost to protect")
+        var ebFactor = 1.48
+        var ebLow = 0
+        for ebEngaged in [true, false, false, false, true, true] {
+            ebLow = ebEngaged ? 0 : ebLow + 1
+            let ebTarget = ExtraBrightnessSupport.gracedTarget(instantaneous: ebEngaged ? 1.48 : 1.10,
+                                                               previous: ebFactor,
+                                                               engaged: ebEngaged, disengagedTicks: ebLow)
+            ebFactor = ExtraBrightnessSupport.rampedFactor(previous: ebFactor, target: ebTarget)
+            expect(ebFactor == 1.48,
+                   "a fullscreen transition blackout leaves the boost visually untouched")
+        }
+        var ebDrop = 1.48
+        var ebDropLow = 0
+        var ebBiggestStep = 0.0
+        for _ in 0..<12 {
+            ebDropLow += 1
+            let ebTarget = ExtraBrightnessSupport.gracedTarget(instantaneous: 1.10, previous: ebDrop,
+                                                               engaged: false, disengagedTicks: ebDropLow)
+            let ebNext = ExtraBrightnessSupport.rampedFactor(previous: ebDrop, target: ebTarget)
+            ebBiggestStep = max(ebBiggestStep, ebDrop - ebNext)
+            ebDrop = ebNext
+        }
+        expect(ebDrop >= 1.10 && ebDrop < 1.13 && ebBiggestStep < 0.0951,
+               "a real revocation ramps the boost down over seconds without one visible slam")
+        var ebWobble = 1.48
+        var ebWobbleStep = 0.0
+        for tick in 0..<20 {
+            let ebNext = ExtraBrightnessSupport.rampedFactor(previous: ebWobble,
+                                                             target: tick % 4 < 2 ? 1.48 : 1.40)
+            ebWobbleStep = max(ebWobbleStep, abs(ebNext - ebWobble))
+            ebWobble = ebNext
+            expect(ebWobble >= 1.40 && ebWobble <= 1.48,
+                   "a wobbling grant keeps the factor inside the grant's own range")
+        }
+        expect(ebWobbleStep < 0.0301,
+               "a wobbling grant moves the factor in imperceptible steps, not flashes")
+        var ebGlide = 1.0
+        for _ in 0..<16 { ebGlide = ExtraBrightnessSupport.rampedFactor(previous: ebGlide, target: 1.48) }
+        expect(ebGlide == 1.48,
+               "switching the boost on glides to full strength within about four seconds")
         expect(CleanerSupport.isProtectedBundleID("com.apple.Music")
                && CleanerSupport.isProtectedBundleID("com.apple")
                && CleanerSupport.isProtectedBundleID("group.com.apple.notes")
@@ -1273,6 +1353,14 @@ struct MetricsTests {
                && !CleanerPolicy.precheckCacheEntry("com.spotify.client")
                && !CleanerPolicy.precheckCacheEntry("ms-playwright"),
                "system, sensitive and unattributable caches start unchecked")
+        expect(CleanerSupport.Category.deviceBackups.rawValue == 6
+               && CleanerSupport.Category.allCases.count == 7,
+               "device backups joined the cleaner with a stable category id")
+        expect(!CleanerPolicy.precheckDeviceBackups,
+               "device backups never start checked, they are the user's safety net")
+        expect(CleanerPolicy.developerJunkPaths.contains("/Library/Developer/Xcode/iOS DeviceSupport")
+               && CleanerPolicy.developerJunkPaths.contains("/Library/Developer/Xcode/watchOS DeviceSupport"),
+               "stale DeviceSupport symbol caches count as developer junk")
         expect(CleanerSupport.looksLikeBundleID("com.vendor.editor")
                && CleanerSupport.looksLikeBundleID("com.foo.Bar-Helper_2"),
                "reverse DNS names are recognized")
@@ -3986,6 +4074,362 @@ struct MetricsTests {
 
         let unrelatedSystemEvent = CleaningSystemKeyEvent.decode(subtype: 99, data1: 0)
         expect(unrelatedSystemEvent == nil, "unrelated system-defined events do not count as unlock keys")
+
+        // MARK: Features hub catalog
+
+        expect(AppFeature.allCases.count == 37, "feature catalog has 37 features")
+        expect(Set(AppFeature.allCases.map(\.rawValue)).count == AppFeature.allCases.count,
+               "feature ids are unique")
+        expect(AppFeature.allCases.map(\.rawValue) == [
+            "switcher", "dockPreview", "dockClick", "windowMaximizer", "windowLayout", "autoQuit",
+            "scrollInverter", "smoothScroll", "mouseNavigation", "middleClick", "keyboardDebounce",
+            "textSnippets",
+            "clipboardHistory", "pastePlain", "finderCutPaste", "shelf", "urlCleaner",
+            "mixer", "soundOutputSwitcher", "micMute", "musicBlock",
+            "keepAwake", "extraBrightness",
+            "quickLauncher", "colorPicker", "screenOCR", "cleaningMode", "mediaTools",
+            "cleaner", "uninstaller", "homebrew",
+            "monitorCPU", "monitorGPU", "monitorMemory", "monitorNetwork", "monitorDisk", "monitorPower",
+        ], "feature ids are stable (they persist inside availability keys)")
+        expect(AppFeature.switcher.availabilityKey == "featureAvailable.switcher",
+               "availability key derives from the raw value")
+        expect(AppFeature.availabilityDefaults.count == AppFeature.allCases.count
+                && AppFeature.availabilityDefaults.values.allSatisfy { ($0 as? Bool) == true },
+               "every feature registers as available by default")
+        expect(FeatureGroup.allCases.map { AppFeature.features(in: $0).count }.reduce(0, +)
+                == AppFeature.allCases.count,
+               "every feature belongs to exactly one group")
+        expect(!FeatureGroup.allCases.contains { AppFeature.features(in: $0).isEmpty },
+               "no hub group is empty")
+
+        func activeSet(_ permission: AppPermission,
+                       available: Set<AppFeature> = Set(AppFeature.allCases),
+                       on: Set<String> = [],
+                       strings: [String: String] = [:]) -> Set<AppFeature> {
+            Set(AppFeature.activeFeatures(using: permission,
+                                          isAvailable: { available.contains($0) },
+                                          boolFor: { on.contains($0) },
+                                          stringFor: { strings[$0] }))
+        }
+
+        expect(activeSet(.accessibility) == [.windowLayout, .cleaningMode],
+               "with nothing enabled only on-demand features use accessibility")
+        expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterEnabled]).contains(.scrollInverter),
+               "an enabled feature counts as using its permission")
+        expect(!activeSet(.accessibility, available: [], on: [DefaultsKey.scrollInverterEnabled])
+                .contains(.scrollInverter),
+               "an unavailable feature never uses a permission")
+        expect(activeSet(.accessibility, on: [DefaultsKey.keepAwakeMouseJiggleEnabled]).contains(.keepAwake),
+               "keep awake uses accessibility only with the mouse jiggle on")
+        expect(!activeSet(.accessibility).contains(.keepAwake),
+               "keep awake without jiggle does not use accessibility")
+
+        expect(activeSet(.screenRecording, on: [DefaultsKey.switcherEnabled]) == [.switcher, .screenOCR],
+               "switcher with previews uses screen recording; OCR is on demand")
+        expect(activeSet(.screenRecording,
+                         on: [DefaultsKey.switcherEnabled, DefaultsKey.switcherSimpleMode]) == [.screenOCR],
+               "simple-mode switcher stops using screen recording")
+        expect(activeSet(.screenRecording,
+                         on: [DefaultsKey.switcherSimpleMode, DefaultsKey.dockPreviewEnabled])
+                .contains(.dockPreview),
+               "dock preview keeps screen recording in use regardless of switcher mode")
+
+        expect(activeSet(.notifications) == [],
+               "no alerts and no schedule means notifications are unused")
+        expect(activeSet(.notifications, on: [DefaultsKey.monitorAlertCPUTemperature]) == [.monitorCPU],
+               "a CPU temperature alert marks the CPU monitor as notifying")
+        expect(activeSet(.notifications,
+                         available: Set(AppFeature.allCases).subtracting([.monitorCPU]),
+                         on: [DefaultsKey.monitorAlertCPU]) == [],
+               "an alert whose metric is unavailable does not notify")
+        expect(activeSet(.notifications, on: [DefaultsKey.cleanerScheduleNotify],
+                         strings: [DefaultsKey.cleanerScheduleFrequency: "weekly"]) == [.cleaner],
+               "a scheduled cleaner with notice enabled uses notifications")
+        expect(activeSet(.notifications, on: [DefaultsKey.cleanerScheduleNotify],
+                         strings: [DefaultsKey.cleanerScheduleFrequency: "off"]) == [],
+               "an unscheduled cleaner does not use notifications")
+
+        expect(activeSet(.fullDiskAccess) == [.cleaner, .uninstaller],
+               "cleaner and uninstaller are on-demand full disk users")
+        expect(activeSet(.automationFinder, on: [DefaultsKey.finderCutPasteEnabled])
+                == [.finderCutPaste, .uninstaller],
+               "finder automation is used by cut and paste plus the uninstaller")
+        expect(activeSet(.automationTerminal) == [.homebrew], "homebrew drives the Terminal")
+        expect(activeSet(.audioCapture) == [.mixer], "the mixer is the only audio capture user")
+        expect(activeSet(.audioCapture, available: Set(AppFeature.allCases).subtracting([.mixer])) == [],
+               "audio capture reads as unused once the mixer is off in the hub")
+
+        expect(!AppFeature.anyMonitorAlertEnabled(isAvailable: { _ in true }, boolFor: { _ in false }),
+               "no alert keys means no monitor alerts")
+        expect(AppFeature.anyMonitorAlertEnabled(isAvailable: { _ in true },
+                                                 boolFor: { $0 == DefaultsKey.monitorAlertDisk }),
+               "one alert on an available metric arms the alert service")
+        expect(!AppFeature.anyMonitorAlertEnabled(isAvailable: { $0 != .monitorDisk },
+                                                  boolFor: { $0 == DefaultsKey.monitorAlertDisk }),
+               "an alert with its metric off in the hub stays disarmed")
+
+        expect(GlobalShortcutRole.activeRoles(isOn: { _ in true }).count == GlobalShortcutRole.allCases.count,
+               "the availability-free overload keeps every enabled role")
+        expect(!GlobalShortcutRole.activeRoles(isOn: { _ in true },
+                                               isAvailable: { $0 != .shelf }).contains(.shelf),
+               "a role leaves the shortcuts page when its feature is off in the hub")
+        expect(GlobalShortcutRole.activeRoles(isOn: { _ in true },
+                                              isAvailable: { $0 != .switcher })
+                .allSatisfy { $0 != .switcher && $0 != .switcherWindow },
+               "both switcher roles follow the switcher feature")
+
+        // MARK: Features hub strings
+
+        for language in AppLanguage.allCases {
+            let hub = FeatureStrings.hub(language)
+            let values = Mirror(reflecting: hub).children.compactMap { $0.value as? String }
+            expect(!values.isEmpty && values.allSatisfy { !$0.isEmpty },
+                   "every hub string is set for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible hub strings (\(language.rawValue))")
+            expect(hub.activeCountFormat.contains("%1$d") && hub.activeCountFormat.contains("%2$d"),
+                   "count format keeps positional specifiers (\(language.rawValue))")
+        }
+        expect(FeatureStrings.hub(.ptBR).pageTitle == "Recursos"
+                && FeatureStrings.hub(.enUS).pageTitle == "Features",
+               "hub page title reads naturally in the owner languages")
+        for language in AppLanguage.allCases {
+            let snippetValues = Mirror(reflecting: FeatureStrings.snippets(language)).children
+                .compactMap { $0.value as? String }
+            expect(!snippetValues.isEmpty && snippetValues.allSatisfy { !$0.isEmpty },
+                   "every snippet string is set for \(language.rawValue)")
+            expect(snippetValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible snippet strings (\(language.rawValue))")
+            let backupValues = Mirror(reflecting: FeatureStrings.backup(language)).children
+                .compactMap { $0.value as? String }
+            expect(!backupValues.isEmpty && backupValues.allSatisfy { !$0.isEmpty },
+                   "every backup string is set for \(language.rawValue)")
+            expect(backupValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible backup strings (\(language.rawValue))")
+            let guideValues = Mirror(reflecting: FeatureStrings.permissionGuide(language)).children
+                .compactMap { $0.value as? String }
+            expect(!guideValues.isEmpty && guideValues.allSatisfy { !$0.isEmpty },
+                   "every permission guide string is set for \(language.rawValue)")
+            expect(guideValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in permission guide strings (\(language.rawValue))")
+            let strings: Strings = {
+                switch language {
+                case .enUS: return .enUS
+                case .ptBR: return .ptBR
+                case .tr: return .tr
+                case .ru: return .ru
+                case .es: return .es
+                case .de: return .de
+                case .fr: return .fr
+                case .it: return .it
+                case .ja: return .ja
+                case .zhHans: return .zhHans
+                case .zhTW: return .zhTW
+                case .zhHK: return .zhHK
+                }
+            }()
+            expect(!strings.obPurposeTitle.isEmpty && !strings.obPurposeBody.isEmpty
+                    && !strings.obPurposeSkip.isEmpty,
+                   "the purpose step speaks \(language.rawValue)")
+        }
+
+        // MARK: Hub presets and energy badges
+
+        expect(FeaturePreset.allCases.count == 3,
+               "three starting points, not another wall of decisions")
+        expect(FeaturePreset.allCases.allSatisfy { !$0.features.isEmpty },
+               "every preset installs something")
+        expect(FeaturePreset.essential.features.contains(.mixer)
+                && FeaturePreset.essential.features.contains(.keepAwake)
+                && FeaturePreset.essential.features.contains(.monitorPower),
+               "the essential preset covers mixer, monitor and keep awake")
+        expect(FeaturePreset.windows.features.allSatisfy { $0.group == .windowsDock },
+               "the windows preset stays inside the windows and Dock group")
+        expect(FeaturePreset.battery.features.allSatisfy {
+                   $0.energyProfile != .mouse && $0.energyProfile != .keyboard
+                       && $0.energyProfile != .inputs
+               },
+               "battery and quiet installs nothing that listens to input")
+        expect(FeaturePreset.battery.features.allSatisfy {
+                   !$0.permissions.contains(.accessibility)
+               },
+               "battery and quiet needs no accessibility permission at all")
+        for preset in FeaturePreset.allCases {
+            expect(preset.enableKeys.allSatisfy { key in
+                       preset.features.contains { $0.enabledKeys.contains(key) }
+                   },
+                   "preset enable keys belong to its own features (\(preset.rawValue))")
+        }
+        expect(AppFeature.monitorCPU.energyProfile == .periodic
+                && AppFeature.clipboardHistory.energyProfile == .periodic
+                && AppFeature.textSnippets.energyProfile == .inputs
+                && AppFeature.dockPreview.energyProfile == .mouse
+                && AppFeature.switcher.energyProfile == .keyboard
+                && AppFeature.colorPicker.energyProfile == .idle
+                && AppFeature.keepAwake.energyProfile == .idle,
+               "energy badges tell the honest mechanism per feature")
+
+        // MARK: Settings page visibility
+
+        func pageVisible(_ page: SettingsPage, available: Set<AppFeature>) -> Bool {
+            FeatureVisibilitySupport.isPageVisible(page) { available.contains($0) }
+        }
+        let allFeatures = Set(AppFeature.allCases)
+        expect(pageVisible(.mouse, available: allFeatures), "mouse page shows with everything available")
+        expect(pageVisible(.mouse, available: [.middleClick]),
+               "one remaining mouse feature keeps the mouse page")
+        expect(!pageVisible(.mouse, available: []),
+               "the mouse page hides only with all four mouse features off")
+        expect(!pageVisible(.energy, available: allFeatures.subtracting([.keepAwake, .extraBrightness])),
+               "energy hides when keep awake and extra brightness are both off")
+        expect(pageVisible(.energy, available: [.extraBrightness]), "XDR alone keeps the energy page")
+        expect(!pageVisible(.monitor, available: allFeatures.subtracting(Set(FeatureVisibilitySupport.monitorFeatures))),
+               "monitor page hides with every metric off")
+        expect(pageVisible(.monitor, available: [.monitorNetwork]), "one metric keeps the monitor page")
+        expect(pageVisible(.general, available: []) && pageVisible(.about, available: [])
+                && pageVisible(.shortcuts, available: []),
+               "app pages never hide")
+        expect(!pageVisible(.shelf, available: allFeatures.subtracting([.shelf])),
+               "single-feature pages follow their feature")
+
+        // MARK: Text snippets engine (issue #201)
+
+        expect(TextSnippetSupport.sanitizedTrigger("  ;e mail\n") == ";email", "triggers lose whitespace")
+        expect(TextSnippetSupport.bufferAppending(String(repeating: "a", count: 64), typed: "b").count
+                == TextSnippetSupport.bufferLimit,
+               "the buffer stays capped")
+        expect(TextSnippetSupport.bufferAppending("abc", typed: "d") == "abcd", "the buffer appends typing")
+
+        let email = TextSnippet(name: "Email", trigger: ";email", replacement: "me@x.com",
+                                expansion: .afterDelimiter, enabled: true)
+        let email2 = TextSnippet(name: "Email 2", trigger: ";email2", replacement: "us@x.com",
+                                 expansion: .afterDelimiter, enabled: true)
+        let dateSnippet = TextSnippet(name: "Now", trigger: ";;dt", replacement: "{{datetime}}",
+                                      expansion: .immediate, enabled: true)
+        let disabledSnippet = TextSnippet(name: "Off", trigger: ";off", replacement: "x",
+                                          expansion: .afterDelimiter, enabled: false)
+
+        expect(TextSnippetSupport.match(buffer: "hello ;email", expansion: .afterDelimiter,
+                                        snippets: [email, email2, disabledSnippet]) == email,
+               "a completed trigger matches at the buffer's end")
+        expect(TextSnippetSupport.match(buffer: "x ;email2", expansion: .afterDelimiter,
+                                        snippets: [email, email2]) == email2,
+               "the longest trigger wins")
+        expect(TextSnippetSupport.match(buffer: ";emai", expansion: .afterDelimiter,
+                                        snippets: [email]) == nil,
+               "a half-typed trigger stays quiet")
+        expect(TextSnippetSupport.match(buffer: "abc ;off", expansion: .afterDelimiter,
+                                        snippets: [disabledSnippet]) == nil,
+               "disabled snippets never fire")
+        expect(TextSnippetSupport.match(buffer: "a;;dt", expansion: .afterDelimiter,
+                                        snippets: [dateSnippet]) == nil,
+               "modes do not cross: immediate snippets ignore the delimiter path")
+        expect(TextSnippetSupport.match(buffer: "a;;dt", expansion: .immediate,
+                                        snippets: [dateSnippet]) == dateSnippet,
+               "immediate snippets fire the moment the trigger completes")
+
+        let fixedDate = Date(timeIntervalSince1970: 1_752_000_000)
+        let expandedText = TextSnippetSupport.expand("Report on {{date}} at {{time}}.",
+                                                     date: fixedDate, clipboard: nil,
+                                                     locale: Locale(identifier: "en_US"))
+        expect(expandedText.contains("2025") && !expandedText.contains("{{date}}")
+                && !expandedText.contains("{{time}}"),
+               "date and time variables expand")
+        expect(TextSnippetSupport.expand("clip: {{clipboard}}", date: fixedDate, clipboard: "X")
+                == "clip: X",
+               "the clipboard variable expands to the copied text")
+        expect(TextSnippetSupport.expand("clip: {{clipboard}}", date: fixedDate, clipboard: nil)
+                == "clip: ",
+               "a missing clipboard expands to nothing")
+        expect(TextSnippetSupport.expand("keep {{unknown}}", date: fixedDate, clipboard: nil)
+                == "keep {{unknown}}",
+               "unknown variables stay visible")
+        expect(TextSnippetSupport.expand("plain", date: fixedDate, clipboard: nil) == "plain",
+               "text without variables passes through untouched")
+
+        let storedSnippets = [email, dateSnippet]
+        expect(TextSnippetSupport.decode(TextSnippetSupport.encode(storedSnippets)) == storedSnippets,
+               "snippets round-trip through persistence")
+        expect(TextSnippetSupport.decode(nil).isEmpty, "no stored data means no snippets")
+
+        // MARK: Dock click with AX-blind apps (issue #200)
+
+        expect(DockClickSupport.effectiveHasUnminimized(unminimizedCount: 2,
+                                                        minimizedCount: 0,
+                                                        windowServerSeesWindows: false),
+               "AX-visible windows count as always")
+        expect(DockClickSupport.effectiveHasUnminimized(unminimizedCount: 0,
+                                                        minimizedCount: 0,
+                                                        windowServerSeesWindows: true),
+               "an AX-blind app with on-screen windows still minimizes")
+        expect(!DockClickSupport.effectiveHasUnminimized(unminimizedCount: 0,
+                                                         minimizedCount: 3,
+                                                         windowServerSeesWindows: true),
+               "minimized-only apps keep the restore path")
+        expect(!DockClickSupport.effectiveHasUnminimized(unminimizedCount: 0,
+                                                         minimizedCount: 0,
+                                                         windowServerSeesWindows: false),
+               "a truly windowless app passes the click through")
+        expect(!DockClickSupport.isDragMovement(from: CGPoint(x: 100, y: 100),
+                                                to: CGPoint(x: 103, y: 103)),
+               "click jitter stays a click")
+        expect(!DockClickSupport.isDragMovement(from: CGPoint(x: 100, y: 100),
+                                                to: CGPoint(x: 106, y: 100)),
+               "movement at the slop boundary still counts as a click")
+        expect(DockClickSupport.isDragMovement(from: CGPoint(x: 100, y: 100),
+                                               to: CGPoint(x: 105, y: 105)),
+               "a real drag crosses the slop and hands the press to the Dock")
+        expect(DockClickSupport.isDragMovement(from: CGPoint(x: 100, y: 100),
+                                               to: CGPoint(x: 100, y: 93)),
+               "vertical pulls count as drags too")
+
+        // MARK: Settings backup
+
+        let backupKeys = SettingsBackupSupport.exportKeys()
+        expect(backupKeys.contains(DefaultsKey.switcherEnabled)
+                && backupKeys.contains(DefaultsKey.menuBarCPU)
+                && backupKeys.contains(DefaultsKey.language)
+                && backupKeys.contains(DefaultsKey.appVolumes)
+                && backupKeys.contains(AppFeature.dockPreview.availabilityKey),
+               "backup carries preferences, menu bar pins, language and hub availability")
+        expect(backupKeys.contains(DefaultsKey.textSnippets)
+                && backupKeys.contains(DefaultsKey.textSnippetsEnabled),
+               "snippets travel with the settings backup")
+        expect(!backupKeys.contains(DefaultsKey.clipboardHistoryEntries)
+                && !backupKeys.contains(DefaultsKey.shelfItems)
+                && !backupKeys.contains(DefaultsKey.sleepDisabledFlag)
+                && !backupKeys.contains(DefaultsKey.micMuteActive)
+                && !backupKeys.contains(DefaultsKey.cleanerLastAutoRun)
+                && !backupKeys.contains(DefaultsKey.statusItemPlacementGeneration),
+               "backup never carries private content, live state or machine markers")
+        expect(backupKeys.contains(DefaultsKey.hasOnboarded)
+                && backupKeys.contains(DefaultsKey.dockPreviewIntroVersion)
+                && backupKeys.contains(DefaultsKey.featuresOnboardingVersion)
+                && backupKeys.contains(DefaultsKey.lastUpdateIntroVersion),
+               "a restored Mac does not replay onboarding or the intros already seen")
+        let backupPayload = SettingsBackupSupport.payload(appVersion: "test") { key in
+            key == DefaultsKey.switcherEnabled ? true : nil
+        }
+        expect(backupPayload[SettingsBackupSupport.formatVersionKey] as? Int
+                == SettingsBackupSupport.formatVersion,
+               "backup envelope carries the format version")
+        let roundTrip = SettingsBackupSupport.sanitizedSettings(from: backupPayload)
+        expect(roundTrip?[DefaultsKey.switcherEnabled] as? Bool == true,
+               "a backup round-trips its settings")
+        expect(SettingsBackupSupport.sanitizedSettings(from: [SettingsBackupSupport.settingsKey: [String: Any]()]) == nil,
+               "a file without the version envelope is rejected")
+        let tampered: [String: Any] = [
+            SettingsBackupSupport.formatVersionKey: 1,
+            SettingsBackupSupport.settingsKey: ["evilKey": "x", DefaultsKey.autoQuitEnabled: true] as [String: Any],
+        ]
+        let filteredImport = SettingsBackupSupport.sanitizedSettings(from: tampered)
+        expect(filteredImport?["evilKey"] == nil
+                && filteredImport?[DefaultsKey.autoQuitEnabled] as? Bool == true,
+               "unknown keys are dropped on import")
+        expect(SettingsBackupSupport.sanitizedSettings(from: [
+            SettingsBackupSupport.formatVersionKey: 99,
+            SettingsBackupSupport.settingsKey: [String: Any](),
+        ]) == nil, "a future format version is rejected")
 
         // MARK: Result
 
