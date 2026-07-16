@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.1.14 can show the brightness percentage while you adjust each
 display. It also improves mouse navigation, prevents the Shelf from opening
-while you move a window and fixes a crash that could close the app right
-after launch.
+while you move a window, fixes a crash that could close the app right after
+launch and aligns the monitor blocks with the other menu bar icons.
 
 ### Added
 - The optional brightness overlay shows the percentage after brightness
@@ -29,6 +29,8 @@ after launch.
 - The Shelf area under the menu bar icon no longer appears while a window is
   being moved or resized. It only opens for a real file or content drag.
 - Extra Brightness no longer drops briefly as video enters or leaves fullscreen.
+- Monitor blocks in the menu bar, including the usage bars, no longer sit a
+  couple of pixels above the other status icons on macOS 26 (Tahoe).
 
 ## [3.1.13] - 2026-07-15
 
