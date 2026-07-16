@@ -129,28 +129,8 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $router.page) {
-                ForEach(sidebarSections, id: \.title) { section in
-                    let items = section.items.filter {
-                        FeatureVisibilitySupport.isPageVisible($0.page) { $0.isAvailable }
-                            && SettingsSearchSupport.matches(query: searchQuery, title: $0.title,
-                                                             keywords: $0.keywords)
-                    }
-                    if !items.isEmpty {
-                        Section(section.title) {
-                            ForEach(items) { item in
-                                Label(item.title, systemImage: item.icon).tag(item.page)
-                            }
-                        }
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .searchable(text: $searchQuery,
-                        placement: .sidebar,
-                        prompt: l10n.s.settingsSearchPlaceholder)
-            .settingsSidebarSearchEdge()
-            .navigationSplitViewColumnWidth(min: 198, ideal: 210, max: 240)
+            sidebar
+                .navigationSplitViewColumnWidth(min: 198, ideal: 210, max: 240)
         } detail: {
             detail
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -159,6 +139,54 @@ struct SettingsView: View {
         .frame(minWidth: 772, maxWidth: .infinity, minHeight: 528, maxHeight: .infinity)
         .onAppear { ensureVisiblePage() }
         .onChange(of: features.revision) { _, _ in ensureVisiblePage() }
+    }
+
+    /// macOS 27 backs the pinned sidebar search field with a hard top scroll
+    /// edge, so rows fade out cleanly under it. On macOS 26 that effect does
+    /// not render inside split-view sidebars and the pinned field has no
+    /// backing of its own, so rows slid legibly across the placeholder
+    /// (issues #183, #254); there the field lives on a fixed header above the
+    /// list, where rows can never reach it. Earlier systems keep the classic
+    /// opaque sidebar chrome.
+    @ViewBuilder
+    private var sidebar: some View {
+        if #available(macOS 27, *) {
+            sidebarList
+                .searchable(text: $searchQuery,
+                            placement: .sidebar,
+                            prompt: l10n.s.settingsSearchPlaceholder)
+                .scrollEdgeEffectStyle(.hard, for: .top)
+        } else if #available(macOS 26, *) {
+            VStack(spacing: 0) {
+                SidebarSearchField(query: $searchQuery)
+                sidebarList
+            }
+        } else {
+            sidebarList
+                .searchable(text: $searchQuery,
+                            placement: .sidebar,
+                            prompt: l10n.s.settingsSearchPlaceholder)
+        }
+    }
+
+    private var sidebarList: some View {
+        List(selection: $router.page) {
+            ForEach(sidebarSections, id: \.title) { section in
+                let items = section.items.filter {
+                    FeatureVisibilitySupport.isPageVisible($0.page) { $0.isAvailable }
+                        && SettingsSearchSupport.matches(query: searchQuery, title: $0.title,
+                                                         keywords: $0.keywords)
+                }
+                if !items.isEmpty {
+                    Section(section.title) {
+                        ForEach(items) { item in
+                            Label(item.title, systemImage: item.icon).tag(item.page)
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.sidebar)
     }
 
     /// The selected page can leave the sidebar when its last feature is
@@ -1274,19 +1302,37 @@ struct PermissionRow: View {
     }
 }
 
-private extension View {
-    /// The sidebar search field is pinned to the top, so rows slide up behind it
-    /// as the list scrolls. On macOS 26 the pinned field has no backing of its
-    /// own, leaving the placeholder and the first rows overlapping (issue #183).
-    /// A hard top scroll-edge effect gives that band a defined glass blur, so the
-    /// rows fade out cleanly under the field. No-op on earlier systems, which
-    /// keep the classic opaque sidebar chrome.
-    @ViewBuilder
-    func settingsSidebarSearchEdge() -> some View {
-        if #available(macOS 26.0, *) {
-            scrollEdgeEffectStyle(.hard, for: .top)
-        } else {
-            self
+/// Search field for the macOS 26 sidebar, styled after the system pill.
+/// It sits on a fixed header outside the List, so scrolling rows can never
+/// cross it (issues #183, #254). Esc and the clear button empty the query,
+/// matching the system field.
+private struct SidebarSearchField: View {
+    @ObservedObject private var l10n = L10n.shared
+    @Binding var query: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField(l10n.s.settingsSearchPlaceholder, text: $query)
+                .textFieldStyle(.plain)
+                .onExitCommand { query = "" }
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(l10n.s.urlCleanerClearButton)
+            }
         }
+        .padding(.vertical, 5)
+        .padding(.horizontal, 7)
+        .background(.quaternary.opacity(0.5), in: Capsule())
+        .padding(.horizontal, 10)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 }
