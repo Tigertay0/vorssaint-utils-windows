@@ -17,6 +17,7 @@ opening while you move a window.
   Finder and other apps keep the converted navigation.
 - The Shelf area under the menu bar icon no longer appears while a window is
   being moved or resized. It only opens for a real file or content drag.
+- Extra Brightness no longer drops briefly as video enters or leaves fullscreen.
 
 ## [3.1.13] - 2026-07-15
 

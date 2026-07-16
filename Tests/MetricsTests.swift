@@ -1094,7 +1094,7 @@ struct MetricsTests {
         // per-release decision: this check fails on every version bump so the
         // decision above is made consciously, never by omission.
         let plistVersion = (NSDictionary(contentsOfFile: "Resources/Info.plist")?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.1.13",
+        expect(plistVersion == "3.1.14",
                "bumping the app version requires re-deciding the support prompt pin above")
         expect(registeredDefaults[DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect] as? Bool == false,
                "headphone disconnect volume lowering is opt-in")
@@ -1622,6 +1622,16 @@ struct MetricsTests {
         expect(ExtraBrightnessSupport.gracedTarget(instantaneous: 1.10, previous: 1.0,
                                                    engaged: false, disengagedTicks: 1) == 1.10,
                "grace never lifts a factor that had no boost to protect")
+        expect(ExtraBrightnessSupport.canReuseSpaceWindows(
+                   sameDisplay: true, overlayOnActiveSpace: true, triggerOnActiveSpace: true),
+               "fullscreen handoff keeps the live overlay pair when both windows followed")
+        expect(!ExtraBrightnessSupport.canReuseSpaceWindows(
+                   sameDisplay: false, overlayOnActiveSpace: true, triggerOnActiveSpace: true)
+               && !ExtraBrightnessSupport.canReuseSpaceWindows(
+                   sameDisplay: true, overlayOnActiveSpace: false, triggerOnActiveSpace: true)
+               && !ExtraBrightnessSupport.canReuseSpaceWindows(
+                   sameDisplay: true, overlayOnActiveSpace: true, triggerOnActiveSpace: false),
+               "display changes and incomplete Space handoffs still rebuild the overlay pair")
         var ebFactor = 1.48
         var ebLow = 0
         for ebEngaged in [true, false, false, false, true, true] {
