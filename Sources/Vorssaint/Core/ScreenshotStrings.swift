@@ -74,6 +74,8 @@ struct ScreenshotFeatureStrings {
     let backdropSavePreset: String
     let backdropDeletePreset: String
     let backdropCustomLabel: String
+    let openEditorToggle: String
+    let openEditorCaption: String
 }
 
 extension FeatureStrings {
@@ -166,7 +168,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Corners",
         backdropSavePreset: "Save background",
         backdropDeletePreset: "Remove",
-        backdropCustomLabel: "Custom"
+        backdropCustomLabel: "Custom",
+        openEditorToggle: "Open the editor right after capturing",
+        openEditorCaption: "The capture skips the floating preview and opens ready to annotate."
     )
 
     static let ptBR = ScreenshotFeatureStrings(
@@ -238,7 +242,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Cantos",
         backdropSavePreset: "Salvar fundo",
         backdropDeletePreset: "Remover",
-        backdropCustomLabel: "Personalizado"
+        backdropCustomLabel: "Personalizado",
+        openEditorToggle: "Abrir o editor logo após capturar",
+        openEditorCaption: "A captura pula a pré-visualização flutuante e já abre pronta para anotar."
     )
 
     static let tr = ScreenshotFeatureStrings(
@@ -310,7 +316,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Köşeler",
         backdropSavePreset: "Arka planı kaydet",
         backdropDeletePreset: "Kaldır",
-        backdropCustomLabel: "Özel"
+        backdropCustomLabel: "Özel",
+        openEditorToggle: "Yakaladıktan hemen sonra düzenleyiciyi aç",
+        openEditorCaption: "Yakalama, yüzen önizlemeyi atlar ve işaretlemeye hazır şekilde açılır."
     )
 
     static let ru = ScreenshotFeatureStrings(
@@ -382,7 +390,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Углы",
         backdropSavePreset: "Сохранить фон",
         backdropDeletePreset: "Удалить",
-        backdropCustomLabel: "Свой"
+        backdropCustomLabel: "Свой",
+        openEditorToggle: "Открывать редактор сразу после снимка",
+        openEditorCaption: "Снимок пропускает плавающее окно предпросмотра и сразу открывается готовым к пометкам."
     )
 
     static let es = ScreenshotFeatureStrings(
@@ -454,7 +464,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Esquinas",
         backdropSavePreset: "Guardar fondo",
         backdropDeletePreset: "Eliminar",
-        backdropCustomLabel: "Personalizado"
+        backdropCustomLabel: "Personalizado",
+        openEditorToggle: "Abrir el editor justo después de capturar",
+        openEditorCaption: "La captura omite la previsualización flotante y se abre lista para anotar."
     )
 
     static let de = ScreenshotFeatureStrings(
@@ -526,7 +538,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Ecken",
         backdropSavePreset: "Hintergrund sichern",
         backdropDeletePreset: "Entfernen",
-        backdropCustomLabel: "Eigene"
+        backdropCustomLabel: "Eigene",
+        openEditorToggle: "Editor direkt nach der Aufnahme öffnen",
+        openEditorCaption: "Die Aufnahme überspringt die schwebende Vorschau und öffnet sich bereit für Anmerkungen."
     )
 
     static let fr = ScreenshotFeatureStrings(
@@ -598,7 +612,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Coins",
         backdropSavePreset: "Enregistrer le fond",
         backdropDeletePreset: "Supprimer",
-        backdropCustomLabel: "Personnalisé"
+        backdropCustomLabel: "Personnalisé",
+        openEditorToggle: "Ouvrir l'éditeur juste après la capture",
+        openEditorCaption: "La capture ignore l'aperçu flottant et s'ouvre prête à être annotée."
     )
 
     static let it = ScreenshotFeatureStrings(
@@ -670,7 +686,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "Angoli",
         backdropSavePreset: "Salva sfondo",
         backdropDeletePreset: "Rimuovi",
-        backdropCustomLabel: "Personalizzato"
+        backdropCustomLabel: "Personalizzato",
+        openEditorToggle: "Apri l'editor subito dopo la cattura",
+        openEditorCaption: "La cattura salta l'anteprima flottante e si apre pronta per le annotazioni."
     )
 
     static let ja = ScreenshotFeatureStrings(
@@ -742,7 +760,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "角丸",
         backdropSavePreset: "背景を保存",
         backdropDeletePreset: "削除",
-        backdropCustomLabel: "カスタム"
+        backdropCustomLabel: "カスタム",
+        openEditorToggle: "撮影後すぐにエディタを開く",
+        openEditorCaption: "撮影はフローティングプレビューを飛ばして、すぐに注釈を付けられる状態で開きます。"
     )
 
     static let ko = ScreenshotFeatureStrings(
@@ -814,7 +834,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "모서리",
         backdropSavePreset: "배경 저장",
         backdropDeletePreset: "제거",
-        backdropCustomLabel: "사용자화"
+        backdropCustomLabel: "사용자화",
+        openEditorToggle: "캡처 후 바로 편집기 열기",
+        openEditorCaption: "캡처가 떠 있는 미리보기를 건너뛰고 바로 주석을 남길 수 있는 상태로 열립니다."
     )
 
     static let zhHans = ScreenshotFeatureStrings(
@@ -886,7 +908,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "圆角",
         backdropSavePreset: "保存背景",
         backdropDeletePreset: "移除",
-        backdropCustomLabel: "自定义"
+        backdropCustomLabel: "自定义",
+        openEditorToggle: "截取后立即打开编辑器",
+        openEditorCaption: "截屏会跳过浮动预览，直接打开即可开始标注。"
     )
 
     static let zhTW = ScreenshotFeatureStrings(
@@ -958,7 +982,9 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "圓角",
         backdropSavePreset: "儲存背景",
         backdropDeletePreset: "移除",
-        backdropCustomLabel: "自訂"
+        backdropCustomLabel: "自訂",
+        openEditorToggle: "擷取後立即開啟編輯器",
+        openEditorCaption: "截圖會略過浮動預覽，直接開啟即可開始標註。"
     )
 
     static let zhHK = ScreenshotFeatureStrings(
@@ -1030,6 +1056,8 @@ extension ScreenshotFeatureStrings {
         backdropCornersLabel: "圓角",
         backdropSavePreset: "儲存背景",
         backdropDeletePreset: "移除",
-        backdropCustomLabel: "自訂"
+        backdropCustomLabel: "自訂",
+        openEditorToggle: "擷取後立即開啟編輯器",
+        openEditorCaption: "截圖會略過浮動預覽，直接開啟即可開始標註。"
     )
 }

@@ -130,8 +130,14 @@ final class ScreenshotService: ObservableObject {
 
     // MARK: - Routing
 
+    /// A finished capture goes to the floating preview, or straight into the
+    /// editor when the direct edit preference is on.
     private func route(_ capture: ScreenshotSelectionController.Capture) {
         preview?.close()
+        if UserDefaults.standard.bool(forKey: DefaultsKey.screenshotOpenEditorDirectly) {
+            openEditor(with: capture)
+            return
+        }
         let controller = ScreenshotQuickPreviewController(
             capture: capture,
             strings: strings,

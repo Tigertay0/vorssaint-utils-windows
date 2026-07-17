@@ -11,7 +11,8 @@ Vorssaint 3.1.14 adds a customizable radial menu that puts your favorite
 actions on a wheel around the pointer, plus Camera preview, a floating
 mirror for video calls. It also lets Dock Preview work with Dock
 magnification, shows the brightness percentage while you adjust displays,
-turns the screenshot black bar into a solid block in any color, returns
+turns the screenshot black bar into a solid block in any color, can open
+screenshots straight in the editor, returns
 Firefox to the Volume Mixer, improves mouse navigation, makes smooth
 scrolling work with more mice, keeps the Shelf from opening while you move a
 window, fixes a crash right after launch, makes brightness keys follow the
@@ -28,6 +29,8 @@ macOS 26 (Tahoe).
   than one is connected and closes when you click away.
 - The optional brightness overlay shows the percentage after brightness
   changes on the Mac screen and external monitors.
+- Screenshots can skip the floating preview and open straight in the
+  annotation editor. Off by default in Settings under Screenshot.
 
 ### Changed
 - Dock Preview now works with Dock magnification enabled, so the zoom effect

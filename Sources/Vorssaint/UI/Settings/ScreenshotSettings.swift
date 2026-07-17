@@ -17,6 +17,7 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotToolOrder) private var toolOrderRaw =
         ScreenshotSupport.Tool.defaultOrderStorage
     @AppStorage(DefaultsKey.screenshotToolShortcutsEnabled) private var toolShortcutsEnabled = true
+    @AppStorage(DefaultsKey.screenshotOpenEditorDirectly) private var openEditorDirectly = false
 
     private var strings: ScreenshotFeatureStrings {
         FeatureStrings.screenshot(l10n.language)
@@ -69,6 +70,10 @@ struct ScreenshotSettings: View {
                 }
                 .pickerStyle(.segmented)
                 Toggle(strings.pointerToggle, isOn: $includePointer)
+                Toggle(strings.openEditorToggle, isOn: $openEditorDirectly)
+                Text(strings.openEditorCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section {
