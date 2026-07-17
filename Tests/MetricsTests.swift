@@ -1232,6 +1232,8 @@ struct MetricsTests {
                "panel cut and paste control is visible by default")
         expect(registeredDefaults[DefaultsKey.colorPickerBareHex] as? Bool == false,
                "color picker keeps the # prefix by default")
+        expect(registeredDefaults[DefaultsKey.screenOCRDetectQRCodes] as? Bool == true,
+               "copy text from screen reads QR codes by default")
         expect(registeredDefaults[DefaultsKey.micMuteMenuBarIndicator] as? Bool == true,
                "mic mute menu bar indicator ships on by default (badge only shows while muted)")
         expect(registeredDefaults[DefaultsKey.menuBarMetricSpacing] as? String == "compact",
@@ -3543,6 +3545,34 @@ struct MetricsTests {
         expectEqual(QuickToolsSupport.joinedRecognizedText([]), "",
                     "screen OCR joins an empty result to an empty string")
 
+        // QR codes: several join top to bottom, left to right, blanks dropped.
+        let qrCodes = [
+            QuickToolsSupport.DecodedBarcode(payload: "second", x: 0.6, y: 0.8),
+            QuickToolsSupport.DecodedBarcode(payload: "first", x: 0.1, y: 0.81),
+            QuickToolsSupport.DecodedBarcode(payload: "bottom", x: 0.1, y: 0.3),
+            QuickToolsSupport.DecodedBarcode(payload: "  ", x: 0.2, y: 0.5),
+        ]
+        expectEqual(QuickToolsSupport.joinedBarcodePayloads(qrCodes), "first\nsecond\nbottom",
+                    "QR codes join top to bottom, left to right, dropping blanks")
+        expectEqual(QuickToolsSupport.joinedBarcodePayloads([]), "",
+                    "no QR codes joins to an empty string")
+
+        // Open link is limited to http and https so a scanned code can never
+        // launch another scheme.
+        expect(QuickToolsSupport.openableURL(from: "https://example.com/menu")?.absoluteString
+                    == "https://example.com/menu",
+               "an https payload is offered as an open link")
+        expect(QuickToolsSupport.openableURL(from: " http://example.com ")?.host == "example.com",
+               "surrounding whitespace does not stop a plain web link")
+        expect(QuickToolsSupport.openableURL(from: "WIFI:S:Net;T:WPA;P:secret;;") == nil,
+               "a Wi-Fi payload is copied, never opened")
+        expect(QuickToolsSupport.openableURL(from: "mailto:a@b.com") == nil,
+               "a mailto payload is not treated as an open link")
+        expect(QuickToolsSupport.openableURL(from: "just some text") == nil,
+               "plain text is never an open link")
+        expect(QuickToolsSupport.openableURL(from: "example.com") == nil,
+               "a bare host with no scheme is not opened")
+
         // Launcher grid: 8 items in 3 columns (rows of 3, 3, 2).
         expect(QuickToolsSupport.gridIndex(after: 0, count: 8, columns: 3, direction: .right) == 1,
                "launcher grid moves right within a row")
@@ -4482,6 +4512,10 @@ struct MetricsTests {
             expect(!strings.launchAtLoginNeedsApplications.isEmpty
                    && !strings.launchAtLoginNeedsApplications.contains("—"),
                    "\(prefix) launch at login location note is present without em dash")
+            let ocrQRStrings = [strings.ocrQRToggle, strings.ocrQRCaption, strings.ocrQRCopied,
+                                strings.qrResultTitle, strings.qrResultCopy, strings.qrResultOpen]
+            expect(ocrQRStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
+                   "\(prefix) screen QR strings are present without em dash")
             let officialHomebrewIntroStrings = [
                 strings.homebrewOfficialIntroTitle,
                 strings.homebrewOfficialIntroMessage,

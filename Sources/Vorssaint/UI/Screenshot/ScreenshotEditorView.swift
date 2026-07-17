@@ -625,6 +625,23 @@ struct ScreenshotEditorView: View {
         .accessibilityLabel(tool.screenshotTitle(strings))
     }
 
+    // MARK: - QR code (shown only when the capture holds one)
+
+    /// Opens the shared result panel that spells out the code's content, with
+    /// copy and open actions.
+    private var qrControl: some View {
+        Button {
+            controller.showQRResult()
+        } label: {
+            Image(systemName: "qrcode")
+                .frame(width: 24, height: 24)
+        }
+        .buttonStyle(.borderless)
+        .tint(.accentColor)
+        .screenshotSafeHelp(l10n.s.qrResultTitle)
+        .accessibilityLabel(l10n.s.qrResultTitle)
+    }
+
     // MARK: - Action cluster (top right)
 
     private var actionCluster: some View {
@@ -659,6 +676,12 @@ struct ScreenshotEditorView: View {
             }
             .buttonStyle(.borderless)
             .disabled(!model.canRedo)
+
+            if model.qrReading != nil {
+                Divider().frame(height: 16).padding(.horizontal, 3)
+                qrControl
+                    .transition(.scale.combined(with: .opacity))
+            }
 
             Divider().frame(height: 16).padding(.horizontal, 3)
 

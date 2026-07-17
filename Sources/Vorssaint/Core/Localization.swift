@@ -1007,6 +1007,12 @@ struct Strings {
     let cleanerNotifDenied: String
     let cleanerNotifOpenSettings: String
     let launchAtLoginNeedsApplications: String
+    let ocrQRToggle: String
+    let ocrQRCaption: String
+    let ocrQRCopied: String
+    let qrResultTitle: String
+    let qrResultCopy: String
+    let qrResultOpen: String
 }
 
 // MARK: - Português (Brasil)
@@ -1870,7 +1876,13 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Avisar quando terminar",
         cleanerNotifDenied: "As notificações do Vorssaint estão desativadas no sistema.",
         cleanerNotifOpenSettings: "Abrir Ajustes de Notificações…",
-        launchAtLoginNeedsApplications: "O app está rodando de um lugar que não permite abrir no login. Arraste o Vorssaint para a pasta Aplicativos, abra de lá e ligue de novo."
+        launchAtLoginNeedsApplications: "O app está rodando de um lugar que não permite abrir no login. Arraste o Vorssaint para a pasta Aplicativos, abra de lá e ligue de novo.",
+        ocrQRToggle: "Ler QR codes",
+        ocrQRCaption: "Se a área tiver um QR code, o conteúdo dele aparece para copiar ou abrir.",
+        ocrQRCopied: "QR code copiado",
+        qrResultTitle: "QR code",
+        qrResultCopy: "Copiar",
+        qrResultOpen: "Abrir link"
     )
 }
 
@@ -2735,6 +2747,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Notify when done",
         cleanerNotifDenied: "Vorssaint notifications are turned off in the system.",
         cleanerNotifOpenSettings: "Open Notification Settings…",
-        launchAtLoginNeedsApplications: "The app is running from a place that cannot open at login. Drag Vorssaint to the Applications folder, open it from there and turn this on again."
+        launchAtLoginNeedsApplications: "The app is running from a place that cannot open at login. Drag Vorssaint to the Applications folder, open it from there and turn this on again.",
+        ocrQRToggle: "Read QR codes",
+        ocrQRCaption: "If the area has a QR code, its content is shown to copy or open.",
+        ocrQRCopied: "QR code copied",
+        qrResultTitle: "QR code",
+        qrResultCopy: "Copy",
+        qrResultOpen: "Open link"
     )
 }

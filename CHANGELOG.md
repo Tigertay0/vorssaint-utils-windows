@@ -13,7 +13,8 @@ mirror for video calls. It also lets Dock Preview work with Dock
 magnification, shows the brightness percentage while you adjust displays,
 turns the screenshot black bar into a solid block in any color, can open
 screenshots straight in the editor, adds a zoomable loupe to the screenshot
-selection, shows the file system format of each drive in the Disks panel,
+selection, reads QR codes when you copy text from the screen, shows the file
+system format of each drive in the Disks panel,
 keeps Launch at Login from turning itself off, returns missing
 browsers to the Volume Mixer, improves mouse navigation, makes smooth
 scrolling work with more mice, keeps the Shelf from opening while you move a
@@ -37,6 +38,9 @@ Switcher and cleans up menu bar and Settings visuals on macOS 26 (Tahoe).
   annotation editor. Off by default in Settings under Screenshot.
 - The screenshot selection now has a pixel loupe for precise captures.
   Press Z to show or hide it and scroll to zoom. Thanks to @ruvelro.
+- Copy text from screen now reads QR codes. When the area holds a QR code,
+  its content is shown so you can copy it or open the link. The same works
+  from a screenshot's preview and editor. Off in Settings.
 - The Disks panel now shows each drive's file system format, like APFS or
   exFAT, next to the drive name.
 

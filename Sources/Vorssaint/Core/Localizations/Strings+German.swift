@@ -862,6 +862,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Nach Abschluss benachrichtigen",
         cleanerNotifDenied: "Mitteilungen von Vorssaint sind im System deaktiviert.",
         cleanerNotifOpenSettings: "Mitteilungseinstellungen öffnen…",
-        launchAtLoginNeedsApplications: "Die App läuft von einem Ort, der das Öffnen bei der Anmeldung nicht erlaubt. Ziehe Vorssaint in den Ordner Programme, öffne die App von dort und schalte die Option wieder ein."
+        launchAtLoginNeedsApplications: "Die App läuft von einem Ort, der das Öffnen bei der Anmeldung nicht erlaubt. Ziehe Vorssaint in den Ordner Programme, öffne die App von dort und schalte die Option wieder ein.",
+        ocrQRToggle: "QR-Codes lesen",
+        ocrQRCaption: "Enthält der Bereich einen QR-Code, wird sein Inhalt zum Kopieren oder Öffnen gezeigt.",
+        ocrQRCopied: "QR-Code kopiert",
+        qrResultTitle: "QR-Code",
+        qrResultCopy: "Kopieren",
+        qrResultOpen: "Link öffnen"
     )
 }

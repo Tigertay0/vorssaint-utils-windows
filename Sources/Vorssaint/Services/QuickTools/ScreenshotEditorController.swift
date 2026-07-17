@@ -31,6 +31,8 @@ final class ScreenshotEditorModel: ObservableObject {
     @Published private(set) var textWords: [ScreenshotSupport.RecognizedWord] = []
     @Published private(set) var selectedWordIndexes: [Int] = []
     private var textSelectionAnchor: CGPoint?
+    /// A QR code found in the capture, offered as a copy or open action.
+    @Published private(set) var qrReading: BarcodeDetector.Reading?
     @Published var color: ScreenshotSupport.ColorID {
         didSet {
             UserDefaults.standard.set(color.rawValue, forKey: DefaultsKey.screenshotLastColor)
@@ -320,6 +322,21 @@ final class ScreenshotEditorModel: ObservableObject {
         }
     }
 
+    /// Scans the capture for a QR code off the main thread; the result drives
+    /// the copy or open action in the toolbar. Re-run whenever the base image
+    /// changes (crop, undo) so a cropped out code stops being offered.
+    func recognizeQRCodes() {
+        let image = baseImage
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let current = self, image === current.baseImage else { return }
+            let reading = BarcodeDetector.read(image)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, image === self.baseImage else { return }
+                self.qrReading = reading
+            }
+        }
+    }
+
     // MARK: - Zoom
 
     static let zoomRange: ClosedRange<CGFloat> = 0.05...3
@@ -366,6 +383,7 @@ final class ScreenshotEditorModel: ObservableObject {
             pixelated = nil
             clearTextSelection()
             recognizeText()
+            recognizeQRCodes()
         }
         annotations = state.annotations
         if annotations.contains(where: { $0.tool == .pixelate }) {
@@ -795,6 +813,7 @@ final class ScreenshotEditorModel: ObservableObject {
         selectedID = nil
         tool = .select
         recognizeText()
+        recognizeQRCodes()
     }
 
     // MARK: - Output
@@ -872,6 +891,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         self.window = window
         installKeyMonitor()
         model.recognizeText()
+        model.recognizeQRCodes()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
@@ -1063,6 +1083,13 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         QuickToolHUD.show(icon: "text.viewfinder", message: L10n.shared.s.ocrCopied)
+    }
+
+    /// Shows the detected code's content in the shared result panel; the
+    /// editor stays open behind it so the capture can still be worked on.
+    func showQRResult() {
+        guard let reading = model.qrReading else { return }
+        QRResultController.shared.show(reading: reading)
     }
 
     // MARK: NSWindowDelegate

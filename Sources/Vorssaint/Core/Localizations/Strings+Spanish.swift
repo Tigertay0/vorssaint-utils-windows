@@ -862,6 +862,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Avisar al terminar",
         cleanerNotifDenied: "Las notificaciones de Vorssaint están desactivadas en el sistema.",
         cleanerNotifOpenSettings: "Abrir ajustes de notificaciones…",
-        launchAtLoginNeedsApplications: "La app se está ejecutando desde un lugar que no permite abrirse al iniciar sesión. Arrastra Vorssaint a la carpeta Aplicaciones, ábrelo desde ahí y actívalo de nuevo."
+        launchAtLoginNeedsApplications: "La app se está ejecutando desde un lugar que no permite abrirse al iniciar sesión. Arrastra Vorssaint a la carpeta Aplicaciones, ábrelo desde ahí y actívalo de nuevo.",
+        ocrQRToggle: "Leer códigos QR",
+        ocrQRCaption: "Si el área tiene un código QR, se muestra su contenido para copiar o abrir.",
+        ocrQRCopied: "Código QR copiado",
+        qrResultTitle: "Código QR",
+        qrResultCopy: "Copiar",
+        qrResultOpen: "Abrir enlace"
     )
 }

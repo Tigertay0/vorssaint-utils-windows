@@ -862,6 +862,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Prévenir à la fin",
         cleanerNotifDenied: "Les notifications de Vorssaint sont désactivées dans le système.",
         cleanerNotifOpenSettings: "Ouvrir les réglages de notifications…",
-        launchAtLoginNeedsApplications: "L'app s'exécute depuis un emplacement qui ne permet pas l'ouverture à la connexion. Glissez Vorssaint dans le dossier Applications, ouvrez l'app depuis ce dossier et réactivez l'option."
+        launchAtLoginNeedsApplications: "L'app s'exécute depuis un emplacement qui ne permet pas l'ouverture à la connexion. Glissez Vorssaint dans le dossier Applications, ouvrez l'app depuis ce dossier et réactivez l'option.",
+        ocrQRToggle: "Lire les codes QR",
+        ocrQRCaption: "Si la zone contient un code QR, son contenu s'affiche pour le copier ou l'ouvrir.",
+        ocrQRCopied: "Code QR copié",
+        qrResultTitle: "Code QR",
+        qrResultCopy: "Copier",
+        qrResultOpen: "Ouvrir le lien"
     )
 }

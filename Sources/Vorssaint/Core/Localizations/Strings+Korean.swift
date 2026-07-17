@@ -863,6 +863,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "완료 시 알림",
         cleanerNotifDenied: "시스템에서 Vorssaint 알림이 꺼져 있습니다.",
         cleanerNotifOpenSettings: "알림 설정 열기…",
-        launchAtLoginNeedsApplications: "로그인 시 열 수 없는 위치에서 앱이 실행되고 있습니다. Vorssaint를 응용 프로그램 폴더로 드래그한 다음 거기에서 열고 이 옵션을 다시 켜 주세요."
+        launchAtLoginNeedsApplications: "로그인 시 열 수 없는 위치에서 앱이 실행되고 있습니다. Vorssaint를 응용 프로그램 폴더로 드래그한 다음 거기에서 열고 이 옵션을 다시 켜 주세요.",
+        ocrQRToggle: "QR 코드 읽기",
+        ocrQRCaption: "영역에 QR 코드가 있으면 그 내용을 복사하거나 열 수 있도록 보여 줍니다.",
+        ocrQRCopied: "QR 코드를 복사했습니다",
+        qrResultTitle: "QR 코드",
+        qrResultCopy: "복사",
+        qrResultOpen: "링크 열기"
     )
 }

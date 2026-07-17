@@ -863,6 +863,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Уведомлять по завершении",
         cleanerNotifDenied: "Уведомления Vorssaint отключены в системе.",
         cleanerNotifOpenSettings: "Открыть настройки уведомлений…",
-        launchAtLoginNeedsApplications: "Приложение запущено из места, из которого нельзя открываться при входе. Перетащите Vorssaint в папку «Программы», откройте его оттуда и включите параметр снова."
+        launchAtLoginNeedsApplications: "Приложение запущено из места, из которого нельзя открываться при входе. Перетащите Vorssaint в папку «Программы», откройте его оттуда и включите параметр снова.",
+        ocrQRToggle: "Читать QR-коды",
+        ocrQRCaption: "Если в области есть QR-код, его содержимое можно скопировать или открыть.",
+        ocrQRCopied: "QR-код скопирован",
+        qrResultTitle: "QR-код",
+        qrResultCopy: "Копировать",
+        qrResultOpen: "Открыть ссылку"
     )
 }

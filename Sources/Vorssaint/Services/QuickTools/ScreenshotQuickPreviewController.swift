@@ -5,6 +5,12 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
+/// Drives the QR button, which appears after the capture is scanned so the
+/// preview never waits on detection to show.
+final class ScreenshotQuickPreviewModel: ObservableObject {
+    @Published var qr: BarcodeDetector.Reading?
+}
+
 /// A transient in-memory capture preview. It stays outside Command Tab and
 /// performs no file write until the user explicitly chooses Save.
 final class ScreenshotQuickPreviewController {
@@ -19,6 +25,7 @@ final class ScreenshotQuickPreviewController {
     private let strings: ScreenshotFeatureStrings
     private let action: (Action) -> Bool
     private let onClose: () -> Void
+    private let model = ScreenshotQuickPreviewModel()
     private var panel: ScreenshotQuickPreviewPanel?
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
@@ -39,7 +46,9 @@ final class ScreenshotQuickPreviewController {
         let content = ScreenshotQuickPreviewView(
             image: Self.thumbnail(for: capture.image),
             strings: strings,
+            model: model,
             perform: { [weak self] action in self?.perform(action) },
+            showQR: { [weak self] in self?.showQRResult() },
             hoverChanged: { [weak self] inside in
                 if inside {
                     self?.dismissWork?.cancel()
@@ -78,6 +87,30 @@ final class ScreenshotQuickPreviewController {
         panel.orderFrontRegardless()
         panel.makeKey()
         scheduleAutoDismiss()
+        scanForQR()
+    }
+
+    /// Scans the full resolution capture off the main thread and reveals the
+    /// QR button if a code is found. Silent when there is none, so a plain
+    /// screenshot preview is untouched.
+    private func scanForQR() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let image = self?.capture.image, let reading = BarcodeDetector.read(image) else { return }
+            DispatchQueue.main.async {
+                guard let self, !self.closed else { return }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                    self.model.qr = reading
+                }
+            }
+        }
+    }
+
+    /// Hands the code to the shared result panel, which spells out the
+    /// content before anything is copied. The preview steps aside.
+    private func showQRResult() {
+        guard let reading = model.qr else { return }
+        close()
+        QRResultController.shared.show(reading: reading)
     }
 
     private static func thumbnail(for image: CGImage) -> CGImage {
@@ -176,7 +209,9 @@ private final class ScreenshotQuickPreviewPanel: NSPanel {
 private struct ScreenshotQuickPreviewView: View {
     let image: CGImage
     let strings: ScreenshotFeatureStrings
+    @ObservedObject var model: ScreenshotQuickPreviewModel
     let perform: (ScreenshotQuickPreviewController.Action) -> Void
+    let showQR: () -> Void
     let hoverChanged: (Bool) -> Void
 
     var body: some View {
@@ -212,6 +247,10 @@ private struct ScreenshotQuickPreviewView: View {
                 .controlSize(.small)
                 .screenshotSafeHelp("\(strings.discardConfirm)  (⌫)")
                 .accessibilityLabel(strings.discardConfirm)
+                if model.qr != nil {
+                    qrControl
+                        .transition(.scale.combined(with: .opacity))
+                }
                 actionButton(symbol: "square.and.arrow.down",
                              title: strings.saveButton,
                              shortcut: "⌘S") {
@@ -240,6 +279,19 @@ private struct ScreenshotQuickPreviewView: View {
                 .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
         )
         .onHover(perform: hoverChanged)
+    }
+
+    /// A code was found: open the result panel that spells out its content.
+    private var qrControl: some View {
+        Button(action: showQR) {
+            Image(systemName: "qrcode")
+                .frame(width: 22, height: 18)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .tint(.accentColor)
+        .screenshotSafeHelp(L10n.shared.s.qrResultTitle)
+        .accessibilityLabel(L10n.shared.s.qrResultTitle)
     }
 
     private func actionButton(symbol: String,

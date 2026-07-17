@@ -862,6 +862,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "完成时通知",
         cleanerNotifDenied: "Vorssaint 的通知在系统中已关闭。",
         cleanerNotifOpenSettings: "打开通知设置…",
-        launchAtLoginNeedsApplications: "应用正从一个无法在登录时打开的位置运行。请将 Vorssaint 拖到“应用程序”文件夹，从那里打开后再重新开启此选项。"
+        launchAtLoginNeedsApplications: "应用正从一个无法在登录时打开的位置运行。请将 Vorssaint 拖到“应用程序”文件夹，从那里打开后再重新开启此选项。",
+        ocrQRToggle: "读取二维码",
+        ocrQRCaption: "如果所选区域包含二维码，会显示它的内容以便拷贝或打开。",
+        ocrQRCopied: "二维码已拷贝",
+        qrResultTitle: "二维码",
+        qrResultCopy: "拷贝",
+        qrResultOpen: "打开链接"
     )
 }

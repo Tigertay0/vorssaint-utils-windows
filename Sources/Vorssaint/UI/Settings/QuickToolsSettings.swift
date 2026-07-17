@@ -15,6 +15,7 @@ struct QuickToolsSettings: View {
     @ObservedObject private var cameraPreview = CameraPreviewService.shared
     @AppStorage(DefaultsKey.quickLauncherShortcutEnabled) private var launcherShortcutEnabled = true
     @AppStorage(DefaultsKey.screenOCRShortcutEnabled) private var ocrShortcutEnabled = false
+    @AppStorage(DefaultsKey.screenOCRDetectQRCodes) private var ocrDetectQRCodes = true
     @AppStorage(DefaultsKey.colorPickerShortcutEnabled) private var colorShortcutEnabled = false
     @AppStorage(DefaultsKey.micMuteShortcutEnabled) private var micShortcutEnabled = false
     @AppStorage(DefaultsKey.cameraPreviewShortcutEnabled) private var cameraShortcutEnabled = false
@@ -81,6 +82,10 @@ struct QuickToolsSettings: View {
                         Label(l10n.s.ocrName, systemImage: "text.viewfinder")
                     }
                     Text(l10n.s.ocrCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Toggle(l10n.s.ocrQRToggle, isOn: $ocrDetectQRCodes)
+                    Text(l10n.s.ocrQRCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Toggle(l10n.s.quickToolShortcutToggle, isOn: $ocrShortcutEnabled)

@@ -862,6 +862,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "Bitince bildir",
         cleanerNotifDenied: "Vorssaint bildirimleri sistemde kapalı.",
         cleanerNotifOpenSettings: "Bildirim ayarlarını aç…",
-        launchAtLoginNeedsApplications: "Uygulama, oturum açılırken açılmaya izin vermeyen bir konumdan çalışıyor. Vorssaint'i Uygulamalar klasörüne sürükleyin, oradan açın ve bu seçeneği yeniden açın."
+        launchAtLoginNeedsApplications: "Uygulama, oturum açılırken açılmaya izin vermeyen bir konumdan çalışıyor. Vorssaint'i Uygulamalar klasörüne sürükleyin, oradan açın ve bu seçeneği yeniden açın.",
+        ocrQRToggle: "QR kodlarını oku",
+        ocrQRCaption: "Alanda bir QR kodu varsa içeriği kopyalamak veya açmak için gösterilir.",
+        ocrQRCopied: "QR kodu kopyalandı",
+        qrResultTitle: "QR kodu",
+        qrResultCopy: "Kopyala",
+        qrResultOpen: "Bağlantıyı aç"
     )
 }

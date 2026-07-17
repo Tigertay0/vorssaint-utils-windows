@@ -862,6 +862,12 @@ extension Strings {
         cleanerScheduleNotifyToggle: "完了時に通知",
         cleanerNotifDenied: "Vorssaint の通知がシステムでオフになっています。",
         cleanerNotifOpenSettings: "通知設定を開く…",
-        launchAtLoginNeedsApplications: "ログイン時に開けない場所からアプリが実行されています。Vorssaintをアプリケーションフォルダにドラッグし、そこから開いてもう一度オンにしてください。"
+        launchAtLoginNeedsApplications: "ログイン時に開けない場所からアプリが実行されています。Vorssaintをアプリケーションフォルダにドラッグし、そこから開いてもう一度オンにしてください。",
+        ocrQRToggle: "QRコードを読み取る",
+        ocrQRCaption: "選択した範囲にQRコードがあると、その内容をコピーまたは開けるように表示します。",
+        ocrQRCopied: "QRコードをコピーしました",
+        qrResultTitle: "QRコード",
+        qrResultCopy: "コピー",
+        qrResultOpen: "リンクを開く"
     )
 }
