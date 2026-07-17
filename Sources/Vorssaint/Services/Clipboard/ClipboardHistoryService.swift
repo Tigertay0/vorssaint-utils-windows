@@ -58,6 +58,16 @@ final class ClipboardHistoryService: ObservableObject {
     private var registeredShortcut: GlobalShortcut?
     private var pasteTargetApp: NSRunningApplication?
     private let maxCharacters = 20_000
+    /// Writes coalesce per mutation cycle; the JSON encode and the disk write
+    /// stay off the main thread (a full history of long texts is real work),
+    /// serialized so blobs land in mutation order.
+    private static let persistQueue = DispatchQueue(label: "com.vorssaint.utils.clipboard-persist",
+                                                    qos: .utility)
+    private var persistScheduled = false
+    /// True while the history still lives in the legacy UserDefaults blob;
+    /// only a store-file write that really landed retires that blob, so a
+    /// crash mid-migration never loses entries.
+    private var migrateLegacyBlob = false
 
     private init() {
         load()
@@ -701,8 +711,28 @@ final class ClipboardHistoryService: ObservableObject {
         ClipboardHistorySensitiveText.looksSensitive(text)
     }
 
+    /// The history file. Entries used to live as one blob inside UserDefaults,
+    /// but the preferences plist is rewritten whole on every copy and macOS
+    /// pushes back past a few megabytes, which a large history of long texts
+    /// can reach. Without a resolvable home the blob stays in UserDefaults.
+    private static var storeURL: URL? {
+        guard let base = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                  in: .userDomainMask).first,
+              let bundleID = Bundle.main.bundleIdentifier
+        else { return nil }
+        return base
+            .appendingPathComponent(bundleID, isDirectory: true)
+            .appendingPathComponent("ClipboardHistory.json")
+    }
+
     private func load() {
-        guard let data = UserDefaults.standard.data(forKey: DefaultsKey.clipboardHistoryEntries),
+        var data = Self.storeURL.flatMap { try? Data(contentsOf: $0) }
+        if data == nil,
+           let legacy = UserDefaults.standard.data(forKey: DefaultsKey.clipboardHistoryEntries) {
+            data = legacy
+            migrateLegacyBlob = Self.storeURL != nil
+        }
+        guard let data,
               let decoded = try? JSONDecoder().decode([ClipboardHistoryEntry].self, from: data)
         else { return }
         entries = decoded
@@ -710,12 +740,48 @@ final class ClipboardHistoryService: ObservableObject {
         trimToLimit()
         // Sweep image files that lost their entry (crash between write and save).
         ClipboardImageStore.cleanup(keeping: Set(entries.compactMap(\.imageFile)))
+        // A history read from the legacy blob migrates right away instead of
+        // waiting for the next copy: launching once is enough to leave
+        // UserDefaults behind.
+        if migrateLegacyBlob {
+            save()
+        }
     }
 
+    /// Coalesces the saves of one mutation cycle into a single persist.
     private func save() {
-        guard let data = try? JSONEncoder().encode(entries) else { return }
-        UserDefaults.standard.set(data, forKey: DefaultsKey.clipboardHistoryEntries)
+        guard !persistScheduled else { return }
+        persistScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.persistScheduled = false
+            self.persist()
+        }
+    }
+
+    private func persist() {
+        // The image sweep stays on the main thread: run from the persist
+        // queue it could race a just-stored PNG between its write and its
+        // entry landing in the list, and delete it.
         ClipboardImageStore.cleanup(keeping: Set(entries.compactMap(\.imageFile)))
+        let snapshot = entries
+        let retireLegacyBlob = migrateLegacyBlob
+        Self.persistQueue.async { [weak self] in
+            guard let data = try? JSONEncoder().encode(snapshot) else { return }
+            guard let url = Self.storeURL else {
+                UserDefaults.standard.set(data, forKey: DefaultsKey.clipboardHistoryEntries)
+                return
+            }
+            try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                     withIntermediateDirectories: true)
+            // Only a write that really landed retires the legacy blob, so a
+            // failed save leaves the history readable from somewhere.
+            guard (try? data.write(to: url, options: .atomic)) != nil else { return }
+            if retireLegacyBlob {
+                UserDefaults.standard.removeObject(forKey: DefaultsKey.clipboardHistoryEntries)
+                DispatchQueue.main.async { self?.migrateLegacyBlob = false }
+            }
+        }
     }
 
     // MARK: - Shortcut

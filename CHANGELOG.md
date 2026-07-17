@@ -15,9 +15,9 @@ magnification, shows the brightness percentage while you adjust displays,
 turns the screenshot black bar into a solid block in any color, can open
 screenshots straight in the editor, adds a zoomable loupe to the screenshot
 selection, reads QR codes when you copy text from the screen, shows the file
-system format of each drive in the Disks panel,
-keeps Launch at Login from turning itself off, returns missing
-browsers to the Volume Mixer, improves mouse navigation, makes smooth
+system format of each drive in the Disks panel, lets the clipboard history
+keep up to 1000 items, keeps Launch at Login from turning itself off,
+returns missing browsers to the Volume Mixer, improves mouse navigation, makes smooth
 scrolling work with more mice, keeps the Shelf from opening while you move a
 window, fixes a crash right after launch, stops closed lid mode from asking
 for the password on every toggle, makes brightness keys follow the pointer
@@ -47,6 +47,8 @@ Switcher and cleans up menu bar and Settings visuals on macOS 26 (Tahoe).
   from a screenshot's preview and editor. Off in Settings.
 - The Disks panel now shows each drive's file system format, like APFS or
   exFAT, next to the drive name.
+- The clipboard history can now keep up to 1000 items. Pick the size in
+  Settings under Clipboard. Thanks to @ruvelro.
 
 ### Changed
 - Dock Preview now works with Dock magnification enabled, so the zoom effect
