@@ -232,7 +232,7 @@ extension ScreenshotFeatureStrings {
         toolSticker: "Adesivo",
         toolCounter: "Número",
         toolPixelate: "Pixelizar",
-        toolRedact: "Tarja preta",
+        toolRedact: "Bloco sólido",
         toolCrop: "Recortar",
         textPlaceholder: "Texto",
         cropApply: "Recortar",

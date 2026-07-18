@@ -856,9 +856,9 @@ enum ScreenshotSupport {
               let presets = try? JSONDecoder().decode([BackdropStyle].self, from: data)
         else { return [] }
         return presets.map { $0.sanitized() }
-        .filter { $0.kind != .none }
-        .suffix(backdropPresetLimit)
-        .map { $0 }
+            .filter { $0.kind != .none }
+            .suffix(backdropPresetLimit)
+            .map { $0 }
     }
 
     static func encodedBackdropPresets(_ presets: [BackdropStyle]) -> String {
