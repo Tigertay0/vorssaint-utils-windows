@@ -156,6 +156,18 @@ enum ScreenshotSupport {
         return CGRect(origin: CGPoint(x: x, y: y), size: size)
     }
 
+    /// A quieter, corner-anchored placement used when a default action is
+    /// configured — the HUD is now just a confirmation, not something the
+    /// person needs to act on, so it stays out of the way in the corner
+    /// instead of popping up next to the selection.
+    static func quickPreviewCornerFrame(size: CGSize, visibleFrame: CGRect) -> CGRect {
+        let inset: CGFloat = 16
+        let usable = visibleFrame.insetBy(dx: inset, dy: inset)
+        let x = max(usable.minX, usable.maxX - size.width)
+        let y = usable.minY
+        return CGRect(origin: CGPoint(x: x, y: y), size: size)
+    }
+
     // MARK: - Editor layout
 
     /// A fresh editor should be large enough for its controls and canvas,
@@ -866,4 +878,15 @@ enum ScreenshotSupport {
         else { return "[]" }
         return String(data: data, encoding: .utf8) ?? "[]"
     }
+}
+
+/// The action to run automatically right after a capture, chosen in
+/// Settings. `.none` leaves the quick-preview HUD waiting for the user, as
+/// before this setting existed.
+enum ScreenshotDefaultAction: String, CaseIterable {
+    case none = ""
+    case save
+    case saveAndCopy
+    case copy
+    case edit
 }

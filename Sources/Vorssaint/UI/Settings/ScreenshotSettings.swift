@@ -18,6 +18,7 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotIncludePointer) private var includePointer = false
     @AppStorage(DefaultsKey.screenshotDownscale) private var downscale = false
     @AppStorage(DefaultsKey.screenshotDelay) private var delay = 0
+    @AppStorage(DefaultsKey.screenshotDefaultAction) private var defaultActionRaw = ""
     @AppStorage(DefaultsKey.screenshotToolOrder) private var toolOrderRaw =
         ScreenshotSupport.Tool.defaultOrderStorage
     @AppStorage(DefaultsKey.screenshotToolShortcutsEnabled) private var toolShortcutsEnabled = true
@@ -73,6 +74,7 @@ struct ScreenshotSettings: View {
                 }
                 .pickerStyle(.segmented)
                 Toggle(strings.pointerToggle, isOn: $includePointer)
+                defaultActionRow
             }
 
             Section {
@@ -94,6 +96,21 @@ struct ScreenshotSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var defaultActionRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Picker(strings.defaultActionLabel, selection: $defaultActionRaw) {
+                Text(strings.defaultActionNone).tag(ScreenshotDefaultAction.none.rawValue)
+                Text(strings.saveButton).tag(ScreenshotDefaultAction.save.rawValue)
+                Text(strings.defaultActionSaveAndCopy).tag(ScreenshotDefaultAction.saveAndCopy.rawValue)
+                Text(strings.copyButton).tag(ScreenshotDefaultAction.copy.rawValue)
+                Text(strings.editButton).tag(ScreenshotDefaultAction.edit.rawValue)
+            }
+            Text(strings.defaultActionCaption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var folderRow: some View {

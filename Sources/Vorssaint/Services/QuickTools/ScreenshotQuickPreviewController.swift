@@ -18,6 +18,7 @@ final class ScreenshotQuickPreviewController {
         case edit
         case copy
         case save
+        case saveAndCopy
         case discard
     }
 
@@ -29,6 +30,7 @@ final class ScreenshotQuickPreviewController {
     private var panel: ScreenshotQuickPreviewPanel?
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
+    private var autoDismissDuration: TimeInterval = 12
     private var closed = false
 
     init(capture: ScreenshotSelectionController.Capture,
@@ -43,9 +45,11 @@ final class ScreenshotQuickPreviewController {
 
     func show() {
         guard panel == nil, !closed else { return }
+        let defaultAction = Self.configuredDefaultAction()
         let content = ScreenshotQuickPreviewView(
             image: Self.thumbnail(for: capture.image),
             strings: strings,
+            disabledActions: Self.disabledActions(for: defaultAction),
             model: model,
             perform: { [weak self] action in self?.perform(action) },
             showQR: { [weak self] in self?.showQRResult() },
@@ -77,17 +81,58 @@ final class ScreenshotQuickPreviewController {
         let screen = NSScreen.screens.first(where: {
             $0.frame.intersects(capture.anchorRect)
         }) ?? NSScreen.withMouse
-        panel.setFrame(ScreenshotSupport.quickPreviewFrame(
-            size: size,
-            anchor: capture.anchorRect,
-            pointer: NSEvent.mouseLocation,
-            visibleFrame: screen.visibleFrame), display: false)
+
+        // A default action means this HUD is just a confirmation, not
+        // something the person needs to act on — keep it out of the way in
+        // the corner instead of popping up next to the selection.
+        let frame = defaultAction == .none
+            ? ScreenshotSupport.quickPreviewFrame(
+                size: size,
+                anchor: capture.anchorRect,
+                pointer: NSEvent.mouseLocation,
+                visibleFrame: screen.visibleFrame)
+            : ScreenshotSupport.quickPreviewCornerFrame(size: size, visibleFrame: screen.visibleFrame)
+        panel.setFrame(frame, display: false)
         self.panel = panel
         installKeyMonitor(for: panel)
         panel.orderFrontRegardless()
         panel.makeKey()
+        autoDismissDuration = defaultAction == .none ? 12 : 3
         scheduleAutoDismiss()
         scanForQR()
+        runDefaultAction(defaultAction)
+    }
+
+    private static func configuredDefaultAction() -> ScreenshotDefaultAction {
+        let raw = UserDefaults.standard.string(forKey: DefaultsKey.screenshotDefaultAction) ?? ""
+        return ScreenshotDefaultAction(rawValue: raw) ?? .none
+    }
+
+    /// Buttons whose action the default action already performed, so the
+    /// HUD doesn't invite doing it again.
+    private static func disabledActions(for defaultAction: ScreenshotDefaultAction) -> Set<Action> {
+        switch defaultAction {
+            case .none, .edit: return []
+            case .save: return [.save]
+            case .saveAndCopy: return [.save, .copy]
+            case .copy: return [.copy]
+        }
+    }
+
+    /// Runs the Settings-configured default action once, immediately after
+    /// the HUD appears. Unlike `perform(_:)`, this never closes the panel —
+    /// it stays up as confirmation, and the person can still Edit or
+    /// discard from it afterward.
+    private func runDefaultAction(_ defaultAction: ScreenshotDefaultAction) {
+        let mapped: Action
+        switch defaultAction {
+        case .none: return
+        case .save: mapped = .save
+        case .saveAndCopy: mapped = .saveAndCopy
+        case .copy: mapped = .copy
+        case .edit: mapped = .edit
+        }
+        _ = action(mapped)
     }
 
     /// Scans the full resolution capture off the main thread and reveals the
@@ -164,7 +209,7 @@ final class ScreenshotQuickPreviewController {
         dismissWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.close() }
         dismissWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + autoDismissDuration, execute: work)
     }
 
     private func installKeyMonitor(for panel: NSPanel) {
@@ -209,6 +254,7 @@ private final class ScreenshotQuickPreviewPanel: NSPanel {
 private struct ScreenshotQuickPreviewView: View {
     let image: CGImage
     let strings: ScreenshotFeatureStrings
+    let disabledActions: Set<ScreenshotQuickPreviewController.Action>
     @ObservedObject var model: ScreenshotQuickPreviewModel
     let perform: (ScreenshotQuickPreviewController.Action) -> Void
     let showQR: () -> Void
@@ -253,12 +299,14 @@ private struct ScreenshotQuickPreviewView: View {
                 }
                 actionButton(symbol: "square.and.arrow.down",
                              title: strings.saveButton,
-                             shortcut: "⌘S") {
+                             shortcut: "⌘S",
+                             disabled: disabledActions.contains(.save)) {
                     perform(.save)
                 }
                 actionButton(symbol: "doc.on.doc",
                              title: strings.copyButton,
-                             shortcut: "⌘C") {
+                             shortcut: "⌘C",
+                             disabled: disabledActions.contains(.copy)) {
                     perform(.copy)
                 }
                 Spacer(minLength: 4)
@@ -297,6 +345,7 @@ private struct ScreenshotQuickPreviewView: View {
     private func actionButton(symbol: String,
                               title: String,
                               shortcut: String,
+                              disabled: Bool = false,
                               action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: symbol)
@@ -306,6 +355,8 @@ private struct ScreenshotQuickPreviewView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
+        .disabled(disabled)
+        .opacity(disabled ? 0.4 : 1)
         .screenshotSafeHelp("\(title)  (\(shortcut))")
         .accessibilityLabel(title)
     }
