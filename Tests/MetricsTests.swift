@@ -5473,6 +5473,7 @@ struct MetricsTests {
             RadialMenuItem(kind: .url, payload: "not a link"),
             RadialMenuItem(kind: .shortcut, payload: "garbage"),
             RadialMenuItem(kind: .tool, payload: "unknownTool"),
+            RadialMenuItem(kind: .windowLayout, payload: "unknownLayout"),
             RadialMenuItem(kind: .media, payload: "unknownKey"),
         ]).isEmpty,
                "slices that cannot run are dropped instead of rendering dead")
@@ -5498,9 +5499,22 @@ struct MetricsTests {
         expect(RadialMenuSupport.needsAccessibility([starter[3]]) == false
                 && RadialMenuSupport.needsAccessibility(starter)
                 && RadialMenuSupport.needsAccessibility([
+                    RadialMenuItem(kind: .windowLayout, payload: WindowLayoutAction.leftThird.rawValue),
+                ])
+                && RadialMenuSupport.needsAccessibility([
                     RadialMenuItem(kind: .submenu, children: [RadialMenuItem(kind: .shortcut, payload: "command:8")]),
                 ]),
-               "only wheels that press keys need Accessibility, submenus included")
+               "keyboard and window actions need Accessibility, submenus included")
+        let radialLayout = RadialMenuItem(kind: .windowLayout,
+                                          payload: WindowLayoutAction.leftThird.rawValue)
+        expect(RadialMenuSupport.sanitized([radialLayout]) == [radialLayout]
+                && radialLayout.windowLayoutAction == .leftThird
+                && radialLayout.effectiveSymbolName == WindowLayoutAction.leftThird.symbolName
+                && WindowLayoutAction.allCases.allSatisfy { !$0.symbolName.isEmpty }
+                && RadialMenuSupport.usesWindowLayout([
+                    RadialMenuItem(kind: .submenu, children: [radialLayout]),
+                ]),
+               "window-layout slices keep a valid placement and its automatic icon")
         expect(RadialMenuMediaKey.playPause.auxKeyType == 16
                 && RadialMenuMediaKey.previousTrack.auxKeyType == 20
                 && RadialMenuMediaKey.nextTrack.auxKeyType == 19,
