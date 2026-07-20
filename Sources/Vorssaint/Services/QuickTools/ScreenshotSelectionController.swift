@@ -32,6 +32,8 @@ final class ScreenshotSelectionController {
     private let freeze: Bool
     private let includePointer: Bool
     private var finished = false
+    /// Read by the overlays so a late event finds a session that is over.
+    fileprivate var isOver: Bool { finished }
     fileprivate var spaceIsDown = false
     fileprivate var loupeEnabled = false {
         didSet { panels.forEach { $0.overlayView.refreshPointerState() } }
@@ -185,8 +187,16 @@ final class ScreenshotSelectionController {
 
     // MARK: - Confirmations (called by the views)
 
+    /// The surfaces stop answering the pointer the instant a picture starts
+    /// being taken. They are either about to leave the screen or already gone,
+    /// and the rest of the gesture must not begin a second capture.
+    private func markCapturePending() {
+        panels.forEach { $0.overlayView.isCapturePending = true }
+    }
+
     fileprivate func confirmRegion(_ viewRect: CGRect, on panel: ScreenshotOverlayPanel) {
         guard viewRect.width >= 1, viewRect.height >= 1 else { return }
+        markCapturePending()
         Self.lastRegion = (panel.displayID, viewRect)
         let pixelRect = ScreenshotSupport.imagePixelRect(
             fromView: viewRect,
@@ -216,7 +226,7 @@ final class ScreenshotSelectionController {
     fileprivate func confirmWindow(_ windowID: CGWindowID,
                                    frame: CGRect,
                                    on panel: ScreenshotOverlayPanel) {
-        panels.forEach { $0.overlayView.isCapturePending = true }
+        markCapturePending()
         Task { @MainActor [weak self] in
             guard let self else { return }
             guard let image = await ScreenshotCaptureEngine.captureWindow(
@@ -235,6 +245,7 @@ final class ScreenshotSelectionController {
 
     private func captureFullDisplayUnderMouse() {
         guard let panel = panelUnderMouse() else { return }
+        markCapturePending()
         if let frozen = panel.frozenImage {
             finish(.captured(Capture(image: frozen,
                                      scale: panel.pixelScale,
@@ -298,6 +309,10 @@ final class ScreenshotSelectionController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
+        // A gesture can still have events on the way, so the surfaces are made
+        // inert before they leave the screen: whatever arrives after this
+        // point finds nothing left to act on.
+        markCapturePending()
         panels.forEach { $0.orderOut(nil) }
         panels.removeAll()
         NSCursor.arrow.set()
@@ -387,6 +402,9 @@ private final class ScreenshotOverlayView: NSView {
     private let frozenImage: CGImage?
     private var loupeImage: CGImage?
     private let windows: [ScreenshotSupport.PickableWindow]
+    /// Both are held weakly on purpose. The session hands its result over
+    /// after the panels leave the screen, so the controller is already gone
+    /// while the window server still delivers the tail of a gesture here.
     private weak var controller: ScreenshotSelectionController?
     private weak var panel: ScreenshotOverlayPanel?
     private let strings: ScreenshotFeatureStrings
@@ -402,6 +420,15 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     var isDragging: Bool { dragOrigin != nil }
+
+    /// A surface whose session is over answers nothing, so the rest of a
+    /// gesture can neither reach a controller that is gone nor start a second
+    /// capture behind the one already running.
+    private var acceptsPointerInput: Bool {
+        ScreenshotSupport.selectionAcceptsPointerInput(
+            sessionIsOver: controller?.isOver ?? true,
+            capturePending: isCapturePending)
+    }
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -458,8 +485,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func scrollWheel(with event: NSEvent) {
-        guard let controller else { return }
-        guard controller.loupeEnabled, !isCapturePending else {
+        guard acceptsPointerInput, let controller, controller.loupeEnabled else {
             super.scrollWheel(with: event)
             return
         }
@@ -467,7 +493,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
-        guard !isCapturePending else { return }
+        guard acceptsPointerInput else { return }
         let point = convert(event.locationInWindow, from: nil)
         hoverPoint = point
         dragOrigin = point
@@ -477,7 +503,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let controller, let origin = dragOrigin, !isCapturePending else { return }
+        guard acceptsPointerInput, let controller, let origin = dragOrigin else { return }
         let point = convert(event.locationInWindow, from: nil)
         hoverPoint = point
         if controller.spaceIsDown, selection.width > 0 {
@@ -499,7 +525,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard let controller, let panel, !isCapturePending else { return }
+        guard acceptsPointerInput, let controller, let panel else { return }
         let point = convert(event.locationInWindow, from: nil)
         guard let origin = dragOrigin else { return }
         dragOrigin = nil

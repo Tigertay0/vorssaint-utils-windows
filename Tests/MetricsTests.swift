@@ -5881,6 +5881,21 @@ struct MetricsTests {
                 && !ScreenshotSupport.isClick(from: .zero, to: CGPoint(x: 12, y: 0)),
                "a tiny drag is a click, a real drag is not")
 
+        // A gesture that ends with more than one release, like a drag made
+        // with three fingers, delivers events after the capture is over.
+        expect(ScreenshotSupport.selectionAcceptsPointerInput(sessionIsOver: false,
+                                                              capturePending: false),
+               "a live selection answers the pointer")
+        expect(!ScreenshotSupport.selectionAcceptsPointerInput(sessionIsOver: true,
+                                                               capturePending: false),
+               "a session that is over ignores the tail of a gesture")
+        expect(!ScreenshotSupport.selectionAcceptsPointerInput(sessionIsOver: false,
+                                                               capturePending: true),
+               "a capture already on its way ignores further pointer input")
+        expect(!ScreenshotSupport.selectionAcceptsPointerInput(sessionIsOver: true,
+                                                               capturePending: true),
+               "both at once still ignores the pointer")
+
         let cocoa = ScreenshotSupport.cocoaRect(fromWindowServer: CGRect(x: 10, y: 30, width: 200, height: 100),
                                                 mainScreenHeight: 900)
         expect(cocoa == CGRect(x: 10, y: 770, width: 200, height: 100),

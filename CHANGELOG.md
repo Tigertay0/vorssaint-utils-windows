@@ -8,9 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.1.15 fixes starts that could leave the app with no menu bar icon
-or quit it right after an update, gives back the clicks that moving windows by
-dragging was taking from other apps, repairs smooth scrolling, and keeps the
-menu bar panel under its icon when the menu bar is set to hide itself.
+or quit it right after an update, and a crash while choosing a screenshot
+area. It also gives back the clicks that moving windows by dragging was taking
+from other apps, repairs smooth scrolling, and keeps the menu bar panel under
+its icon when the menu bar is set to hide itself.
 
 ### Fixed
 - Moving and resizing windows by dragging no longer takes the modifier click
@@ -26,6 +27,9 @@ menu bar panel under its icon when the menu bar is set to hide itself.
   up.
 - The app could quit at startup right after an update, while the tour of the
   new features was opening. The tour now keeps the same size on every page.
+- Choosing a screenshot area no longer quits the app when the drag ends with
+  more than one finger leaving the trackpad. Cancelling with Escape is safe
+  too. Thanks to @lei1024.
 - The panel stays under its icon when the menu bar is set to hide itself.
   Switching tabs no longer moves it to the edge of the screen.
 
