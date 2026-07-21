@@ -8,11 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.1.15 fixes starts that could leave the app with no menu bar icon
-or quit it right after an update, and a crash while choosing a screenshot
-area. It also gives back the clicks that moving windows by dragging was taking
-from other apps, repairs smooth scrolling, brings the window switcher back on
-the first press, and keeps the menu bar panel under its icon when the menu bar
-is set to hide itself.
+or quit it right away, freezes where the app stopped responding, a crash
+while choosing a screenshot area, and an external display that could go dark
+and stay dark. It also gives back the clicks that moving windows by dragging
+was taking from other apps, repairs smooth scrolling, the brightness keys and
+the shortcut recorder, and brings the window switcher back on the first
+press.
 
 ### Fixed
 - Moving and resizing windows by dragging no longer takes the modifier click
@@ -34,7 +35,8 @@ is set to hide itself.
 - The app could stop responding for a while at a time, often right when
   headphones or another audio device connected. It no longer waits on the
   audio system, on other apps that are busy, or on commands that never
-  answer.
+  answer, and it stops watching audio properly when the mixer is switched
+  off instead of leaving watchers behind.
 - An external display could go dark while its brightness was adjusted and
   stay dark until it was unplugged. It recovers now, and a screen switched
   off here comes back at the next start.

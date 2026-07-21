@@ -97,12 +97,12 @@ final class AppVolumeMixer: ObservableObject {
     /// The global HAL listeners (devices, default output, process list), kept
     /// so stop() can hand the blocks back to
     /// AudioObjectRemovePropertyListenerBlock when the mixer leaves the hub.
-    private var globalListeners: [(selector: AudioObjectPropertySelector, block: AudioObjectPropertyListenerBlock)] = []
+    private var globalListeners: [AudioObjectPropertySelector] = []
     /// One IsRunningOutput listener per live process object, kept so the block
     /// can be handed back to AudioObjectRemovePropertyListenerBlock when the
     /// process disappears. Without removal, a week of app churn leaves
     /// thousands of dead listener blocks registered with the HAL.
-    private var runningListeners: [AudioObjectID: AudioObjectPropertyListenerBlock] = [:]
+    private var runningListeners = Set<AudioObjectID>()
     private var stopped = false
     private var lastAutomaticLoweredOutputUID: String?
     /// The output volume as it was before the headphone disconnect protection
@@ -188,44 +188,64 @@ final class AppVolumeMixer: ObservableObject {
         if needsPermission { needsPermission = false }
     }
 
-    /// The listener blocks are delivered on `halQueue`, never on the main
-    /// thread: a device reconfiguration can fire them in bursts, and the HAL
-    /// runs each one before it moves on. All they do is ask the main thread for
-    /// a refresh, so the coalescing state stays main-thread owned.
+    /// What the audio system calls when something changes.
+    ///
+    /// Deliberately the smallest possible answer: the system decides which
+    /// thread this arrives on and it is not always the same one, so all it
+    /// does is ask the main thread for a refresh and return. Everything the
+    /// refresh then reads from the audio system happens away from the main
+    /// thread.
+    ///
+    /// This is the plain callback rather than the closure form on purpose.
+    /// Handing a closure back to be removed never matches the one that was
+    /// registered: the call answers that it worked and the listener stays,
+    /// which measured as two live registrations after one removal and one
+    /// re-registration. Matching on this function and the pointer below works.
+    private static let listenerCallback: AudioObjectPropertyListenerProc = { _, _, _, client in
+        guard let client else { return noErr }
+        let mixer = Unmanaged<AppVolumeMixer>.fromOpaque(client).takeUnretainedValue()
+        DispatchQueue.main.async { mixer.scheduleListenerRefresh() }
+        return noErr
+    }
+
+    /// Identifies these registrations as ours. Unretained is safe here and
+    /// only here: the mixer is a single instance that lives as long as the app.
+    private var listenerClient: UnsafeMutableRawPointer {
+        Unmanaged.passUnretained(self).toOpaque()
+    }
+
     private func installListener(selector: AudioObjectPropertySelector) {
         var address = AudioObjectPropertyAddress(mSelector: selector,
                                                  mScope: kAudioObjectPropertyScopeGlobal,
                                                  mElement: kAudioObjectPropertyElementMain)
-        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-            DispatchQueue.main.async { self?.scheduleListenerRefresh() }
-        }
-        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, halQueue, block)
-        globalListeners.append((selector, block))
+        guard AudioObjectAddPropertyListener(AudioObjectID(kAudioObjectSystemObject),
+                                             &address,
+                                             Self.listenerCallback,
+                                             listenerClient) == noErr else { return }
+        globalListeners.append(selector)
     }
 
-    /// Removal only matches when the queue is the one the listener was
-    /// registered with, so this has to hand back `halQueue` too.
     private func removeGlobalListeners() {
         guard listenerInstalled else { return }
         listenerInstalled = false
-        for entry in globalListeners {
-            var address = AudioObjectPropertyAddress(mSelector: entry.selector,
+        for selector in globalListeners {
+            var address = AudioObjectPropertyAddress(mSelector: selector,
                                                      mScope: kAudioObjectPropertyScopeGlobal,
                                                      mElement: kAudioObjectPropertyElementMain)
-            AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject),
-                                                   &address, halQueue, entry.block)
+            AudioObjectRemovePropertyListener(AudioObjectID(kAudioObjectSystemObject),
+                                              &address,
+                                              Self.listenerCallback,
+                                              listenerClient)
         }
         globalListeners.removeAll()
     }
 
     private func subscribeToRunningChanges(of object: AudioObjectID) {
-        guard runningListeners[object] == nil else { return }
+        guard !runningListeners.contains(object) else { return }
         var address = Self.isRunningOutputAddress()
-        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-            DispatchQueue.main.async { self?.scheduleListenerRefresh() }
-        }
-        if AudioObjectAddPropertyListenerBlock(object, &address, halQueue, block) == noErr {
-            runningListeners[object] = block
+        if AudioObjectAddPropertyListener(object, &address,
+                                          Self.listenerCallback, listenerClient) == noErr {
+            runningListeners.insert(object)
         }
     }
 
@@ -234,10 +254,11 @@ final class AppVolumeMixer: ObservableObject {
     /// come back (the HAL reuses them for later processes), and a returning id
     /// is simply subscribed again on the next refresh.
     private func pruneRunningListeners(keeping current: Set<AudioObjectID>) {
-        for (object, block) in runningListeners where !current.contains(object) {
+        for object in runningListeners where !current.contains(object) {
             var address = Self.isRunningOutputAddress()
-            AudioObjectRemovePropertyListenerBlock(object, &address, halQueue, block)
-            runningListeners.removeValue(forKey: object)
+            AudioObjectRemovePropertyListener(object, &address,
+                                              Self.listenerCallback, listenerClient)
+            runningListeners.remove(object)
         }
     }
 

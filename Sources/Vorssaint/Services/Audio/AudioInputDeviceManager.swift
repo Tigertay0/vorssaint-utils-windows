@@ -29,7 +29,7 @@ final class AudioInputDeviceManager: ObservableObject {
     private var listenerInstalled = false
     /// Stored so stop() can remove the HAL listeners when the mixer leaves
     /// the hub.
-    private var globalListeners: [(selector: AudioObjectPropertySelector, block: AudioObjectPropertyListenerBlock)] = []
+    private var globalListeners: [AudioObjectPropertySelector] = []
     private var applyingPreferred = false
     private var refreshPending = false
     private var lastListenerRefreshAt: CFAbsoluteTime = 0
@@ -79,14 +79,14 @@ final class AudioInputDeviceManager: ObservableObject {
         // A sweep already reading the HAL must not publish into a manager that
         // has stopped watching.
         refresh.discardInFlight()
-        for entry in globalListeners {
-            var address = AudioObjectPropertyAddress(mSelector: entry.selector,
+        for selector in globalListeners {
+            var address = AudioObjectPropertyAddress(mSelector: selector,
                                                      mScope: kAudioObjectPropertyScopeGlobal,
                                                      mElement: kAudioObjectPropertyElementMain)
-            // Removal only matches when the queue is the one the listener was
-            // registered with.
-            AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject),
-                                                   &address, halQueue, entry.block)
+            AudioObjectRemovePropertyListener(AudioObjectID(kAudioObjectSystemObject),
+                                              &address,
+                                              Self.listenerCallback,
+                                              listenerClient)
         }
         globalListeners.removeAll()
         if !inputDevices.isEmpty { inputDevices = [] }
@@ -109,18 +109,33 @@ final class AudioInputDeviceManager: ObservableObject {
         refreshAndApply()
     }
 
-    /// Delivered on `halQueue`, never on the main thread: the block only asks
-    /// the main thread for a refresh, so the coalescing state below stays
-    /// main-thread owned.
+    /// The smallest possible answer to a change: the system decides which
+    /// thread this arrives on, so it only asks the main thread for a refresh
+    /// and returns. The reading that follows happens away from the main
+    /// thread. Handing a closure back to be removed never matches the one that
+    /// was registered, so the plain callback is what makes stopping work.
+    private static let listenerCallback: AudioObjectPropertyListenerProc = { _, _, _, client in
+        guard let client else { return noErr }
+        let manager = Unmanaged<AudioInputDeviceManager>.fromOpaque(client).takeUnretainedValue()
+        DispatchQueue.main.async { manager.scheduleListenerRefresh() }
+        return noErr
+    }
+
+    /// Unretained is safe here and only here: this is a single instance that
+    /// lives as long as the app.
+    private var listenerClient: UnsafeMutableRawPointer {
+        Unmanaged.passUnretained(self).toOpaque()
+    }
+
     private func installListener(selector: AudioObjectPropertySelector) {
         var address = AudioObjectPropertyAddress(mSelector: selector,
                                                  mScope: kAudioObjectPropertyScopeGlobal,
                                                  mElement: kAudioObjectPropertyElementMain)
-        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-            DispatchQueue.main.async { self?.scheduleListenerRefresh() }
-        }
-        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, halQueue, block)
-        globalListeners.append((selector, block))
+        guard AudioObjectAddPropertyListener(AudioObjectID(kAudioObjectSystemObject),
+                                             &address,
+                                             Self.listenerCallback,
+                                             listenerClient) == noErr else { return }
+        globalListeners.append(selector)
     }
 
     /// Same coalescing as AppVolumeMixer.scheduleListenerRefresh: one hardware
