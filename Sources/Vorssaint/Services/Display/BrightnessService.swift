@@ -441,7 +441,11 @@ final class BrightnessService: ObservableObject {
         guard DisplayConfigurationBridge.configureEnabled != nil else { return }
         workQueue.async {
             for id in stored {
-                _ = Self.configureDisplay(CGDirectDisplayID(id), enabled: true)
+                // The list is plain numbers on disk and can arrive edited or
+                // imported, so anything that is not a display number is
+                // skipped rather than converted.
+                guard let displayID = CGDirectDisplayID(exactly: id) else { continue }
+                _ = Self.configureDisplay(displayID, enabled: true)
             }
         }
     }

@@ -64,15 +64,24 @@ final class KeepAwakeManager: ObservableObject {
     /// installed, re-preparing would bounce here forever (and flicker the
     /// caption). One automatic re-acquire per user attempt, then we give up.
     private var clamshellSetupRetried = false
+    /// A reply to a settings change already waiting for the next run loop turn.
+    private var preferenceSyncScheduled = false
 
     private init() {
         clamshellPreferred = UserDefaults.standard.bool(forKey: DefaultsKey.clamshellPreferred)
         refreshPasswordlessStatus()
+        // Every settings write announces itself, including the ones made from
+        // inside this class, so a burst folds into a single reply on the next
+        // turn of the run loop rather than one full pass per write.
         defaultsObserver = NotificationCenter.default
             .publisher(for: UserDefaults.didChangeNotification)
             .sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.syncWithPreferences()
+                guard let self, !self.preferenceSyncScheduled else { return }
+                self.preferenceSyncScheduled = true
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.preferenceSyncScheduled = false
+                    self.syncWithPreferences()
                 }
             }
     }

@@ -196,8 +196,16 @@ struct GlobalShortcut: Equatable, Hashable {
         "\(modifiers.storageTokens.joined(separator: "+")):\(keyCode)"
     }
 
+    /// The range a virtual key code can occupy. A stored shortcut is just
+    /// text, and it can arrive edited by hand or through an imported settings
+    /// file, so the number is checked before anything converts it into the
+    /// narrower types the system APIs take.
+    static let keyCodeRange: ClosedRange<Int64> = 0...0xFFFF
+
+    var hasUsableKeyCode: Bool { Self.keyCodeRange.contains(keyCode) }
+
     var isValid: Bool {
-        modifiers.hasPrimaryModifier && keyLabel != nil
+        hasUsableKeyCode && modifiers.hasPrimaryModifier && keyLabel != nil
     }
 
     var displayString: String {
@@ -212,7 +220,7 @@ struct GlobalShortcut: Equatable, Hashable {
     }
 
     var carbonKeyCode: UInt32 {
-        UInt32(keyCode)
+        UInt32(exactly: keyCode) ?? 0
     }
 
     var carbonModifiers: UInt32 {
@@ -374,7 +382,8 @@ struct GlobalShortcut: Equatable, Hashable {
     /// so keys the static table does not know (ISO and JIS extras) still get a
     /// real cap. Returns nil for anything unprintable, keeping those invalid.
     private static func layoutKeyLabel(for keyCode: Int64) -> String? {
-        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+        guard let code = UInt16(exactly: keyCode),
+              let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
               let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
         else { return nil }
         let data = Unmanaged<CFData>.fromOpaque(layoutData).takeUnretainedValue() as Data
@@ -384,7 +393,7 @@ struct GlobalShortcut: Equatable, Hashable {
         let status = data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) -> OSStatus in
             guard let layout = bytes.bindMemory(to: UCKeyboardLayout.self).baseAddress
             else { return OSStatus(paramErr) }
-            return UCKeyTranslate(layout, UInt16(keyCode), UInt16(kUCKeyActionDisplay), 0,
+            return UCKeyTranslate(layout, code, UInt16(kUCKeyActionDisplay), 0,
                                   UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysBit),
                                   &deadKeyState, chars.count, &length, &chars)
         }

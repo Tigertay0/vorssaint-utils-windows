@@ -6629,6 +6629,27 @@ struct MetricsTests {
                "backup never carries private content, live state or machine markers")
         expect(Defaults.registeredDefaults[DefaultsKey.displaysSwitchedOff] == nil,
                "a display switched off is a repair note for this machine, not a setting")
+        expect(Defaults.registeredDefaults[DefaultsKey.startupDidNotFinish] == nil,
+               "a start that did not finish is a note for this machine, not a setting")
+
+        // A stored shortcut is text on disk and can arrive edited or through
+        // an imported settings file, so the number is checked before it ever
+        // reaches an API that takes a narrower type.
+        expect(GlobalShortcut(storageValue: "command:-1") == nil,
+               "a negative key code never becomes a shortcut")
+        expect(GlobalShortcut(storageValue: "command:99999999") == nil,
+               "a key code past the end of the range never becomes a shortcut")
+        expect(GlobalShortcut(storageValue: "command:\(Int64.min)") == nil,
+               "the smallest possible number never becomes a shortcut")
+        expect(!GlobalShortcut(keyCode: -1, modifiers: [.command]).isValid
+                && !GlobalShortcut(keyCode: 70000, modifiers: [.command]).isValid,
+               "a shortcut built with a number out of range is not valid")
+        expect(GlobalShortcut(keyCode: -1, modifiers: [.command]).carbonKeyCode == 0,
+               "a number out of range converts to nothing instead of trapping")
+        expect(GlobalShortcut(storageValue: "control+option+command:40") != nil,
+               "an ordinary stored shortcut still reads back")
+        expect(!backupKeys.contains(DefaultsKey.startupDidNotFinish),
+               "the backup never carries a note about a start that did not finish")
         expect(backupKeys.contains(DefaultsKey.hasOnboarded)
                 && backupKeys.contains(DefaultsKey.dockPreviewIntroVersion)
                 && backupKeys.contains(DefaultsKey.featuresOnboardingVersion)
@@ -6657,6 +6678,24 @@ struct MetricsTests {
             SettingsBackupSupport.formatVersionKey: 99,
             SettingsBackupSupport.settingsKey: [String: Any](),
         ]) == nil, "a future format version is rejected")
+
+        // A backup file can be edited by hand, and a value of the wrong shape
+        // would reach code that trusts its own settings.
+        let wrongShapes: [String: Any] = [
+            SettingsBackupSupport.formatVersionKey: 1,
+            SettingsBackupSupport.settingsKey: [
+                DefaultsKey.smoothScrollEnabled: "yes please",
+                DefaultsKey.monitorInterval: "soon",
+                DefaultsKey.smoothScrollStep: 60,
+            ] as [String: Any],
+        ]
+        let shapeChecked = SettingsBackupSupport.sanitizedSettings(from: wrongShapes)
+        expect(shapeChecked?[DefaultsKey.smoothScrollEnabled] == nil,
+               "text where a switch belongs is dropped on import")
+        expect(shapeChecked?[DefaultsKey.monitorInterval] == nil,
+               "text where a number belongs is dropped on import")
+        expect(shapeChecked?[DefaultsKey.smoothScrollStep] as? Int == 60,
+               "a value of the right shape still restores")
 
         // MARK: Result
 

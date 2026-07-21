@@ -80,6 +80,10 @@ enum DefaultsKey {
     // Displays this app switched off, so a run that ends without putting them
     // back can be repaired on the next start instead of needing a replug.
     static let displaysSwitchedOff = "displaysSwitchedOff"
+    // Set while a start is under way and cleared once the app has run
+    // healthily for a while, or when it is quit properly. Found still set at
+    // the next start, it means the previous one died on the way up.
+    static let startupDidNotFinish = "startupDidNotFinish"
     static let musicBlockEnabled = "musicBlockEnabled"
     static let musicBlockReplacementPath = "musicBlockReplacementPath"  // app bundle path ("" = none)
     static let cleanerScheduleFrequency = "cleanerScheduleFrequency"    // off | daily | weekly

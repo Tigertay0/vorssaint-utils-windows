@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        beginStartupWatch()
 
         // Finish the on-disk rename for installs carried over from a pre-2.5
         // build, or retire a leftover old-named bundle. Returns true when we are
@@ -123,19 +124,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             .store(in: &cancellables)
 
         let defaults = UserDefaults.standard
-        if !defaults.bool(forKey: DefaultsKey.hasOnboarded) {
-            showOnboarding(mode: .full)
-        } else {
-            // Keep the last seen version marker current without opening
-            // post-update release notes; the update flow already previews them.
-            defaults.set(OnboardingInfo.currentFeatureSet, forKey: DefaultsKey.featuresOnboardingVersion)
-            defaults.set(AppInfo.version, forKey: DefaultsKey.lastUpdateIntroVersion)
-            presentUpdateIntros()
+        // Whatever opens a window at startup waits for the next turn of the
+        // run loop, so the menu bar icon is on screen first. A start that goes
+        // wrong after this point then leaves the app reachable instead of
+        // invisible. And if the previous start never finished, the extra
+        // windows are skipped entirely this time: the app comes up bare rather
+        // than walking into the same thing twice.
+        let skipStartupWindows = startupOfPreviousRunDidNotFinish
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if !defaults.bool(forKey: DefaultsKey.hasOnboarded) {
+                guard !skipStartupWindows else { return }
+                self.showOnboarding(mode: .full)
+            } else {
+                // Keep the last seen version marker current without opening
+                // post-update release notes; the update flow already previews
+                // them.
+                defaults.set(OnboardingInfo.currentFeatureSet, forKey: DefaultsKey.featuresOnboardingVersion)
+                defaults.set(AppInfo.version, forKey: DefaultsKey.lastUpdateIntroVersion)
+                guard !skipStartupWindows else { return }
+                self.presentUpdateIntros()
+            }
         }
+    }
+
+    // MARK: - Startup that did not finish
+
+    /// A start is marked as under way before anything else happens and cleared
+    /// once the app has been running healthily for a while, or when it is
+    /// quit properly. Finding the mark still set means the previous run died
+    /// on the way up, and this one leaves the optional windows out of it.
+    private var startupOfPreviousRunDidNotFinish = false
+
+    /// How long a run has to last before its start counts as having worked.
+    /// Comfortably past the point where the reported failures happened.
+    private static let healthyStartupSeconds: TimeInterval = 20
+
+    private func beginStartupWatch() {
+        let defaults = UserDefaults.standard
+        startupOfPreviousRunDidNotFinish = defaults.bool(forKey: DefaultsKey.startupDidNotFinish)
+        defaults.set(true, forKey: DefaultsKey.startupDidNotFinish)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.healthyStartupSeconds) {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.startupDidNotFinish)
+        }
+    }
+
+    private func endStartupWatch() {
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.startupDidNotFinish)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         isTerminating = true
+        // Quitting properly means the start worked, whenever it happened.
+        endStartupWatch()
         if AppFeature.brightness.isAvailable {
             BrightnessService.shared.restoreDisplaysBeforeTermination()
         }
