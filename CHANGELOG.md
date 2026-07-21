@@ -7,13 +7,17 @@ All notable changes to this project are documented here. The format follows
 ## [3.1.16]
 
 ### Summary
-Vorssaint 3.1.16 cleans up the sound of boosted apps. Raising an app above
-100% no longer adds crackling to loud audio.
+Vorssaint 3.1.16 cleans up the sound of boosted apps and repairs the green
+button maximize in browsers where the window slid to the edge of the screen
+instead of filling it.
 
 ### Fixed
 - Boosting an app's volume above 100% no longer adds a crackling noise while
   the sound is loud. The boost now eases the peaks down for a moment instead
   of chopping them off.
+- Maximizing with the green button no longer leaves some windows parked at
+  the left edge of the screen with their old size. Browsers that take a
+  moment to resize now fill the screen properly.
 
 ## [3.1.15] - 2026-07-21
 
