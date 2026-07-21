@@ -152,6 +152,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         DockPreviewService.shared.stop()
         SoundOutputSwitcher.shared.stop()
         AppVolumeMixer.shared.stopAll()
+        // Puts the system input back if a microphone was chosen here: the
+        // app's audio settings must not outlive the app.
+        AudioInputDeviceManager.shared.stop()
         // Flushes any scratchpad edit still inside the save debounce.
         ScratchpadService.shared.suspend()
         // The clipboard history persists through an async pipeline; the last

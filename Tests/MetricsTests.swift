@@ -1293,8 +1293,13 @@ struct MetricsTests {
                "highlights tour never leaks into another release")
         expect(registeredDefaults[DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect] as? Bool == false,
                "headphone disconnect volume lowering is opt-in")
-        expect(registeredDefaults[DefaultsKey.mixerHeadphonesDisconnectVolumePercent] as? Int == 0,
-               "headphone disconnect volume keeps the existing mute behavior by default")
+        expect(registeredDefaults[DefaultsKey.mixerHeadphonesDisconnectVolumePercent] as? Int
+               == Defaults.defaultMixerHeadphonesDisconnectVolumePercent,
+               "headphone disconnect protection starts at an audible volume, never at silence")
+        expect(Defaults.defaultMixerHeadphonesDisconnectVolumePercent
+               >= Defaults.minimumMixerHeadphonesDisconnectVolumePercent
+               && Defaults.defaultMixerHeadphonesDisconnectVolumePercent < 100,
+               "the headphone disconnect default is a real reduction that can still be heard")
         expect(registeredDefaults[DefaultsKey.mixerShowFinder] as? Bool == true,
                "Finder returns to the mixer by default")
         expect(registeredDefaults[DefaultsKey.soundOutputSwitcherEnabled] as? Bool == false,
@@ -2719,10 +2724,28 @@ struct MetricsTests {
         expectClose(Defaults.sanitizedAppVolume(.infinity), 1, "non-finite app volume falls back to unity")
         expect(Defaults.sanitizedMixerHeadphonesDisconnectVolumePercent(35) == 35,
                "headphone disconnect volume preserves valid percentages")
-        expect(Defaults.sanitizedMixerHeadphonesDisconnectVolumePercent(-5) == 0,
-               "headphone disconnect volume clamps low values")
+        expect(Defaults.sanitizedMixerHeadphonesDisconnectVolumePercent(-5)
+               == Defaults.minimumMixerHeadphonesDisconnectVolumePercent,
+               "headphone disconnect volume never drops below the audible floor")
+        expect(Defaults.sanitizedMixerHeadphonesDisconnectVolumePercent(0)
+               == Defaults.minimumMixerHeadphonesDisconnectVolumePercent,
+               "headphone disconnect protection lowers the speakers, it never silences them")
         expect(Defaults.sanitizedMixerHeadphonesDisconnectVolumePercent(105) == 100,
                "headphone disconnect volume clamps high values")
+        let headphonesSuite = "vorss.tests.mixer.headphones"
+        if let silentHeadphoneVolume = UserDefaults(suiteName: headphonesSuite) {
+            silentHeadphoneVolume.removePersistentDomain(forName: headphonesSuite)
+            silentHeadphoneVolume.set(0, forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent)
+            Defaults.migrateSilentHeadphonesDisconnectVolume(in: silentHeadphoneVolume)
+            expect(silentHeadphoneVolume.integer(forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent)
+                   == Defaults.defaultMixerHeadphonesDisconnectVolumePercent,
+                   "a stored volume of zero from the first release of the option migrates to the default")
+            silentHeadphoneVolume.set(60, forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent)
+            Defaults.migrateSilentHeadphonesDisconnectVolume(in: silentHeadphoneVolume)
+            expect(silentHeadphoneVolume.integer(forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent) == 60,
+                   "a volume the user chose is never migrated")
+            silentHeadphoneVolume.removePersistentDomain(forName: headphonesSuite)
+        }
         expect(Defaults.sanitizedAppOutputDeviceUID(" BuiltInSpeakerDevice ") == "BuiltInSpeakerDevice",
                "audio output device UIDs are trimmed")
         expect(Defaults.sanitizedAppOutputDeviceUID("") == nil,
@@ -2856,6 +2879,138 @@ struct MetricsTests {
                                                    targetOutputDeviceUID: "BuiltInSpeakerDevice",
                                                    defaultOutputDeviceUID: "BuiltInSpeakerDevice"),
                "a persistent mixer row waits for an audio connection before building a tap")
+
+        // Issue #296. A tap mutes the app on the real output, so which build
+        // may be installed, when an engine is allowed to go away and who may
+        // be tapped at all decide whether an app suddenly plays at full
+        // volume, plays twice as loud, or goes silent.
+        expect(!MixerRoutingSupport.rowMayBeTapped(savedVolume: nil,
+                                                   savedRouteUID: nil,
+                                                   defaultOutputDeviceUID: "BuiltInSpeakerDevice"),
+               "an app with no saved volume and no saved route is never tapped")
+        expect(!MixerRoutingSupport.rowMayBeTapped(savedVolume: 1,
+                                                   savedRouteUID: nil,
+                                                   defaultOutputDeviceUID: "BuiltInSpeakerDevice"),
+               "a row saved at 100 percent is never tapped")
+        expect(!MixerRoutingSupport.rowMayBeTapped(savedVolume: nil,
+                                                   savedRouteUID: "BuiltInSpeakerDevice",
+                                                   defaultOutputDeviceUID: "BuiltInSpeakerDevice"),
+               "a row routed to the device that is already the default is never tapped")
+        expect(MixerRoutingSupport.rowMayBeTapped(savedVolume: 0.4,
+                                                  savedRouteUID: nil,
+                                                  defaultOutputDeviceUID: "BuiltInSpeakerDevice"),
+               "a row the user turned down is tapped")
+        expect(MixerRoutingSupport.rowMayBeTapped(savedVolume: nil,
+                                                  savedRouteUID: "ExternalDisplay",
+                                                  defaultOutputDeviceUID: "BuiltInSpeakerDevice"),
+               "a row routed to another output is tapped")
+
+        var mixerBuilds = MixerEngineBuilds()
+        expect(mixerBuilds.isEmpty, "a mixer with nothing being built has no builds in flight")
+        // No real token is ever negative, so the sentinel cannot pass a check.
+        let firstBuild = mixerBuilds.begin("com.example.Player") ?? -1
+        expect(firstBuild > 0, "the first engine build for a row starts")
+        expect(mixerBuilds.begin("com.example.Player") == nil,
+               "a second engine build for the same row is refused while one is in flight")
+        expect(mixerBuilds.isCurrent("com.example.Player", token: firstBuild),
+               "a build that nothing invalidated is the one to install")
+        mixerBuilds.finish("com.example.Player", token: firstBuild)
+        expect(mixerBuilds.isEmpty,
+               "finishing a build frees the row for the next one")
+        let staleBuild = mixerBuilds.begin("com.example.Player") ?? -1
+        mixerBuilds.invalidateAll()
+        expect(!mixerBuilds.isCurrent("com.example.Player", token: staleBuild),
+               "an engine build that lands after everything was invalidated is discarded")
+        let freshBuild = mixerBuilds.begin("com.example.Player") ?? -1
+        expect(freshBuild > 0 && freshBuild != staleBuild
+               && mixerBuilds.isCurrent("com.example.Player", token: freshBuild),
+               "the build started after an invalidation is the one to install")
+        mixerBuilds.finish("com.example.Player", token: staleBuild)
+        expect(mixerBuilds.isCurrent("com.example.Player", token: freshBuild),
+               "a stale build landing late leaves the current build alone")
+        var manyBuilds = MixerEngineBuilds()
+        let firstRow = manyBuilds.begin("com.example.Player") ?? -1
+        let secondRow = manyBuilds.begin("com.example.Radio") ?? -1
+        manyBuilds.invalidateAll()
+        expect(manyBuilds.isEmpty,
+               "invalidating clears every engine build in flight")
+        expect(!manyBuilds.isCurrent("com.example.Player", token: firstRow)
+               && !manyBuilds.isCurrent("com.example.Radio", token: secondRow),
+               "one invalidation makes every row's build in flight stale")
+
+        expect(MixerRoutingSupport.engineTeardownDelay(hasAudioObjects: true,
+                                                       lastChangeAt: nil,
+                                                       now: 100) == nil,
+               "a row that still has audio is never left waiting for its tap")
+        expect(MixerRoutingSupport.engineTeardownDelay(hasAudioObjects: true,
+                                                       lastChangeAt: 99.9,
+                                                       now: 100) == nil,
+               "a row that got its audio back is handled at once")
+        expect(MixerRoutingSupport.engineTeardownDelay(hasAudioObjects: false,
+                                                       lastChangeAt: nil,
+                                                       now: 100,
+                                                       window: 0.2) == 0.2,
+               "a row that just lost its audio objects keeps its tap for one window")
+        expectClose(MixerRoutingSupport.engineTeardownDelay(hasAudioObjects: false,
+                                                            lastChangeAt: 99.95,
+                                                            now: 100,
+                                                            window: 0.2) ?? -1,
+                    0.15,
+                    "repeated churn in one window waits out the remainder instead of acting again")
+        expect(MixerRoutingSupport.engineTeardownDelay(hasAudioObjects: false,
+                                                       lastChangeAt: 99.5,
+                                                       now: 100,
+                                                       window: 0.2) == nil,
+               "a row still without audio after the window loses its tap")
+        expect(MixerRoutingSupport.engineTeardownDelay(hasAudioObjects: false,
+                                                       lastChangeAt: 101,
+                                                       now: 100,
+                                                       window: 0.2) == 0.2,
+               "a clock that jumps backwards falls back to a full window")
+
+        let identifiedRow = MixerRoutingSupport.rowIdentity(bundleIdentifier: "com.example.Player",
+                                                           ownerPid: 501)
+        expect(identifiedRow.rowID == "com.example.Player"
+               && identifiedRow.persistenceID == "com.example.Player",
+               "an app with a bundle id keeps it as both row and storage identity")
+        let unidentifiedRow = MixerRoutingSupport.rowIdentity(bundleIdentifier: nil, ownerPid: 501)
+        let otherUnidentifiedRow = MixerRoutingSupport.rowIdentity(bundleIdentifier: nil, ownerPid: 502)
+        expect(!unidentifiedRow.rowID.isEmpty && unidentifiedRow.persistenceID == nil,
+               "an app without a bundle id is still listable but has nothing to store a volume under")
+        expect(unidentifiedRow.rowID != otherUnidentifiedRow.rowID,
+               "two processes without a bundle id are separate rows, so neither inherits the other's volume")
+        expect(MixerRoutingSupport.rowIdentity(bundleIdentifier: "   ", ownerPid: 501).persistenceID == nil,
+               "a blank bundle id is not an identity")
+
+        expect(MixerRoutingSupport.restorableInputDeviceUID(originalUID: "BuiltInMicrophoneDevice",
+                                                            appliedUID: "USBMicrophone",
+                                                            currentUID: "USBMicrophone",
+                                                            availableUIDs: ["BuiltInMicrophoneDevice",
+                                                                            "USBMicrophone"])
+               == "BuiltInMicrophoneDevice",
+               "the microphone the system had before the app changed it is put back")
+        expect(MixerRoutingSupport.restorableInputDeviceUID(originalUID: "BuiltInMicrophoneDevice",
+                                                            appliedUID: "USBMicrophone",
+                                                            currentUID: "HeadsetMicrophone",
+                                                            availableUIDs: ["BuiltInMicrophoneDevice",
+                                                                            "USBMicrophone"]) == nil,
+               "a microphone chosen elsewhere since is left alone")
+        expect(MixerRoutingSupport.restorableInputDeviceUID(originalUID: "BuiltInMicrophoneDevice",
+                                                            appliedUID: "USBMicrophone",
+                                                            currentUID: "USBMicrophone",
+                                                            availableUIDs: ["USBMicrophone"]) == nil,
+               "a microphone that is gone is not restored")
+        expect(MixerRoutingSupport.restorableInputDeviceUID(originalUID: nil,
+                                                            appliedUID: nil,
+                                                            currentUID: "USBMicrophone",
+                                                            availableUIDs: ["USBMicrophone"]) == nil,
+               "nothing is restored when the app never changed the microphone")
+        expect(MixerRoutingSupport.shouldRestoreOutputVolume(appliedVolume: 0.25, currentVolume: 0.25),
+               "a volume still at the value the app set goes back to what it was")
+        expect(!MixerRoutingSupport.shouldRestoreOutputVolume(appliedVolume: 0.25, currentVolume: 0.6),
+               "a volume changed since the app lowered it is left alone")
+        expect(!MixerRoutingSupport.shouldRestoreOutputVolume(appliedVolume: 0.25, currentVolume: nil),
+               "a volume that cannot be read is left alone")
         expect(!MixerRoutingSupport.isHiddenFromMixer(bundleIdentifier: "com.apple.finder",
                                                       showFinder: true),
                "Finder shows in the mixer when enabled")

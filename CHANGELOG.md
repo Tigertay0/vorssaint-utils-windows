@@ -37,6 +37,9 @@ is set to hide itself.
 - Choosing a screenshot area no longer quits the app when the drag ends with
   more than one finger leaving the trackpad. Cancelling with Escape is safe
   too. Thanks to @lei1024.
+- Per-app volume no longer jumps loud or quiet when an app changes what it
+  is playing. Quitting or switching the mixer off puts back the input
+  device and the volume it changed.
 - The panel stays under its icon when the menu bar is set to hide itself.
   Switching tabs no longer moves it to the edge of the screen.
 

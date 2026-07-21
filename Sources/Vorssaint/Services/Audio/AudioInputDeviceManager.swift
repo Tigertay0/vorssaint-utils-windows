@@ -33,6 +33,12 @@ final class AudioInputDeviceManager: ObservableObject {
     private var applyingPreferred = false
     private var refreshPending = false
     private var lastListenerRefreshAt: CFAbsoluteTime = 0
+    /// The system input as it was before this app first pointed it somewhere
+    /// else, and the device it was pointed at. Choosing a microphone here
+    /// changes a system setting, so switching the feature off or quitting puts
+    /// the original back.
+    private var inputDeviceBeforeOverride: String?
+    private var appliedInputDeviceUID: String?
 
     private init() {}
 
@@ -58,6 +64,7 @@ final class AudioInputDeviceManager: ObservableObject {
     }
 
     func stop() {
+        restoreOriginalInputDevice()
         guard listenerInstalled else { return }
         listenerInstalled = false
         for entry in globalListeners {
@@ -164,16 +171,12 @@ final class AudioInputDeviceManager: ObservableObject {
         applyingPreferred = true
         defer { applyingPreferred = false }
 
-        var nextDeviceID = device.audioObjectID
-        var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultInputDevice,
-                                                 mScope: kAudioObjectPropertyScopeGlobal,
-                                                 mElement: kAudioObjectPropertyElementMain)
-        let status = AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject),
-                                                &address,
-                                                0,
-                                                nil,
-                                                UInt32(MemoryLayout<AudioObjectID>.size),
-                                                &nextDeviceID)
+        // Remembered once, at the first override: what the system had before
+        // the app started steering it.
+        if inputDeviceBeforeOverride == nil {
+            inputDeviceBeforeOverride = currentInputDeviceUID ?? Self.defaultInputDeviceUID()
+        }
+        let status = Self.setDefaultInputDevice(device.audioObjectID)
         guard status == noErr else {
             let message = "OSStatus \(status)"
             if lastError != message {
@@ -185,6 +188,7 @@ final class AudioInputDeviceManager: ObservableObject {
         if lastError != nil {
             lastError = nil
         }
+        appliedInputDeviceUID = device.uid
         if currentInputDeviceUID != device.uid {
             currentInputDeviceUID = device.uid
         }
@@ -201,6 +205,37 @@ final class AudioInputDeviceManager: ObservableObject {
         if inputDevices != updated {
             inputDevices = updated
         }
+    }
+
+    /// Hands the system input back the way it was found. Only when the app is
+    /// still the last one to have set it: if something else picked a
+    /// microphone since, that choice stays.
+    private func restoreOriginalInputDevice() {
+        guard let originalUID = inputDeviceBeforeOverride,
+              let appliedUID = appliedInputDeviceUID else { return }
+        inputDeviceBeforeOverride = nil
+        appliedInputDeviceUID = nil
+        let devices = Self.inputDevices(defaultUID: nil)
+        guard let restoredUID = MixerRoutingSupport.restorableInputDeviceUID(
+            originalUID: originalUID,
+            appliedUID: appliedUID,
+            currentUID: Self.defaultInputDeviceUID(),
+            availableUIDs: Set(devices.map(\.uid))),
+            let device = devices.first(where: { $0.uid == restoredUID }) else { return }
+        _ = Self.setDefaultInputDevice(device.audioObjectID)
+    }
+
+    private static func setDefaultInputDevice(_ deviceID: AudioObjectID) -> OSStatus {
+        var nextDeviceID = deviceID
+        var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                                                 mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        return AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                          &address,
+                                          0,
+                                          nil,
+                                          UInt32(MemoryLayout<AudioObjectID>.size),
+                                          &nextDeviceID)
     }
 
     private static func inputDevices(defaultUID: String?) -> [MixerInputDevice] {
