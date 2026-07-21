@@ -7,9 +7,9 @@ All notable changes to this project are documented here. The format follows
 ## [3.1.16]
 
 ### Summary
-Vorssaint 3.1.16 cleans up the sound of boosted apps and repairs the green
-button maximize in browsers where the window slid to the edge of the screen
-instead of filling it.
+Vorssaint 3.1.16 cleans up the sound of boosted apps and repairs maximizing
+and window layout in browsers where windows moved without taking their new
+size.
 
 ### Fixed
 - Boosting an app's volume above 100% no longer adds a crackling noise while
@@ -18,6 +18,9 @@ instead of filling it.
 - Maximizing with the green button no longer leaves some windows parked at
   the left edge of the screen with their old size. Browsers that take a
   moment to resize now fill the screen properly.
+- Window layout shortcuts, the panel buttons and the drag gesture now resize
+  those same browsers correctly instead of moving the window and leaving its
+  size behind.
 
 ## [3.1.15] - 2026-07-21
 
