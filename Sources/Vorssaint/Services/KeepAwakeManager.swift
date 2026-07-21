@@ -509,10 +509,16 @@ final class KeepAwakeManager: ObservableObject {
 
     private func disableClamshell(synchronous: Bool) {
         clamshellActive = false
-        let revert = {
+        let revert = { [synchronous] in
             let usedPasswordless = Sudoers.pmsetDisableSleep(false)
+            // Quitting is the one moment where asking for a password is not
+            // an option: the dialog would hold the app open until somebody
+            // answers it, and nobody is watching an app that is closing. The
+            // next start repairs a revert that was missed.
             let ok = usedPasswordless
-                || AdminShell.runSync("pmset disablesleep 0", prompt: L10n.shared.s.adminPromptClamshellOff)
+                || (!synchronous
+                    && AdminShell.runSync("pmset disablesleep 0",
+                                          prompt: L10n.shared.s.adminPromptClamshellOff))
             if ok {
                 DispatchQueue.main.async {
                     if !usedPasswordless {

@@ -34,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         beginStartupWatch()
+        Self.boundAccessibilityWaits()
 
         // Finish the on-disk rename for installs carried over from a pre-2.5
         // build, or retire a leftover old-named bundle. Returns true when we are
@@ -146,6 +147,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 self.presentUpdateIntros()
             }
         }
+    }
+
+    /// Asking another app about its windows waits for that app to answer, and
+    /// the wait allowed by default is a second and a half per question. An app
+    /// that is busy saving, or stuck on a slow disk, would hold this one still
+    /// for that long each time, and this app asks in places where the whole
+    /// session is waiting on it. The limit is set once here, low enough that a
+    /// slow answer is dropped rather than felt. The value matches what the
+    /// window features already settled on for themselves. It applies to every
+    /// question asked from this process, whichever element it is asked of, so
+    /// it also covers the places that never set one of their own.
+    private static func boundAccessibilityWaits() {
+        AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 0.35)
     }
 
     // MARK: - Startup that did not finish
