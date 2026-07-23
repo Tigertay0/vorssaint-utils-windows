@@ -24,6 +24,9 @@ from going black while their brightness is adjusted.
 - Hide apps from the volume mixer. Right click an app in the list, or
   uncheck it in the new chooser at the bottom of the mixer; hidden apps play
   normally and the same menu brings them back.
+- Eject one drive at a time. Every removable drive in the Drives tab now
+  carries its own eject button, so you no longer need to eject all of them
+  together or reach for the Finder.
 
 ### Changed
 - Recording a shortcut now keeps the keys to itself. A combination that used
