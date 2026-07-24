@@ -372,6 +372,7 @@ enum DefaultsKey {
     static let radialMenuShortcut = "radialMenuShortcut"
     static let radialMenuAtPointer = "radialMenuAtPointer" // false: screen center
     static let radialMenuMouseButton = "radialMenuMouseButton" // RadialMenuMouseTrigger.rawValue
+    static let radialMenuActivationMode = "radialMenuActivationMode" // RadialMenuActivationMode.rawValue
     static let radialMenuItems = "radialMenuItems"        // Data: [RadialMenuItem] JSON
 
     // Dev-build only: force the "update available" UI for local testing.
@@ -625,6 +626,7 @@ enum Defaults {
         DefaultsKey.radialMenuShortcut: GlobalShortcut.radialMenuDefault.storageValue,
         DefaultsKey.radialMenuAtPointer: true,
         DefaultsKey.radialMenuMouseButton: RadialMenuMouseTrigger.off.rawValue,
+        DefaultsKey.radialMenuActivationMode: RadialMenuActivationMode.pressOrHold.rawValue,
         DefaultsKey.windowMaximizeEnabled: false,
         DefaultsKey.keyboardDebounceEnabled: false,
         DefaultsKey.keyboardDebounceWindowMs: defaultKeyboardDebounceWindowMs,
