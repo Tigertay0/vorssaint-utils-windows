@@ -3612,6 +3612,33 @@ struct MetricsTests {
                "healthy shelf items pass sanitizing untouched")
         expect(ShelfPersistenceSupport.sanitized([shelfFile, shelfText]) { _ in false } == [shelfText],
                "shelf files that no longer exist are dropped at load")
+        let bookmarkedShelfFile = ShelfPersistedItem(id: shelfFile.id, kind: .file,
+                                                     title: "notes.pdf", path: "/tmp/notes.pdf",
+                                                     bookmark: Data([1, 2, 3]))
+        let healedShelf = ShelfPersistenceSupport.sanitized(
+            [bookmarkedShelfFile],
+            fileExists: { $0 == "/tmp/moved/renamed.pdf" },
+            resolveBookmark: { _ in "/tmp/moved/renamed.pdf" })
+        expect(healedShelf.count == 1
+                && healedShelf.first?.path == "/tmp/moved/renamed.pdf"
+                && healedShelf.first?.title == "renamed.pdf"
+                && healedShelf.first?.id == shelfFile.id
+                && healedShelf.first?.bookmark == bookmarkedShelfFile.bookmark,
+               "a moved shelf file heals through its bookmark with its new path and name")
+        expect(ShelfPersistenceSupport.sanitized(
+                   [bookmarkedShelfFile],
+                   fileExists: { _ in false },
+                   resolveBookmark: { _ in "/tmp/also-gone.pdf" })
+                   .isEmpty,
+               "a bookmark that resolves to another dead path still drops the item")
+        expect(ShelfPersistenceSupport.sanitized(
+                   [bookmarkedShelfFile],
+                   fileExists: { $0 == "/tmp/notes.pdf" },
+                   resolveBookmark: { _ in
+                       expect(false, "a living shelf path never pays for bookmark resolution")
+                       return nil
+                   }).first?.path == "/tmp/notes.pdf",
+               "a living shelf file keeps its path without touching the bookmark")
         expect(ShelfPersistenceSupport.unmountedVolumeRoot(of: "/Volumes/NAS/docs/a.txt") == "/Volumes/NAS",
                "files under /Volumes report their volume root")
         expect(ShelfPersistenceSupport.unmountedVolumeRoot(of: "/Users/me/a.txt") == nil,

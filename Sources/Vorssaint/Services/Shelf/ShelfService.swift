@@ -31,13 +31,18 @@ final class ShelfService: ObservableObject {
         let title: String
         let icon: NSImage
         let isImage: Bool
+        /// Finds a file payload again after a move or rename; nil for
+        /// non-file payloads and for files whose bookmark could not be made.
+        let bookmark: Data?
 
-        init(id: UUID = UUID(), payload: Payload, title: String, icon: NSImage, isImage: Bool) {
+        init(id: UUID = UUID(), payload: Payload, title: String, icon: NSImage,
+             isImage: Bool, bookmark: Data? = nil) {
             self.id = id
             self.payload = payload
             self.title = title
             self.icon = icon
             self.isImage = isImage
+            self.bookmark = bookmark
         }
 
         static func == (lhs: Item, rhs: Item) -> Bool { lhs.id == rhs.id }
@@ -838,14 +843,69 @@ final class ShelfService: ObservableObject {
         return result
     }
 
-    /// Drag leaves whose payload can actually land somewhere: a file that
-    /// vanished from disk is refused by every destination, so it never joins
-    /// a session. Text and links always qualify.
+    /// Drag leaves whose payload can actually land somewhere: text and links
+    /// always qualify, and a file whose path died gets one chance to heal
+    /// through its bookmark (the file may only have been moved or renamed).
+    /// A healed tile is updated in place; what stays dead never joins a
+    /// session, because every destination would refuse the dead URL.
     func livingDragItems(in items: [Item]) -> [Item] {
-        items.filter { item in
-            guard case let .file(url) = item.payload else { return true }
-            return FileManager.default.fileExists(atPath: url.path)
+        items.compactMap { item in
+            guard case let .file(url) = item.payload else { return item }
+            if FileManager.default.fileExists(atPath: url.path) { return item }
+            guard let healed = rebookedItem(item) else { return nil }
+            replaceItem(healed)
+            return healed
         }
+    }
+
+    /// Resolves a shelf bookmark without ever mounting drives or showing UI;
+    /// nil when the file is truly gone.
+    private static func resolvedBookmarkPath(_ bookmark: Data) -> String? {
+        var stale = false
+        guard let url = try? URL(resolvingBookmarkData: bookmark,
+                                 options: [.withoutUI, .withoutMounting],
+                                 relativeTo: nil,
+                                 bookmarkDataIsStale: &stale) else { return nil }
+        return url.path
+    }
+
+    /// A fresh Item for a file found again through its bookmark, new name
+    /// included; nil when there is no bookmark or the file is really gone.
+    private func rebookedItem(_ item: Item) -> Item? {
+        guard case .file = item.payload, let bookmark = item.bookmark,
+              let path = Self.resolvedBookmarkPath(bookmark),
+              FileManager.default.fileExists(atPath: path) else { return nil }
+        let resolved = URL(fileURLWithPath: path)
+        return Item(id: item.id, payload: .file(resolved),
+                    title: resolved.lastPathComponent,
+                    icon: item.icon, isImage: item.isImage,
+                    bookmark: (try? resolved.bookmarkData()) ?? bookmark)
+    }
+
+    /// Swaps an item in place wherever it lives, top level or inside a
+    /// batch, keeping order, selection and expansion untouched.
+    private func replaceItem(_ replacement: Item) {
+        func replace(in items: inout [Item]) -> Bool {
+            for index in items.indices {
+                if items[index].id == replacement.id {
+                    items[index] = replacement
+                    return true
+                }
+                if case let .batch(children) = items[index].payload {
+                    var mutable = children
+                    if replace(in: &mutable) {
+                        items[index] = Item(id: items[index].id, payload: .batch(mutable),
+                                            title: items[index].title,
+                                            icon: items[index].icon,
+                                            isImage: items[index].isImage)
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+        var current = items
+        if replace(in: &current) { items = current }
     }
 
     /// Every grabbed payload is gone. Ghost-dragging dead URLs reads as "the
@@ -871,7 +931,9 @@ final class ShelfService: ObservableObject {
     /// their leaves just like an external drag.
     func fileURLsForActions(startingAt item: Item) -> [URL] {
         let candidates = selection.contains(item.id) ? selectedItems() : [item]
-        return dragItems(for: candidates).compactMap { entry in
+        // Actions heal moved files the same way a drag does: Open or Reveal
+        // on a renamed file should find it, not shrug.
+        return livingDragItems(in: dragItems(for: candidates)).compactMap { entry in
             guard case let .file(url) = entry.payload else { return nil }
             return url
         }
@@ -1005,15 +1067,19 @@ final class ShelfService: ObservableObject {
         append(linkItem(for: url))
     }
 
-    private func fileItem(for url: URL, id: UUID = UUID(), title: String? = nil) -> Item {
+    private func fileItem(for url: URL, id: UUID = UUID(), title: String? = nil,
+                          bookmark: Data? = nil) -> Item {
         let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "heif", "tiff", "bmp", "webp"]
         let isImage = imageExtensions.contains(url.pathExtension.lowercased())
         let fallbackIcon = NSWorkspace.shared.icon(forFile: url.path)
         let icon = (isImage ? ImageThumbnailer.thumbnail(for: url) : nil)
             ?? ImageThumbnailer.thumbnail(for: fallbackIcon)
             ?? fallbackIcon
+        // Made once when the item is shelved (or upgrading a legacy entry),
+        // so a later move or rename of the file cannot orphan the tile.
         return Item(id: id, payload: .file(url), title: title ?? url.lastPathComponent,
-                    icon: icon, isImage: isImage)
+                    icon: icon, isImage: isImage,
+                    bookmark: bookmark ?? (try? url.bookmarkData()))
     }
 
     private func imageItem(for image: NSImage) -> Item? {
@@ -1434,7 +1500,7 @@ final class ShelfService: ObservableObject {
             var sanitized: [ShelfPersistedItem] = []
             if let data,
                let decoded = try? JSONDecoder().decode([ShelfPersistedItem].self, from: data) {
-                sanitized = ShelfPersistenceSupport.sanitized(decoded) { path in
+                sanitized = ShelfPersistenceSupport.sanitized(decoded, fileExists: { path in
                     if FileManager.default.fileExists(atPath: path) { return true }
                     // A file on an unmounted volume is not gone: the app can
                     // launch at login before an external or network drive
@@ -1444,7 +1510,7 @@ final class ShelfService: ObservableObject {
                         return !FileManager.default.fileExists(atPath: volumeRoot)
                     }
                     return false
-                }
+                }, resolveBookmark: Self.resolvedBookmarkPath)
             }
             DispatchQueue.main.async {
                 let restored = sanitized.compactMap { self.restoredItem(from: $0) }
@@ -1467,7 +1533,8 @@ final class ShelfService: ObservableObject {
     private static func persistedItem(from item: Item) -> ShelfPersistedItem {
         switch item.payload {
         case let .file(url):
-            return ShelfPersistedItem(id: item.id, kind: .file, title: item.title, path: url.path)
+            return ShelfPersistedItem(id: item.id, kind: .file, title: item.title,
+                                      path: url.path, bookmark: item.bookmark)
         case let .text(text):
             return ShelfPersistedItem(id: item.id, kind: .text, title: item.title, text: text)
         case let .link(url):
@@ -1484,7 +1551,8 @@ final class ShelfService: ObservableObject {
         case .file:
             guard let path = persisted.path else { return nil }
             return fileItem(for: URL(fileURLWithPath: path), id: persisted.id,
-                            title: persisted.title.isEmpty ? nil : persisted.title)
+                            title: persisted.title.isEmpty ? nil : persisted.title,
+                            bookmark: persisted.bookmark)
         case .text:
             guard let text = persisted.text else { return nil }
             let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
