@@ -139,7 +139,7 @@ extension AppFeature {
         case .mouseButtonShortcuts: return [DefaultsKey.mouseButtonShortcutsEnabled]
         case .middleClick: return [DefaultsKey.middleClickEnabled]
         case .keyboardDebounce: return [DefaultsKey.keyboardDebounceEnabled]
-        case .textSnippets: return [DefaultsKey.textSnippetsEnabled]
+        case .textSnippets: return [DefaultsKey.textSnippetsEnabled, DefaultsKey.snippetLibraryEnabled]
         case .radialMenu: return [DefaultsKey.radialMenuEnabled]
         case .clipboardHistory: return [DefaultsKey.clipboardHistoryEnabled]
         case .pastePlain: return [DefaultsKey.pastePlainEnabled]

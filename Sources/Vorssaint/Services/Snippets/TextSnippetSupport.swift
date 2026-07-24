@@ -22,15 +22,21 @@ struct TextSnippet: Codable, Identifiable, Equatable {
     var expansion = Expansion.afterDelimiter
     var enabled = true
     var ignoresCase = false
+    /// Plain folder name for the library; empty means no folder. Folders are
+    /// derived from the snippets themselves, so there is no folder entity to
+    /// migrate or orphan.
+    var folder = ""
+    var showsInLibrary = true
 
     enum CodingKeys: String, CodingKey {
-        case id, name, trigger, replacement, expansion, enabled, ignoresCase
+        case id, name, trigger, replacement, expansion, enabled, ignoresCase, folder, showsInLibrary
     }
 }
 
 extension TextSnippet {
-    /// Snippets stored before the capitalization option existed have no
-    /// `ignoresCase` key; they keep matching exactly, as they always did.
+    /// Snippets stored before an option existed have no key for it; each one
+    /// falls back to the behavior of its day (exact matching, no folder,
+    /// visible in the library).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -40,6 +46,8 @@ extension TextSnippet {
         expansion = try container.decode(Expansion.self, forKey: .expansion)
         enabled = try container.decode(Bool.self, forKey: .enabled)
         ignoresCase = try container.decodeIfPresent(Bool.self, forKey: .ignoresCase) ?? false
+        folder = try container.decodeIfPresent(String.self, forKey: .folder) ?? ""
+        showsInLibrary = try container.decodeIfPresent(Bool.self, forKey: .showsInLibrary) ?? true
     }
 }
 
@@ -117,6 +125,63 @@ enum TextSnippetSupport {
             .replacingOccurrences(of: "{{time}}", with: timeText)
             .replacingOccurrences(of: "{{datetime}}", with: "\(dateText) \(timeText)")
             .replacingOccurrences(of: "{{clipboard}}", with: clipboard ?? "")
+    }
+
+    // MARK: - Library
+
+    /// One folder worth of library rows. An empty name is the loose group,
+    /// rendered without a header.
+    struct LibrarySection: Equatable {
+        let folder: String
+        let snippets: [TextSnippet]
+    }
+
+    /// The library's content for a search text: enabled snippets marked to
+    /// show, matched against name, trigger, text and folder (case and
+    /// diacritic insensitive), grouped by folder. Folders come first in
+    /// alphabetical order; snippets without one close the list, both keeping
+    /// the stored order inside. An empty search shows everything.
+    static func librarySections(_ snippets: [TextSnippet], query: String) -> [LibrarySection] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let visible = snippets.filter { snippet in
+            guard snippet.enabled, snippet.showsInLibrary else { return false }
+            guard !trimmed.isEmpty else { return true }
+            return snippet.name.localizedStandardContains(trimmed)
+                || snippet.trigger.localizedStandardContains(trimmed)
+                || snippet.replacement.localizedStandardContains(trimmed)
+                || snippet.folder.localizedStandardContains(trimmed)
+        }
+        var byFolder: [String: [TextSnippet]] = [:]
+        for snippet in visible {
+            byFolder[snippet.folder, default: []].append(snippet)
+        }
+        var sections = byFolder
+            .filter { !$0.key.isEmpty }
+            .sorted { $0.key.localizedStandardCompare($1.key) == .orderedAscending }
+            .map { LibrarySection(folder: $0.key, snippets: $0.value) }
+        if let loose = byFolder[""], !loose.isEmpty {
+            sections.append(LibrarySection(folder: "", snippets: loose))
+        }
+        return sections
+    }
+
+    /// The same content as one flat list, in reading order, for the keyboard
+    /// selection to walk.
+    static func libraryRows(_ sections: [LibrarySection]) -> [TextSnippet] {
+        sections.flatMap(\.snippets)
+    }
+
+    /// Existing folder names for the editor's suggestions, distinct and
+    /// alphabetical.
+    static func folderSuggestions(_ snippets: [TextSnippet]) -> [String] {
+        Set(snippets.map(\.folder).filter { !$0.isEmpty })
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    /// Folder names travel inside each snippet; a rename is a plain rewrite
+    /// of every member. Whitespace-only names mean no folder.
+    static func sanitizedFolder(_ raw: String) -> String {
+        raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: - Persistence

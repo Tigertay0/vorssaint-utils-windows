@@ -134,7 +134,10 @@ final class FeatureRuntime: ObservableObject {
         .mouseButtonShortcuts: { MouseButtonShortcutService.shared.syncWithPreferences() },
         .middleClick: { MiddleClickService.shared.syncWithPreferences() },
         .keyboardDebounce: { KeyboardDebounceService.shared.syncWithPreferences() },
-        .textSnippets: { TextSnippetService.shared.syncWithPreferences() },
+        .textSnippets: {
+            TextSnippetService.shared.syncWithPreferences()
+            SnippetLibraryService.shared.syncWithPreferences()
+        },
         .clipboardHistory: { ClipboardHistoryService.shared.syncWithPreferences() },
         .pastePlain: { PastePlainService.shared.syncWithPreferences() },
         .finderCutPaste: { FinderCutPaste.shared.syncWithPreferences() },

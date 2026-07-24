@@ -7,13 +7,17 @@ All notable changes to this project are documented here. The format follows
 ## [3.2.0]
 
 ### Summary
-Vorssaint 3.2.0 lets the extra buttons on a mouse press keyboard shortcuts
-you choose, shows windows from other desktops in the App Switcher and Dock
-previews, and lets you hide apps from the volume mixer. It also cleans up
-the sound of boosted apps and fixes a batch of volume, window layout,
-monitor brightness and paste as plain text issues.
+Vorssaint 3.2.0 adds a searchable snippet menu with folders, lets the extra
+buttons on a mouse press keyboard shortcuts you choose, and shows windows
+from other desktops in the App Switcher and Dock previews. It also lets you
+hide apps from the volume mixer, cleans up the sound of boosted apps and
+fixes a batch of volume, window layout, monitor brightness and paste as
+plain text issues.
 
 ### Added
+- A quick snippet menu. A shortcut of your choice opens a searchable menu
+  with your snippets, organized into folders; picking one types it right
+  where your cursor is. Turn it on in Settings under Text snippets.
 - Mouse button shortcuts. Give any extra mouse button a key combination and
   it presses those keys for you. Set it up in Settings under Mouse, with a
   quick toggle in the menu panel.
