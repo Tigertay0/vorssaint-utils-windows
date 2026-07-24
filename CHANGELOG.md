@@ -70,6 +70,9 @@ and a batch of fixes.
 - The Drives tab no longer shows a drive's format and location twice.
 - External monitors no longer go dark while adjusting brightness, and a
   reconnected screen always comes back visible.
+- Minimizing several windows from the Dock icon animates them together
+  again, and restoring them ends with the right window on top and
+  focused. Thanks to @Zvzdov.
 
 ## [3.1.15] - 2026-07-21
 

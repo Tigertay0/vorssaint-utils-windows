@@ -6817,6 +6817,33 @@ struct MetricsTests {
                                                to: CGPoint(x: 100, y: 93)),
                "vertical pulls count as drags too")
 
+        // MARK: Dock click restore order (issue #357)
+
+        // The AX array order is deliberately unhelpful in these cases: the
+        // captured WindowServer stacking is what has to decide the outcome.
+        expect(DockClickSupport.restoreSequence(ids: [10, 20], frontToBack: [10, 20]) == [1, 0],
+               "the window that was frontmost is restored last so it lands on top")
+        expect(DockClickSupport.restoreSequence(ids: [10, 20], frontToBack: [20, 10]) == [0, 1],
+               "the batch follows the captured stacking, not the order it arrived in")
+        expect(DockClickSupport.restoreSequence(ids: [10, 20, 30], frontToBack: [20, 30, 10]) == [0, 2, 1],
+               "a three window batch rebuilds the captured stacking bottom up")
+        expect(DockClickSupport.restoreSequence(ids: [10, 20, 10, 20], frontToBack: [10, 20]) == [1, 0],
+               "the same window captured twice is restored once, in its captured slot")
+        expect(DockClickSupport.restoreSequence(ids: [10, 40], frontToBack: [10, 20]) == [1, 0],
+               "a window missing from the capture counts as rearmost and restores first")
+        expect(DockClickSupport.restoreSequence(ids: [10], frontToBack: [10]) == [0],
+               "a single window restores as itself")
+        expect(DockClickSupport.restoreSequence(ids: [], frontToBack: []).isEmpty,
+               "an empty batch stays empty")
+        expect(DockClickSupport.restoreSequence(ids: [10, 20, 30],
+                                                frontToBack: [],
+                                                preferredFront: 20) == [0, 2, 1],
+               "with no capture the app's main window is moved to the end")
+        expect(DockClickSupport.restoreSequence(ids: [10, 20], frontToBack: [], preferredFront: nil) == [0, 1],
+               "with nothing to go on the batch keeps the order it arrived in")
+        expect(DockClickSupport.restoreSequence(ids: [nil, nil], frontToBack: []) == [0, 1],
+               "unresolvable windows are never deduped away")
+
         // MARK: Quick toggles
 
         expect(QuickTogglesSupport.emptyTrashSource == "tell application \"Finder\" to empty trash",
