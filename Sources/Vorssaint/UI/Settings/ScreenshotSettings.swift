@@ -16,6 +16,7 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotFileNumberStart) private var numberStart = 1
     @AppStorage(DefaultsKey.screenshotFileNumberNext) private var nextNumber = 1
     @AppStorage(DefaultsKey.screenshotIncludePointer) private var includePointer = false
+    @AppStorage(DefaultsKey.screenshotShowLastRegion) private var showLastRegion = true
     @AppStorage(DefaultsKey.screenshotDownscale) private var downscale = false
     @AppStorage(DefaultsKey.screenshotDelay) private var delay = 0
     @AppStorage(DefaultsKey.screenshotDefaultAction) private var defaultActionRaw = ""
@@ -75,6 +76,7 @@ struct ScreenshotSettings: View {
                 }
                 .pickerStyle(.segmented)
                 Toggle(strings.pointerToggle, isOn: $includePointer)
+                Toggle(strings.lastRegionToggle, isOn: $showLastRegion)
                 defaultActionRow
             }
 

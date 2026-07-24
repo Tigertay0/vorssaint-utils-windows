@@ -8,11 +8,6 @@ struct RadialMenuFeatureStrings {
     let hubDescription: String
     let enableLabel: String
     let enableCaption: String
-    let activationModeLabel: String
-    let activationModePressOrHold: String
-    let activationModePress: String
-    let activationModeHold: String
-    let activationModeCaption: String
     let positionLabel: String
     let positionPointer: String
     let positionCenter: String
@@ -59,6 +54,11 @@ struct RadialMenuFeatureStrings {
     let buttonTestOther: String
     let buttonTestBlind: String
     let buttonTestHint: String
+    let activationModeLabel: String
+    let activationModePressOrHold: String
+    let activationModePress: String
+    let activationModeHold: String
+    let activationModeCaption: String
 }
 
 extension FeatureStrings {
@@ -87,11 +87,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Opens a wheel of your favorite actions around the pointer",
         enableLabel: "Use the radial menu",
         enableCaption: "Hold the shortcut, point at an action and release. A quick press keeps the wheel open.",
-        activationModeLabel: "Opening behavior",
-        activationModePressOrHold: "Press or hold",
-        activationModePress: "Press to open",
-        activationModeHold: "Hold to select",
-        activationModeCaption: "Press or hold keeps the current adaptive gesture. Press stays open; hold runs the highlighted action on release.",
         positionLabel: "Opens",
         positionPointer: "At the pointer",
         positionCenter: "At the screen center",
@@ -137,7 +132,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint sees this button",
         buttonTestOther: "That was a different button",
         buttonTestBlind: "Vorssaint cannot watch the mouse right now",
-        buttonTestHint: "If nothing lights up, macOS is not sending that button to apps. Mice that come with their own software often turn the side buttons into something else. Change it back there, or give the button a key combination and use that combination above."
+        buttonTestHint: "If nothing lights up, macOS is not sending that button to apps. Mice that come with their own software often turn the side buttons into something else. Change it back there, or give the button a key combination and use that combination above.",
+        activationModeLabel: "Opening behavior",
+        activationModePressOrHold: "Press or hold",
+        activationModePress: "Press to open",
+        activationModeHold: "Hold to select",
+        activationModeCaption: "Press or hold keeps the current adaptive gesture. Press stays open; hold runs the highlighted action on release."
     )
 
     static let ptBR = RadialMenuFeatureStrings(
@@ -145,11 +145,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Abre uma roda com as suas ações favoritas ao redor do ponteiro",
         enableLabel: "Usar o menu radial",
         enableCaption: "Segure o atalho, aponte para uma ação e solte. Um toque rápido mantém a roda aberta.",
-        activationModeLabel: "Comportamento de abertura",
-        activationModePressOrHold: "Pressionar ou segurar",
-        activationModePress: "Pressionar para abrir",
-        activationModeHold: "Segurar para selecionar",
-        activationModeCaption: "Pressionar ou segurar mantém o gesto adaptável atual. Pressionar deixa aberto; segurar executa a ação destacada ao soltar.",
         positionLabel: "Abre",
         positionPointer: "No ponteiro",
         positionCenter: "No centro da tela",
@@ -195,7 +190,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "O Vorssaint enxerga esse botão",
         buttonTestOther: "Esse foi outro botão",
         buttonTestBlind: "O Vorssaint não consegue observar o mouse agora",
-        buttonTestHint: "Se nada acender, o macOS não está entregando esse botão para os apps. Mouses que vêm com programa próprio costumam trocar os botões laterais por outra coisa. Volte lá e desfaça, ou dê uma combinação de teclas ao botão e use essa combinação acima."
+        buttonTestHint: "Se nada acender, o macOS não está entregando esse botão para os apps. Mouses que vêm com programa próprio costumam trocar os botões laterais por outra coisa. Volte lá e desfaça, ou dê uma combinação de teclas ao botão e use essa combinação acima.",
+        activationModeLabel: "Comportamento de abertura",
+        activationModePressOrHold: "Pressionar ou segurar",
+        activationModePress: "Pressionar para abrir",
+        activationModeHold: "Segurar para selecionar",
+        activationModeCaption: "Pressionar ou segurar mantém o gesto adaptável atual. Pressionar deixa aberto; segurar executa a ação destacada ao soltar."
     )
 
     static let tr = RadialMenuFeatureStrings(
@@ -203,11 +203,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "İşaretçinin çevresinde en sevdiğiniz eylemlerden oluşan bir çark açar",
         enableLabel: "Dairesel menüyü kullan",
         enableCaption: "Kısayolu basılı tutun, bir eyleme yönelin ve bırakın. Kısa bir basış çarkı açık tutar.",
-        activationModeLabel: "Açılma davranışı",
-        activationModePressOrHold: "Bas veya basılı tut",
-        activationModePress: "Açmak için bas",
-        activationModeHold: "Seçmek için basılı tut",
-        activationModeCaption: "Bas veya basılı tut mevcut uyarlanabilir hareketi korur. Bas modu açık kalır; basılı tutma modu bırakınca vurgulanan eylemi çalıştırır.",
         positionLabel: "Açılış yeri",
         positionPointer: "İşaretçide",
         positionCenter: "Ekranın ortasında",
@@ -253,7 +248,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint bu düğmeyi görüyor",
         buttonTestOther: "Bu başka bir düğmeydi",
         buttonTestBlind: "Vorssaint şu anda fareyi izleyemiyor",
-        buttonTestHint: "Hiçbir şey yanmıyorsa macOS o düğmeyi uygulamalara iletmiyordur. Kendi yazılımıyla gelen fareler yan düğmeleri çoğu zaman başka bir şeye çevirir. Oradan geri alın veya düğmeye bir tuş birleşimi verip o birleşimi yukarıda kullanın."
+        buttonTestHint: "Hiçbir şey yanmıyorsa macOS o düğmeyi uygulamalara iletmiyordur. Kendi yazılımıyla gelen fareler yan düğmeleri çoğu zaman başka bir şeye çevirir. Oradan geri alın veya düğmeye bir tuş birleşimi verip o birleşimi yukarıda kullanın.",
+        activationModeLabel: "Açılma davranışı",
+        activationModePressOrHold: "Bas veya basılı tut",
+        activationModePress: "Açmak için bas",
+        activationModeHold: "Seçmek için basılı tut",
+        activationModeCaption: "Bas veya basılı tut mevcut uyarlanabilir hareketi korur. Bas modu açık kalır; basılı tutma modu bırakınca vurgulanan eylemi çalıştırır."
     )
 
     static let ru = RadialMenuFeatureStrings(
@@ -261,11 +261,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Открывает колесо с любимыми действиями вокруг указателя",
         enableLabel: "Использовать радиальное меню",
         enableCaption: "Удерживайте сочетание, наведите на действие и отпустите. Короткое нажатие оставляет колесо открытым.",
-        activationModeLabel: "Способ открытия",
-        activationModePressOrHold: "Нажать или удерживать",
-        activationModePress: "Нажать, чтобы открыть",
-        activationModeHold: "Удерживать для выбора",
-        activationModeCaption: "Первый режим сохраняет текущее адаптивное поведение. Нажатие оставляет меню открытым; удержание запускает выделенное действие при отпускании.",
         positionLabel: "Открывается",
         positionPointer: "У указателя",
         positionCenter: "В центре экрана",
@@ -311,7 +306,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint видит эту кнопку",
         buttonTestOther: "Это была другая кнопка",
         buttonTestBlind: "Vorssaint сейчас не может следить за мышью",
-        buttonTestHint: "Если ничего не загорается, macOS не передаёт эту кнопку приложениям. Мыши со своей программой часто заменяют боковые кнопки чем-то другим. Верните там как было или назначьте кнопке сочетание клавиш и используйте его выше."
+        buttonTestHint: "Если ничего не загорается, macOS не передаёт эту кнопку приложениям. Мыши со своей программой часто заменяют боковые кнопки чем-то другим. Верните там как было или назначьте кнопке сочетание клавиш и используйте его выше.",
+        activationModeLabel: "Способ открытия",
+        activationModePressOrHold: "Нажать или удерживать",
+        activationModePress: "Нажать, чтобы открыть",
+        activationModeHold: "Удерживать для выбора",
+        activationModeCaption: "Первый режим сохраняет текущее адаптивное поведение. Нажатие оставляет меню открытым; удержание запускает выделенное действие при отпускании."
     )
 
     static let es = RadialMenuFeatureStrings(
@@ -319,11 +319,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Abre una rueda con tus acciones favoritas alrededor del puntero",
         enableLabel: "Usar el menú radial",
         enableCaption: "Mantén pulsado el atajo, apunta a una acción y suelta. Una pulsación breve deja la rueda abierta.",
-        activationModeLabel: "Comportamiento de apertura",
-        activationModePressOrHold: "Pulsar o mantener",
-        activationModePress: "Pulsar para abrir",
-        activationModeHold: "Mantener para seleccionar",
-        activationModeCaption: "Pulsar o mantener conserva el gesto adaptable actual. Pulsar deja el menú abierto; mantener ejecuta la acción resaltada al soltar.",
         positionLabel: "Se abre",
         positionPointer: "En el puntero",
         positionCenter: "En el centro de la pantalla",
@@ -369,7 +364,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint ve este botón",
         buttonTestOther: "Ese fue otro botón",
         buttonTestBlind: "Vorssaint no puede observar el ratón ahora",
-        buttonTestHint: "Si no se enciende nada, macOS no está enviando ese botón a las apps. Los ratones que traen su propio programa suelen convertir los botones laterales en otra cosa. Deshazlo allí, o dale una combinación de teclas al botón y usa esa combinación arriba."
+        buttonTestHint: "Si no se enciende nada, macOS no está enviando ese botón a las apps. Los ratones que traen su propio programa suelen convertir los botones laterales en otra cosa. Deshazlo allí, o dale una combinación de teclas al botón y usa esa combinación arriba.",
+        activationModeLabel: "Comportamiento de apertura",
+        activationModePressOrHold: "Pulsar o mantener",
+        activationModePress: "Pulsar para abrir",
+        activationModeHold: "Mantener para seleccionar",
+        activationModeCaption: "Pulsar o mantener conserva el gesto adaptable actual. Pulsar deja el menú abierto; mantener ejecuta la acción resaltada al soltar."
     )
 
     static let de = RadialMenuFeatureStrings(
@@ -377,11 +377,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Öffnet ein Rad mit deinen Lieblingsaktionen rund um den Zeiger",
         enableLabel: "Radialmenü verwenden",
         enableCaption: "Kurzbefehl gedrückt halten, auf eine Aktion zeigen und loslassen. Ein kurzer Druck hält das Rad offen.",
-        activationModeLabel: "Öffnungsverhalten",
-        activationModePressOrHold: "Drücken oder halten",
-        activationModePress: "Zum Öffnen drücken",
-        activationModeHold: "Zum Auswählen halten",
-        activationModeCaption: "Drücken oder halten behält die bisherige adaptive Geste bei. Drücken lässt das Rad offen; Halten führt beim Loslassen die markierte Aktion aus.",
         positionLabel: "Öffnet sich",
         positionPointer: "Am Zeiger",
         positionCenter: "In der Bildschirmmitte",
@@ -427,7 +422,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint sieht diese Taste",
         buttonTestOther: "Das war eine andere Taste",
         buttonTestBlind: "Vorssaint kann die Maus gerade nicht beobachten",
-        buttonTestHint: "Leuchtet nichts auf, gibt macOS diese Taste nicht an Apps weiter. Mäuse mit eigener Software belegen die Seitentasten oft anders. Dort zurückstellen, oder der Taste eine Tastenkombination geben und diese oben verwenden."
+        buttonTestHint: "Leuchtet nichts auf, gibt macOS diese Taste nicht an Apps weiter. Mäuse mit eigener Software belegen die Seitentasten oft anders. Dort zurückstellen, oder der Taste eine Tastenkombination geben und diese oben verwenden.",
+        activationModeLabel: "Öffnungsverhalten",
+        activationModePressOrHold: "Drücken oder halten",
+        activationModePress: "Zum Öffnen drücken",
+        activationModeHold: "Zum Auswählen halten",
+        activationModeCaption: "Drücken oder halten behält die bisherige adaptive Geste bei. Drücken lässt das Rad offen; Halten führt beim Loslassen die markierte Aktion aus."
     )
 
     static let fr = RadialMenuFeatureStrings(
@@ -435,11 +435,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Ouvre une roue avec vos actions préférées autour du pointeur",
         enableLabel: "Utiliser le menu radial",
         enableCaption: "Maintenez le raccourci, visez une action et relâchez. Un appui bref garde la roue ouverte.",
-        activationModeLabel: "Comportement d’ouverture",
-        activationModePressOrHold: "Appuyer ou maintenir",
-        activationModePress: "Appuyer pour ouvrir",
-        activationModeHold: "Maintenir pour choisir",
-        activationModeCaption: "Appuyer ou maintenir conserve le geste adaptatif actuel. Appuyer laisse la roue ouverte ; maintenir lance l’action surlignée au relâchement.",
         positionLabel: "S'ouvre",
         positionPointer: "Au pointeur",
         positionCenter: "Au centre de l'écran",
@@ -485,7 +480,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint voit ce bouton",
         buttonTestOther: "C'était un autre bouton",
         buttonTestBlind: "Vorssaint ne peut pas observer la souris pour le moment",
-        buttonTestHint: "Si rien ne s'allume, macOS ne transmet pas ce bouton aux apps. Les souris livrées avec leur propre logiciel changent souvent les boutons latéraux. Rétablissez-le là-bas, ou donnez une combinaison de touches au bouton et utilisez cette combinaison ci-dessus."
+        buttonTestHint: "Si rien ne s'allume, macOS ne transmet pas ce bouton aux apps. Les souris livrées avec leur propre logiciel changent souvent les boutons latéraux. Rétablissez-le là-bas, ou donnez une combinaison de touches au bouton et utilisez cette combinaison ci-dessus.",
+        activationModeLabel: "Comportement d’ouverture",
+        activationModePressOrHold: "Appuyer ou maintenir",
+        activationModePress: "Appuyer pour ouvrir",
+        activationModeHold: "Maintenir pour choisir",
+        activationModeCaption: "Appuyer ou maintenir conserve le geste adaptatif actuel. Appuyer laisse la roue ouverte ; maintenir lance l’action surlignée au relâchement."
     )
 
     static let it = RadialMenuFeatureStrings(
@@ -493,11 +493,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "Apre una ruota con le tue azioni preferite attorno al puntatore",
         enableLabel: "Usa il menu radiale",
         enableCaption: "Tieni premuta l'abbreviazione, punta un'azione e rilascia. Una pressione breve lascia la ruota aperta.",
-        activationModeLabel: "Comportamento di apertura",
-        activationModePressOrHold: "Premi o tieni premuto",
-        activationModePress: "Premi per aprire",
-        activationModeHold: "Tieni premuto per scegliere",
-        activationModeCaption: "Premi o tieni premuto conserva il gesto adattivo attuale. Premi lascia aperta la ruota; tieni premuto esegue l’azione evidenziata al rilascio.",
         positionLabel: "Si apre",
         positionPointer: "Sul puntatore",
         positionCenter: "Al centro dello schermo",
@@ -543,7 +538,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint vede questo pulsante",
         buttonTestOther: "Quello era un altro pulsante",
         buttonTestBlind: "Vorssaint non riesce a osservare il mouse in questo momento",
-        buttonTestHint: "Se non si accende nulla, macOS non sta passando quel pulsante alle app. I mouse che arrivano con un programma proprio spesso trasformano i pulsanti laterali in altro. Rimettilo com'era da lì, oppure assegna al pulsante una combinazione di tasti e usa quella combinazione qui sopra."
+        buttonTestHint: "Se non si accende nulla, macOS non sta passando quel pulsante alle app. I mouse che arrivano con un programma proprio spesso trasformano i pulsanti laterali in altro. Rimettilo com'era da lì, oppure assegna al pulsante una combinazione di tasti e usa quella combinazione qui sopra.",
+        activationModeLabel: "Comportamento di apertura",
+        activationModePressOrHold: "Premi o tieni premuto",
+        activationModePress: "Premi per aprire",
+        activationModeHold: "Tieni premuto per scegliere",
+        activationModeCaption: "Premi o tieni premuto conserva il gesto adattivo attuale. Premi lascia aperta la ruota; tieni premuto esegue l’azione evidenziata al rilascio."
     )
 
     static let ja = RadialMenuFeatureStrings(
@@ -551,11 +551,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "ポインタの周りにお気に入りのアクションのホイールを開きます",
         enableLabel: "ラジアルメニューを使用",
         enableCaption: "ショートカットを押したまま、アクションに向けて放します。短く押すとホイールが開いたままになります。",
-        activationModeLabel: "開き方",
-        activationModePressOrHold: "押す／長押し",
-        activationModePress: "押して開く",
-        activationModeHold: "長押しで選択",
-        activationModeCaption: "押す／長押しは現在の自動ジェスチャーを維持します。押すモードは開いたまま、長押しモードは放したときに強調中の操作を実行します。",
         positionLabel: "表示位置",
         positionPointer: "ポインタの位置",
         positionCenter: "画面の中央",
@@ -601,7 +596,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint はこのボタンを認識しています",
         buttonTestOther: "いまのは別のボタンです",
         buttonTestBlind: "Vorssaint はいまマウスを見られません",
-        buttonTestHint: "何も光らない場合、macOS がそのボタンをアプリに渡していません。専用ソフトが付属するマウスは、サイドボタンを別の動作に置き換えていることがよくあります。そちらで元に戻すか、ボタンにキーの組み合わせを割り当てて、その組み合わせを上で使ってください。"
+        buttonTestHint: "何も光らない場合、macOS がそのボタンをアプリに渡していません。専用ソフトが付属するマウスは、サイドボタンを別の動作に置き換えていることがよくあります。そちらで元に戻すか、ボタンにキーの組み合わせを割り当てて、その組み合わせを上で使ってください。",
+        activationModeLabel: "開き方",
+        activationModePressOrHold: "押す／長押し",
+        activationModePress: "押して開く",
+        activationModeHold: "長押しで選択",
+        activationModeCaption: "押す／長押しは現在の自動ジェスチャーを維持します。押すモードは開いたまま、長押しモードは放したときに強調中の操作を実行します。"
     )
 
     static let ko = RadialMenuFeatureStrings(
@@ -609,11 +609,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "포인터 주위에 즐겨 쓰는 동작의 휠을 엽니다",
         enableLabel: "방사형 메뉴 사용",
         enableCaption: "단축키를 누른 채 동작을 향해 이동한 뒤 놓으세요. 짧게 누르면 휠이 열린 상태로 유지됩니다.",
-        activationModeLabel: "열기 동작",
-        activationModePressOrHold: "누르기 또는 길게 누르기",
-        activationModePress: "눌러서 열기",
-        activationModeHold: "길게 눌러 선택",
-        activationModeCaption: "누르기 또는 길게 누르기는 현재의 자동 제스처를 유지합니다. 누르기 모드는 열린 상태를 유지하고, 길게 누르기 모드는 놓을 때 강조된 동작을 실행합니다.",
         positionLabel: "열리는 위치",
         positionPointer: "포인터 위치",
         positionCenter: "화면 중앙",
@@ -659,7 +654,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint가 이 버튼을 인식합니다",
         buttonTestOther: "방금 것은 다른 버튼입니다",
         buttonTestBlind: "지금은 Vorssaint가 마우스를 살펴볼 수 없습니다",
-        buttonTestHint: "아무것도 켜지지 않으면 macOS가 그 버튼을 앱에 전달하지 않는 것입니다. 전용 프로그램이 함께 오는 마우스는 옆 버튼을 다른 동작으로 바꿔 두는 경우가 많습니다. 거기서 되돌리거나, 버튼에 키 조합을 지정하고 그 조합을 위에서 사용하세요."
+        buttonTestHint: "아무것도 켜지지 않으면 macOS가 그 버튼을 앱에 전달하지 않는 것입니다. 전용 프로그램이 함께 오는 마우스는 옆 버튼을 다른 동작으로 바꿔 두는 경우가 많습니다. 거기서 되돌리거나, 버튼에 키 조합을 지정하고 그 조합을 위에서 사용하세요.",
+        activationModeLabel: "열기 동작",
+        activationModePressOrHold: "누르기 또는 길게 누르기",
+        activationModePress: "눌러서 열기",
+        activationModeHold: "길게 눌러 선택",
+        activationModeCaption: "누르기 또는 길게 누르기는 현재의 자동 제스처를 유지합니다. 누르기 모드는 열린 상태를 유지하고, 길게 누르기 모드는 놓을 때 강조된 동작을 실행합니다."
     )
 
     static let zhHans = RadialMenuFeatureStrings(
@@ -667,11 +667,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "在指针周围打开一个由常用操作组成的转盘",
         enableLabel: "使用径向菜单",
         enableCaption: "按住快捷键，指向某个操作后松开。快速按一下可让转盘保持打开。",
-        activationModeLabel: "打开方式",
-        activationModePressOrHold: "按下或按住",
-        activationModePress: "按下打开",
-        activationModeHold: "按住选择",
-        activationModeCaption: "按下或按住会保留当前的自适应手势。按下模式会保持打开；按住模式会在松开时执行高亮操作。",
         positionLabel: "打开位置",
         positionPointer: "指针处",
         positionCenter: "屏幕中央",
@@ -717,7 +712,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint 能看到这个按键",
         buttonTestOther: "刚才是另一个按键",
         buttonTestBlind: "Vorssaint 现在无法观察鼠标",
-        buttonTestHint: "如果没有任何反应，说明 macOS 没有把该按键交给应用。自带软件的鼠标常把侧键改成了别的功能。请到那边改回来，或者给该按键设置一个快捷键组合，然后在上面使用这个组合。"
+        buttonTestHint: "如果没有任何反应，说明 macOS 没有把该按键交给应用。自带软件的鼠标常把侧键改成了别的功能。请到那边改回来，或者给该按键设置一个快捷键组合，然后在上面使用这个组合。",
+        activationModeLabel: "打开方式",
+        activationModePressOrHold: "按下或按住",
+        activationModePress: "按下打开",
+        activationModeHold: "按住选择",
+        activationModeCaption: "按下或按住会保留当前的自适应手势。按下模式会保持打开；按住模式会在松开时执行高亮操作。"
     )
 
     static let zhTW = RadialMenuFeatureStrings(
@@ -725,11 +725,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "在指標周圍打開一個由常用動作組成的轉盤",
         enableLabel: "使用放射狀選單",
         enableCaption: "按住快速鍵，指向某個動作後放開。快速按一下可讓轉盤保持開啟。",
-        activationModeLabel: "開啟方式",
-        activationModePressOrHold: "按下或按住",
-        activationModePress: "按下以開啟",
-        activationModeHold: "按住以選擇",
-        activationModeCaption: "按下或按住會保留目前的自適應手勢。按下模式會保持開啟；按住模式會在放開時執行醒目顯示的動作。",
         positionLabel: "開啟位置",
         positionPointer: "指標處",
         positionCenter: "螢幕中央",
@@ -775,7 +770,12 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint 看得到這個按鍵",
         buttonTestOther: "剛才是另一個按鍵",
         buttonTestBlind: "Vorssaint 目前無法觀察滑鼠",
-        buttonTestHint: "如果沒有任何反應，表示 macOS 沒有把該按鍵交給 App。自帶軟體的滑鼠常把側鍵改成別的功能。請到那邊改回來，或者給該按鍵設定一組快速鍵，然後在上面使用這組快速鍵。"
+        buttonTestHint: "如果沒有任何反應，表示 macOS 沒有把該按鍵交給 App。自帶軟體的滑鼠常把側鍵改成別的功能。請到那邊改回來，或者給該按鍵設定一組快速鍵，然後在上面使用這組快速鍵。",
+        activationModeLabel: "開啟方式",
+        activationModePressOrHold: "按下或按住",
+        activationModePress: "按下以開啟",
+        activationModeHold: "按住以選擇",
+        activationModeCaption: "按下或按住會保留目前的自適應手勢。按下模式會保持開啟；按住模式會在放開時執行醒目顯示的動作。"
     )
 
     static let zhHK = RadialMenuFeatureStrings(
@@ -783,11 +783,6 @@ extension RadialMenuFeatureStrings {
         hubDescription: "在指標周圍打開一個由常用動作組成的轉盤",
         enableLabel: "使用放射狀選單",
         enableCaption: "按住快速鍵，指向某個動作後放開。快速按一下可讓轉盤保持開啟。",
-        activationModeLabel: "開啟方式",
-        activationModePressOrHold: "按下或按住",
-        activationModePress: "按下以開啟",
-        activationModeHold: "按住以選擇",
-        activationModeCaption: "按下或按住會保留目前的自適應手勢。按下模式會保持開啟；按住模式會在放開時執行醒目顯示的動作。",
         positionLabel: "開啟位置",
         positionPointer: "指標處",
         positionCenter: "螢幕中央",
@@ -833,6 +828,11 @@ extension RadialMenuFeatureStrings {
         buttonTestSeen: "Vorssaint 看得到這個按鍵",
         buttonTestOther: "剛才是另一個按鍵",
         buttonTestBlind: "Vorssaint 目前無法觀察滑鼠",
-        buttonTestHint: "如果沒有任何反應，表示 macOS 沒有把該按鍵交給 App。自帶軟體的滑鼠常把側鍵改成別的功能。請到那邊改回來，或者給該按鍵設定一組快速鍵，然後在上面使用這組快速鍵。"
+        buttonTestHint: "如果沒有任何反應，表示 macOS 沒有把該按鍵交給 App。自帶軟體的滑鼠常把側鍵改成別的功能。請到那邊改回來，或者給該按鍵設定一組快速鍵，然後在上面使用這組快速鍵。",
+        activationModeLabel: "開啟方式",
+        activationModePressOrHold: "按下或按住",
+        activationModePress: "按下以開啟",
+        activationModeHold: "按住以選擇",
+        activationModeCaption: "按下或按住會保留目前的自適應手勢。按下模式會保持開啟；按住模式會在放開時執行醒目顯示的動作。"
     )
 }
