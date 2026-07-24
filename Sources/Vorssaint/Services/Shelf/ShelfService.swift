@@ -838,6 +838,34 @@ final class ShelfService: ObservableObject {
         return result
     }
 
+    /// Drag leaves whose payload can actually land somewhere: a file that
+    /// vanished from disk is refused by every destination, so it never joins
+    /// a session. Text and links always qualify.
+    func livingDragItems(in items: [Item]) -> [Item] {
+        items.filter { item in
+            guard case let .file(url) = item.payload else { return true }
+            return FileManager.default.fileExists(atPath: url.path)
+        }
+    }
+
+    /// Every grabbed payload is gone. Ghost-dragging dead URLs reads as "the
+    /// drag is broken", so the grab says why and retires the corpses the same
+    /// way a relaunch would. Files on unmounted volumes come back with their
+    /// drive, so they only sit the drag out and are kept.
+    func handleDeadDrag(_ items: [Item]) {
+        QuickToolHUD.show(icon: "tray.full", message: L10n.shared.s.shelfFileMissing)
+        let goneForever = items.filter { item in
+            guard case let .file(url) = item.payload else { return false }
+            let path = url.standardizedFileURL.path
+            guard let volumeRoot = ShelfPersistenceSupport.unmountedVolumeRoot(of: path) else {
+                return true
+            }
+            return FileManager.default.fileExists(atPath: volumeRoot)
+        }
+        guard !goneForever.isEmpty else { return }
+        removeItems(goneForever.map(\.id))
+    }
+
     /// File actions use the current multi-selection when the clicked tile is
     /// part of it; otherwise they stay scoped to that tile. Batches flatten to
     /// their leaves just like an external drag.

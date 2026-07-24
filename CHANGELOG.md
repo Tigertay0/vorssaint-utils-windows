@@ -62,6 +62,8 @@ and a batch of fixes.
   of leaving an adjusted app silent.
 - Paste as plain text no longer leaves the pasted style on what you type
   next in some rich text apps.
+- Dragging a Shelf item whose file was moved or deleted no longer offers a
+  drag that no destination accepts; the Shelf now says the file is gone.
 - The Drives tab no longer shows a drive's format and location twice.
 - External monitors no longer go dark while adjusting brightness, and a
   reconnected screen always comes back visible.

@@ -884,6 +884,7 @@ extension Strings {
         highlightsTry: "Dene",
         highlightsSeeAll: "Tüm değişiklikleri gör",
         switcherCurrentSpaceOnly: "Yalnızca geçerli masaüstünü göster",
-        switcherCurrentSpaceOnlyCaption: "Değiştiricide yalnızca bulunduğunuz masaüstündeki pencereler listelenir. Bir pencere seçmek sizi asla başka bir masaüstüne taşımaz."
+        switcherCurrentSpaceOnlyCaption: "Değiştiricide yalnızca bulunduğunuz masaüstündeki pencereler listelenir. Bir pencere seçmek sizi asla başka bir masaüstüne taşımaz.",
+        shelfFileMissing: "Dosya artık yok"
     )
 }

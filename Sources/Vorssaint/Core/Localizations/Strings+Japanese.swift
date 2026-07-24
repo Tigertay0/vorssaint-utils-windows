@@ -884,6 +884,7 @@ extension Strings {
         highlightsTry: "試す",
         highlightsSeeAll: "すべての変更を見る",
         switcherCurrentSpaceOnly: "現在のデスクトップのみ表示",
-        switcherCurrentSpaceOnlyCaption: "今いるデスクトップのウインドウだけをスイッチャーに表示します。ウインドウを選んでも別のデスクトップには移動しません。"
+        switcherCurrentSpaceOnlyCaption: "今いるデスクトップのウインドウだけをスイッチャーに表示します。ウインドウを選んでも別のデスクトップには移動しません。",
+        shelfFileMissing: "ファイルはもう存在しません"
     )
 }
