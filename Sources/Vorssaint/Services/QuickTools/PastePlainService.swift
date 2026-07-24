@@ -155,9 +155,17 @@ final class PastePlainService: ObservableObject {
     /// localized title, same as the mouse navigation menu press. Returns
     /// false when the app has no such command (or refuses the press) so the
     /// caller falls back to the synthesized paste.
+    /// Bundles known to carry no ⌥⇧⌘V menu item, so their menu bar is not
+    /// re-walked on every single press. An app gets another chance after a
+    /// relaunch (the pid changes) — menus rarely grow the item mid-run, and
+    /// the synthesized fallback covers it if they do.
+    private var noMatchStyleItem: [pid_t: Bool] = [:]
+
     private func pressNativeMatchStyleItem() -> Bool {
         guard let app = NSWorkspace.shared.frontmostApplication else { return false }
-        let application = AXUIElementCreateApplication(app.processIdentifier)
+        let pid = app.processIdentifier
+        if noMatchStyleItem[pid] == true { return false }
+        let application = AXUIElementCreateApplication(pid)
         // A busy target must not hold the main thread for AX's default
         // multi-second timeout; every traversed element gets the same bound.
         AXUIElementSetMessagingTimeout(application, 0.35)
@@ -166,6 +174,8 @@ final class PastePlainService: ObservableObject {
         }
         var visited = 0
         guard let item = Self.findMatchStyleItem(in: menuBar, depth: 0, visited: &visited) else {
+            noMatchStyleItem[pid] = true
+            if noMatchStyleItem.count > 64 { noMatchStyleItem.removeAll() }
             return false
         }
         return AXUIElementPerformAction(item, kAXPressAction as CFString) == .success

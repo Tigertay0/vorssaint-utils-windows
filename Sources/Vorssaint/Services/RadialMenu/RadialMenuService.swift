@@ -100,6 +100,10 @@ final class RadialMenuService: ObservableObject {
 
     func suspend() {
         hotkey.unregister()
+        // The trigger ivar must die with the tap: the settings page's button
+        // test calls syncMouseTap() on appear, and a stale trigger would let
+        // it resurrect the tap — and the wheel — with the feature off.
+        mouseTrigger = .off
         tearDownMouseTap()
         endSession()
         panel = nil

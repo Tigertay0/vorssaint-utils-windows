@@ -183,8 +183,10 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
     /// Shared by every place that presents an individual placement action.
     var symbolName: String {
         switch self {
-        case .leftHalf, .leftThird: return "rectangle.leftthird.inset.filled"
-        case .rightHalf, .rightThird: return "rectangle.rightthird.inset.filled"
+        case .leftHalf: return "rectangle.lefthalf.inset.filled"
+        case .rightHalf: return "rectangle.righthalf.inset.filled"
+        case .leftThird: return "rectangle.leftthird.inset.filled"
+        case .rightThird: return "rectangle.rightthird.inset.filled"
         case .topHalf: return "rectangle.topthird.inset.filled"
         case .bottomHalf: return "rectangle.bottomthird.inset.filled"
         case .centerThird: return "rectangle.center.inset.filled"

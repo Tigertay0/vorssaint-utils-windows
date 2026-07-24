@@ -115,6 +115,15 @@ final class WhatsAppDownloadScheduler: ObservableObject {
                 guard let self else { return }
                 switch phase {
                 case .results:
+                    // The person may have opened the review while the pass's
+                    // scan was in flight; automation must never rewrite their
+                    // checkboxes or clean under their eyes. Step aside and
+                    // try again later.
+                    guard !manager.reviewVisible else {
+                        self.runObserver = nil
+                        self.schedule(at: Date().addingTimeInterval(600))
+                        return
+                    }
                     manager.selectAutomaticRules()
                     if manager.selectedCount > 0 {
                         manager.cleanSelected(automatic: true)

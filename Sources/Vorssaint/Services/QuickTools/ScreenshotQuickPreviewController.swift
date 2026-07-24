@@ -26,7 +26,10 @@ final class ScreenshotQuickPreviewController {
 
     private let capture: ScreenshotSelectionController.Capture
     private let strings: ScreenshotFeatureStrings
-    private let action: (Action) -> Bool
+    /// Runs one action and reports which sub-actions actually happened —
+    /// save-and-copy can succeed by halves, and only the done halves gray
+    /// their buttons out. Empty means the action failed entirely.
+    private let action: (Action) -> Set<Action>
     private let onClose: () -> Void
     private let model = ScreenshotQuickPreviewModel()
     private var panel: ScreenshotQuickPreviewPanel?
@@ -37,7 +40,7 @@ final class ScreenshotQuickPreviewController {
 
     init(capture: ScreenshotSelectionController.Capture,
          strings: ScreenshotFeatureStrings,
-         action: @escaping (Action) -> Bool,
+         action: @escaping (Action) -> Set<Action>,
          onClose: @escaping () -> Void) {
         self.capture = capture
         self.strings = strings
@@ -103,23 +106,13 @@ final class ScreenshotQuickPreviewController {
         scanForQR()
     }
 
-    /// Buttons whose work the after-capture action already did, so the
-    /// preview doesn't invite doing it again. Applied only once the action
-    /// actually succeeded; a failed save leaves every button alive.
-    private static func disabledActions(for defaultAction: ScreenshotDefaultAction) -> Set<Action> {
-        switch defaultAction {
-        case .none, .edit: return []
-        case .save: return [.save]
-        case .saveAndCopy: return [.save, .copy]
-        case .copy: return [.copy]
-        }
-    }
-
     /// Runs the Settings-configured action once, right after the preview
-    /// appears, and reports whether it succeeded. Unlike `perform(_:)` this
-    /// never closes the panel: it stays up as confirmation, and the person
-    /// can still edit or discard from it. Edit never reaches here, the
-    /// service routes it straight into the editor without a preview.
+    /// appears, and reports whether anything happened. Only the halves that
+    /// actually succeeded gray their buttons out, so a failed copy leaves
+    /// Copy available. Unlike `perform(_:)` this never closes the panel: it
+    /// stays up as confirmation, and the person can still edit or discard
+    /// from it. Edit never reaches here, the service routes it straight
+    /// into the editor without a preview.
     private func runDefaultAction(_ defaultAction: ScreenshotDefaultAction) -> Bool {
         let mapped: Action
         switch defaultAction {
@@ -128,8 +121,9 @@ final class ScreenshotQuickPreviewController {
         case .saveAndCopy: mapped = .saveAndCopy
         case .copy: mapped = .copy
         }
-        guard action(mapped) else { return false }
-        model.disabledActions = Self.disabledActions(for: defaultAction)
+        let performed = action(mapped)
+        guard !performed.isEmpty else { return false }
+        model.disabledActions = performed.intersection([.save, .copy])
         return true
     }
 
@@ -198,7 +192,7 @@ final class ScreenshotQuickPreviewController {
         guard !model.disabledActions.contains(requested) else { return }
         dismissWork?.cancel()
         dismissWork = nil
-        guard action(requested) else {
+        guard !action(requested).isEmpty else {
             scheduleAutoDismiss()
             return
         }
@@ -238,8 +232,15 @@ final class ScreenshotQuickPreviewController {
             case kVK_Return, kVK_ANSI_KeypadEnter, kVK_ANSI_E:
                 self.perform(.edit)
                 return nil
-            case kVK_Delete, kVK_ForwardDelete, kVK_Escape:
+            case kVK_Delete, kVK_ForwardDelete:
                 self.perform(.discard)
+                return nil
+            case kVK_Escape:
+                // Escape only dismisses. Before the after-capture actions it
+                // was equivalent to discard; now a discard can delete a file
+                // the HUD just announced as saved, and "make this popup go
+                // away" must never do that. Deleting stays on Trash and ⌫.
+                self.close()
                 return nil
             default:
                 return event

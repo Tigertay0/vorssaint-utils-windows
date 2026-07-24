@@ -1952,7 +1952,7 @@ struct MetricsTests {
 
         expect(WhatsAppDownloadSupport.isWhatsAppAgent("WhatsApp")
                 && WhatsAppDownloadSupport.isWhatsAppAgent(" whatsapp ")
-                && !WhatsAppDownloadSupport.isWhatsAppAgent("Safari")
+                && !WhatsAppDownloadSupport.isWhatsAppAgent("SomeBrowser")
                 && !WhatsAppDownloadSupport.isWhatsAppAgent(nil),
                "only an explicit WhatsApp quarantine agent is trusted")
         expect(WhatsAppDownloadSupport.category(contentTypeIdentifier: "public.jpeg",

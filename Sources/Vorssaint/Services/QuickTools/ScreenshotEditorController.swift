@@ -691,7 +691,7 @@ final class ScreenshotEditorModel: ObservableObject {
     /// text enters its inline editor immediately.
     @discardableResult
     private func selectExistingAnnotation(at point: CGPoint) -> Bool {
-        guard let hitID = hitTest(point),
+        guard let hitID = hitTest(point, includeShapeInteriors: false),
               let hit = annotations.first(where: { $0.id == hitID })
         else {
             selectedID = nil
@@ -715,7 +715,11 @@ final class ScreenshotEditorModel: ObservableObject {
         mutate(&annotations[index])
     }
 
-    func hitTest(_ point: CGPoint) -> UUID? {
+    /// `includeShapeInteriors: false` is the creation-tap variant: area
+    /// shapes (boxes, ellipses, highlights, censors) only answer near their
+    /// edge, so their inside stays free for placing a new text, sticker or
+    /// counter — the tap that used to create one there must keep doing so.
+    func hitTest(_ point: CGPoint, includeShapeInteriors: Bool = true) -> UUID? {
         let tolerance = 10 * scale
         for annotation in annotations.reversed() {
             switch annotation.tool {
@@ -738,9 +742,22 @@ final class ScreenshotEditorModel: ObservableObject {
                     <= radius + 4 * scale {
                     return annotation.id
                 }
-        case .rect, .ellipse, .highlight, .pixelate, .redact, .text, .sticker:
-            if annotation.rect.insetBy(dx: -tolerance / 2, dy: -tolerance / 2)
-                .contains(point) {
+        case .rect, .ellipse, .highlight, .pixelate, .redact:
+                let outer = annotation.rect.insetBy(dx: -tolerance / 2, dy: -tolerance / 2)
+                guard outer.contains(point) else { continue }
+                if includeShapeInteriors {
+                    return annotation.id
+                }
+                // Edge ring only: a shape too small to have a meaningful
+                // interior stays fully tappable.
+                let inner = annotation.rect.insetBy(dx: tolerance, dy: tolerance)
+                if inner.isEmpty || inner.width <= 0 || inner.height <= 0
+                    || !inner.contains(point) {
+                    return annotation.id
+                }
+            case .text, .sticker:
+                if annotation.rect.insetBy(dx: -tolerance / 2, dy: -tolerance / 2)
+                    .contains(point) {
                     return annotation.id
                 }
             case .select, .crop:
@@ -1070,7 +1087,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         guard let image = model.exportImage(),
               let data = ScreenshotRenderer.pngData(from: image)
         else { return }
-        let (url, usedNumber) = ScreenshotService.saveDestination(strings: strings)
+        let (url, consumedNumber) = ScreenshotService.saveDestination(strings: strings)
         do {
             try data.write(to: url, options: .atomic)
             model.markExported()
@@ -1079,8 +1096,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                                               url.deletingLastPathComponent().lastPathComponent))
             window?.close()
         } catch {
-            if usedNumber {
-                ScreenshotService.rewindNumberSequence()
+            if let consumedNumber {
+                ScreenshotService.rewindNumberSequence(toReuse: consumedNumber)
             }
             NSSound.beep()
         }

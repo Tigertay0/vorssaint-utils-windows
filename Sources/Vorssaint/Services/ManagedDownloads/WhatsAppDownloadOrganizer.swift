@@ -17,6 +17,11 @@ final class WhatsAppDownloadOrganizer: ObservableObject {
         case idle, waiting, organizing, undoing
         case done(moved: Int, duplicates: Int, failed: Int)
         case failed
+
+        var isDone: Bool {
+            if case .done = self { return true }
+            return false
+        }
     }
 
     struct Record: Codable, Equatable {
@@ -215,7 +220,9 @@ final class WhatsAppDownloadOrganizer: ObservableObject {
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
         nextCheck = date
-        if !isBusy { phase = .waiting }
+        // A fresh .done stays visible as the green just-finished feedback;
+        // everything else folds into the quiet waiting state.
+        if !isBusy, !phase.isDone { phase = .waiting }
     }
 
     private func schedule(at date: Date?) {
@@ -231,8 +238,14 @@ final class WhatsAppDownloadOrganizer: ObservableObject {
         timer?.invalidate()
         timer = nil
         nextCheck = nil
-        guard !isBusy,
-              AppFeature.cleaner.isAvailable,
+        // A pass already executing keeps its phase untouched: writing .idle
+        // here would unmask the busy guard and let a second pass race the
+        // first, orphaning the first pass's records and undo transaction.
+        guard !isBusy else {
+            schedule(after: 60)
+            return
+        }
+        guard AppFeature.cleaner.isAvailable,
               UserDefaults.standard.bool(forKey: DefaultsKey.whatsAppOrganizerEnabled),
               let root = downloadsURL,
               let settings = settings(root: root) else {

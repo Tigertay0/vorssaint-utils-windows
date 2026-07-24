@@ -190,7 +190,7 @@ struct UpdateHighlightsView: View {
     /// At least one featured item survives in the hub, so the tour has a
     /// page to show. The gate reads this before opening the window.
     static var hasContent: Bool {
-        [AppFeature.mouseButtonShortcuts]
+        [AppFeature.mouseButtonShortcuts, .textSnippets]
             .contains { $0.isAvailable }
     }
 

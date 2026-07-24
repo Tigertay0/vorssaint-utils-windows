@@ -43,7 +43,12 @@ final class SnippetLibraryService: ObservableObject {
                                             fallback: .snippetLibraryDefault)
         shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut)
         if !enabled { hide() }
-        if isVisible { reloadSnippets() }
+        if isVisible {
+            reloadSnippets()
+            // Edits made in Settings can flip the panel between its list and
+            // empty states, which have different heights.
+            refreshPanelLayout()
+        }
     }
 
     func suspend() {
@@ -141,6 +146,14 @@ final class SnippetLibraryService: ObservableObject {
 
     func insert(_ snippet: TextSnippet) {
         hide()
+        // The panel never activates, so focus normally sits in the target
+        // app. When Vorssaint itself is frontmost (its Settings window, for
+        // example), the synthetic typing would land in our own fields.
+        if NSWorkspace.shared.frontmostApplication?.processIdentifier
+            == ProcessInfo.processInfo.processIdentifier {
+            NSSound.beep()
+            return
+        }
         guard AXIsProcessTrusted() else {
             if promptedForAccessibility {
                 NSSound.beep()
@@ -169,7 +182,14 @@ final class SnippetLibraryService: ObservableObject {
     private func postWhenModifiersReleased(text: String, attempt: Int) {
         let held = CGEventSource.flagsState(.combinedSessionState)
             .intersection([.maskCommand, .maskAlternate, .maskShift, .maskControl])
-        guard held.isEmpty || attempt >= 100 else {
+        // A modifier still pinned after ~1.5 s means the keyboard never came
+        // clean; typing anyway would turn every character into a shortcut in
+        // the target app. Give up audibly instead.
+        if attempt >= 100 {
+            NSSound.beep()
+            return
+        }
+        guard held.isEmpty else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.015) { [weak self] in
                 self?.postWhenModifiersReleased(text: text, attempt: attempt + 1)
             }

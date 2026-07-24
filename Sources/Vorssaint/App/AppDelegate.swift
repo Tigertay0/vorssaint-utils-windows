@@ -34,7 +34,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        UNUserNotificationCenter.current().delegate = self
+        // UNUserNotificationCenter aborts in a process without a bundle;
+        // guard keeps ad-hoc runs of the bare binary alive for probing.
+        if Bundle.main.bundleIdentifier != nil {
+            UNUserNotificationCenter.current().delegate = self
+        }
         beginStartupWatch()
         Self.boundAccessibilityWaits()
 

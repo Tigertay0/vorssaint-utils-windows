@@ -29,6 +29,9 @@ final class WhatsAppDownloadManager: ObservableObject {
         let category: WhatsAppDownloadCategory
         let managedRoot: URL
         let allowsDescendants: Bool
+        /// Filed away by the organizer: manual review still lists it, the
+        /// automation never touches it.
+        let organized: Bool
         let eligibleForRules: Bool
         let eligibleForAutomaticCleanup: Bool
         var excluded: Bool
@@ -94,17 +97,21 @@ final class WhatsAppDownloadManager: ObservableObject {
                     at: root,
                     includingPropertiesForKeys: Array(Self.resourceKeys),
                     options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])
-                var locations = sourceURLs.map { ($0, root, false) }
+                var locations = sourceURLs.map { ($0, root, false, false) }
                 for path in WhatsAppDownloadOrganizer.managedDestinationPaths() {
                     let url = URL(fileURLWithPath: path).standardizedFileURL
                     if !WhatsAppDownloadSupport.isDirectChild(url, of: root) {
-                        locations.append((url, url.deletingLastPathComponent(), false))
+                        // Organized files stay reviewable by hand but are
+                        // never trashed automatically: the person filed them
+                        // away to keep them, and the page only promises the
+                        // automation watches the top level of Downloads.
+                        locations.append((url, url.deletingLastPathComponent(), false, true))
                     }
                 }
                 let now = Date()
-                let found = locations.compactMap { url, managedRoot, recursive in
+                let found = locations.compactMap { url, managedRoot, recursive, organized in
                     Self.candidate(at: url, root: managedRoot,
-                                   allowsDescendants: recursive,
+                                   allowsDescendants: recursive, organized: organized,
                                    settings: settings, excluded: excluded, now: now)
                 }.sorted {
                     if $0.downloadedAt != $1.downloadedAt { return $0.downloadedAt > $1.downloadedAt }
@@ -199,6 +206,7 @@ final class WhatsAppDownloadManager: ObservableObject {
             for original in chosen {
                 guard let current = Self.candidate(at: original.url, root: original.managedRoot,
                                                    allowsDescendants: original.allowsDescendants,
+                                                   organized: original.organized,
                                                    settings: settings,
                                                    excluded: [], now: Date()),
                       current.id == original.id else {
@@ -270,6 +278,7 @@ final class WhatsAppDownloadManager: ObservableObject {
     private static func candidate(at url: URL,
                                   root: URL,
                                   allowsDescendants: Bool = false,
+                                  organized: Bool = false,
                                   settings: SettingsSnapshot,
                                   excluded: Set<String>,
                                   now: Date) -> Candidate? {
@@ -303,7 +312,7 @@ final class WhatsAppDownloadManager: ObservableObject {
             category: category, downloadedAt: downloadedAt, modifiedAt: modifiedAt,
             now: now, retentionDays: settings.retentionDays,
             enabledCategories: settings.categories)
-        let automatic = WhatsAppDownloadSupport.isEligibleForAutomaticCleanup(
+        let automatic = !organized && WhatsAppDownloadSupport.isEligibleForAutomaticCleanup(
             category: category, downloadedAt: downloadedAt, modifiedAt: modifiedAt,
             now: now, retentionDays: settings.retentionDays,
             enabledCategories: settings.categories,
@@ -314,7 +323,8 @@ final class WhatsAppDownloadManager: ObservableObject {
                          size: Int64(values.fileSize ?? 0),
                          downloadedAt: downloadedAt, modifiedAt: modifiedAt,
                          category: category, managedRoot: standardizedRoot,
-                         allowsDescendants: allowsDescendants, eligibleForRules: rules,
+                         allowsDescendants: allowsDescendants, organized: organized,
+                         eligibleForRules: rules,
                          eligibleForAutomaticCleanup: automatic,
                          excluded: isExcluded, include: rules && !isExcluded)
     }

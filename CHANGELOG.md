@@ -32,7 +32,7 @@ and a batch of fixes.
   choose, with undo. Thanks to @ruvelro.
 - The last capture outline in the screenshot selector can be hidden.
   Thanks to @ruvelro.
-- Hide apps from the volume mixer with a right click; the same menu brings
+- Hide apps from the volume mixer with a right click. The same menu brings
   them back.
 - Each removable drive in the Drives tab now has its own eject button.
 - Snippet triggers can ignore capitalization, and date variables accept a
@@ -42,11 +42,11 @@ and a batch of fixes.
 - Recording a shortcut keeps the keys to itself instead of triggering the
   app or the system.
 - "Open the editor right after capturing" became the Edit after-capture
-  action; existing setups keep working unchanged.
+  action, and existing setups keep working unchanged.
 
 ### Fixed
 - The App Switcher and Dock previews now show windows from other desktops
-  too; an option keeps them to the current one.
+  too, and an option keeps everything to the current one.
 - Undo works in the screenshot editor, and clicking an annotation selects
   it instead of drawing on top. Thanks to @ruvelro.
 - The Homebrew settings page no longer breaks in narrow windows.
@@ -56,7 +56,7 @@ and a batch of fixes.
 - Boosting an app's volume above 100% no longer crackles at loud moments.
 - The green button and window layout tools now resize slow browsers
   properly instead of leaving them small or misplaced.
-- Volume levels for some games and tools were not saved since 3.1.15; they
+- Volume levels for some games and tools were not saved since 3.1.15. They
   are saved again and old ones come back.
 - The mixer repairs its audio path by itself after the Mac wakes, instead
   of leaving an adjusted app silent.
