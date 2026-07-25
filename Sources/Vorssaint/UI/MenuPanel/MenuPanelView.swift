@@ -940,7 +940,7 @@ struct UtilitiesSection: View {
 
 private enum ControlPanelItem: String, PanelOrderItem, Identifiable {
     case mouseScroll, mouseNavigation, switcher, cutPaste, autoQuit, shelf, windowMaximize, dockPreview, keyDebounce,
-         dockClick, dockClickCycle, middleClick, textSnippets, radialMenu, mouseButtonShortcuts
+         dockClick, dockClickCycle, middleClick, textSnippets, radialMenu, mouseButtonShortcuts, superKey
 
     var id: String { rawValue }
 
@@ -962,6 +962,7 @@ private enum ControlPanelItem: String, PanelOrderItem, Identifiable {
         case .textSnippets: return .textSnippets
         case .radialMenu: return .radialMenu
         case .mouseButtonShortcuts: return .mouseButtonShortcuts
+        case .superKey: return .superKey
         }
     }
 }
@@ -978,7 +979,7 @@ private enum ControlCategory: String, CaseIterable, Identifiable {
         case .switcher, .dockPreview, .dockClick, .dockClickCycle, .windowMaximize, .autoQuit:
             return .windows
         case .mouseScroll, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .keyDebounce,
-             .textSnippets, .radialMenu:
+             .textSnippets, .radialMenu, .superKey:
             return .inputDevices
         case .cutPaste, .shelf:
             return .files
@@ -1017,6 +1018,7 @@ struct QuickControlsSection: View {
     @AppStorage(DefaultsKey.textSnippetsEnabled) private var textSnippetsEnabled = false
     @AppStorage(DefaultsKey.radialMenuEnabled) private var radialMenuEnabled = false
     @AppStorage(DefaultsKey.mouseButtonShortcutsEnabled) private var mouseButtonShortcutsEnabled = false
+    @AppStorage(DefaultsKey.superKeyEnabled) private var superKeyEnabled = false
     @AppStorage(DefaultsKey.panelControlMouseScroll) private var showScroll = true
     @AppStorage(DefaultsKey.panelControlMouseNavigation) private var showMouseNavigation = true
     @AppStorage(DefaultsKey.panelControlSwitcher) private var showSwitcher = true
@@ -1032,6 +1034,7 @@ struct QuickControlsSection: View {
     @AppStorage(DefaultsKey.panelControlTextSnippets) private var showTextSnippets = true
     @AppStorage(DefaultsKey.panelControlRadialMenu) private var showRadialMenu = true
     @AppStorage(DefaultsKey.panelControlMouseButtonShortcuts) private var showMouseButtonShortcuts = true
+    @AppStorage(DefaultsKey.panelControlSuperKey) private var showSuperKey = true
     @AppStorage(DefaultsKey.panelControlWindowsExpanded) private var windowsExpanded = false
     @AppStorage(DefaultsKey.panelControlInputExpanded) private var inputExpanded = false
     @AppStorage(DefaultsKey.panelControlFilesExpanded) private var filesExpanded = false
@@ -1146,6 +1149,7 @@ struct QuickControlsSection: View {
         case .textSnippets: return textSnippetsEnabled
         case .radialMenu: return radialMenuEnabled
         case .mouseButtonShortcuts: return mouseButtonShortcutsEnabled
+        case .superKey: return superKeyEnabled
         }
     }
 
@@ -1218,6 +1222,7 @@ struct QuickControlsSection: View {
         case .textSnippets: return showTextSnippets
         case .radialMenu: return showRadialMenu
         case .mouseButtonShortcuts: return showMouseButtonShortcuts
+        case .superKey: return showSuperKey
         }
     }
 
@@ -1506,6 +1511,28 @@ struct QuickControlsSection: View {
                     MouseButtonShortcutService.shared.syncWithPreferences()
                     requestAccessibilityIfNeeded(enabled)
                 }
+        case .superKey:
+            let superKeyStrings = FeatureStrings.superKey(l10n.language)
+            PanelToggleRow(title: superKeyStrings.pageTitle,
+                           caption: caption(superKeyStrings.panelCaption,
+                                            needsAccessibility: superKeyEnabled),
+                           systemImage: "capslock",
+                           isOn: $superKeyEnabled,
+                           isEditing: editing,
+                           showsDragHandle: true,
+                           visibility: $showSuperKey,
+                           needsAttention: superKeyEnabled && !permissions.accessibility,
+                           permissionButtonTitle: l10n.s.permissionRequest,
+                           permissionAction: accessibilityPermissionAction(superKeyEnabled),
+                           accessoryTitle: superKeyEnabled ? superKeyStrings.manageButton : nil,
+                           accessoryAction: {
+                               SettingsRouter.shared.page = .superKey
+                               appDelegate()?.openSettingsWindow()
+                           })
+                .onChange(of: superKeyEnabled) { _, enabled in
+                    SuperKeyService.shared.syncWithPreferences()
+                    requestAccessibilityIfNeeded(enabled)
+                }
         }
     }
 
@@ -1534,6 +1561,7 @@ struct QuickControlsSection: View {
         showTextSnippets = true
         showRadialMenu = true
         showMouseButtonShortcuts = true
+        showSuperKey = true
         windowsExpanded = false
         inputExpanded = false
         filesExpanded = false

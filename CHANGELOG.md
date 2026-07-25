@@ -7,10 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [3.2.0]
 
 ### Summary
-Vorssaint 3.2.0 adds a searchable snippet menu, mouse button shortcuts,
-screenshot autopilot and new radial menu slices, and the Cleaner can tidy
-WhatsApp downloads. Plus windows from other desktops in the App Switcher
-and a batch of fixes.
+Vorssaint 3.2.0 adds a searchable snippet menu, a super key on Caps Lock,
+mouse button shortcuts, screenshot autopilot and new radial menu slices, and
+the Cleaner can tidy WhatsApp downloads. Plus windows from other desktops in
+the App Switcher and a batch of fixes.
 
 ### Added
 - A snippet menu. A shortcut opens your snippets in a searchable list and
@@ -41,6 +41,8 @@ and a batch of fixes.
   wheel and the buttons their own way. Under Mouse.
 - The app can stay light or dark on its own, apart from the Mac. Under
   General.
+- A super key. Hold Caps Lock and it becomes Shift, Control, Option and
+  Command together, for shortcuts nothing else uses. Under Super key.
 
 ### Changed
 - Recording a shortcut keeps the keys to itself instead of triggering the
