@@ -61,6 +61,15 @@ struct UpdateHighlightsView: View {
                 actionLabel: s.highlightsConfigure,
                 action: { openSettings(.mouse) }))
         }
+        if AppFeature.superKey.isAvailable {
+            pages.append(Highlight(
+                id: "superkey", symbol: AppFeature.superKey.symbolName,
+                imageName: "highlights-superkey",
+                title: AppFeature.superKey.hubTitle(s, hub: hub),
+                caption: AppFeature.superKey.hubDescription(hub),
+                actionLabel: s.highlightsConfigure,
+                action: { openSettings(.superKey) }))
+        }
         return pages
     }
 
@@ -190,7 +199,7 @@ struct UpdateHighlightsView: View {
     /// At least one featured item survives in the hub, so the tour has a
     /// page to show. The gate reads this before opening the window.
     static var hasContent: Bool {
-        [AppFeature.mouseButtonShortcuts, .textSnippets]
+        [AppFeature.mouseButtonShortcuts, .textSnippets, .superKey]
             .contains { $0.isAvailable }
     }
 
