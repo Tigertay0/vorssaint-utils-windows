@@ -81,6 +81,8 @@ and a batch of fixes.
 - Minimizing several windows from the Dock icon animates them together
   again, and restoring them ends with the right window on top and
   focused. Thanks to @Zvzdov.
+- Monitor blocks in the menu bar sit centered again on macOS 26 and
+  earlier. Thanks to @wzxu.
 
 ## [3.1.15] - 2026-07-21
 
