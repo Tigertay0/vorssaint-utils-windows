@@ -102,6 +102,8 @@ if (( TEST )); then
         Sources/Vorssaint/Core/ScratchpadStrings.swift \
         Sources/Vorssaint/Core/RadialMenuStrings.swift \
         Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift \
+        Sources/Vorssaint/Core/AppAppearance.swift \
+        Sources/Vorssaint/Core/AppearanceStrings.swift \
         Sources/Vorssaint/Core/BatteryTimeStrings.swift \
         Sources/Vorssaint/Core/KeepAwakeStrings.swift \
         Sources/Vorssaint/Core/PermissionGuideStrings.swift \

@@ -39,6 +39,8 @@ and a batch of fixes.
   format, like {{date:yyyy-MM-dd}}.
 - Each mouse feature can name apps to leave alone, for apps that use the
   wheel and the buttons their own way. Under Mouse.
+- The app can stay light or dark on its own, apart from the Mac. Under
+  General.
 
 ### Changed
 - Recording a shortcut keeps the keys to itself instead of triggering the

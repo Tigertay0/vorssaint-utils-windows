@@ -8,6 +8,7 @@ import Foundation
 /// Every UserDefaults key used by the app, in one place.
 enum DefaultsKey {
     static let language = "appLanguage"                   // AppLanguage.rawValue
+    static let appearance = "appAppearance"               // AppAppearance.rawValue
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
     static let onboardingStep = "onboardingStep"          // resume point if onboarding is interrupted
     static let featuresOnboardingVersion = "featuresOnboardingVersion" // last feature-tour marker handled
@@ -579,6 +580,7 @@ enum Defaults {
     static let allowedMonitorAlertCooldowns = [2, 5, 15, 30, 60]
 
     static let registeredDefaults: [String: Any] = [
+        DefaultsKey.appearance: AppAppearance.fallback.rawValue,
         DefaultsKey.clamshellPreferred: false,
         DefaultsKey.defaultDuration: 0,
         DefaultsKey.batteryLimit: 10,

@@ -45,7 +45,9 @@ struct SettingsView: View {
             (categories.essentials, [
                 SidebarItem(page: .general, title: l10n.s.tabGeneral, icon: "gearshape",
                             keywords: [l10n.s.launchAtLogin, l10n.s.languageLabel, l10n.s.showMenuBarIcon,
-                                       l10n.s.musicBlockTitle, l10n.s.musicBlockSection]),
+                                       l10n.s.musicBlockTitle, l10n.s.musicBlockSection,
+                                       FeatureStrings.appearance(l10n.language).label,
+                                       FeatureStrings.appearance(l10n.language).dark]),
                 // Searching any feature name lands here even when the feature
                 // is hidden, so the hub is always the way back.
                 SidebarItem(page: .features, title: FeatureStrings.hub(l10n.language).pageTitle,
@@ -252,6 +254,7 @@ struct SettingsView: View {
 
 struct GeneralSettings: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var appearance = AppAppearanceController.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var hotkeys = HotkeyManager.shared
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
@@ -260,6 +263,8 @@ struct GeneralSettings: View {
     @AppStorage(DefaultsKey.showCountdown) private var showCountdown = false
     @AppStorage(DefaultsKey.musicBlockEnabled) private var musicBlockEnabled = false
     @AppStorage(DefaultsKey.musicBlockReplacementPath) private var musicBlockReplacementPath = ""
+
+    private var appearanceStrings: AppearanceStrings { FeatureStrings.appearance(l10n.language) }
 
     var body: some View {
         Form {
@@ -285,6 +290,12 @@ struct GeneralSettings: View {
                         Text(language.displayName).tag(language)
                     }
                 }
+                Picker(appearanceStrings.label, selection: $appearance.appearance) {
+                    ForEach(AppAppearance.allCases) { option in
+                        Text(option.title(appearanceStrings)).tag(option)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
             Section(l10n.s.menuBarSection) {
                 if AppFeature.keepAwake.isAvailable {

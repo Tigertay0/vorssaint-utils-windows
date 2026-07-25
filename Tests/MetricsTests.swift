@@ -937,6 +937,15 @@ struct MetricsTests {
         // MARK: Registered defaults
 
         let registeredDefaults = Defaults.registeredDefaults
+        expect(registeredDefaults[DefaultsKey.appearance] as? String == AppAppearance.system.rawValue,
+               "the app follows the system appearance until the user picks a side")
+        expect(AppAppearance.sanitized(nil) == .system
+                && AppAppearance.sanitized("nonsense") == .system,
+               "an unknown stored appearance falls back to the system one")
+        expect(AppAppearance.sanitized("dark") == .dark && AppAppearance.sanitized("light") == .light,
+               "stored appearance values survive a relaunch")
+        expect(AppAppearance.allCases.map(\.rawValue) == ["system", "light", "dark"],
+               "appearance raw values are persisted keys and their order is the picker order")
         expect(registeredDefaults[DefaultsKey.keepAwakeAutoStart] as? Bool == false,
                "Keep Awake launch restore is opt-in")
         expect(registeredDefaults[DefaultsKey.keepAwakeExternalDisplay] as? Bool == false,
@@ -6102,6 +6111,12 @@ struct MetricsTests {
                    "every menu bar appearance string is set for \(language.rawValue)")
             expect(menuBarAppearanceValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible menu bar appearance strings (\(language.rawValue))")
+            let appearanceValues = Mirror(reflecting: FeatureStrings.appearance(language)).children
+                .compactMap { $0.value as? String }
+            expect(appearanceValues.count == 4 && appearanceValues.allSatisfy { !$0.isEmpty },
+                   "every appearance string is set for \(language.rawValue)")
+            expect(appearanceValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible appearance strings (\(language.rawValue))")
             let screenshotValues = Mirror(reflecting: FeatureStrings.screenshot(language)).children
                 .compactMap { $0.value as? String }
             expect(!screenshotValues.isEmpty && screenshotValues.allSatisfy { !$0.isEmpty },
@@ -7610,6 +7625,8 @@ struct MetricsTests {
                "backup carries preferences, menu bar pins, Keep Awake appearance, language and hub availability")
         expect(backupKeys.contains(DefaultsKey.launchAtLoginWanted),
                "the launch at login choice travels with the settings backup")
+        expect(backupKeys.contains(DefaultsKey.appearance),
+               "the light or dark choice travels with the settings backup")
         expect(backupKeys.contains(DefaultsKey.textSnippets)
                 && backupKeys.contains(DefaultsKey.textSnippetsEnabled),
                "snippets travel with the settings backup")
