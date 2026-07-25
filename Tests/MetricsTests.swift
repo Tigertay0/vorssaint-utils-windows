@@ -6137,7 +6137,7 @@ struct MetricsTests {
                    "no em-dash in visible radial menu strings (\(language.rawValue))")
             let scratchpadValues = Mirror(reflecting: FeatureStrings.scratchpad(language)).children
                 .compactMap { $0.value as? String }
-            expect(scratchpadValues.count == 15 && scratchpadValues.allSatisfy { !$0.isEmpty },
+            expect(scratchpadValues.count == 16 && scratchpadValues.allSatisfy { !$0.isEmpty },
                    "every scratchpad string is set for \(language.rawValue)")
             expect(scratchpadValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible scratchpad strings (\(language.rawValue))")
@@ -7373,6 +7373,10 @@ struct MetricsTests {
                "the scratchpad panel row ships visible like its siblings")
         expect(Defaults.registeredDefaults[DefaultsKey.scratchpadRetention] as? String == "never",
                "the scratchpad keeps text until cleared by default")
+        expect(Defaults.registeredDefaults[DefaultsKey.scratchpadCloseOnClickOutside] as? Bool == true,
+               "a click outside puts the scratchpad away unless the user keeps it floating")
+        expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.scratchpadCloseOnClickOutside),
+               "the scratchpad dismissal choice travels with the settings backup")
         expect(GlobalShortcutRole.scratchpad.requiredEnableKeys == [DefaultsKey.scratchpadShortcutEnabled]
                 && GlobalShortcutRole.scratchpad.feature == .scratchpad,
                "the scratchpad shortcut role gates on its toggle and feature")

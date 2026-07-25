@@ -47,6 +47,8 @@ and a batch of fixes.
   app or the system.
 - "Open the editor right after capturing" became the Edit after-capture
   action, and existing setups keep working unchanged.
+- The scratchpad now closes when you click outside it. A toggle under Quick
+  tools keeps it floating instead.
 
 ### Fixed
 - The app pickers list every app again, including the ones macOS keeps
