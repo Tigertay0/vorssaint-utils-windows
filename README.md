@@ -91,6 +91,7 @@ The rest bends the same way: panel sections reorder and hide, the compact layout
 - **Side buttons.** The mouse Back and Forward buttons start meaning it, in Finder, browsers and compatible apps.
 - **Mouse button shortcuts.** Give any extra mouse button a key combination of your choice. Click add, press the button, record the keys.
 - **Middle click.** A three finger press becomes a real middle click.
+- **Apps to leave alone.** Every feature above can name apps that drive themselves with the mouse, like 3D and design tools, and it steps aside in those.
 - **Key debounce.** Filters the double letters a worn keyboard invents.
 
 ### Clipboard, files and links

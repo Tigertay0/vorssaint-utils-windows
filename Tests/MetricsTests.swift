@@ -7512,6 +7512,91 @@ struct MetricsTests {
                 && MouseButtonShortcutSupport.buttonName(for: 5, strings: .enUS) == "Button 6",
                "buttons are named by their job or their printed count")
 
+        // MARK: Mouse app exceptions (issue #358)
+
+        expect(MouseExceptionScope.allCases.allSatisfy {
+                    (Defaults.registeredDefaults[$0.defaultsKey] as? [String])?.isEmpty == true
+               },
+               "every feature's exception list registers empty, so they all start out working everywhere")
+        expect(Set(MouseExceptionScope.allCases.map(\.defaultsKey)).count == MouseExceptionScope.allCases.count,
+               "each feature keeps its own list, never a key shared with another")
+        expect(MouseExceptionScope.smoothScroll.feature == .smoothScroll
+                && MouseExceptionScope.scrollDirection.feature == .scrollInverter
+                && MouseExceptionScope.navigation.feature == .mouseNavigation
+                && MouseExceptionScope.buttonShortcuts.feature == .mouseButtonShortcuts
+                && MouseExceptionScope.middleClick.feature == .middleClick,
+               "each list knows the feature that owns it, so it hides with that feature")
+        expect(MouseExceptionScope.allCases.allSatisfy { $0.feature.group == .mouseKeyboard },
+               "every exception list belongs to a mouse feature")
+        expect(Defaults.sanitizedBundleIdentifierList(["  com.example.a  ", "", "com.example.a", "com.example.b"])
+                == ["com.example.a", "com.example.b"],
+               "the exception list drops blanks, spaces and repeats")
+
+        let exceptionSet: Set<String> = ["com.example.modeler"]
+        expect(MouseAppExceptionSupport.isExcepted("com.example.modeler", exceptions: exceptionSet)
+                && !MouseAppExceptionSupport.isExcepted("com.example.other", exceptions: exceptionSet)
+                && !MouseAppExceptionSupport.isExcepted(nil, exceptions: exceptionSet)
+                && !MouseAppExceptionSupport.isExcepted("com.example.modeler", exceptions: []),
+               "an app is excepted only when its identifier is on a list that has entries")
+
+        let pointer = CGPoint(x: 100, y: 100)
+        let ownWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 0, y: 0, width: 400, height: 400), layer: 0, processID: 9)
+        let systemWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 0, y: 0, width: 400, height: 400), layer: 25, processID: 3)
+        let hiddenWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 0, y: 0, width: 400, height: 400), layer: 0, alpha: 0, processID: 4)
+        let frontWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 50, y: 50, width: 300, height: 300), layer: 0, processID: 5)
+        let panelWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 60, y: 60, width: 100, height: 100), layer: 3, processID: 6)
+        let behindWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 0, y: 0, width: 400, height: 400), layer: 0, processID: 7)
+        let underlayWindow = MouseAppExceptionSupport.Window(
+            frame: CGRect(x: 0, y: 0, width: 400, height: 400), layer: -2_147_483_601, processID: 8)
+        expect(MouseAppExceptionSupport.pointerWindow(
+                in: [ownWindow, systemWindow, hiddenWindow, frontWindow, behindWindow],
+                at: pointer, ownProcessID: 9) == frontWindow,
+               "the pointer's window is the frontmost real window under it")
+        expect(MouseAppExceptionSupport.pointerWindow(
+                in: [underlayWindow], at: pointer, ownProcessID: 9) == nil,
+               "a window living below every real one never answers for the pointer")
+        expect(MouseAppExceptionSupport.pointerWindow(
+                in: [panelWindow, frontWindow], at: pointer, ownProcessID: 9) == panelWindow,
+               "an app's floating panel answers for its app")
+        expect(MouseAppExceptionSupport.pointerWindow(
+                in: [frontWindow], at: CGPoint(x: 380, y: 380), ownProcessID: 9) == nil,
+               "a pointer outside every window resolves to nothing")
+
+        expect(MouseAppExceptionSupport.cacheHolds(region: frontWindow.frame, resolvedPoint: pointer,
+                                                   resolvedAt: 10, point: CGPoint(x: 120, y: 120), now: 10.2),
+               "a fresh answer keeps serving while the pointer stays inside its window")
+        expect(!MouseAppExceptionSupport.cacheHolds(region: frontWindow.frame, resolvedPoint: pointer,
+                                                    resolvedAt: 10, point: CGPoint(x: 380, y: 380), now: 10.2),
+               "the pointer leaving the window asks the window server again")
+        expect(!MouseAppExceptionSupport.cacheHolds(region: frontWindow.frame, resolvedPoint: pointer,
+                                                    resolvedAt: 10, point: pointer,
+                                                    now: 10 + MouseAppExceptionSupport.resolveLifetime),
+               "an answer expires, so a window that opened under a resting pointer is noticed")
+        expect(MouseAppExceptionSupport.cacheHolds(region: nil, resolvedPoint: pointer,
+                                                   resolvedAt: 10, point: pointer, now: 10.2)
+                && !MouseAppExceptionSupport.cacheHolds(region: nil, resolvedPoint: pointer,
+                                                        resolvedAt: 10,
+                                                        point: CGPoint(x: 101, y: 100), now: 10.2),
+               "an answer of nothing only covers the exact spot it was resolved at")
+
+        for language in AppLanguage.allCases {
+            let strings = FeatureStrings.mouseExceptions(language)
+            let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
+            expect(!values.isEmpty && values.allSatisfy { !$0.isEmpty },
+                   "every mouse exception string is set for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible mouse exception strings (\(language.rawValue))")
+            expect(Set(MouseExceptionScope.allCases.map { strings.caption(for: $0) }).count
+                    == MouseExceptionScope.allCases.count,
+                   "each list explains its own feature, never the same line twice (\(language.rawValue))")
+        }
+
         // MARK: Settings backup
 
         let backupKeys = SettingsBackupSupport.exportKeys()
@@ -7581,6 +7666,8 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.mouseButtonShortcuts)
                 && backupKeys.contains(DefaultsKey.panelControlMouseButtonShortcuts),
                "mouse button shortcuts travel with the settings backup")
+        expect(MouseExceptionScope.allCases.allSatisfy { backupKeys.contains($0.defaultsKey) },
+               "the apps each mouse feature leaves alone travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.panelShowToggles)
                 && backupKeys.contains(DefaultsKey.panelToggleOrder)
                 && backupKeys.contains(DefaultsKey.panelToggleDarkMode),

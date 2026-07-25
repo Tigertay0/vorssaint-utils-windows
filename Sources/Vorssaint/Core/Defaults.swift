@@ -39,6 +39,12 @@ enum DefaultsKey {
     static let mouseNavigationEnabled = "mouseNavigationEnabled" // side buttons trigger Back and Forward
     static let mouseButtonShortcutsEnabled = "mouseButtonShortcutsEnabled" // extra buttons press a key combination (issue #282)
     static let mouseButtonShortcuts = "mouseButtonShortcuts" // [button number: GlobalShortcut storage value]
+    // One list of bundle ids per mouse feature: apps it leaves alone (issue #358).
+    static let smoothScrollExceptions = "smoothScrollExceptions"
+    static let scrollInverterExceptions = "scrollInverterExceptions"
+    static let mouseNavigationExceptions = "mouseNavigationExceptions"
+    static let mouseButtonExceptions = "mouseButtonExceptions"
+    static let middleClickExceptions = "middleClickExceptions"
     static let switcherEnabled = "switcherEnabled"
     static let switcherShortcut = "switcherShortcut"      // GlobalShortcut storage value
     static let switcherWindowShortcut = "switcherWindowShortcut" // GlobalShortcut storage value
@@ -593,6 +599,11 @@ enum Defaults {
         DefaultsKey.mouseNavigationEnabled: false,
         DefaultsKey.mouseButtonShortcutsEnabled: false,
         DefaultsKey.mouseButtonShortcuts: [String: String](),
+        DefaultsKey.smoothScrollExceptions: [],
+        DefaultsKey.scrollInverterExceptions: [],
+        DefaultsKey.mouseNavigationExceptions: [],
+        DefaultsKey.mouseButtonExceptions: [],
+        DefaultsKey.middleClickExceptions: [],
         DefaultsKey.switcherEnabled: true,
         DefaultsKey.switcherShortcut: "command:48",
         DefaultsKey.switcherWindowShortcut: GlobalShortcut.switcherWindowDefault.storageValue,

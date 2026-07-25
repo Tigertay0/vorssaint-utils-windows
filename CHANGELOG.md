@@ -37,6 +37,8 @@ and a batch of fixes.
 - Each removable drive in the Drives tab now has its own eject button.
 - Snippet triggers can ignore capitalization, and date variables accept a
   format, like {{date:yyyy-MM-dd}}.
+- Each mouse feature can name apps to leave alone, for apps that use the
+  wheel and the buttons their own way. Under Mouse.
 
 ### Changed
 - Recording a shortcut keeps the keys to itself instead of triggering the
@@ -45,6 +47,8 @@ and a batch of fixes.
   action, and existing setups keep working unchanged.
 
 ### Fixed
+- The app pickers list every app again, including the ones macOS keeps
+  outside the applications folder.
 - The App Switcher and Dock previews now show windows from other desktops
   too, and an option keeps everything to the current one.
 - Undo works in the screenshot editor, and clicking an annotation selects

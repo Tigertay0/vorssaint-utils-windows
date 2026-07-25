@@ -72,7 +72,8 @@ struct SettingsView: View {
                 SidebarItem(page: .mouse, title: l10n.s.tabMouse, icon: "computermouse",
                             keywords: [l10n.s.invertMouseScroll, l10n.s.middleClickTapPicker,
                                        l10n.s.smoothScrollName, l10n.s.mouseNavigationEnable,
-                                       FeatureStrings.mouseButtons(l10n.language).pageTitle]),
+                                       FeatureStrings.mouseButtons(l10n.language).pageTitle,
+                                       FeatureStrings.mouseExceptions(l10n.language).listTitle]),
                 SidebarItem(page: .switcher, title: l10n.s.tabSwitcher, icon: "rectangle.on.rectangle",
                             keywords: [l10n.s.switcherEnable, l10n.s.dockClickMinimize,
                                        l10n.s.dockClickCycleWindows]),
@@ -717,6 +718,9 @@ struct MouseSettings: View {
                     Text(l10n.s.scrollTrackpadNote)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if inverterEnabled {
+                        MouseExceptionsList(scope: .scrollDirection)
+                    }
                 }
             }
             if AppFeature.smoothScroll.isAvailable {
@@ -740,6 +744,7 @@ struct MouseSettings: View {
                                 .foregroundStyle(.secondary)
                                 .frame(width: 34, alignment: .trailing)
                         }
+                        MouseExceptionsList(scope: .smoothScroll)
                     }
                 }
             }
@@ -756,6 +761,9 @@ struct MouseSettings: View {
                         Label(l10n.s.mouseNavigationActiveNow, systemImage: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundStyle(.green)
+                    }
+                    if mouseNavigationEnabled {
+                        MouseExceptionsList(scope: .navigation)
                     }
                 }
             }
@@ -788,6 +796,9 @@ struct MouseSettings: View {
                         Text(l10n.s.middleClickDragConflict)
                             .font(.caption)
                             .foregroundStyle(.orange)
+                    }
+                    if middleClickEnabled {
+                        MouseExceptionsList(scope: .middleClick)
                     }
                 }
             }

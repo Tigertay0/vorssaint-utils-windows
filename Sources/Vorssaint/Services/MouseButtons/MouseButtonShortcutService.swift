@@ -172,6 +172,13 @@ final class MouseButtonShortcutService: ObservableObject {
                 consumedButtons.insert(button)
                 return nil
             }
+            // An app on the exception list keeps its buttons: the press goes
+            // through whole and no shortcut is sent (issue #358). Capture is
+            // above on purpose, so a button can still be added from Settings
+            // while such an app is in front.
+            guard !MouseAppExceptions.shared.excludesActionTarget(.buttonShortcuts, at: event.location) else {
+                return Unmanaged.passUnretained(event)
+            }
             guard let shortcut = MouseButtonShortcutSupport.firesShortcut(
                 for: button,
                 isAvailable: AppFeature.mouseButtonShortcuts.isAvailable,
