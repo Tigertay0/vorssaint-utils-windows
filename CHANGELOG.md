@@ -53,6 +53,8 @@ the App Switcher and a batch of fixes.
   tools keeps it floating instead.
 
 ### Fixed
+- Muting the microphone now cuts every microphone, not only the one macOS
+  is set to. An app pointed at a headset of its own goes quiet too.
 - The app pickers list every app again, including the ones macOS keeps
   outside the applications folder.
 - The App Switcher and Dock previews now show windows from other desktops

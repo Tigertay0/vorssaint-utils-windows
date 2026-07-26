@@ -60,7 +60,7 @@ The rest bends the same way: panel sections reorder and hide, the compact layout
 - **Volume mixer.** Slide any single app up or down while the rest of the Mac stays put, and push a quiet one past 100 percent when a video is just too low. Hide the apps you never adjust to keep the list short. No audio driver, no setup.
 - **Per app output.** Send your music to the speakers and a call to your headset at the same time.
 - **Output switcher.** Cycle between chosen outputs with one shortcut, and drop the volume automatically when headphones disconnect.
-- **Microphone tools.** Pin your favorite input so the Mac stops guessing, and mute the mic everywhere with a click or shortcut.
+- **Microphone tools.** Pin your favorite input so the Mac stops guessing, and mute every microphone at once with a click or shortcut, whichever one an app is using.
 - **Music app blocker.** Stops the Music app from bursting in when headphones connect.
 
 ### Know what your Mac is doing

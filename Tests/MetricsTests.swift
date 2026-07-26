@@ -5560,6 +5560,7 @@ struct MetricsTests {
             let highlightsStrings = [strings.highlightsTitle, strings.highlightsCaptionDockPreview,
                                      strings.highlightsCaptionScreenshot,
                                      strings.highlightsCaptionSnippetLibrary,
+                                     strings.highlightsCaptionMicMute,
                                      strings.highlightsConfigure,
                                      strings.highlightsTry, strings.highlightsSeeAll]
             expect(highlightsStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
@@ -7419,6 +7420,35 @@ struct MetricsTests {
                 && scratchpadExportName.count == "Scratchpad ".count + 14,
                "scratchpad export file name is the title plus the local date")
 
+        // Muting every microphone, not just the one the Mac is set to: an app
+        // pointed at a device of its own has to go silent too.
+        expect(MicMuteSupport.isOwnDevice(name: "Vorssaint Mixer")
+                && !MicMuteSupport.isOwnDevice(name: "MacBook Air Microphone"),
+               "the mute skips the app's own mixing device and no other")
+        expect(!MicMuteSupport.shouldSaveVolume(nil)
+                && !MicMuteSupport.shouldSaveVolume(0)
+                && !MicMuteSupport.shouldSaveVolume(0.005)
+                && MicMuteSupport.shouldSaveVolume(0.4),
+               "a level worth restoring is remembered and a silent one never is")
+        expect(MicMuteSupport.volumeToRestore(uid: "mic-a",
+                                              saved: ["mic-a": 0.4, "mic-b": 0.9],
+                                              legacy: 0.6) == 0.4
+                && MicMuteSupport.volumeToRestore(uid: "mic-c",
+                                                  saved: ["mic-a": 0.4],
+                                                  legacy: 0.6) == 0.6
+                && MicMuteSupport.volumeToRestore(uid: "mic-c", saved: [:], legacy: 0)
+                    == MicMuteSupport.fallbackVolume
+                && MicMuteSupport.volumeToRestore(uid: "mic-a",
+                                                  saved: ["mic-a": 0],
+                                                  legacy: 0) == MicMuteSupport.fallbackVolume,
+               "each microphone gets its own level back, then the older single level, then a usable one")
+        expect(MicMuteSupport.restoreTargets(recorded: ["mic-a", "gone"],
+                                             present: ["mic-a", "mic-b"]) == ["mic-a"]
+                && MicMuteSupport.restoreTargets(recorded: [],
+                                                 present: ["mic-a", "mic-b"]) == ["mic-a", "mic-b"]
+                && MicMuteSupport.restoreTargets(recorded: ["mic-a"], present: []).isEmpty,
+               "unmuting touches the microphones this app muted, and every one of them when it knows of none")
+
         expect(Defaults.registeredDefaults[DefaultsKey.radialMenuEnabled] as? Bool == false,
                "the radial menu ships off by default")
         expect(Defaults.registeredDefaults[DefaultsKey.radialMenuShortcut] as? String
@@ -7808,6 +7838,8 @@ struct MetricsTests {
                 && !backupKeys.contains(DefaultsKey.shelfItems)
                 && !backupKeys.contains(DefaultsKey.sleepDisabledFlag)
                 && !backupKeys.contains(DefaultsKey.micMuteActive)
+                && !backupKeys.contains(DefaultsKey.micMuteSavedVolumes)
+                && !backupKeys.contains(DefaultsKey.micMuteMutedDevices)
                 && !backupKeys.contains(DefaultsKey.cleanerLastAutoRun)
                 && !backupKeys.contains(DefaultsKey.statusItemPlacementGeneration)
                 && !backupKeys.contains(DefaultsKey.displaysSwitchedOff),
