@@ -1887,8 +1887,6 @@ struct MetricsTests {
                "the schedule defaults to nine in the morning on Mondays")
         expect(registeredDefaults[DefaultsKey.cleanerScheduleNotify] as? Bool == true,
                "the schedule reports its outcome unless the user opts out")
-        expect(registeredDefaults[DefaultsKey.cleanerBadgeSeen] as? Bool == false,
-               "the red dot guiding to the cleaner shows until the cleaner opens once")
         expect(registeredDefaults[DefaultsKey.whatsAppDownloadsAutomaticEnabled] as? Bool == false,
                "WhatsApp automatic cleanup is opt-in")
         expect(registeredDefaults[DefaultsKey.whatsAppDownloadsCategories] as? String

@@ -56,6 +56,8 @@ new radial menu slices and a batch of fixes.
   tools keeps it floating instead.
 
 ### Fixed
+- The red dot in the panel is gone. It marked the Cleaner as new since an
+  older version and could stay on screen for good.
 - Showing the menu bar icon again waits for macOS to place it before
   reporting a problem.
 - Brightness keys step from where the monitor actually is. After a pause the
