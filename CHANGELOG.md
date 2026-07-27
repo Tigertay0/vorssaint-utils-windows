@@ -56,6 +56,8 @@ new radial menu slices and a batch of fixes.
   tools keeps it floating instead.
 
 ### Fixed
+- Brightness keys step from where the monitor actually is. After a pause the
+  monitor is asked first, so a screen at 80% no longer drops to one step.
 - Brightness keys and sliders reach an external monitor again after the Mac
   has slept. The connection is looked up fresh on waking.
 - Copy text from screen works again. The area is now picked with the app's

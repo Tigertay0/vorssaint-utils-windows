@@ -8160,6 +8160,29 @@ struct MetricsTests {
                 .contains(.appUpdates),
                "with the schedule off, app updates need no notification permission")
 
+        // MARK: Brightness key base (issue #370)
+
+        let pressed = Date(timeIntervalSince1970: 1_800_000_000)
+        expect(BrightnessSupport.trustsRememberedLevel(lastKnownAt: pressed,
+                                                       now: pressed.addingTimeInterval(1),
+                                                       window: 3),
+               "a level written a moment ago is still the running value")
+        expect(!BrightnessSupport.trustsRememberedLevel(lastKnownAt: pressed,
+                                                        now: pressed.addingTimeInterval(3),
+                                                        window: 3),
+               "a level older than the window is asked about again")
+        expect(!BrightnessSupport.trustsRememberedLevel(lastKnownAt: nil,
+                                                        now: pressed, window: 3),
+               "a display never written to is asked about")
+        expect(!BrightnessSupport.trustsRememberedLevel(lastKnownAt: pressed.addingTimeInterval(60),
+                                                        now: pressed, window: 3),
+               "a clock that jumped backwards never makes a stale level look fresh")
+        // The step itself is unchanged; what changed is the value it starts
+        // from, so the arithmetic stays pinned.
+        expect(BrightnessSupport.steppedBrightness(0.8, delta: 1 / 16.0) > 0.8
+                && BrightnessSupport.steppedBrightness(0.0, delta: 1 / 16.0) > 0,
+               "a step still moves in the direction asked for")
+
         // MARK: Result
 
         if failures.isEmpty {
