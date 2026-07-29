@@ -12,8 +12,8 @@ import CoreGraphics
 /// are minimized or parked on other Spaces are included when WindowServer
 /// exposes them. Fullscreen windows on other Spaces can be missing from that
 /// list, so Accessibility supplies a second pass for real app windows by id.
-/// The result is then ordered by the app activation MRU (see
-/// `AppActivationTracker`), so the switcher matches the system ⌘Tab toggle.
+/// The result is then ordered by how recently each window was used (see
+/// `WindowUseTracker`), so the switcher matches the system ⌘Tab toggle.
 /// Window titles require Screen Recording on modern macOS; Vorssaint's own
 /// titled windows use NSWindow metadata so Settings remains reachable even
 /// though the app is a menu-bar accessory.
@@ -53,6 +53,14 @@ enum WindowEnumerator {
 
         let ownPid = ProcessInfo.processInfo.processIdentifier
         let runningApps = NSWorkspace.shared.runningApplications
+        // Bring the use history up to date before ordering by it: windows that
+        // are gone leave, and any window that appeared without ever taking
+        // focus is filed by the window server's front-to-back order.
+        let frontToBack = WindowUseTracker.frontToBack()
+        WindowUseTracker.shared.reconcile(
+            existingWindows: Set(raw.compactMap { $0[kCGWindowNumber as String] as? CGWindowID }),
+            frontToBack: frontToBack,
+            running: Set(runningApps.map(\.processIdentifier)))
         var regularApps: [pid_t: String] = [:]
         var regularBundlePaths: [pid_t: String] = [:]
         for app in runningApps where app.activationPolicy == .regular {
@@ -221,7 +229,7 @@ enum WindowEnumerator {
         if groupByApp {
             windows = groupWindowsByApp(windows)
         }
-        let ordered = orderByActivation(windows)
+        let ordered = orderByUse(windows, frontToBack: frontToBack)
         guard ordered.count > maximumCount else { return ordered }
         var trimmed = Array(ordered.prefix(maximumCount))
         // The windowless Finder tile is an explicit user choice; it must not
@@ -331,7 +339,7 @@ enum WindowEnumerator {
                                                        seen: inout Set<CGWindowID>,
                                                        filterPID: pid_t?,
                                                        excludeWindow: (CGWindowID) -> Bool = { _ in false }) {
-        let tracker = AppActivationTracker.shared
+        let tracker = WindowUseTracker.shared
         let pids = snapshots.keys
             .filter { windowOwnerPID in
                 guard windowOwnerPID != ProcessInfo.processInfo.processIdentifier else { return false }
@@ -495,18 +503,18 @@ enum WindowEnumerator {
         return window.title.isEmpty ? AppInfo.name : window.title
     }
 
-    /// Groups windows by app in most-recently-used order while preserving the
-    /// window server's front-to-back order within each app. A stable sort is
-    /// required so the within-app order survives the regrouping. This is what
-    /// puts the window you were just in (including another window of the same
-    /// app) right next to the current one.
-    private static func orderByActivation(_ windows: [SwitcherItem]) -> [SwitcherItem] {
-        let tracker = AppActivationTracker.shared
-        return windows.enumerated().sorted { lhs, rhs in
-            let rankL = tracker.rank(of: lhs.element.pid)
-            let rankR = tracker.rank(of: rhs.element.pid)
-            return rankL != rankR ? rankL < rankR : lhs.offset < rhs.offset
-        }.map(\.element)
+    /// Orders windows by how recently the user used them, so the entry next to
+    /// the current one is the window they came from — another app's window, or
+    /// another window of the same app, whichever was really used last.
+    private static func orderByUse(_ windows: [SwitcherItem],
+                                   frontToBack: WindowUseTracker.FrontToBack) -> [SwitcherItem] {
+        let tracker = WindowUseTracker.shared
+        let entries = windows.map { WindowUseOrder.Entry(windowID: $0.windowID, pid: $0.pid) }
+        return WindowUseOrder.order(entries,
+                                    windowHistory: tracker.windows,
+                                    appHistory: tracker.apps,
+                                    frontToBack: frontToBack.windows)
+            .map { windows[$0] }
     }
 
     /// Collapses every window of an app into a single entry, so an app shows once

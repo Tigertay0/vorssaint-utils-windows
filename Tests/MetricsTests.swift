@@ -4755,16 +4755,74 @@ struct MetricsTests {
                                                                  selectedIndex: 2,
                                                                  delta: 1) == 2,
                "App Switcher icon-row window navigation stays put when the app has one window")
-        let afterFirstSwitch = SwitcherSupport.updatedMRU(afterActivating: "window-b",
-                                                          previousID: "window-a",
-                                                          existing: [])
-        expect(afterFirstSwitch == ["window-b", "window-a"],
-               "App Switcher MRU records the previous window immediately after a switch")
-        let afterSecondSwitch = SwitcherSupport.updatedMRU(afterActivating: "window-a",
-                                                           previousID: "window-b",
-                                                           existing: afterFirstSwitch)
-        expect(afterSecondSwitch == ["window-a", "window-b"],
-               "App Switcher MRU toggles back after two consecutive switcher uses")
+        let afterFirstSwitch = WindowUseOrder.promoting(2, previous: 1, in: [])
+        expect(afterFirstSwitch == [2, 1],
+               "App Switcher use history records the previous window immediately after a switch")
+        let afterSecondSwitch = WindowUseOrder.promoting(1, previous: 2, in: afterFirstSwitch)
+        expect(afterSecondSwitch == [1, 2],
+               "App Switcher use history toggles back after two consecutive switcher uses")
+
+        // Issue #388: the switcher put the app the user had just used far down
+        // the list. The order used to come from a history that only the
+        // switcher's own commits ever wrote to, so windows picked with the
+        // mouse were invisible to it and windows picked once through the
+        // switcher stayed ahead of them forever.
+        let mouseEntries = [WindowUseOrder.Entry(windowID: 10, pid: 1),   // used through the switcher, long ago
+                            WindowUseOrder.Entry(windowID: 11, pid: 2),   // used through the switcher, long ago
+                            WindowUseOrder.Entry(windowID: 12, pid: 3),   // clicked a moment ago
+                            WindowUseOrder.Entry(windowID: 13, pid: 4)]   // clicked just now, in front
+        let mouseOrder = WindowUseOrder.ordered(mouseEntries,
+                                                windowHistory: [13, 12, 11, 10],
+                                                appHistory: [4, 3, 2, 1],
+                                                frontToBack: [13, 12, 11, 10])
+        expect(mouseOrder.map(\.windowID) == [13, 12, 11, 10],
+               "App Switcher orders by real window use, so windows picked with the mouse keep their place")
+
+        // Two windows of the same app: the system posts no activation for a
+        // switch between them, so only the focus history can order them.
+        let sameAppEntries = [WindowUseOrder.Entry(windowID: 20, pid: 1),
+                              WindowUseOrder.Entry(windowID: 21, pid: 1),
+                              WindowUseOrder.Entry(windowID: 22, pid: 2)]
+        let sameAppOrder = WindowUseOrder.ordered(sameAppEntries,
+                                                  windowHistory: [21, 22, 20],
+                                                  appHistory: [1, 2],
+                                                  frontToBack: [21, 22, 20])
+        expect(sameAppOrder.map(\.windowID) == [21, 22, 20],
+               "App Switcher toggles back to the last window used even when it belongs to the current app")
+
+        // A window that was never focused cannot be ranked by use: it follows
+        // everything that was, ordered by its app and then by how deep it sits.
+        let unseenEntries = [WindowUseOrder.Entry(windowID: 30, pid: 1),
+                             WindowUseOrder.Entry(windowID: 31, pid: 2),
+                             WindowUseOrder.Entry(windowID: 32, pid: 3),
+                             WindowUseOrder.Entry(windowID: nil, pid: 3)]
+        let unseenOrder = WindowUseOrder.ordered(unseenEntries,
+                                                 windowHistory: [30],
+                                                 appHistory: [1, 2, 3],
+                                                 frontToBack: [30, 31, 32])
+        expect(unseenOrder.map(\.windowID) == [30, 31, 32, nil],
+               "App Switcher places never-focused windows after used ones, by app and then by depth")
+
+        // Cold start: nothing has been used yet, so front-to-back order is the
+        // only account of what came last, and it has to be used as one.
+        expect(WindowUseOrder.reconciled([], existing: [40, 41, 42], frontToBack: [42, 40, 41])
+               == [42, 40, 41],
+               "App Switcher seeds its use history from the window server instead of starting arbitrary")
+        expect(WindowUseOrder.reconciled([50, 51], existing: [51, 52], frontToBack: [52, 51])
+               == [51, 52],
+               "App Switcher use history drops closed windows and files new ones behind what was used")
+        expect(WindowUseOrder.reconciled([60, 61, 62], existing: [60, 61, 62], frontToBack: [62])
+               == [60, 61, 62],
+               "App Switcher use history is not reshuffled by the window server once it knows better")
+        expect(WindowUseOrder.reconciled([70, 71, 72], existing: [70, 71, 72], frontToBack: [], limit: 2)
+               == [70, 71],
+               "App Switcher use history stays bounded")
+        expect(WindowUseOrder.reconciled([], running: [80, 81, 82], frontToBack: [81, 82, 80])
+               == [81, 82, 80],
+               "App Switcher seeds its application history from the window server too")
+        expect(WindowUseOrder.reconciled([90, 91], running: [91, 92], frontToBack: [92, 91])
+               == [91, 92],
+               "App Switcher application history drops closed apps and files new ones behind")
         let groupedIconLayout = SwitcherIconRowLayout.compute(appCount: appGroups.count,
                                                               selectedWindowCount: appGroups[0].windowCount,
                                                               screenVisibleFrame: screen)

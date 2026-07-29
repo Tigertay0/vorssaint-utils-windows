@@ -117,14 +117,14 @@ final class FeatureRuntime: ObservableObject {
     /// their surfaces simply follow availability in the UI.
     private static let bindings: [AppFeature: () -> Void] = [
         .switcher: {
-            AppActivationTracker.shared.syncWithFeatures()
+            WindowUseTracker.shared.syncWithFeatures()
             AppSwitcher.shared.syncWithPreferences()
         },
         .dockPreview: { DockPreviewService.shared.syncWithPreferences() },
         .dockClick: { DockClickService.shared.syncWithPreferences() },
         .windowMaximizer: { WindowMaximizer.shared.syncWithPreferences() },
         .windowLayout: {
-            AppActivationTracker.shared.syncWithFeatures()
+            WindowUseTracker.shared.syncWithFeatures()
             WindowLayoutService.shared.syncWithPreferences()
         },
         .autoQuit: { AutoQuitService.shared.syncWithPreferences() },

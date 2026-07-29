@@ -362,23 +362,6 @@ enum SwitcherSupport {
         shiftIsNavigationModifier && isShiftHeld && !wasShiftHeld
     }
 
-    static func updatedMRU(afterActivating activatedID: String,
-                           previousID: String?,
-                           existing: [String],
-                           limit: Int = 64) -> [String] {
-        var list = existing
-        list.removeAll { $0 == activatedID }
-        list.insert(activatedID, at: 0)
-        if let previousID, previousID != activatedID {
-            list.removeAll { $0 == previousID }
-            list.insert(previousID, at: 1)
-        }
-        if list.count > limit {
-            list.removeLast(list.count - limit)
-        }
-        return list
-    }
-
     static func selectedPreviewPlacement(appCount rawAppCount: Int,
                                          selectedAppIndex rawSelectedAppIndex: Int,
                                          selectedWindowIndex _: Int,
