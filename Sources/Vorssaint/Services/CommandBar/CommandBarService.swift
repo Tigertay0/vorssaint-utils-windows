@@ -1617,9 +1617,10 @@ final class CommandBarService: ObservableObject {
         return panel
     }
 
-    /// Spotlight-style placement: centered, a bit above the middle of the
-    /// screen with the pointer. Anchored by the top edge so the list can
-    /// grow and shrink below a field that never moves.
+    /// Centered, a bit above the middle of the screen the pointer is on:
+    /// where the eye already is, and where the system's own search field
+    /// puts itself. Anchored by the top edge so the list can grow and shrink
+    /// below a field that never moves.
     private func position(_ panel: NSPanel) {
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
         let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: 560, height: 380)

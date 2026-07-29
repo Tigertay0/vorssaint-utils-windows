@@ -12,35 +12,19 @@ your Mac, plus app updates in one list, a searchable snippet menu, a super key
 on Caps Lock and mouse button shortcuts.
 
 ### Added
-- Window layouts gained native Full Screen alongside Maximize, and both answer
-  to each other's names when searched.
 - The Command Bar. One shortcut opens a field that finds and runs anything,
-  from the app's own tools to the menu commands of whatever app is in front.
-  It also answers sums and conversions. Under Command Bar, off by default.
-- The Command Bar is yours to shape. Give anything your own name, pin what you
-  use, hide what you never want, and switch off whole kinds of result.
-- The Command Bar opens with Option-Space, one tap into a category (Apps,
-  Clipboard, Windows and more) shows all of it, and Esc walks back home.
-- The Command Bar opens showing everything it can do, grouped by area, instead
-  of a handful of guesses.
-- Every switch in the app can be flipped straight from the Command Bar, so the
-  whole app is usable without opening Settings.
-- The last things you copied sit at the bottom of the Command Bar, one scroll
-  down.
-- The Command Bar acts on the text you have selected: change its case, clean a
-  link, keep it or count it, without copying anything first.
-- Save your own shortcuts in the Command Bar. A site, a folder, or a search
-  that takes whatever you type after its name.
-- Any Command Bar row can get a global shortcut of its own, so what you use
-  most needs no bar at all.
-- The Command Bar answers dates and clocks, like three weeks from now or the
-  time in another city.
+  including the menu commands of the app in front. Under Command Bar, off by
+  default.
 - App updates. One list of the apps with a newer version, ticked the way you
   want, updated together. Under App updates.
 - A snippet menu. A shortcut opens your snippets in a searchable list and
   picking one types it at the cursor. Under Text snippets.
+- A super key. Hold Caps Lock and it becomes Shift, Control, Option and
+  Command together, for shortcuts nothing else uses. Under Super key.
 - Mouse button shortcuts. Any extra mouse button can press a key
   combination for you. Under Mouse.
+- Full Screen joins the window layouts, the same one the green button gives.
+  Under Window layout.
 - Screenshots can copy themselves to the clipboard the moment they are
   taken. Under Screenshot. Thanks to @kingstyles.
 - Screenshots can run an action by themselves after each capture: save,
@@ -51,9 +35,9 @@ on Caps Lock and mouse button shortcuts.
   layouts. Thanks to @ruvelro.
 - A choice of how the radial menu opens: press to keep it open, or hold and
   release to run. Thanks to @ruvelro.
-- WhatsApp download cleanup in the Cleaner, always to the Trash and off by
-  default. An optional organizer files new downloads into a folder you
-  choose, with undo. Thanks to @ruvelro.
+- The Cleaner can clear the media a messaging app leaves in your downloads,
+  always to the Trash and off by default. An optional organizer files new
+  ones into a folder you pick. Thanks to @ruvelro.
 - The last capture outline in the screenshot selector can be hidden.
   Thanks to @ruvelro.
 - Hide apps from the volume mixer with a right click. The same menu brings
@@ -65,14 +49,10 @@ on Caps Lock and mouse button shortcuts.
   wheel and the buttons their own way. Under Mouse.
 - The app can stay light or dark on its own, apart from the Mac. Under
   General.
-- A super key. Hold Caps Lock and it becomes Shift, Control, Option and
-  Command together, for shortcuts nothing else uses. Under Super key.
 
 ### Changed
 - Settings groups App updates, Cleaner, Homebrew and Uninstaller under App
   management.
-- Holding Command in the Command Bar numbers the first nine rows, which have
-  always run with the number keys.
 - Recording a shortcut keeps the keys to itself instead of triggering the
   app or the system.
 - "Open the editor right after capturing" became the Edit after-capture
