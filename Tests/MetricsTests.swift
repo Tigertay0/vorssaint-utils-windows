@@ -912,6 +912,47 @@ struct MetricsTests {
         )
         expectClose(genericCPU ?? -1, 51.6, "generic CPU sensor selection preserves previous hottest behavior")
 
+        // MARK: Hot CPU alert
+
+        var spikeGate = TemperatureAlertGate()
+        expect(!spikeGate.shouldAlert(temperature: 99, threshold: 90, readAt: 100),
+               "a single hot reading is not a hot CPU yet")
+        expect(!spikeGate.shouldAlert(temperature: 99, threshold: 90, readAt: 108),
+               "a second hot reading inside the window still waits")
+        expect(spikeGate.shouldAlert(temperature: 99, threshold: 90, readAt: 112),
+               "a temperature that holds past the window alerts")
+
+        var carriedGate = TemperatureAlertGate()
+        expect(!carriedGate.shouldAlert(temperature: 101, threshold: 90, readAt: 200),
+               "the reading behind a spike starts the window")
+        var carriedAlerts = 0
+        for _ in 0..<60 {
+            if carriedGate.shouldAlert(temperature: 101, threshold: 90, readAt: 200) {
+                carriedAlerts += 1
+            }
+        }
+        expect(carriedAlerts == 0,
+               "the same reading served again never ages into an alert on its own")
+
+        var coolingGate = TemperatureAlertGate()
+        _ = coolingGate.shouldAlert(temperature: 99, threshold: 90, readAt: 300)
+        expect(!coolingGate.shouldAlert(temperature: 52, threshold: 90, readAt: 315),
+               "a reading back under the limit does not alert")
+        expect(!coolingGate.shouldAlert(temperature: 99, threshold: 90, readAt: 330),
+               "cooling down restarts the window instead of resuming the old one")
+        expect(coolingGate.shouldAlert(temperature: 99, threshold: 90, readAt: 345),
+               "the restarted window alerts on its own merits")
+
+        var quietGate = TemperatureAlertGate()
+        expect(!quietGate.shouldAlert(temperature: 89, threshold: 90, readAt: 400),
+               "a reading under the limit is not hot")
+        expect(!quietGate.shouldAlert(temperature: 89, threshold: 90, readAt: 500),
+               "staying under the limit never alerts")
+        expect(!quietGate.shouldAlert(temperature: nil, threshold: 90, readAt: 600),
+               "a missing temperature does not alert")
+        expect(!quietGate.shouldAlert(temperature: 99, threshold: 90, readAt: nil),
+               "a temperature with no reading time does not alert")
+
         // MARK: Uptime formatting
 
         expectEqual(MetricFormat.uptime(0), "0min", "uptime zero")

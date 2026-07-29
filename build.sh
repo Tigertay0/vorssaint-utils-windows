@@ -174,6 +174,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Metrics/MonitorSamplingPolicy.swift \
         Sources/Vorssaint/Services/Metrics/MaxCapacityProbe.swift \
         Sources/Vorssaint/Services/Metrics/TemperatureSensorSelector.swift \
+        Sources/Vorssaint/Services/Metrics/TemperatureAlertGate.swift \
         Sources/Vorssaint/Services/WindowLayout/WindowLayoutSupport.swift \
         Sources/Vorssaint/Services/WindowLayout/WindowGestureSupport.swift \
         Sources/Vorssaint/Services/CleaningMode/CleaningUnlockCounter.swift \

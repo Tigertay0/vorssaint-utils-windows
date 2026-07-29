@@ -64,6 +64,8 @@ on Caps Lock and mouse button shortcuts.
 - The app switcher now closes when you click outside it.
 
 ### Fixed
+- The hot CPU alert no longer fires on a momentary spike. The temperature
+  now has to stay above the limit for a few seconds.
 - Quit on close no longer leaves apps running after their last window is
   closed, including apps that hide the window instead of closing it.
 - The red dot in the panel is gone. It marked the Cleaner as new since an

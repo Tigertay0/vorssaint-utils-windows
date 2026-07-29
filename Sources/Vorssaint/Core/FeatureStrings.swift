@@ -195,7 +195,7 @@ extension WindowLayoutFeatureStrings {
 extension MonitorAlertFeatureStrings {
     static let ko = MonitorAlertFeatureStrings(
         section: "알림",
-        caption: "선택한 기준에 도달하면 알림이 표시됩니다. CPU 사용량은 기준을 약 12초 동안 계속 넘어야 하므로 짧은 급증은 무시됩니다. 반복 설정은 같은 알림의 반복만 제한합니다.",
+        caption: "선택한 기준에 도달하면 알림이 표시됩니다. CPU 사용량과 온도는 기준을 약 12초 동안 계속 넘어야 하므로 짧은 급증은 무시됩니다. 반복 설정은 같은 알림의 반복만 제한합니다.",
         notificationsDenied: "시스템 설정에서 Vorssaint 알림이 꺼져 있어 경고를 표시할 수 없습니다.",
         cpu: "높은 CPU 사용량",
         cpuTemperature: "높은 CPU 온도",
@@ -1622,7 +1622,7 @@ struct MonitorAlertFeatureStrings {
 
     static let enUS = MonitorAlertFeatureStrings(
         section: "Alerts",
-        caption: "Alerts fire when their selected limits are reached. High CPU ignores spikes shorter than about 12 seconds. The repeat setting only limits repeats of the same alert.",
+        caption: "Alerts fire when their selected limits are reached. CPU use and temperature ignore spikes shorter than about 12 seconds. The repeat setting only limits repeats of the same alert.",
         notificationsDenied: "Notifications for Vorssaint are off in System Settings, so alerts cannot appear.",
         cpu: "High CPU",
         cpuTemperature: "High CPU temperature",
@@ -1653,7 +1653,7 @@ struct MonitorAlertFeatureStrings {
 
     static let ptBR = MonitorAlertFeatureStrings(
         section: "Alertas",
-        caption: "Os alertas disparam quando os limites escolhidos são atingidos. A CPU ignora picos com menos de 12 segundos. A opção de repetição só limita o mesmo alerta.",
+        caption: "Os alertas disparam quando os limites escolhidos são atingidos. O uso e a temperatura da CPU ignoram picos com menos de 12 segundos. A opção de repetição só limita o mesmo alerta.",
         notificationsDenied: "As notificações do Vorssaint estão desativadas nos Ajustes do Sistema, então os alertas não aparecem.",
         cpu: "CPU alta",
         cpuTemperature: "Temperatura alta da CPU",
