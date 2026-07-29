@@ -32,16 +32,17 @@ enum WindowEnumerator {
     }
 
     static func listWindows(for pid: pid_t, maximumCount: Int = 12) -> [SwitcherItem] {
-        // The Dock previews honor the same current-desktop choice as the
-        // switcher: the Settings caption promises that picking a window
-        // never hops desktops while the option is on, and a preview click
-        // is a pick like any other.
+        // The current-desktop choice belongs to the switcher alone (issue
+        // #337): its caption promises it trims the switcher list, nothing
+        // else. Dock previews keep showing windows from every desktop, the
+        // behavior issue #339 made first-class; honoring the toggle here
+        // would leave an empty preview with no setting anywhere near the
+        // Dock to explain it.
         listWindows(filterPID: pid,
                     maximumCount: maximumCount,
                     includeWindowlessFinder: false,
                     groupByApp: false,
-                    currentSpaceOnly: UserDefaults.standard.bool(
-                        forKey: DefaultsKey.switcherCurrentSpaceOnly))
+                    currentSpaceOnly: false)
     }
 
     private static func listWindows(filterPID: pid_t?,

@@ -914,43 +914,43 @@ struct MetricsTests {
 
         // MARK: Hot CPU alert
 
-        var spikeGate = TemperatureAlertGate()
-        expect(!spikeGate.shouldAlert(temperature: 99, threshold: 90, readAt: 100),
+        var spikeGate = SustainedAlertGate()
+        expect(!spikeGate.shouldAlert(reading: 99, threshold: 90, readAt: 100),
                "a single hot reading is not a hot CPU yet")
-        expect(!spikeGate.shouldAlert(temperature: 99, threshold: 90, readAt: 108),
+        expect(!spikeGate.shouldAlert(reading: 99, threshold: 90, readAt: 108),
                "a second hot reading inside the window still waits")
-        expect(spikeGate.shouldAlert(temperature: 99, threshold: 90, readAt: 112),
+        expect(spikeGate.shouldAlert(reading: 99, threshold: 90, readAt: 112),
                "a temperature that holds past the window alerts")
 
-        var carriedGate = TemperatureAlertGate()
-        expect(!carriedGate.shouldAlert(temperature: 101, threshold: 90, readAt: 200),
+        var carriedGate = SustainedAlertGate()
+        expect(!carriedGate.shouldAlert(reading: 101, threshold: 90, readAt: 200),
                "the reading behind a spike starts the window")
         var carriedAlerts = 0
         for _ in 0..<60 {
-            if carriedGate.shouldAlert(temperature: 101, threshold: 90, readAt: 200) {
+            if carriedGate.shouldAlert(reading: 101, threshold: 90, readAt: 200) {
                 carriedAlerts += 1
             }
         }
         expect(carriedAlerts == 0,
                "the same reading served again never ages into an alert on its own")
 
-        var coolingGate = TemperatureAlertGate()
-        _ = coolingGate.shouldAlert(temperature: 99, threshold: 90, readAt: 300)
-        expect(!coolingGate.shouldAlert(temperature: 52, threshold: 90, readAt: 315),
+        var coolingGate = SustainedAlertGate()
+        _ = coolingGate.shouldAlert(reading: 99, threshold: 90, readAt: 300)
+        expect(!coolingGate.shouldAlert(reading: 52, threshold: 90, readAt: 315),
                "a reading back under the limit does not alert")
-        expect(!coolingGate.shouldAlert(temperature: 99, threshold: 90, readAt: 330),
+        expect(!coolingGate.shouldAlert(reading: 99, threshold: 90, readAt: 330),
                "cooling down restarts the window instead of resuming the old one")
-        expect(coolingGate.shouldAlert(temperature: 99, threshold: 90, readAt: 345),
+        expect(coolingGate.shouldAlert(reading: 99, threshold: 90, readAt: 345),
                "the restarted window alerts on its own merits")
 
-        var quietGate = TemperatureAlertGate()
-        expect(!quietGate.shouldAlert(temperature: 89, threshold: 90, readAt: 400),
+        var quietGate = SustainedAlertGate()
+        expect(!quietGate.shouldAlert(reading: 89, threshold: 90, readAt: 400),
                "a reading under the limit is not hot")
-        expect(!quietGate.shouldAlert(temperature: 89, threshold: 90, readAt: 500),
+        expect(!quietGate.shouldAlert(reading: 89, threshold: 90, readAt: 500),
                "staying under the limit never alerts")
-        expect(!quietGate.shouldAlert(temperature: nil, threshold: 90, readAt: 600),
+        expect(!quietGate.shouldAlert(reading: nil, threshold: 90, readAt: 600),
                "a missing temperature does not alert")
-        expect(!quietGate.shouldAlert(temperature: 99, threshold: 90, readAt: nil),
+        expect(!quietGate.shouldAlert(reading: 99, threshold: 90, readAt: nil),
                "a temperature with no reading time does not alert")
 
         // MARK: Uptime formatting
@@ -7669,10 +7669,12 @@ struct MetricsTests {
                "each microphone gets its own level back, then the older single level, then a usable one")
         expect(MicMuteSupport.restoreTargets(recorded: ["mic-a", "gone"],
                                              present: ["mic-a", "mic-b"]) == ["mic-a"]
-                && MicMuteSupport.restoreTargets(recorded: [],
+                && MicMuteSupport.restoreTargets(recorded: nil,
                                                  present: ["mic-a", "mic-b"]) == ["mic-a", "mic-b"]
+                && MicMuteSupport.restoreTargets(recorded: [],
+                                                 present: ["mic-a", "mic-b"]).isEmpty
                 && MicMuteSupport.restoreTargets(recorded: ["mic-a"], present: []).isEmpty,
-               "unmuting touches the microphones this app muted, and every one of them when it knows of none")
+               "unmuting touches the microphones this app muted, every one with no record, and none when the record is empty")
 
         expect(Defaults.registeredDefaults[DefaultsKey.radialMenuEnabled] as? Bool == false,
                "the radial menu ships off by default")
@@ -8152,6 +8154,12 @@ struct MetricsTests {
         expect(AppUpdatesSupport.compare("2026.723.1724", "2026.714.1952") == .orderedDescending
                 && AppUpdatesSupport.compare("00123", "123") == .orderedSame,
                "leading zeros never decide a comparison")
+        expect(!AppUpdatesSupport.isNewer("1.9a", than: "1.10")
+                && AppUpdatesSupport.isNewer("1.10", than: "1.9a")
+                && !AppUpdatesSupport.isNewer("3.5beta", than: "3.5")
+                && AppUpdatesSupport.isNewer("3.5", than: "3.5beta")
+                && AppUpdatesSupport.isNewer("1.9b", than: "1.9a"),
+               "a lettered part compares by its number first, and the bare number outranks its own suffixed run")
         expect(AppUpdatesSupport.versionCore("3.5.262,260717dcrpwg7m0") == "3.5.262"
                 && AppUpdatesSupport.versionCore("0.0.402") == "0.0.402",
                "the revision after a comma is not part of the version")

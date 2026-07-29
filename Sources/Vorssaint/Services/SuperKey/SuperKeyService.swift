@@ -79,8 +79,11 @@ final class SuperKeyService: ObservableObject {
             return
         }
         // Without Accessibility the tap cannot add the modifiers, and a
-        // mapping alone would turn Caps Lock into a dead key.
+        // mapping alone would turn Caps Lock into a dead key. One left by a
+        // run that was killed comes out here too: with the feature still
+        // enabled, the launch-time stop() that normally clears it never runs.
         guard AXIsProcessTrusted() else {
+            clearLeftoverMapping()
             isRunning = false
             return
         }
@@ -99,6 +102,7 @@ final class SuperKeyService: ObservableObject {
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
+            clearLeftoverMapping()
             isRunning = false
             return
         }
@@ -132,13 +136,18 @@ final class SuperKeyService: ObservableObject {
             NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
             self.wakeObserver = nil
         }
-        // The mapping is cleared even when this service never applied it: an
-        // app that was killed while the feature was on leaves one behind, and
-        // this is where the next launch takes it out.
+        clearLeftoverMapping(synchronously: synchronously)
+        isRunning = false
+    }
+
+    /// The mapping is cleared even when this service never applied it: an
+    /// app that was killed while the feature was on leaves one behind, and
+    /// every path that ends without a live tap takes it out, so Caps Lock is
+    /// never left as a key that does nothing.
+    private func clearLeftoverMapping(synchronously: Bool = false) {
         if UserDefaults.standard.bool(forKey: DefaultsKey.superKeyMappingApplied) {
             applyMapping(false, synchronously: synchronously)
         }
-        isRunning = false
     }
 
     /// Sleep can bring the keyboard back without the mapping, and so can
