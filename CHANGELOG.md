@@ -7,11 +7,34 @@ All notable changes to this project are documented here. The format follows
 ## [3.2.0]
 
 ### Summary
-Vorssaint 3.2.0 adds app updates in one list, a searchable snippet menu, a
-super key on Caps Lock and mouse button shortcuts. Plus screenshot autopilot,
-new radial menu slices and a batch of fixes.
+Vorssaint 3.2.0 adds the Command Bar, one field that finds and runs anything on
+your Mac, plus app updates in one list, a searchable snippet menu, a super key
+on Caps Lock and mouse button shortcuts.
 
 ### Added
+- Window layouts gained native Full Screen alongside Maximize, and both answer
+  to each other's names when searched.
+- The Command Bar. One shortcut opens a field that finds and runs anything,
+  from the app's own tools to the menu commands of whatever app is in front.
+  It also answers sums and conversions. Under Command Bar, off by default.
+- The Command Bar is yours to shape. Give anything your own name, pin what you
+  use, hide what you never want, and switch off whole kinds of result.
+- The Command Bar opens with Option-Space, one tap into a category (Apps,
+  Clipboard, Windows and more) shows all of it, and Esc walks back home.
+- The Command Bar opens showing everything it can do, grouped by area, instead
+  of a handful of guesses.
+- Every switch in the app can be flipped straight from the Command Bar, so the
+  whole app is usable without opening Settings.
+- The last things you copied sit at the bottom of the Command Bar, one scroll
+  down.
+- The Command Bar acts on the text you have selected: change its case, clean a
+  link, keep it or count it, without copying anything first.
+- Save your own shortcuts in the Command Bar. A site, a folder, or a search
+  that takes whatever you type after its name.
+- Any Command Bar row can get a global shortcut of its own, so what you use
+  most needs no bar at all.
+- The Command Bar answers dates and clocks, like three weeks from now or the
+  time in another city.
 - App updates. One list of the apps with a newer version, ticked the way you
   want, updated together. Under App updates.
 - A snippet menu. A shortcut opens your snippets in a searchable list and
@@ -48,6 +71,8 @@ new radial menu slices and a batch of fixes.
 ### Changed
 - Settings groups App updates, Cleaner, Homebrew and Uninstaller under App
   management.
+- Holding Command in the Command Bar numbers the first nine rows, which have
+  always run with the number keys.
 - Recording a shortcut keeps the keys to itself instead of triggering the
   app or the system.
 - "Open the editor right after capturing" became the Edit after-capture

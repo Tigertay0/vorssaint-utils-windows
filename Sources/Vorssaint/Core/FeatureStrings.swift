@@ -187,7 +187,8 @@ extension WindowLayoutFeatureStrings {
         maximize: "최대화",
         center: "가운데",
         nextDisplay: "다음 디스플레이",
-        restore: "복원"
+        restore: "복원",
+        fullScreen: "전체 화면"
     )
 }
 
@@ -950,6 +951,7 @@ struct WindowLayoutFeatureStrings {
     let center: String
     let nextDisplay: String
     let restore: String
+    let fullScreen: String
 
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window layout",
@@ -1000,7 +1002,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Maximize",
         center: "Center",
         nextDisplay: "Next display",
-        restore: "Restore"
+        restore: "Restore",
+        fullScreen: "Full Screen"
     )
 
     static let ptBR = WindowLayoutFeatureStrings(
@@ -1052,7 +1055,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Maximizar",
         center: "Centralizar",
         nextDisplay: "Próximo display",
-        restore: "Restaurar"
+        restore: "Restaurar",
+        fullScreen: "Tela cheia"
     )
 
     static let tr = WindowLayoutFeatureStrings(
@@ -1104,7 +1108,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Büyüt",
         center: "Ortala",
         nextDisplay: "Sonraki ekran",
-        restore: "Geri yükle"
+        restore: "Geri yükle",
+        fullScreen: "Tam ekran"
     )
 
     static let ru = WindowLayoutFeatureStrings(
@@ -1156,7 +1161,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Развернуть",
         center: "По центру",
         nextDisplay: "Следующий дисплей",
-        restore: "Восстановить"
+        restore: "Восстановить",
+        fullScreen: "Во весь экран"
     )
 
     static let es = WindowLayoutFeatureStrings(
@@ -1208,7 +1214,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Maximizar",
         center: "Centrar",
         nextDisplay: "Siguiente pantalla",
-        restore: "Restaurar"
+        restore: "Restaurar",
+        fullScreen: "Pantalla completa"
     )
 
     static let de = WindowLayoutFeatureStrings(
@@ -1260,7 +1267,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Maximieren",
         center: "Zentrieren",
         nextDisplay: "Nächstes Display",
-        restore: "Wiederherstellen"
+        restore: "Wiederherstellen",
+        fullScreen: "Vollbild"
     )
 
     static let fr = WindowLayoutFeatureStrings(
@@ -1312,7 +1320,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Agrandir",
         center: "Centrer",
         nextDisplay: "Écran suivant",
-        restore: "Restaurer"
+        restore: "Restaurer",
+        fullScreen: "Plein écran"
     )
 
     static let it = WindowLayoutFeatureStrings(
@@ -1364,7 +1373,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "Massimizza",
         center: "Centra",
         nextDisplay: "Display successivo",
-        restore: "Ripristina"
+        restore: "Ripristina",
+        fullScreen: "Schermo intero"
     )
 
     static let ja = WindowLayoutFeatureStrings(
@@ -1416,7 +1426,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "最大化",
         center: "中央",
         nextDisplay: "次のディスプレイ",
-        restore: "復元"
+        restore: "復元",
+        fullScreen: "フルスクリーン"
     )
 
     static let zhHans = WindowLayoutFeatureStrings(
@@ -1468,7 +1479,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "最大化",
         center: "居中",
         nextDisplay: "下一台显示器",
-        restore: "恢复"
+        restore: "恢复",
+        fullScreen: "全屏幕"
     )
 
     static let zhTW = WindowLayoutFeatureStrings(
@@ -1520,7 +1532,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "最大化",
         center: "置中",
         nextDisplay: "下一台顯示器",
-        restore: "還原"
+        restore: "還原",
+        fullScreen: "全螢幕"
     )
 
     static let zhHK = WindowLayoutFeatureStrings(
@@ -1572,7 +1585,8 @@ struct WindowLayoutFeatureStrings {
         maximize: "最大化",
         center: "置中",
         nextDisplay: "下一部顯示器",
-        restore: "還原"
+        restore: "還原",
+        fullScreen: "全螢幕"
     )
 }
 
