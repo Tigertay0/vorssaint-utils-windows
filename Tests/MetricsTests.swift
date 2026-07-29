@@ -5176,6 +5176,52 @@ struct MetricsTests {
                && switcherCloseMissing.remainingItemIDs == ["a", "b"]
                && switcherCloseMissing.selectedIndex == 1,
                "App Switcher close leaves selection intact when the item is not present")
+        expect(SwitcherSupport.commitTargetID(itemIDs: ["a", "b", "c"],
+                                              selectedIndex: 1,
+                                              closingItemIDs: []) == "b",
+               "App Switcher release activates the highlighted window")
+        expect(SwitcherSupport.commitTargetID(itemIDs: ["a", "b", "c"],
+                                              selectedIndex: 1,
+                                              closingItemIDs: ["b"]) == "c",
+               "App Switcher release skips the window that is closing")
+        expect(SwitcherSupport.commitTargetID(itemIDs: ["a", "b", "c"],
+                                              selectedIndex: 2,
+                                              closingItemIDs: ["b", "c"]) == "a",
+               "App Switcher release falls back to the last window left when several are closing")
+        expect(SwitcherSupport.commitTargetID(itemIDs: ["a", "b"],
+                                              selectedIndex: 1,
+                                              closingItemIDs: ["a", "b"]) == nil,
+               "App Switcher release activates nothing when every window is closing")
+        expect(SwitcherSupport.commitTargetID(itemIDs: [],
+                                              selectedIndex: 0,
+                                              closingItemIDs: []) == nil,
+               "App Switcher release activates nothing with an empty list")
+        expect(SwitcherSupport.letterAction(typedCharacter: "w", keyCode: 13) == .closeWindow
+               && SwitcherSupport.letterAction(typedCharacter: "q", keyCode: 12) == .quitApp,
+               "App Switcher panel closes a window with W and quits an app with Q")
+        expect(SwitcherSupport.letterAction(typedCharacter: "W", keyCode: 13) == .closeWindow,
+               "App Switcher panel treats the letter the same in either case")
+        expect(SwitcherSupport.letterAction(typedCharacter: "e", keyCode: 14) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "1", keyCode: 18) == nil,
+               "App Switcher panel leaves every other key to the search field")
+        // A French keyboard types z where the US one types w, and its own w
+        // sits on another key: both answer by the letter, not the position.
+        expect(SwitcherSupport.letterAction(typedCharacter: "z", keyCode: 13) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "w", keyCode: 6) == .closeWindow,
+               "App Switcher panel follows the letters printed on the keyboard")
+        expect(SwitcherSupport.letterAction(typedCharacter: "a", keyCode: 12) == nil
+               && SwitcherSupport.letterAction(typedCharacter: "q", keyCode: 0) == .quitApp,
+               "App Switcher panel quits from the Q key wherever the layout puts it")
+        // Cyrillic and Greek type no Latin letter at all, so the key position
+        // stands in, the same place macOS puts their command shortcuts.
+        expect(SwitcherSupport.letterAction(typedCharacter: "ц", keyCode: 13) == .closeWindow
+               && SwitcherSupport.letterAction(typedCharacter: "й", keyCode: 12) == .quitApp,
+               "App Switcher panel falls back to the key position on non-Latin layouts")
+        expect(SwitcherSupport.letterAction(typedCharacter: nil, keyCode: 13) == .closeWindow
+               && SwitcherSupport.letterAction(typedCharacter: "", keyCode: 12) == .quitApp,
+               "App Switcher panel falls back to the key position when a key types nothing")
+        expect(SwitcherSupport.letterAction(typedCharacter: "ç", keyCode: 13) == nil,
+               "App Switcher panel counts an accented letter as a letter of its own")
         let searchRecords = [
             SwitcherSearchRecord(id: "alpha", title: "Inbox", appName: "Alpha"),
             SwitcherSearchRecord(id: "beta", title: "Vorssaint Roadmap", appName: "Beta"),

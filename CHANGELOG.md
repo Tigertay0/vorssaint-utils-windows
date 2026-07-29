@@ -40,6 +40,8 @@ on Caps Lock and mouse button shortcuts.
   ones into a folder you pick. Thanks to @ruvelro.
 - The last capture outline in the screenshot selector can be hidden.
   Thanks to @ruvelro.
+- W closes the highlighted window in the app switcher, leaving the app
+  running.
 - Hide apps from the volume mixer with a right click. The same menu brings
   them back.
 - Each removable drive in the Drives tab now has its own eject button.
@@ -79,6 +81,8 @@ on Caps Lock and mouse button shortcuts.
   outside the applications folder.
 - The App Switcher and Dock previews now show windows from other desktops
   too, and an option keeps everything to the current one.
+- Q in the app switcher quits from the Q on your keyboard, on layouts that
+  put the letter somewhere else.
 - Undo works in the screenshot editor, and clicking an annotation selects
   it instead of drawing on top. Thanks to @ruvelro.
 - The Homebrew settings page no longer breaks in narrow windows.
