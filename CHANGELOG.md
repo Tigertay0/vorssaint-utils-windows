@@ -61,6 +61,7 @@ on Caps Lock and mouse button shortcuts.
   action, and existing setups keep working unchanged.
 - The scratchpad now closes when you click outside it. A toggle under Quick
   tools keeps it floating instead.
+- The app switcher now closes when you click outside it.
 
 ### Fixed
 - Quit on close no longer leaves apps running after their last window is

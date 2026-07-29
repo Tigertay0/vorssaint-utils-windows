@@ -652,6 +652,17 @@ enum SwitcherSupport {
         return remaining[clampedSelection(position, count: remaining.count)]
     }
 
+    /// Whether a click ends the session. The panel floats above everything and
+    /// never takes the keyboard from the app in front, so clicking another
+    /// window is what most people try when they want it gone, and a session
+    /// opened with no key held down has no release coming to close it either
+    /// (issue #384). Anything on the panel still belongs to the panel.
+    static func shouldDismissForClick(panelIsVisible: Bool,
+                                      panelFrame: CGRect,
+                                      location: CGPoint) -> Bool {
+        panelIsVisible && !panelFrame.contains(location)
+    }
+
     /// The two letters the panel acts on: W closes the highlighted window and
     /// Q quits its app. A keyboard answers by the letter it types, so both keys
     /// stay where they are printed even on layouts that move them (measured:

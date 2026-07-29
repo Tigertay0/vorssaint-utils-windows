@@ -5222,6 +5222,23 @@ struct MetricsTests {
                "App Switcher panel falls back to the key position when a key types nothing")
         expect(SwitcherSupport.letterAction(typedCharacter: "ç", keyCode: 13) == nil,
                "App Switcher panel counts an accented letter as a letter of its own")
+        let switcherPanelFrame = CGRect(x: 400, y: 300, width: 600, height: 400)
+        expect(SwitcherSupport.shouldDismissForClick(panelIsVisible: true,
+                                                     panelFrame: switcherPanelFrame,
+                                                     location: CGPoint(x: 200, y: 200)),
+               "App Switcher panel closes on a click outside it")
+        expect(!SwitcherSupport.shouldDismissForClick(panelIsVisible: true,
+                                                      panelFrame: switcherPanelFrame,
+                                                      location: CGPoint(x: 700, y: 500)),
+               "App Switcher panel stays for a click on one of its windows")
+        expect(!SwitcherSupport.shouldDismissForClick(panelIsVisible: true,
+                                                      panelFrame: switcherPanelFrame,
+                                                      location: CGPoint(x: 401, y: 301)),
+               "App Switcher panel counts its own edge as part of it")
+        expect(!SwitcherSupport.shouldDismissForClick(panelIsVisible: false,
+                                                      panelFrame: switcherPanelFrame,
+                                                      location: CGPoint(x: 200, y: 200)),
+               "App Switcher ignores clicks while a quick switch shows no panel")
         let searchRecords = [
             SwitcherSearchRecord(id: "alpha", title: "Inbox", appName: "Alpha"),
             SwitcherSearchRecord(id: "beta", title: "Vorssaint Roadmap", appName: "Beta"),
