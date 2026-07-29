@@ -61,6 +61,8 @@ on Caps Lock and mouse button shortcuts.
   tools keeps it floating instead.
 
 ### Fixed
+- Quit on close no longer leaves apps running after their last window is
+  closed, including apps that hide the window instead of closing it.
 - The red dot in the panel is gone. It marked the Cleaner as new since an
   older version and could stay on screen for good.
 - Showing the menu bar icon again waits for macOS to place it before

@@ -2449,6 +2449,26 @@ struct MetricsTests {
                                                            hasKnownMinimizedWindow: false,
                                                            hasUserFacingWindow: true),
                "AutoQuit keeps apps with user-facing windows running")
+        expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [4],
+                                                            visibleSpaces: [3],
+                                                            hasTitle: true),
+               "a window parked on another Space keeps its app running")
+        expect(!AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [3],
+                                                             visibleSpaces: [3],
+                                                             hasTitle: true),
+               "a window the app hid on the Space in front does not keep it running")
+        expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [],
+                                                            visibleSpaces: [3],
+                                                            hasTitle: true),
+               "a window with no Space answer falls back to the title rule")
+        expect(!AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [],
+                                                             visibleSpaces: nil,
+                                                             hasTitle: false),
+               "an untitled off-screen window never keeps an app running")
+        expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [3],
+                                                            visibleSpaces: nil,
+                                                            hasTitle: true),
+               "without Spaces to compare, the old cautious rule stands")
         expect(Defaults.sanitizedPanelItemOrder("uninstaller,homebrew,homebrew,bad",
                                                 defaultOrder: ["homebrew", "media", "uninstaller", "cleanURL", "cleaning"])
                == ["uninstaller", "homebrew", "media", "cleanURL", "cleaning"],
