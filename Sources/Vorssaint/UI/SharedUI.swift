@@ -41,6 +41,48 @@ struct ShortcutCaps: View {
 /// cut-feedback HUD). Mirrors the switcher's backdrop so every floating surface
 /// matches.
 ///
+/// `contrast: .high` lays a flat plate over the material, for the panels that
+/// are nothing but rows of text. The frost borrows so much of whatever window
+/// sits behind it that such a list over a bright document stops being readable,
+/// and the darker the theme the worse it reads: light text against a page of
+/// white. The plate keeps the frost visible and gives the text something to sit
+/// on. Where the system is already told to reduce transparency it makes the
+/// material opaque by itself, so the plate stays out of the way.
+struct HUDBackdrop: View {
+    enum Contrast {
+        case standard
+        case high
+    }
+
+    var cornerRadius: CGFloat = 0
+    var contrast: Contrast = .standard
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    /// Chosen from the worst case rather than by eye: a panel over a full white
+    /// window in the dark theme, or over a full black one in the light theme,
+    /// with the material assumed to hold nothing back. At these values the
+    /// plate alone carries white text to 4.8:1 and black text to 5.3:1, both
+    /// past the 4.5:1 the accessibility guidelines ask of body text, and the
+    /// real material only ever adds to that.
+    private var plateOpacity: Double {
+        guard contrast == .high, !reduceTransparency else { return 0 }
+        return colorScheme == .dark ? 0.55 : 0.5
+    }
+
+    var body: some View {
+        HUDBackdropMaterial(cornerRadius: cornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(colorScheme == .dark ? Color.black : Color.white)
+                    .opacity(plateOpacity)
+            )
+    }
+}
+
+/// The material itself.
+///
 /// The corner radius rounds the effect view's own layer, which matters for the
 /// behind-window blur: SwiftUI's `.clipShape` rounds the drawn content but does
 /// not clip an `NSVisualEffectView`'s behind-window material, so the blur (and
@@ -49,7 +91,7 @@ struct ShortcutCaps: View {
 /// outline just outside the rounded card, and whether it shows depends on what
 /// is behind the window, which is why it looks intermittent. Clipping the layer
 /// to the same radius as the card removes it. Pass the card's corner radius.
-struct HUDBackdrop: NSViewRepresentable {
+private struct HUDBackdropMaterial: NSViewRepresentable {
     var cornerRadius: CGFloat = 0
 
     func makeNSView(context: Context) -> NSVisualEffectView {
