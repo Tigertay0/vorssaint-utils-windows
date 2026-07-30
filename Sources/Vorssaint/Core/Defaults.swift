@@ -156,6 +156,9 @@ enum DefaultsKey {
     static let appUpdatesNotify = "appUpdatesNotify"
     static let appUpdatesLastCheck = "appUpdatesLastCheck"            // Double, epoch seconds
     static let appUpdatesLastCount = "appUpdatesLastCount"
+    // Findings already announced once, so a pending update nobody installs
+    // does not speak up again after every relaunch.
+    static let appUpdatesNotifiedIDs = "appUpdatesNotifiedIDs"
     static let panelUtilityMedia = "panelUtilityMedia"
     static let panelUtilityClipboard = "panelUtilityClipboard"
     static let panelUtilityWindowLayout = "panelUtilityWindowLayout"
@@ -738,6 +741,7 @@ enum Defaults {
         DefaultsKey.appUpdatesNotify: true,
         DefaultsKey.appUpdatesLastCheck: 0.0,
         DefaultsKey.appUpdatesLastCount: 0,
+        DefaultsKey.appUpdatesNotifiedIDs: [],
         DefaultsKey.panelUtilityMedia: true,
         DefaultsKey.panelUtilityClipboard: true,
         DefaultsKey.panelUtilityWindowLayout: true,

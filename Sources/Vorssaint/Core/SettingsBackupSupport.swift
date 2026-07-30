@@ -81,6 +81,7 @@ enum SettingsBackupSupport {
         // When the last check ran and what it found belong to one Mac.
         DefaultsKey.appUpdatesLastCheck,
         DefaultsKey.appUpdatesLastCount,
+        DefaultsKey.appUpdatesNotifiedIDs,
         DefaultsKey.cleanerLastAutoFreed,
         DefaultsKey.whatsAppDownloadsAutomaticStartDate,
         DefaultsKey.whatsAppDownloadsLastAutoRun,

@@ -59,8 +59,11 @@ final class MouseButtonShortcutService: ObservableObject {
         isDraining = false
         // A tap the system disabled (Accessibility revoked and regranted)
         // never revives on its own; rebuild it instead of keeping the corpse.
+        // Torn down directly, not through stop(): a dead tap can no longer
+        // deliver the pending Up of a held button, so draining for it would
+        // only keep the corpse and leave every mapped button silent.
         if let tap, !CGEvent.tapIsEnabled(tap: tap) {
-            stop()
+            tearDownTap()
         }
         start()
     }
