@@ -2088,7 +2088,10 @@ struct UpdateBanner: View {
                         Text(l10n.s.updateBannerTitle)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.white)
-                        Text("\(l10n.s.updateAvailablePrefix) \(version)")
+                        // The title above already says an update is waiting,
+                        // so this line carries the version instead of saying
+                        // the same words a second time.
+                        Text("\(l10n.s.versionPrefix) \(version)")
                             .font(.system(size: 10.5))
                             .foregroundStyle(.white.opacity(0.85))
                     }

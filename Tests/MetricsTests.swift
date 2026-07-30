@@ -7877,6 +7877,19 @@ struct MetricsTests {
         expect(superKeyState.decide(.triggerUp) == .swallow,
                "releasing after a combination does nothing on its own")
 
+        // What the watchdog leans on: a press whose release never arrived is
+        // let go of, and typing goes back to normal without the key being
+        // touched again.
+        var lostReleaseState = SuperKeySupport.State()
+        _ = lostReleaseState.decide(.triggerDown(isRepeat: false))
+        expect(lostReleaseState.decide(.otherKey) == .addModifiers,
+               "a press with no release still carries the modifiers while it stands")
+        lostReleaseState.reset()
+        expect(lostReleaseState.decide(.otherKey) == .pass,
+               "letting go of a press whose release was lost gives typing back")
+        expect(lostReleaseState.decide(.triggerUp) == .swallow,
+               "a release arriving after the press was let go does nothing")
+
         var soloState = SuperKeySupport.State()
         _ = soloState.decide(.triggerDown(isRepeat: false))
         expect(soloState.decide(.triggerUp) == .soloTap,

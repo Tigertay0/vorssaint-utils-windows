@@ -27,14 +27,14 @@ on Caps Lock and mouse button shortcuts.
   Under Window layout.
 - Screenshots can copy themselves to the clipboard the moment they are
   taken. Under Screenshot. Thanks to @kingstyles.
-- Screenshots can run an action by themselves after each capture: save,
-  copy, both, or edit. Thanks to @403Denied.
-- Screenshot saves can use dated subfolders and your own file name pattern,
-  like %y-%mo. Thanks to @403Denied.
-- New radial menu slices: Shelf, Cleaning Mode, Keep Awake and window
-  layouts. Thanks to @ruvelro.
-- A choice of how the radial menu opens: press to keep it open, or hold and
-  release to run. Thanks to @ruvelro.
+- Screenshots can run the action you choose right after each capture.
+  Thanks to @403Denied.
+- Screenshot saves can go into dated subfolders and follow a file name
+  pattern you set. Thanks to @403Denied.
+- The radial menu gained slices for the Shelf, Cleaning Mode, Keep Awake
+  and window layouts. Thanks to @ruvelro.
+- You choose how the radial menu opens, by a press or by holding it.
+  Thanks to @ruvelro.
 - The Cleaner can clear the media a messaging app leaves in your downloads,
   always to the Trash and off by default. An optional organizer files new
   ones into a folder you pick. Thanks to @ruvelro.
@@ -45,8 +45,8 @@ on Caps Lock and mouse button shortcuts.
 - Hide apps from the volume mixer with a right click. The same menu brings
   them back.
 - Each removable drive in the Drives tab now has its own eject button.
-- Snippet triggers can ignore capitalization, and date variables accept a
-  format, like {{date:yyyy-MM-dd}}.
+- Snippet triggers can ignore capitalization, and date variables can follow
+  the format you want.
 - Each mouse feature can name apps to leave alone, for apps that use the
   wheel and the buttons their own way. Under Mouse.
 - The app can stay light or dark on its own, apart from the Mac. Under
