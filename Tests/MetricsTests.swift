@@ -3573,22 +3573,24 @@ struct MetricsTests {
             return samples
         }
         func limited(_ samples: [Float], channels: Int = 1,
+                     release: Float = BoostLimiter.release(sampleRate: 48000),
                      with limiter: inout BoostLimiter) -> [Float] {
             var output = samples
             output.withUnsafeMutableBufferPointer { buffer in
                 limiter.process(buffer.baseAddress!,
                                 frames: samples.count / channels,
-                                channels: channels)
+                                channels: channels,
+                                release: release)
             }
             return output
         }
 
-        var quietLimiter = BoostLimiter(sampleRate: 48000)
+        var quietLimiter = BoostLimiter()
         let quiet = sine(amplitude: 0.6, frames: 4800)
         expect(limited(quiet, with: &quietLimiter) == quiet,
                "audio inside the ceiling passes through bit-identical")
 
-        var loudLimiter = BoostLimiter(sampleRate: 48000)
+        var loudLimiter = BoostLimiter()
         let loud = limited(sine(amplitude: 1.5, frames: 9600), with: &loudLimiter)
         expect(loud.allSatisfy { abs($0) <= BoostLimiter.ceiling + 0.0001 },
                "boosted peaks never leave the ceiling")
@@ -3597,7 +3599,7 @@ struct MetricsTests {
         expect(pinned < steady.count / 5,
                "the limiter rides the level instead of flattening the wave into clipping")
 
-        var recoveryLimiter = BoostLimiter(sampleRate: 48000)
+        var recoveryLimiter = BoostLimiter()
         _ = limited(sine(amplitude: 1.5, frames: 4800), with: &recoveryLimiter)
         let afterLoud = limited(sine(amplitude: 0.5, frames: 48000), with: &recoveryLimiter)
         expect(afterLoud.prefix(480).max()! < 0.45,
@@ -3605,8 +3607,8 @@ struct MetricsTests {
         expect(afterLoud.suffix(4800).max()! > 0.499,
                "the gain recovers to unity once the audio gets quiet")
 
-        var wholeLimiter = BoostLimiter(sampleRate: 48000)
-        var chunkedLimiter = BoostLimiter(sampleRate: 48000)
+        var wholeLimiter = BoostLimiter()
+        var chunkedLimiter = BoostLimiter()
         let long = sine(amplitude: 1.5, frames: 2048)
         let whole = limited(long, with: &wholeLimiter)
         let chunked = limited(Array(long[0..<1024]), with: &chunkedLimiter)
@@ -3614,7 +3616,7 @@ struct MetricsTests {
         expect(whole == chunked,
                "splitting the stream into buffers does not change the result")
 
-        var stereoLimiter = BoostLimiter(sampleRate: 48000)
+        var stereoLimiter = BoostLimiter()
         var stereo = [Float](repeating: 0, count: 9600 * 2)
         for frame in 0..<9600 {
             let value = Float(sin(2 * Double.pi * 440 * Double(frame) / 48000))
@@ -3630,10 +3632,54 @@ struct MetricsTests {
         expect(stereoLinked,
                "both channels of a frame share one gain so the stereo image stays put")
 
-        var fallbackLimiter = BoostLimiter(sampleRate: 0)
-        let fallbackLimited = limited(sine(amplitude: 1.5, frames: 480), with: &fallbackLimiter)
+        var fallbackLimiter = BoostLimiter()
+        let fallbackLimited = limited(sine(amplitude: 1.5, frames: 480),
+                                      release: BoostLimiter.release(sampleRate: 0),
+                                      with: &fallbackLimiter)
         expect(fallbackLimited.allSatisfy { abs($0) <= BoostLimiter.ceiling + 0.0001 },
                "an unreadable sample rate still limits at the common device rate")
+
+        // A headset that takes the microphone for a call changes the rate the
+        // device runs at while the audio path stays up. The recovery has to
+        // stay the same length of time, not the same number of samples.
+
+        /// How many seconds the gain takes to come back after a loud stretch.
+        func recoverySeconds(rate: Double, release: Float) -> Double {
+            var limiter = BoostLimiter()
+            let step = max(Int(rate / 1000), 1)
+            func tone(_ amplitude: Float, seconds: Double) -> [Float] {
+                let frames = Int(rate * seconds)
+                var samples = [Float](repeating: 0, count: frames)
+                for frame in 0..<frames {
+                    samples[frame] = amplitude * Float(sin(2 * Double.pi * 440 * Double(frame) / rate))
+                }
+                return samples
+            }
+            _ = limited(tone(1.5, seconds: 0.1), release: release, with: &limiter)
+            let quiet = limited(tone(0.5, seconds: 1.0), release: release, with: &limiter)
+            let peaks = stride(from: 0, to: quiet.count, by: step).map { start in
+                quiet[start..<min(start + step, quiet.count)].map { abs($0) }.max() ?? 0
+            }
+            guard let recovered = peaks.firstIndex(where: { $0 > 0.499 }) else { return .infinity }
+            return Double(recovered) / 1000
+        }
+
+        let releaseAt48k = BoostLimiter.release(sampleRate: 48000)
+        let releaseAt16k = BoostLimiter.release(sampleRate: 16000)
+        expect(releaseAt16k < releaseAt48k,
+               "a slower rate keeps less of the previous level in each sample")
+
+        let recoveryAt48k = recoverySeconds(rate: 48000, release: releaseAt48k)
+        let recoveryAt16k = recoverySeconds(rate: 16000, release: releaseAt16k)
+        expect(abs(recoveryAt16k - recoveryAt48k) < 0.02,
+               "the gain takes the same time to come back whatever rate the device runs at")
+
+        // The defect this replaced: the figure was worked out once when the
+        // engine was built, so a device that changed rate afterwards recovered
+        // at the wrong speed for as long as it kept playing.
+        let staleRecovery = recoverySeconds(rate: 16000, release: releaseAt48k)
+        expect(staleRecovery > recoveryAt16k * 2,
+               "keeping the old rate's figure after a change drags the recovery out")
 
         // MARK: Mixer render (issue #397)
 
