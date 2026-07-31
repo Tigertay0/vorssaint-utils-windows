@@ -1117,8 +1117,11 @@ struct SupportSettings: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
-            SponsorButton()
-                .padding(.top, 4)
+            VStack(spacing: 10) {
+                SponsorButton()
+                CoffeeLink()
+            }
+            .padding(.top, 4)
             Text(l10n.s.donateThanks)
                 .font(.caption)
                 .foregroundStyle(.tertiary)
@@ -1151,6 +1154,32 @@ struct SponsorButton: View {
             .background(Capsule().fill(Color(red: 0.86, green: 0.38, blue: 0.64)))
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// The other way to give, for the people who already give that way. Small and
+/// tertiary on purpose: it sits under the main button as an alternative, never
+/// as a second thing to weigh. The name is the same in every language, so it
+/// carries no string of its own.
+struct CoffeeLink: View {
+    @Environment(\.openURL) private var openURL
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            openURL(AppInfo.coffeeURL)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "cup.and.saucer")
+                Text("Buy me a coffee")
+                    .underline(isHovering)
+            }
+            .font(.system(size: 11.5))
+            .foregroundStyle(isHovering ? Color.secondary : Color(nsColor: .tertiaryLabelColor))
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: isHovering)
     }
 }
 

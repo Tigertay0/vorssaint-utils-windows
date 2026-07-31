@@ -13,7 +13,8 @@ GitHub Sponsors.
 
 ### Changed
 - Supporting Vorssaint now goes through GitHub Sponsors, from the Support page
-  in Settings and from the screen shown after an update.
+  in Settings and from the screen shown after an update. The coffee link is
+  still there for whoever prefers it.
 
 ### Fixed
 - A saved search in the Command Bar stays in the list while you type what to

@@ -13,6 +13,9 @@ enum AppInfo {
     /// the community keeps it alive. Confirm the handle is exactly right before
     /// shipping to main.
     static let donateURL = URL(string: "https://github.com/sponsors/vorssaint")!
+    /// The other way to give, kept as a quiet second option for the people who
+    /// already give that way.
+    static let coffeeURL = URL(string: "https://buymeacoffee.com/vorssaint")!
     /// Where previews of upcoming features are posted between weekly releases.
     /// Handle taken from the owner's GitHub profile (twitter_username).
     static let communityHandle = "@vorssaint"

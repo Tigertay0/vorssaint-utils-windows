@@ -208,7 +208,7 @@ The [troubleshooting guide](docs/TROUBLESHOOTING.md) walks through the common ca
 
 Vorssaint went from first commit to the front of GitHub trending in three days, top of the Swift charts, and issues and pull requests have shaped every release since. Bug reports, feature ideas and translations are all welcome, starting from the [contributing guide](CONTRIBUTING.md).
 
-Vorssaint is free and will stay that way. If it earned its place in your menu bar, a star helps other people find it, and [sponsoring it](https://github.com/sponsors/vorssaint) keeps the maintainer awake, with or without the Keep awake feature.
+Vorssaint is free and will stay that way. If it earned its place in your menu bar, a star helps other people find it, and a [coffee](https://buymeacoffee.com/vorssaint) keeps the maintainer awake, with or without the Keep awake feature.
 
 ## License
 
