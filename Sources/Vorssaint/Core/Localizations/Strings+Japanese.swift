@@ -884,7 +884,6 @@ extension Strings {
         highlightsCaptionDockPreview: "Dock Preview がDockの拡大がオンのままでも動作するようになりました",
         highlightsCaptionScreenshot: "スクリーンショットにピクセルルーペとQRコードの読み取りが加わりました",
         highlightsCaptionSnippetLibrary: "検索できるスニペットメニューがカーソル位置にスニペットを入力します",
-        highlightsCaptionMicMute: "ミュートが設定中のマイクだけでなく、すべてのマイクに効くようになりました",
         highlightsConfigure: "設定する",
         highlightsTry: "試す",
         highlightsSeeAll: "すべての変更を見る",

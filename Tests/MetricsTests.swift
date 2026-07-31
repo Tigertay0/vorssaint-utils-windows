@@ -6085,7 +6085,6 @@ struct MetricsTests {
             let highlightsStrings = [strings.highlightsTitle, strings.highlightsCaptionDockPreview,
                                      strings.highlightsCaptionScreenshot,
                                      strings.highlightsCaptionSnippetLibrary,
-                                     strings.highlightsCaptionMicMute,
                                      strings.highlightsConfigure,
                                      strings.highlightsTry, strings.highlightsSeeAll]
             expect(highlightsStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
