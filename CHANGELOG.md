@@ -64,6 +64,9 @@ on Caps Lock and mouse button shortcuts.
 - The app switcher now closes when you click outside it.
 
 ### Fixed
+- Eject all disks now finds every external drive, not only the ones with
+  media that comes out, like a memory card. On most Macs it used to say no
+  external disk was ready.
 - The app switcher now lists windows in the order you really used them. It
   follows the windows you pick with the mouse, and windows of the same app.
 - The hot CPU alert no longer fires on a momentary spike. The temperature
