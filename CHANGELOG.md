@@ -8,7 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.2.1 fixes a saved search in the Command Bar that disappeared as
-soon as you typed what to look for.
+soon as you typed what to look for. Supporting the project now goes through
+GitHub Sponsors.
+
+### Changed
+- Supporting Vorssaint now goes through GitHub Sponsors, from the Support page
+  in Settings and from the screen shown after an update.
 
 ### Fixed
 - A saved search in the Command Bar stays in the list while you type what to

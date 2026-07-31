@@ -922,7 +922,7 @@ struct Strings {
     let supportIntroTitle: String
     let supportIntroMessage: String
     let supportIntroStarButton: String
-    let supportIntroCoffeeButton: String
+    let supportIntroSponsorButton: String
     let supportIntroLaterButton: String
     let supportIntroDoneButton: String
     let communityIntroTitle: String
@@ -1809,13 +1809,13 @@ extension Strings {
         shortcutsPageTitle: "Atalhos de teclado",
         settingsSearchPlaceholder: "Buscar ajustes",
         donateHeading: "Apoie o Vorssaint",
-        donateMessage: "Todos os meus projetos públicos são, e sempre serão, totalmente gratuitos: sem assinatura, sem anúncios. O apoio da comunidade é a única forma de manter tudo vivo. Se o Vorssaint te ajuda, um café faz diferença de verdade.",
-        donateButton: "Buy me a coffee",
+        donateMessage: "Todos os meus projetos públicos são, e sempre serão, totalmente gratuitos: sem assinatura, sem anúncios. O apoio da comunidade é a única forma de manter tudo vivo. Se o Vorssaint te ajuda, virar apoiador no GitHub faz diferença de verdade.",
+        donateButton: "Apoiar no GitHub",
         donateThanks: "Obrigado por estar aqui. 🖤",
         supportIntroTitle: "O Vorssaint é 100% gratuito e sempre será",
-        supportIntroMessage: "Eu sigo cuidando do app no meu tempo livre. Se ele te ajuda, você pode me ajudar de um jeito simples, divulgando, deixando uma estrela no GitHub ou pagando um café. Isso me ajuda muito a continuar trazendo melhorias.",
+        supportIntroMessage: "Eu sigo cuidando do app no meu tempo livre. Se ele te ajuda, você pode me ajudar de um jeito simples, divulgando, deixando uma estrela no GitHub ou virando apoiador por lá. Isso me ajuda muito a continuar trazendo melhorias.",
         supportIntroStarButton: "Dar uma estrela",
-        supportIntroCoffeeButton: "Buy me a coffee",
+        supportIntroSponsorButton: "Apoiar no GitHub",
         supportIntroLaterButton: "Agora não",
         supportIntroDoneButton: "Concluir",
         communityIntroTitle: "Vem ver antes de todo mundo",
@@ -2697,13 +2697,13 @@ extension Strings {
         shortcutsPageTitle: "Keyboard shortcuts",
         settingsSearchPlaceholder: "Search settings",
         donateHeading: "Support Vorssaint",
-        donateMessage: "Every one of my public projects is, and always will be, completely free: no subscription, no ads. Community support is the only thing that keeps it alive. If Vorssaint helps you, a coffee genuinely makes a difference.",
-        donateButton: "Buy me a coffee",
+        donateMessage: "Every one of my public projects is, and always will be, completely free: no subscription, no ads. Community support is the only thing that keeps it alive. If Vorssaint helps you, becoming a sponsor on GitHub genuinely makes a difference.",
+        donateButton: "Sponsor on GitHub",
         donateThanks: "Thank you for being here. 🖤",
         supportIntroTitle: "Vorssaint is 100% free and always will be",
-        supportIntroMessage: "I keep taking care of the app in my free time. If it helps you, you can help me in a simple way by sharing it, leaving a star on GitHub or buying me a coffee. It helps me a lot to keep improving it.",
+        supportIntroMessage: "I keep taking care of the app in my free time. If it helps you, you can help me in a simple way by sharing it, leaving a star on GitHub or sponsoring me there. It helps me a lot to keep improving it.",
         supportIntroStarButton: "Leave a star",
-        supportIntroCoffeeButton: "Buy me a coffee",
+        supportIntroSponsorButton: "Sponsor on GitHub",
         supportIntroLaterButton: "Not now",
         supportIntroDoneButton: "Done",
         communityIntroTitle: "See it before everyone else",

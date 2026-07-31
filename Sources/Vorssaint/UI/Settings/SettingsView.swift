@@ -1094,8 +1094,8 @@ struct ReleaseNotesSettings: View {
 // MARK: - Support / donate
 
 /// A calm, visual page inviting people to support the project. Nothing is
-/// nagged or gated: the message and a single Buy Me a Coffee button that opens
-/// the donate page in the browser.
+/// nagged or gated: the message and a single button that opens the sponsors
+/// page in the browser.
 struct SupportSettings: View {
     @ObservedObject private var l10n = L10n.shared
 
@@ -1106,8 +1106,8 @@ struct SupportSettings: View {
                 Circle()
                     .fill(Theme.spaceGradient)
                     .frame(width: 84, height: 84)
-                Image(systemName: "cup.and.saucer.fill")
-                    .font(.system(size: 33))
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 31))
                     .foregroundStyle(.white)
             }
             Text(l10n.s.donateHeading)
@@ -1117,7 +1117,7 @@ struct SupportSettings: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 360)
-            CoffeeButton()
+            SponsorButton()
                 .padding(.top, 4)
             Text(l10n.s.donateThanks)
                 .font(.caption)
@@ -1128,9 +1128,11 @@ struct SupportSettings: View {
     }
 }
 
-/// The Buy Me a Coffee call to action for the Support page. Opens the donate
-/// page in the default browser.
-struct CoffeeButton: View {
+/// The call to action for the Support page. Opens the sponsors page in the
+/// default browser. The pink heart is the mark the sponsors page itself uses,
+/// so the button looks like where it lands, and white on it holds its contrast
+/// in both themes.
+struct SponsorButton: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.openURL) private var openURL
 
@@ -1139,14 +1141,14 @@ struct CoffeeButton: View {
             openURL(AppInfo.donateURL)
         } label: {
             HStack(spacing: 8) {
-                Text("☕").font(.system(size: 15))
+                Image(systemName: "heart.fill").font(.system(size: 13))
                 Text(l10n.s.donateButton)
                     .font(.system(size: 14, weight: .semibold))
             }
-            .foregroundStyle(.black)
+            .foregroundStyle(.white)
             .padding(.horizontal, 22)
             .padding(.vertical, 11)
-            .background(Capsule().fill(Color(red: 1.0, green: 0.84, blue: 0.0)))
+            .background(Capsule().fill(Color(red: 0.86, green: 0.38, blue: 0.64)))
         }
         .buttonStyle(.plain)
     }
