@@ -234,10 +234,6 @@ extension Strings {
         dockPreviewClosePanel: "關閉預覽",
         dockPreviewPreviousWindow: "上一個視窗",
         dockPreviewNextWindow: "下一個視窗",
-        dockPreviewIntroPeek: "將指標停留在縮圖上可快速查看。按一下即可開啟該視窗。",
-        dockPreviewIntroSettingsHint: "你之後可以在設定 › 切換器中更改。",
-        dockPreviewIntroLater: "暫不啟用",
-        dockPreviewIntroEnable: "啟用 Dock Preview",
 
         cutPasteName: "剪下和貼上",
         cutPasteEnable: "在 Finder 中剪下和貼上檔案",

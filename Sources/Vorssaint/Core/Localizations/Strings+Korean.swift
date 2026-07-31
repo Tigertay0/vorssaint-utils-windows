@@ -234,10 +234,6 @@ extension Strings {
         dockPreviewClosePanel: "미리보기 닫기",
         dockPreviewPreviousWindow: "이전 윈도우",
         dockPreviewNextWindow: "다음 윈도우",
-        dockPreviewIntroPeek: "썸네일 위에 포인터를 올리면 잠시 미리볼 수 있습니다. 클릭하면 해당 윈도우를 엽니다.",
-        dockPreviewIntroSettingsHint: "나중에 설정 › 전환기에서 변경할 수 있습니다.",
-        dockPreviewIntroLater: "나중에",
-        dockPreviewIntroEnable: "Dock 미리보기 활성화",
 
         cutPasteName: "잘라내기 및 붙여넣기",
         cutPasteEnable: "Finder에서 파일 잘라내기 및 붙여넣기",

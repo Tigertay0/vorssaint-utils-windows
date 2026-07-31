@@ -349,10 +349,6 @@ struct Strings {
     let dockPreviewClosePanel: String
     let dockPreviewPreviousWindow: String
     let dockPreviewNextWindow: String
-    let dockPreviewIntroPeek: String
-    let dockPreviewIntroSettingsHint: String
-    let dockPreviewIntroLater: String
-    let dockPreviewIntroEnable: String
 
     // MARK: Feature — cut & paste in Finder
     let cutPasteName: String
@@ -1268,10 +1264,6 @@ extension Strings {
         dockPreviewClosePanel: "Fechar prévia",
         dockPreviewPreviousWindow: "Janela anterior",
         dockPreviewNextWindow: "Próxima janela",
-        dockPreviewIntroPeek: "Passe o mouse em uma miniatura para espiar. Clique para abrir a janela.",
-        dockPreviewIntroSettingsHint: "Você pode mudar isso depois em Ajustes › Switcher.",
-        dockPreviewIntroLater: "Agora não",
-        dockPreviewIntroEnable: "Ativar Dock Preview",
 
         cutPasteName: "Recortar e colar",
         cutPasteEnable: "Recortar e colar arquivos no Finder",
@@ -2160,10 +2152,6 @@ extension Strings {
         dockPreviewClosePanel: "Close preview",
         dockPreviewPreviousWindow: "Previous window",
         dockPreviewNextWindow: "Next window",
-        dockPreviewIntroPeek: "Hover over a thumbnail to peek. Click to open the window.",
-        dockPreviewIntroSettingsHint: "You can change this later in Settings › Switcher.",
-        dockPreviewIntroLater: "Not now",
-        dockPreviewIntroEnable: "Enable Dock Preview",
 
         cutPasteName: "Cut & paste",
         cutPasteEnable: "Cut & paste files in Finder",

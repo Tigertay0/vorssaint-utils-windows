@@ -233,10 +233,6 @@ extension Strings {
         dockPreviewClosePanel: "プレビューを閉じる",
         dockPreviewPreviousWindow: "前のウインドウ",
         dockPreviewNextWindow: "次のウインドウ",
-        dockPreviewIntroPeek: "サムネールにポインタを重ねると一時表示できます。クリックするとそのウインドウを開きます。",
-        dockPreviewIntroSettingsHint: "あとから設定 › Switcher で変更できます。",
-        dockPreviewIntroLater: "今はしない",
-        dockPreviewIntroEnable: "Dock Preview を有効にする",
 
         cutPasteName: "カット＆ペースト",
         cutPasteEnable: "Finder でファイルをカット＆ペースト",

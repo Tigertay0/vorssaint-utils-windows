@@ -13,7 +13,6 @@ enum DefaultsKey {
     static let onboardingStep = "onboardingStep"          // resume point if onboarding is interrupted
     static let featuresOnboardingVersion = "featuresOnboardingVersion" // last feature-tour marker handled
     static let lastUpdateIntroVersion = "lastUpdateIntroVersion"
-    static let dockPreviewIntroVersion = "dockPreviewIntroVersion"
     static let supportUpdateIntroVersion = "supportUpdateIntroVersion"
     static let updateHighlightsSeenVersion = "updateHighlightsSeenVersion"
     static let updateShowcaseIntroVersion = "updateShowcaseIntroVersion"
@@ -455,10 +454,6 @@ enum OnboardingInfo {
     // 3: app languages and support settings.
     // 4: navigable menu panel sections.
     static let currentFeatureSet = 4
-}
-
-enum DockPreviewIntroInfo {
-    static let releaseVersion = "3.0.4"
 }
 
 /// The one-time tour of a release's headline features, shown right after the

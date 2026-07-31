@@ -233,10 +233,6 @@ extension Strings {
         dockPreviewClosePanel: "关闭预览",
         dockPreviewPreviousWindow: "上一个窗口",
         dockPreviewNextWindow: "下一个窗口",
-        dockPreviewIntroPeek: "将指针悬停在缩略图上可临时查看。点按即可打开该窗口。",
-        dockPreviewIntroSettingsHint: "你之后可以在设置 › 切换器中更改。",
-        dockPreviewIntroLater: "暂不启用",
-        dockPreviewIntroEnable: "启用 Dock Preview",
 
         cutPasteName: "剪切和粘贴",
         cutPasteEnable: "在访达中剪切和粘贴文件",

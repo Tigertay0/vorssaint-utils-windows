@@ -233,10 +233,6 @@ extension Strings {
         dockPreviewClosePanel: "Önizlemeyi kapat",
         dockPreviewPreviousWindow: "Önceki pencere",
         dockPreviewNextWindow: "Sonraki pencere",
-        dockPreviewIntroPeek: "Göz atmak için küçük resmin üzerine gel. Pencereyi açmak için tıkla.",
-        dockPreviewIntroSettingsHint: "Bunu daha sonra Ayarlar › Değiştirici bölümünden değiştirebilirsin.",
-        dockPreviewIntroLater: "Şimdi değil",
-        dockPreviewIntroEnable: "Dock Preview'i etkinleştir",
 
         cutPasteName: "Kes ve yapıştır",
         cutPasteEnable: "Finder'da dosya kes ve yapıştır",

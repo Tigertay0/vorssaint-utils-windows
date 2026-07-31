@@ -233,10 +233,6 @@ extension Strings {
         dockPreviewClosePanel: "Vorschau schließen",
         dockPreviewPreviousWindow: "Vorheriges Fenster",
         dockPreviewNextWindow: "Nächstes Fenster",
-        dockPreviewIntroPeek: "Zeige auf ein Vorschaubild, um kurz hineinzusehen. Klicke, um das Fenster zu öffnen.",
-        dockPreviewIntroSettingsHint: "Du kannst das später in Einstellungen › Switcher ändern.",
-        dockPreviewIntroLater: "Jetzt nicht",
-        dockPreviewIntroEnable: "Dock Preview aktivieren",
 
         cutPasteName: "Ausschneiden & Einsetzen",
         cutPasteEnable: "Dateien im Finder ausschneiden & einsetzen",
