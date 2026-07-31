@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [3.2.0]
+## [3.2.0] - 2026-07-31
 
 ### Summary
 Vorssaint 3.2.0 adds the Command Bar, one field that finds and runs anything on
