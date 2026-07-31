@@ -120,6 +120,10 @@ enum CommandBarLinks {
     /// What a link's row is scored against. Its own name works until the
     /// person types something after it — from there the row has to be scored
     /// against everything typed, or the extra words sink it out of the list.
+    ///
+    /// Only for a row that does something with those words: a link that opens
+    /// the same place no matter what follows its name keeps answering to the
+    /// name, so it never leads a list it has no answer for.
     static func rankingTitle(name: String, query: String) -> String {
         trailingArgument(query: query, name: name) != nil ? query : name
     }

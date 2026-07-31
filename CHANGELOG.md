@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.2.1]
+
+### Summary
+Vorssaint 3.2.1 fixes a saved search in the Command Bar that disappeared as
+soon as you typed what to look for.
+
+### Fixed
+- A saved search in the Command Bar stays in the list while you type what to
+  look for after its name. Thanks to @tenbux.
+
 ## [3.2.0] - 2026-07-31
 
 ### Summary

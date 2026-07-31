@@ -1469,7 +1469,7 @@ struct MetricsTests {
         // per-release decision: this check fails on every version bump so the
         // decision above is made consciously, never by omission.
         let plistVersion = (NSDictionary(contentsOfFile: "Resources/Info.plist")?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.2.0",
+        expect(plistVersion == "3.2.1",
                "bumping the app version requires re-deciding the support prompt pin above")
         // 3.2.0 is a feature release, so the tour pin moves to it and the
         // pages are re-curated: mouse button shortcuts is the headline. Later
@@ -9282,6 +9282,15 @@ struct MetricsTests {
                "the name alone still scores against its own name")
         expect(CommandBarLinks.rankingTitle(name: "gh", query: "ghost writer") == "gh",
                "a word that only starts with the name is not an argument, so scoring is untouched")
+        // The defect itself: scored against its own name, a saved search left
+        // the list on the first word of the argument, which is the moment it
+        // was about to run.
+        expect(CommandBarSearch.score(title: "gh", keywords: "Link",
+                                      query: "gh vorssaint utils") == nil
+                && CommandBarSearch.score(
+                    title: CommandBarLinks.rankingTitle(name: "gh", query: "gh vorssaint utils"),
+                    keywords: "Link", query: "gh vorssaint utils") != nil,
+               "a saved search stays in the list while what to look for is typed")
 
         expect(CommandBarText.wordCount("uma frase com cinco palavras") == 5
                 && CommandBarText.wordCount("  espaços   demais  ") == 2
