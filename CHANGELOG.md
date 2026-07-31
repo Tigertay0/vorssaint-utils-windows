@@ -103,6 +103,8 @@ on Caps Lock and mouse button shortcuts.
   are saved again and old ones come back.
 - The mixer repairs its audio path by itself after the Mac wakes, instead
   of leaving an adjusted app silent.
+- An app you turned down no longer plays slowed down, or falls silent, on
+  earbuds during a call and on some other outputs. Thanks to @danilo-alm.
 - Paste as plain text no longer leaves the pasted style on what you type
   next in some rich text apps.
 - Shelf items now follow their files across moves and renames. Only a file

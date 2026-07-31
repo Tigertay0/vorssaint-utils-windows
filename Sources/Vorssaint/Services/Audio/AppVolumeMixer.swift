@@ -1665,30 +1665,33 @@ private final class TapGainEngine: GainEngine {
         let limiterBox = LimiterBox(sampleRate: Self.nominalSampleRate(of: aggregateID),
                                     bufferCount: 8)
         let cycles = cycleBox
+        let tapChannels = Self.tapChannels(of: tapID)
         guard AudioDeviceCreateIOProcIDWithBlock(&ioProc, aggregateID, nil, { _, input, _, output, _ in
             cycles.value &+= 1
             let inputBuffers = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: input))
             let outputBuffers = UnsafeMutableAudioBufferListPointer(output)
-            var gain = box.value
-            let boosting = gain > 1
+            guard let tapIndex = MixerRender.tapBufferIndex(in: inputBuffers,
+                                                            tapChannels: tapChannels) else { return }
+            let gain = box.value
+            let frames = MixerRender.render(source: inputBuffers[tapIndex],
+                                            into: outputBuffers,
+                                            gain: gain)
+            guard gain > 1, frames > 0 else { return }
             var low: Float = -1, high: Float = 1
-            for (index, inputBuffer) in inputBuffers.enumerated() where index < outputBuffers.count {
-                guard let source = inputBuffer.mData?.assumingMemoryBound(to: Float.self),
-                      let destination = outputBuffers[index].mData?.assumingMemoryBound(to: Float.self)
+            for (index, outputBuffer) in outputBuffers.enumerated() {
+                let channels = Int(outputBuffer.mNumberChannels)
+                guard channels > 0,
+                      let destination = outputBuffer.mData?.assumingMemoryBound(to: Float.self)
                 else { continue }
-                let samples = min(Int(inputBuffer.mDataByteSize),
-                                  Int(outputBuffers[index].mDataByteSize)) / MemoryLayout<Float>.size
-                vDSP_vsmul(source, 1, &gain, destination, 1, vDSP_Length(samples))
-                guard boosting else { continue }
-                let channels = Int(outputBuffers[index].mNumberChannels)
-                if index < limiterBox.limiters.count, channels > 0, samples % channels == 0 {
+                if index < limiterBox.limiters.count {
                     limiterBox.limiters[index].process(destination,
-                                                       frames: samples / channels,
+                                                       frames: frames,
                                                        channels: channels)
                 } else {
-                    // A stream shaped like nothing a tap produces still must
-                    // not hand the device samples out of range.
-                    vDSP_vclip(destination, 1, &low, &high, destination, 1, vDSP_Length(samples))
+                    // A device with more streams than the limiter was built
+                    // for still must not receive samples out of range.
+                    vDSP_vclip(destination, 1, &low, &high, destination, 1,
+                               vDSP_Length(frames * channels))
                 }
             }
         }) == noErr else {
@@ -1701,6 +1704,16 @@ private final class TapGainEngine: GainEngine {
             stop()
             return nil
         }
+    }
+
+    /// How many channels the tap hands over, used to find it among the
+    /// aggregate's input buffers. A stereo mixdown is what the tap is asked
+    /// for, so that is also the fallback.
+    private static func tapChannels(of tapID: AudioObjectID) -> Int {
+        var format = AudioStreamBasicDescription()
+        guard AppVolumeMixer.read(tapID, kAudioTapPropertyFormat, &format),
+              format.mChannelsPerFrame > 0 else { return 2 }
+        return Int(format.mChannelsPerFrame)
     }
 
     /// The rate the aggregate renders at, for the limiter's release timing.
