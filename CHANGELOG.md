@@ -18,11 +18,6 @@ it.
 - A slider for how solid the Dock preview panel looks. Under Switcher, with
   Dock Preview on. Thanks to @ruvelro.
 
-### Changed
-- Supporting Vorssaint now goes through GitHub Sponsors, from the Support page
-  in Settings and from the screen shown after an update. The coffee link is
-  still there for whoever prefers it.
-
 ### Fixed
 - The mouse side buttons now go back and forward on keyboard layouts such as
   German and French, where they did nothing at all. Thanks to @thomas-goerlich.
