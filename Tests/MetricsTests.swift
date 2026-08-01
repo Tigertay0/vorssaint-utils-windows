@@ -678,6 +678,50 @@ struct MetricsTests {
                "Back uses the standard Command left bracket menu command")
         expect(MouseNavigationSupport.commandCharacter(for: .forward) == "]",
                "Forward uses the standard Command right bracket menu command")
+        expect(MouseNavigationSupport.sanitizedCommandCharacter("ö") == "ö",
+               "a key equivalent the system moved the command to is taken as it is")
+        expect(MouseNavigationSupport.sanitizedCommandCharacter("[") == "[",
+               "a keyboard that types brackets keeps the declared command")
+        expect(MouseNavigationSupport.sanitizedCommandCharacter("") == nil,
+               "an empty key equivalent means no answer came back")
+        expect(MouseNavigationSupport.sanitizedCommandCharacter("ab") == nil,
+               "a key equivalent is a single key, never a string of them")
+        expect(MouseNavigationSupport.sanitizedCommandCharacter(" ") == nil,
+               "a blank key equivalent is not something to look for in a menu")
+        expect(MouseNavigationDirection.allCases.count == 2,
+               "the side buttons navigate in exactly two directions")
+        expect(MouseNavigationSupport.sanitizedCommandCharacter("\t") == nil,
+               "a control character is never a key to look for in a menu")
+        // Menus spell their shortcut key in upper case whatever the app wrote,
+        // and an upper case letter carries Shift on its own: both measured on
+        // a real menu, and both decide whether the command is found at all.
+        expect(MouseNavigationSupport.matchesCommand(menuCharacter: "Ö", menuModifiers: 0,
+                                                     character: "ö", modifiers: 0),
+               "a command the system moved onto a letter is found despite the menu's upper case")
+        expect(MouseNavigationSupport.matchesCommand(menuCharacter: "[", menuModifiers: 0,
+                                                     character: "[", modifiers: 0),
+               "the declared bracket keeps being found where the keyboard types it")
+        expect(!MouseNavigationSupport.matchesCommand(menuCharacter: "Ö", menuModifiers: 1,
+                                                      character: "ö", modifiers: 0),
+               "the same key with another modifier is a different command")
+        expect(!MouseNavigationSupport.matchesCommand(menuCharacter: "Ä", menuModifiers: 0,
+                                                      character: "ö", modifiers: 0),
+               "a different key is never the command being looked for")
+        expect(!MouseNavigationSupport.matchesCommand(menuCharacter: nil, menuModifiers: 0,
+                                                      character: "[", modifiers: 0),
+               "a menu item with no shortcut at all is never a match")
+        expect(MouseNavigationSupport.menuModifiers(shift: false, option: false, control: false,
+                                                    command: true, character: "ö") == 0,
+               "Command with a lower case key is the plain shortcut a menu reports as zero")
+        expect(MouseNavigationSupport.menuModifiers(shift: false, option: false, control: false,
+                                                    command: true, character: "Ö") == 1,
+               "an upper case key carries Shift even when nobody asked for it")
+        expect(MouseNavigationSupport.menuModifiers(shift: true, option: false, control: false,
+                                                    command: true, character: "f") == 1,
+               "Shift asked for reads the same as Shift implied by the key")
+        expect(MouseNavigationSupport.menuModifiers(shift: false, option: true, control: true,
+                                                    command: false, character: "[") == 14,
+               "Option, Control and no Command each add their own bit")
         expect(MouseNavigationSupport.shouldPassThrough(bundleIdentifier: "org.mozilla.firefox"),
                "the pass-through browser family keeps the raw side button events")
         expect(MouseNavigationSupport.shouldPassThrough(

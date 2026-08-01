@@ -24,6 +24,8 @@ it.
   still there for whoever prefers it.
 
 ### Fixed
+- The mouse side buttons now go back and forward on keyboard layouts such as
+  German and French, where they did nothing at all. Thanks to @thomas-goerlich.
 - Extra brightness now holds while you swipe between desktops, instead of
   dropping out until the animation ends. Thanks to @stevenyang406.
 - A mouse button set to a shortcut with an arrow or an F key now presses it
