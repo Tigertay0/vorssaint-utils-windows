@@ -19,6 +19,8 @@ it.
   Dock Preview on. Thanks to @ruvelro.
 
 ### Fixed
+- Picking a window on another desktop now switches over right away, instead of
+  stalling for a couple of seconds. Thanks to @CSkjolden.
 - The mouse side buttons now go back and forward on keyboard layouts such as
   German and French, where they did nothing at all. Thanks to @thomas-goerlich.
 - Extra brightness now holds while you swipe between desktops, instead of
