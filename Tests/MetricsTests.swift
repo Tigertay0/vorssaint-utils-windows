@@ -4579,6 +4579,15 @@ struct MetricsTests {
                                                    movingDown: false) == 1,
                "App Switcher up navigation keeps its existing column behavior")
         let previousPreviewSize = UserDefaults.standard.object(forKey: DefaultsKey.previewSize)
+        UserDefaults.standard.set("small", forKey: DefaultsKey.previewSize)
+        expectClose(Double(PreviewSizing.scale), 0.75,
+                    "Preview sizing accepts the Small option")
+        expectClose(Double(SwitcherIconRowLayout.scale), 0.75,
+                    "App Switcher icon-row mode honors the Small option")
+        expectClose(Double(DockPreviewSupport.cardSpacing), 6,
+                    "Dock Preview Small previews tighten card spacing")
+        expectClose(Double(DockPreviewSupport.panelPadding), 9,
+                    "Dock Preview Small previews tighten panel padding")
         UserDefaults.standard.set("xlarge", forKey: DefaultsKey.previewSize)
         let xlargeIconRowLayout = SwitcherIconRowLayout.compute(appCount: 6,
                                                                  selectedWindowCount: 1,

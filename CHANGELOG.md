@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen. The recording opens in an editor that cuts
 it, smooths the pointer, leans in on every click and puts a background behind
-it.
+it. Window previews can also be made smaller.
 
 ### Added
 - Screen recording. Records an area, a window or the whole screen with the
@@ -21,6 +21,8 @@ it.
   Clipboard. Thanks to @CSkjolden.
 
 ### Changed
+- App Switcher and Dock Preview now have a Small size that reduces previews and
+  the space between them. Thanks to @CSkjolden.
 - The clipboard history no longer saves a copy that an app marks as a
   password, whatever the other options are set to.
 

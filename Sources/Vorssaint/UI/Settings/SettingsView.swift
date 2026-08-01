@@ -872,6 +872,7 @@ struct SwitcherSettings: View {
             if AppFeature.switcher.isAvailable || AppFeature.dockPreview.isAvailable {
                 Section {
                     Picker(l10n.s.previewSizeLabel, selection: $previewSize) {
+                        Text(l10n.s.previewSizeSmall).tag("small")
                         Text(l10n.s.previewSizeNormal).tag("normal")
                         Text(l10n.s.previewSizeLarge).tag("large")
                         Text(l10n.s.previewSizeXLarge).tag("xlarge")
