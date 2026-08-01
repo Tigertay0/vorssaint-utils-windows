@@ -216,6 +216,8 @@ extension Strings {
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Dock'tan pencereleri önizle",
         dockPreviewEnableCaption: "Pencerelerini önizlemek ve göz atmak için Dock'ta açık bir uygulamanın üzerine gel.",
+        dockPreviewBackgroundOpacity: "Panel arka planı",
+        dockPreviewBackgroundOpacityCaption: "Panelin arkasındakileri daha çok görmek için azalt.",
         dockClickMinimize: "Dock simgesine tıklayınca küçült",
         dockClickMinimizeCaption: "Etkin uygulamanın pencereleri Dock simgesine tıklandığında küçülür. Geri getirmek için yeniden tıklayın.",
         dockClickCycleWindows: "Dock simgesine tıklayınca pencere değiştir",

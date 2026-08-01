@@ -7,9 +7,13 @@ All notable changes to this project are documented here. The format follows
 ## [3.2.1]
 
 ### Summary
-Vorssaint 3.2.1 fixes mouse button shortcuts on the arrows and the F keys, and
-a saved search in the Command Bar that disappeared as soon as you typed what to
-look for.
+Vorssaint 3.2.1 lets you see through the Dock preview panel, and fixes mouse
+button shortcuts on the arrows and the F keys and a saved search in the Command
+Bar that disappeared as soon as you typed what to look for.
+
+### Added
+- A slider for how solid the Dock preview panel looks. Under Switcher, with
+  Dock Preview on. Thanks to @ruvelro.
 
 ### Changed
 - Supporting Vorssaint now goes through GitHub Sponsors, from the Support page

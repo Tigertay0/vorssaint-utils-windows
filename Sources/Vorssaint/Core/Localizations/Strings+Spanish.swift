@@ -216,6 +216,8 @@ extension Strings {
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Previsualizar ventanas en el Dock",
         dockPreviewEnableCaption: "Pasa el cursor sobre una app abierta en el Dock para ver y asomarte a sus ventanas.",
+        dockPreviewBackgroundOpacity: "Fondo del panel",
+        dockPreviewBackgroundOpacityCaption: "Bájalo para ver más de lo que hay detrás del panel.",
         dockClickMinimize: "Clic en el Dock para minimizar",
         dockClickMinimizeCaption: "Las ventanas de la app activa se minimizan al hacer clic en su icono del Dock. Vuelve a hacer clic para recuperarlas.",
         dockClickCycleWindows: "Clic en el Dock para alternar ventanas",

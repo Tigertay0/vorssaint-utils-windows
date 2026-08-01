@@ -746,6 +746,7 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.switcherWindowlessApps) private var switcherWindowlessApps = SwitcherWindowlessApps.fallback.rawValue
     @AppStorage(DefaultsKey.switcherCurrentSpaceOnly) private var switcherCurrentSpaceOnly = false
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
+    @AppStorage(DefaultsKey.dockPreviewBackgroundOpacity) private var dockPreviewBackgroundOpacity = 1.0
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickMinimize = false
     @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleWindows = false
     @AppStorage(DefaultsKey.previewSize) private var previewSize = "normal"
@@ -833,6 +834,19 @@ struct SwitcherSettings: View {
                         Text(dockPreviewCaption)
                             .font(.caption)
                             .foregroundStyle(dockPreviewWarning ? .orange : .secondary)
+                        if dockPreviewEnabled {
+                            HStack {
+                                Text(l10n.s.dockPreviewBackgroundOpacity)
+                                Slider(value: dockPreviewBackgroundOpacityBinding,
+                                       in: DockPreviewSupport.backgroundOpacityRange,
+                                       step: 0.05)
+                                Text("\(dockPreviewBackgroundOpacityPercent)%")
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 52, alignment: .trailing)
+                            }
+                            SettingsCaptionText(l10n.s.dockPreviewBackgroundOpacityCaption)
+                        }
                     }
                     if AppFeature.dockClick.isAvailable {
                         Toggle(l10n.s.dockClickMinimize, isOn: $dockClickMinimize)
@@ -901,6 +915,17 @@ struct SwitcherSettings: View {
 
     private var dockPreviewWarning: Bool {
         dockPreviewEnabled && dockPreview.blockedReason != nil
+    }
+
+    private var dockPreviewBackgroundOpacityBinding: Binding<Double> {
+        Binding(
+            get: { DockPreviewSupport.sanitizedBackgroundOpacity(dockPreviewBackgroundOpacity) },
+            set: { dockPreviewBackgroundOpacity = DockPreviewSupport.sanitizedBackgroundOpacity($0) }
+        )
+    }
+
+    private var dockPreviewBackgroundOpacityPercent: Int {
+        Int((DockPreviewSupport.sanitizedBackgroundOpacity(dockPreviewBackgroundOpacity) * 100).rounded())
     }
 }
 
