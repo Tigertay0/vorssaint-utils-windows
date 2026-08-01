@@ -7,9 +7,9 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.0]
 
 ### Summary
-Vorssaint 3.3.0 records the screen. The recording opens in an editor that cuts
-it, smooths the pointer, leans in on every click and puts a background behind
-it. Window previews can also be made smaller.
+Vorssaint 3.3.0 records the screen and opens each recording in an editor that
+cuts it, smooths the pointer, zooms on clicks and adds a background. Window
+previews can also be made smaller.
 
 ### Added
 - Screen recording. Records an area, a window or the whole screen with the
@@ -25,6 +25,8 @@ it. Window previews can also be made smaller.
   the space between them. Thanks to @CSkjolden.
 - The clipboard history no longer saves a copy that an app marks as a
   password, whatever the other options are set to.
+- The remaining-time menu bar option now lives with Keep Awake session settings
+  under Energy. Thanks to @hash00.
 
 ### Fixed
 - The clipboard history no longer drops plain identifier codes when it is set
