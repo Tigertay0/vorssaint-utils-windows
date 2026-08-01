@@ -127,6 +127,7 @@ struct SettingsView: View {
         case .clipboard: ClipboardSettings()
         case .quickTools: QuickToolsSettings()
         case .screenshot: ScreenshotSettings()
+        case .screenRecorder: ScreenRecorderSettings()
         case .windowLayout: WindowLayoutSettings()
         case .shelf: ShelfSettings()
         case .shortcuts: ShortcutsSettings()

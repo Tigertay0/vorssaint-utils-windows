@@ -4,14 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [3.2.1]
+## [3.3.0]
 
 ### Summary
-Vorssaint 3.2.1 lets you see through the Dock preview panel, and fixes mouse
-button shortcuts on the arrows and the F keys and a saved search in the Command
-Bar that disappeared as soon as you typed what to look for.
+Vorssaint 3.3.0 records the screen. The recording opens in an editor that cuts
+it, smooths the pointer, leans in on every click and puts a background behind
+it.
 
 ### Added
+- Screen recording. Records an area, a window or the whole screen with the
+  sound of the Mac, and saves a video or a GIF. Under Screen recording, off by
+  default.
 - A slider for how solid the Dock preview panel looks. Under Switcher, with
   Dock Preview on. Thanks to @ruvelro.
 

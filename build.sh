@@ -98,6 +98,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/BrightnessStrings.swift \
         Sources/Vorssaint/Core/QuickToggleStrings.swift \
         Sources/Vorssaint/Core/ScreenshotStrings.swift \
+        Sources/Vorssaint/Core/RecorderStrings.swift \
         Sources/Vorssaint/Core/CameraPreviewStrings.swift \
         Sources/Vorssaint/Core/ScratchpadStrings.swift \
         Sources/Vorssaint/Core/CommandBarStrings.swift \
@@ -111,6 +112,12 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Snippets/TextSnippetSupport.swift \
         Sources/Vorssaint/Services/RadialMenu/RadialMenuSupport.swift \
         Sources/Vorssaint/Services/QuickTools/ScratchpadSupport.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderSupport.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderMotion.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderPointerTrack.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderTimeline.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderTextOverlay.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderEditDocument.swift \
         Sources/Vorssaint/Core/AppInfo.swift \
         Sources/Vorssaint/Core/GlobalShortcut.swift \
         Sources/Vorssaint/Core/Localization.swift \

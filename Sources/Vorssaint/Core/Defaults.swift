@@ -396,6 +396,20 @@ enum DefaultsKey {
     static let screenshotCopyToClipboard = "screenshotCopyToClipboard"
     static let panelUtilityScreenshot = "panelUtilityScreenshot"
 
+    // Screen recorder - records the picked area, keeps the untouched master
+    // in Application Support until retention sweeps it.
+    static let recorderShortcutEnabled = "recorderShortcutEnabled"
+    static let recorderShortcut = "recorderShortcut"
+    static let recorderCountdown = "recorderCountdown"
+    static let recorderQuality = "recorderQuality"
+    static let recorderFrameRate = "recorderFrameRate"
+    static let recorderSystemAudio = "recorderSystemAudio"
+    static let recorderSaveFolder = "recorderSaveFolder"
+    static let recorderOpenEditor = "recorderOpenEditor"
+    static let recorderGIFSize = "recorderGIFSize"
+    static let recorderGIFFrameRate = "recorderGIFFrameRate"
+    static let panelUtilityScreenRecorder = "panelUtilityScreenRecorder"
+
     // Window Layout — snapping, global shortcuts and optional pointer gestures.
     static let windowLayoutShortcutsEnabled = "windowLayoutShortcutsEnabled"
     static let windowGestureEnabled = "windowGestureEnabled"
@@ -912,6 +926,17 @@ enum Defaults {
         DefaultsKey.panelUtilityScratchpad: true,
         DefaultsKey.clipboardHistoryShortcutEnabled: true,
         DefaultsKey.clipboardHistoryShortcut: GlobalShortcut.clipboardDefault.storageValue,
+        DefaultsKey.recorderShortcutEnabled: false,
+        DefaultsKey.recorderShortcut: GlobalShortcut.screenRecorderDefault.storageValue,
+        DefaultsKey.recorderCountdown: 3,
+        DefaultsKey.recorderQuality: RecorderSupport.Quality.balanced.rawValue,
+        DefaultsKey.recorderFrameRate: 60,
+        DefaultsKey.recorderSystemAudio: true,
+        DefaultsKey.recorderSaveFolder: "",
+        DefaultsKey.recorderOpenEditor: true,
+        DefaultsKey.recorderGIFSize: RecorderSupport.GIFSize.medium.rawValue,
+        DefaultsKey.recorderGIFFrameRate: 12,
+        DefaultsKey.panelUtilityScreenRecorder: true,
         DefaultsKey.screenshotShortcutEnabled: false,
         DefaultsKey.screenshotShortcut: GlobalShortcut.screenshotDefault.storageValue,
         DefaultsKey.screenshotFreeze: true,
