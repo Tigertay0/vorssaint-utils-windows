@@ -24,6 +24,8 @@ it.
   still there for whoever prefers it.
 
 ### Fixed
+- Extra brightness now holds while you swipe between desktops, instead of
+  dropping out until the animation ends. Thanks to @stevenyang406.
 - A mouse button set to a shortcut with an arrow or an F key now presses it
   everywhere, including the window shortcuts. Thanks to @hash00.
 - A saved search in the Command Bar stays in the list while you type what to
