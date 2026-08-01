@@ -17,8 +17,16 @@ it.
   default.
 - A slider for how solid the Dock preview panel looks. Under Switcher, with
   Dock Preview on. Thanks to @ruvelro.
+- Apps the clipboard history skips, so nothing copied in them is saved. Under
+  Clipboard. Thanks to @CSkjolden.
+
+### Changed
+- The clipboard history no longer saves a copy that an app marks as a
+  password, whatever the other options are set to.
 
 ### Fixed
+- The clipboard history no longer drops plain identifier codes when it is set
+  to skip text that looks sensitive.
 - Picking a window on another desktop now switches over right away, instead of
   stalling for a couple of seconds. Thanks to @CSkjolden.
 - The mouse side buttons now go back and forward on keyboard layouts such as

@@ -152,6 +152,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/MouseExceptions/MouseAppExceptionSupport.swift \
         Sources/Vorssaint/Core/MouseButtonStrings.swift \
         Sources/Vorssaint/Core/MouseExceptionStrings.swift \
+        Sources/Vorssaint/Core/ClipboardIgnoredAppsStrings.swift \
         Sources/Vorssaint/Services/QuickTools/QuickToolsSupport.swift \
         Sources/Vorssaint/Services/CommandBar/CommandBarSupport.swift \
         Sources/Vorssaint/Services/CommandBar/CommandBarPreferences.swift \

@@ -366,6 +366,31 @@ struct MetricsTests {
                "clipboard history still skips URLs with obvious secret words")
         expect(ClipboardHistorySensitiveText.looksSensitive("abc1234567890-xyz-abc"),
                "clipboard history still skips compact secret-looking text")
+        // Issue #423: an identifier code is ordinary content to copy around,
+        // and losing it is what stopped people from leaving the skip on.
+        expect(!ClipboardHistorySensitiveText.looksSensitive("3f2504e0-4f89-11d3-9a0c-0305e82c3301"),
+               "clipboard history keeps a plain identifier code")
+        expect(!ClipboardHistorySensitiveText.looksSensitive("3F2504E0-4F89-11D3-9A0C-0305E82C3301"),
+               "clipboard history keeps an identifier code written in capitals")
+        expect(!ClipboardHistorySensitiveText.looksSensitive("{3f2504e0-4f89-11d3-9a0c-0305e82c3301}"),
+               "clipboard history keeps an identifier code wrapped in braces")
+        expect(ClipboardHistorySensitiveText.looksSensitive("3f2504e0-4f89-11d3-9a0c-0305e82c33x1"),
+               "a string that only resembles an identifier code is still treated as a secret")
+        expect(ClipboardHistorySensitiveText.looksSensitive("3f2504e04f8911d39a0c0305e82c3301!x"),
+               "dropping the dashes does not turn a secret into an identifier code")
+        // The mark an app puts on the pasteboard when it hands over a secret.
+        // It travels with every item, so one read of the pasteboard types
+        // answers for a mark written on its own item too (measured).
+        expect(ClipboardHistorySensitiveText.isConcealed(["public.utf8-plain-text",
+                                                          ClipboardHistorySensitiveText
+                                                              .concealedPasteboardType]),
+               "clipboard history leaves out content an app marked as a secret")
+        expect(!ClipboardHistorySensitiveText.isConcealed(["public.utf8-plain-text",
+                                                            "NSStringPboardType"]),
+               "ordinary copied text carries no secret mark")
+        expectEqual(ClipboardHistorySensitiveText.concealedPasteboardType,
+                    "org.nspasteboard.ConcealedType",
+                    "the secret mark keeps the exact name the apps that write it use")
 
         let pasteboardAccess = GeneralPasteboardAccess(label: "Vorssaint.Tests.PasteboardAccess")
         let pasteboardGroup = DispatchGroup()
@@ -8435,6 +8460,15 @@ struct MetricsTests {
                    "each list explains its own feature, never the same line twice (\(language.rawValue))")
         }
 
+        for language in AppLanguage.allCases {
+            let strings = FeatureStrings.clipboardIgnoredApps(language)
+            let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
+            expect(values.count == 4 && values.allSatisfy { !$0.isEmpty },
+                   "every clipboard skip list string is set for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible clipboard skip list strings (\(language.rawValue))")
+        }
+
         // MARK: Settings backup
 
         let backupKeys = SettingsBackupSupport.exportKeys()
@@ -8508,6 +8542,8 @@ struct MetricsTests {
                "mouse button shortcuts travel with the settings backup")
         expect(MouseExceptionScope.allCases.allSatisfy { backupKeys.contains($0.defaultsKey) },
                "the apps each mouse feature leaves alone travel with the settings backup")
+        expect(backupKeys.contains(DefaultsKey.clipboardHistoryIgnoredApps),
+               "the apps the clipboard history skips travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.panelShowToggles)
                 && backupKeys.contains(DefaultsKey.panelToggleOrder)
                 && backupKeys.contains(DefaultsKey.panelToggleDarkMode),
