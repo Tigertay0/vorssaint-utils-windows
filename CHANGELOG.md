@@ -9,7 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records and edits the screen, captures long scrolling pages and
 restores recent Window Layout placements. Finder gains image tools and shortcuts,
-Screenshot reopens its latest capture, and the Volume Mixer routes system sounds separately.
+Screenshot adds direct full-screen capture and reopens its latest capture, while
+the Volume Mixer routes system sounds separately.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
@@ -26,8 +27,8 @@ Screenshot reopens its latest capture, and the Volume Mixer routes system sounds
   starts on F2, off by default. Thanks to @Mito450.
 - Copied images can become PNG files with ⌘V in Finder, off by default under
   Clipboard. Thanks to @AsphaltDemon.
-- A shortcut reopens your latest screenshot in the editor. Under Screenshot,
-  off by default. Thanks to @Yahddyyp.
+- Separate shortcuts capture the whole screen or reopen your latest screenshot.
+  Under Screenshot, both off by default. Thanks to @Yahddyyp.
 - A slider makes the Scratchpad background more solid, up to fully opaque.
   Under Quick Tools. Thanks to @hash00.
 

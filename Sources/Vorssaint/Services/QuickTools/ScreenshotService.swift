@@ -13,21 +13,25 @@ final class ScreenshotService: ObservableObject {
     static let shared = ScreenshotService()
 
     @Published private(set) var shortcutRegistrationFailed = false
+    @Published private(set) var fullScreenShortcutRegistrationFailed = false
     @Published private(set) var lastCaptureShortcutRegistrationFailed = false
 
     private let hotkey = QuickToolHotkey(id: 15)
     private let lastCaptureHotkey = QuickToolHotkey(id: 22)
+    private let fullScreenHotkey = QuickToolHotkey(id: 23)
     private var session: ScreenshotSelectionController?
     private var preview: ScreenshotQuickPreviewController?
     private var editors: [ScreenshotEditorController] = []
     private var countdown: DispatchWorkItem?
     private var countdownRemaining = 0
     private var countdownMode: CaptureMode = .standard
+    private var directCaptureTask: Task<Void, Never>?
     private var scrollingTask: Task<Void, Never>?
     private var scrollingCaptureID: UUID?
 
     private enum CaptureMode {
         case standard
+        case fullScreen
         case scrolling
     }
 
@@ -37,14 +41,17 @@ final class ScreenshotService: ObservableObject {
 
     private init() {
         hotkey.onPress = { [weak self] in self?.capture() }
+        fullScreenHotkey.onPress = { [weak self] in self?.captureFullScreen() }
         lastCaptureHotkey.onPress = { [weak self] in self?.openLastCapture() }
     }
 
     func syncWithPreferences() {
         guard AppFeature.screenshot.isAvailable else {
             shortcutRegistrationFailed = false
+            fullScreenShortcutRegistrationFailed = false
             lastCaptureShortcutRegistrationFailed = false
             hotkey.unregister()
+            fullScreenHotkey.unregister()
             lastCaptureHotkey.unregister()
             ScreenshotLastCaptureStore.clear()
             teardownSurfaces()
@@ -55,6 +62,14 @@ final class ScreenshotService: ObservableObject {
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.screenshotShortcut,
                                             fallback: .screenshotDefault)
         shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut)
+        let fullScreenEnabled = defaults.bool(
+            forKey: DefaultsKey.screenshotFullScreenShortcutEnabled)
+        let fullScreenShortcut = GlobalShortcut.saved(
+            for: DefaultsKey.screenshotFullScreenShortcut,
+            fallback: .screenshotFullScreenDefault)
+        fullScreenShortcutRegistrationFailed = !fullScreenHotkey.sync(
+            enabled: fullScreenEnabled,
+            shortcut: fullScreenShortcut)
         let lastCaptureEnabled = defaults.bool(
             forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
         let lastCaptureShortcut = GlobalShortcut.saved(
@@ -70,6 +85,7 @@ final class ScreenshotService: ObservableObject {
 
     func suspend() {
         hotkey.unregister()
+        fullScreenHotkey.unregister()
         lastCaptureHotkey.unregister()
     }
 
@@ -78,6 +94,8 @@ final class ScreenshotService: ObservableObject {
     private func teardownSurfaces() {
         countdown?.cancel()
         countdown = nil
+        directCaptureTask?.cancel()
+        directCaptureTask = nil
         scrollingTask?.cancel()
         scrollingTask = nil
         scrollingCaptureID = nil
@@ -104,6 +122,10 @@ final class ScreenshotService: ObservableObject {
         startCapture(.scrolling)
     }
 
+    func captureFullScreen() {
+        startCapture(.fullScreen)
+    }
+
     private func startCapture(_ mode: CaptureMode) {
         // The same entry point is also the cancel action while a long capture
         // is running. It can never open a second selection or capture task.
@@ -113,7 +135,8 @@ final class ScreenshotService: ObservableObject {
         }
         // Another feature may already own the capture surface (copying text
         // off the screen picks an area the same way).
-        guard session == nil, !ScreenshotSelectionController.isSessionOnScreen else { return }
+        guard session == nil, directCaptureTask == nil,
+              !ScreenshotSelectionController.isSessionOnScreen else { return }
         if countdown != nil {
             countdown?.cancel()
             countdown = nil
@@ -134,7 +157,7 @@ final class ScreenshotService: ObservableObject {
             countdownRemaining = delay
             tickCountdown()
         } else {
-            beginSelection(mode)
+            beginCapture(mode)
         }
     }
 
@@ -142,7 +165,7 @@ final class ScreenshotService: ObservableObject {
         guard countdownRemaining > 0 else {
             let mode = countdownMode
             countdown = nil
-            beginSelection(mode)
+            beginCapture(mode)
             return
         }
         QuickToolHUD.showCountdown(countdownRemaining)
@@ -153,6 +176,14 @@ final class ScreenshotService: ObservableObject {
         }
         countdown = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
+    }
+
+    private func beginCapture(_ mode: CaptureMode) {
+        if mode == .fullScreen {
+            beginFullScreenCapture()
+        } else {
+            beginSelection(mode)
+        }
     }
 
     private func beginSelection(_ mode: CaptureMode) {
@@ -184,6 +215,39 @@ final class ScreenshotService: ObservableObject {
             case .failed:
                 QuickToolHUD.show(icon: "camera.viewfinder", message: self.strings.captureFailed)
             }
+        }
+    }
+
+    private func beginFullScreenCapture() {
+        guard directCaptureTask == nil, !ScreenshotSelectionController.isSessionOnScreen else {
+            return
+        }
+        preview?.close()
+        preview = nil
+        let pointer = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(pointer) })
+                ?? NSScreen.main,
+              screen.displayID != 0 else {
+            QuickToolHUD.show(icon: "camera.viewfinder", message: strings.captureFailed)
+            return
+        }
+        let displayID = screen.displayID
+        let scale = screen.backingScaleFactor
+        let frame = screen.frame
+        let includePointer = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotIncludePointer)
+        directCaptureTask = Task { @MainActor [weak self] in
+            let image = await ScreenshotCaptureEngine.captureDisplay(
+                displayID, includePointer: includePointer)
+            guard let self, !Task.isCancelled else { return }
+            self.directCaptureTask = nil
+            guard let image else {
+                QuickToolHUD.show(icon: "camera.viewfinder", message: self.strings.captureFailed)
+                return
+            }
+            self.route(ScreenshotSelectionController.Capture(
+                image: image,
+                scale: scale,
+                anchorRect: frame))
         }
     }
 

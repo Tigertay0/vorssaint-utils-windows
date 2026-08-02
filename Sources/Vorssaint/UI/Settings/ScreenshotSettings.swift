@@ -9,6 +9,8 @@ struct ScreenshotSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @AppStorage(DefaultsKey.screenshotShortcutEnabled) private var shortcutEnabled = false
+    @AppStorage(DefaultsKey.screenshotFullScreenShortcutEnabled)
+    private var fullScreenShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotLastCaptureShortcutEnabled)
     private var lastCaptureShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
@@ -62,6 +64,19 @@ struct ScreenshotSettings: View {
                     ScreenshotService.shared.syncWithPreferences()
                 }
                 if shortcutEnabled, service.shortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                Toggle(strings.fullScreenShortcutTitle, isOn: $fullScreenShortcutEnabled)
+                    .onChange(of: fullScreenShortcutEnabled) { _, _ in
+                        ScreenshotService.shared.syncWithPreferences()
+                    }
+                ShortcutPreferenceRow(role: .screenshotFullScreen,
+                                      isEnabled: fullScreenShortcutEnabled) {
+                    ScreenshotService.shared.syncWithPreferences()
+                }
+                if fullScreenShortcutEnabled, service.fullScreenShortcutRegistrationFailed {
                     Text(l10n.s.shortcutUnavailable)
                         .font(.caption)
                         .foregroundStyle(.orange)

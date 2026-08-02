@@ -8255,6 +8255,12 @@ struct MetricsTests {
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotShortcut] as? String
                 == "control+option+command:21",
                "the default screenshot shortcut is control option command 4")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotFullScreenShortcutEnabled]
+                as? Bool == false,
+               "the direct full-screen shortcut ships off")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotFullScreenShortcut] as? String
+                == "control+option+command:20",
+               "the full-screen shortcut sits beside screenshot selection")
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotLastCaptureShortcutEnabled]
                 as? Bool == false,
                "the latest screenshot editor shortcut ships off")
@@ -8266,6 +8272,10 @@ struct MetricsTests {
         expect(GlobalShortcutRole.screenshot.requiredEnableKeys == [DefaultsKey.screenshotShortcutEnabled]
                 && GlobalShortcutRole.screenshot.feature == .screenshot,
                "the screenshot shortcut role gates on its toggle and feature")
+        expect(GlobalShortcutRole.screenshotFullScreen.requiredEnableKeys
+                == [DefaultsKey.screenshotFullScreenShortcutEnabled]
+                && GlobalShortcutRole.screenshotFullScreen.feature == .screenshot,
+               "the full-screen shortcut has its own opt-in gate")
         expect(GlobalShortcutRole.screenshotLastCapture.requiredEnableKeys
                 == [DefaultsKey.screenshotLastCaptureShortcutEnabled]
                 && GlobalShortcutRole.screenshotLastCapture.feature == .screenshot,
@@ -8786,6 +8796,8 @@ struct MetricsTests {
                "window gesture choices travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.screenshotFreeze)
                 && backupKeys.contains(DefaultsKey.screenshotSaveFolder)
+                && backupKeys.contains(DefaultsKey.screenshotFullScreenShortcutEnabled)
+                && backupKeys.contains(DefaultsKey.screenshotFullScreenShortcut)
                 && backupKeys.contains(DefaultsKey.screenshotShowLastRegion)
                 && backupKeys.contains(DefaultsKey.screenshotToolOrder)
                 && backupKeys.contains(DefaultsKey.screenshotToolShortcutsEnabled)

@@ -101,6 +101,7 @@ struct ScreenshotFeatureStrings {
     let scrollingCaptureTooLongHUD: String
     let editLastCapture: String
     let lastCaptureMissing: String
+    let fullScreenShortcutTitle: String
 }
 
 extension FeatureStrings {
@@ -220,7 +221,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Scrolling on",
         scrollingCaptureTooLongHUD: "This capture is too long to finish safely",
         editLastCapture: "Edit latest screenshot",
-        lastCaptureMissing: "Take a screenshot first"
+        lastCaptureMissing: "Take a screenshot first",
+        fullScreenShortcutTitle: "Capture the whole screen"
     )
 
     static let ptBR = ScreenshotFeatureStrings(
@@ -319,7 +321,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Rolagem ligada",
         scrollingCaptureTooLongHUD: "Esta captura é longa demais para terminar com segurança",
         editLastCapture: "Editar a captura mais recente",
-        lastCaptureMissing: "Faça uma captura de tela primeiro"
+        lastCaptureMissing: "Faça uma captura de tela primeiro",
+        fullScreenShortcutTitle: "Capturar a tela inteira"
     )
 
     static let tr = ScreenshotFeatureStrings(
@@ -418,7 +421,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Kaydırma açık",
         scrollingCaptureTooLongHUD: "Bu yakalama güvenle tamamlanamayacak kadar uzun",
         editLastCapture: "Son ekran görüntüsünü düzenle",
-        lastCaptureMissing: "Önce bir ekran görüntüsü alın"
+        lastCaptureMissing: "Önce bir ekran görüntüsü alın",
+        fullScreenShortcutTitle: "Tüm ekranı yakala"
     )
 
     static let ru = ScreenshotFeatureStrings(
@@ -517,7 +521,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Прокрутка включена",
         scrollingCaptureTooLongHUD: "Этот снимок слишком длинный для безопасного завершения",
         editLastCapture: "Редактировать последний снимок",
-        lastCaptureMissing: "Сначала сделайте снимок экрана"
+        lastCaptureMissing: "Сначала сделайте снимок экрана",
+        fullScreenShortcutTitle: "Снять весь экран"
     )
 
     static let es = ScreenshotFeatureStrings(
@@ -616,7 +621,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Desplazamiento activo",
         scrollingCaptureTooLongHUD: "Esta captura es demasiado larga para terminarla con seguridad",
         editLastCapture: "Editar la captura más reciente",
-        lastCaptureMissing: "Haz una captura de pantalla primero"
+        lastCaptureMissing: "Haz una captura de pantalla primero",
+        fullScreenShortcutTitle: "Capturar toda la pantalla"
     )
 
     static let de = ScreenshotFeatureStrings(
@@ -715,7 +721,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Scrollen aktiv",
         scrollingCaptureTooLongHUD: "Diese Aufnahme ist zu lang, um sie sicher abzuschließen",
         editLastCapture: "Letztes Bildschirmfoto bearbeiten",
-        lastCaptureMissing: "Nimm zuerst ein Bildschirmfoto auf"
+        lastCaptureMissing: "Nimm zuerst ein Bildschirmfoto auf",
+        fullScreenShortcutTitle: "Gesamten Bildschirm aufnehmen"
     )
 
     static let fr = ScreenshotFeatureStrings(
@@ -814,7 +821,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Défilement activé",
         scrollingCaptureTooLongHUD: "Cette capture est trop longue pour être terminée en toute sécurité",
         editLastCapture: "Modifier la dernière capture",
-        lastCaptureMissing: "Prenez d'abord une capture d'écran"
+        lastCaptureMissing: "Prenez d'abord une capture d'écran",
+        fullScreenShortcutTitle: "Capturer tout l’écran"
     )
 
     static let it = ScreenshotFeatureStrings(
@@ -913,7 +921,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "Scorrimento attivo",
         scrollingCaptureTooLongHUD: "Questa cattura è troppo lunga per essere completata in sicurezza",
         editLastCapture: "Modifica l'ultima cattura",
-        lastCaptureMissing: "Prima acquisisci un'istantanea"
+        lastCaptureMissing: "Prima acquisisci un'istantanea",
+        fullScreenShortcutTitle: "Acquisisci l’intero schermo"
     )
 
     static let ja = ScreenshotFeatureStrings(
@@ -1012,7 +1021,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "スクロール有効",
         scrollingCaptureTooLongHUD: "このキャプチャは長すぎて安全に完了できません",
         editLastCapture: "最新のスクリーンショットを編集",
-        lastCaptureMissing: "先にスクリーンショットを撮影してください"
+        lastCaptureMissing: "先にスクリーンショットを撮影してください",
+        fullScreenShortcutTitle: "画面全体をキャプチャ"
     )
 
     static let ko = ScreenshotFeatureStrings(
@@ -1111,7 +1121,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "스크롤 켜짐",
         scrollingCaptureTooLongHUD: "이 캡처는 너무 길어 안전하게 완료할 수 없습니다",
         editLastCapture: "최근 스크린샷 편집",
-        lastCaptureMissing: "먼저 스크린샷을 캡처하세요"
+        lastCaptureMissing: "먼저 스크린샷을 캡처하세요",
+        fullScreenShortcutTitle: "전체 화면 캡처"
     )
 
     static let zhHans = ScreenshotFeatureStrings(
@@ -1210,7 +1221,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "滚动已开启",
         scrollingCaptureTooLongHUD: "这次截图过长，无法安全完成",
         editLastCapture: "编辑最新截屏",
-        lastCaptureMissing: "请先截取一张屏幕图像"
+        lastCaptureMissing: "请先截取一张屏幕图像",
+        fullScreenShortcutTitle: "捕捉整个屏幕"
     )
 
     static let zhTW = ScreenshotFeatureStrings(
@@ -1309,7 +1321,8 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "捲動已開啟",
         scrollingCaptureTooLongHUD: "這次截圖太長，無法安全完成",
         editLastCapture: "編輯最新截圖",
-        lastCaptureMissing: "請先擷取一張截圖"
+        lastCaptureMissing: "請先擷取一張截圖",
+        fullScreenShortcutTitle: "擷取整個螢幕"
     )
 
     static let zhHK = ScreenshotFeatureStrings(
@@ -1408,6 +1421,7 @@ extension ScreenshotFeatureStrings {
         scrollingCaptureHintOn: "捲動已開啟",
         scrollingCaptureTooLongHUD: "呢次截圖太長，無法安全完成",
         editLastCapture: "編輯最新截圖",
-        lastCaptureMissing: "請先擷取一張截圖"
+        lastCaptureMissing: "請先擷取一張截圖",
+        fullScreenShortcutTitle: "擷取整個螢幕"
     )
 }
