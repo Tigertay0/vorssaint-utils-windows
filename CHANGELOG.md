@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen and edits recordings with cuts, zooms,
 pressed keys, reusable presets and direct copy or export. Window Layout restores
-recent placements, while previews, Scratchpad, the App Switcher and radial menu
-gain faster, clearer controls, and Finder gains a rename shortcut.
+recent placements, Finder gains a rename shortcut, and the App Switcher,
+previews, Scratchpad and radial menu gain faster, clearer controls.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
@@ -38,6 +38,8 @@ gain faster, clearer controls, and Finder gains a rename shortcut.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- The App Switcher no longer stalls when certain apps are open. Thanks to
+  @Sirtx.
 - Radial menu submenus now open their action list after creation and keep it
   easy to find later. Thanks to @z76k.
 - The radial menu now stays open while the Super Key is held and follows the

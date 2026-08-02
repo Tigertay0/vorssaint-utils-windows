@@ -243,6 +243,23 @@ enum SwitcherSupport {
             .key
     }
 
+    /// Picks the processes queried through Accessibility when the switcher
+    /// opens. Every embedded helper stays eligible because Accessibility can be
+    /// the only source for its fullscreen window on another desktop; the
+    /// enumerator overlaps these remote queries so slow helpers do not stack.
+    static func accessibilityPIDs(regularAppPIDs: Set<pid_t>,
+                                  embeddedHostPIDs: [pid_t: pid_t],
+                                  ownPID: pid_t,
+                                  filterPID: pid_t?) -> Set<pid_t> {
+        if let filterPID {
+            let embeddedPIDs = embeddedHostPIDs.compactMap { ownerPID, hostPID in
+                hostPID == filterPID ? ownerPID : nil
+            }
+            return Set([filterPID] + embeddedPIDs)
+        }
+        return regularAppPIDs.union(embeddedHostPIDs.keys).subtracting([ownPID])
+    }
+
     /// Picks the running apps that earn an entry of their own because the
     /// window list has nothing for them.
     ///

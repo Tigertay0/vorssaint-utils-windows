@@ -1317,6 +1317,21 @@ struct MetricsTests {
             regularBundlePaths: regularBundlePaths
         ) == nil,
                "App Switcher leaves unrelated accessory apps independent")
+        let embeddedHostPIDs: [pid_t: pid_t] = [202: 101, 203: 101, 302: 301]
+        expect(SwitcherSupport.accessibilityPIDs(
+            regularAppPIDs: Set<pid_t>([101, 301, 999]),
+            embeddedHostPIDs: embeddedHostPIDs,
+            ownPID: 999,
+            filterPID: nil
+        ) == Set<pid_t>([101, 202, 203, 301, 302]),
+               "App Switcher keeps embedded helpers eligible for Accessibility-only windows")
+        expect(SwitcherSupport.accessibilityPIDs(
+            regularAppPIDs: Set<pid_t>([101, 301, 999]),
+            embeddedHostPIDs: embeddedHostPIDs,
+            ownPID: 999,
+            filterPID: 101
+        ) == Set<pid_t>([101, 202, 203]),
+               "a single-app enumeration keeps that app and all of its embedded helpers")
         let embeddedWindow = SwitcherItem.window(id: 77,
                                                  title: "Project",
                                                  appName: "Primary",
