@@ -888,6 +888,8 @@ extension Strings {
         switcherCurrentSpaceOnly: "Afficher uniquement le bureau actuel",
         switcherCurrentSpaceOnlyCaption: "N'affiche dans le sélecteur que les fenêtres du bureau où vous êtes. Choisir une fenêtre ne vous emmène jamais sur un autre bureau.",
         shelfFileMissing: "Le fichier n'existe plus",
-        previewSizeSmall: "Petite"
+        previewSizeSmall: "Petite",
+        mixerSoundEffectsOutputTitle: "Sons du système",
+        mixerSoundEffectsOutputTooltip: "Choisir où sont diffusés les alertes et effets sonores"
     )
 }

@@ -76,6 +76,7 @@ final class AppVolumeMixer: ObservableObject {
     @Published private(set) var apps: [MixerApp] = []
     @Published private(set) var outputDevices: [MixerOutputDevice] = []
     @Published private(set) var currentOutputDeviceUID: String?
+    @Published private(set) var currentSystemSoundOutputDeviceUID: String?
     @Published private(set) var outputSwitchError: String?
     /// Set when tap creation fails with a permission error, so the panel can
     /// point at the System Audio Recording consent.
@@ -169,6 +170,7 @@ final class AppVolumeMixer: ObservableObject {
         listenerInstalled = true
         installListener(selector: kAudioHardwarePropertyDevices)
         installListener(selector: kAudioHardwarePropertyDefaultOutputDevice)
+        installListener(selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
         if Self.isSupported {
             installListener(selector: kAudioHardwarePropertyProcessObjectList)
         }
@@ -224,6 +226,7 @@ final class AppVolumeMixer: ObservableObject {
         if !hiddenApps.isEmpty { hiddenApps = [] }
         if !outputDevices.isEmpty { outputDevices = [] }
         if currentOutputDeviceUID != nil { currentOutputDeviceUID = nil }
+        if currentSystemSoundOutputDeviceUID != nil { currentSystemSoundOutputDeviceUID = nil }
         if outputSwitchError != nil { outputSwitchError = nil }
         if needsPermission { needsPermission = false }
     }
@@ -390,13 +393,8 @@ final class AppVolumeMixer: ObservableObject {
             return false
         }
 
-        if device.canBeDefaultSystemOutput {
-            _ = Self.setDefaultDevice(device.audioObjectID,
-                                      selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
-        }
-
         outputSwitchError = nil
-        // The system output just changed by this app's own hand, so a refresh
+        // The default app output just changed by this app's own hand, so a refresh
         // still reading the previous devices is thrown away; the one at the end
         // of this method replaces it.
         refresh.discardInFlight()
@@ -435,6 +433,33 @@ final class AppVolumeMixer: ObservableObject {
         }
         reconcileEngines(with: apps)
         clearPermissionIfNoActiveAdjustments()
+        refreshApps()
+        return true
+    }
+
+    @discardableResult
+    func setSystemSoundOutputDeviceUID(_ uid: String) -> Bool {
+        guard let sanitized = Defaults.sanitizedAppOutputDeviceUID(uid),
+              let device = outputDevices.first(where: {
+                  $0.uid == sanitized && $0.canBeDefaultSystemOutput
+              }) else {
+            outputSwitchError = L10n.shared.s.mixerOutputUnavailable
+            refreshApps()
+            return false
+        }
+
+        let status = Self.setDefaultDevice(
+            device.audioObjectID,
+            selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
+        guard status == noErr else {
+            outputSwitchError = "OSStatus \(status)"
+            refreshApps()
+            return false
+        }
+
+        outputSwitchError = nil
+        refresh.discardInFlight()
+        currentSystemSoundOutputDeviceUID = device.uid
         refreshApps()
         return true
     }
@@ -621,6 +646,7 @@ final class AppVolumeMixer: ObservableObject {
     /// thread to turn into published state.
     private struct RefreshSnapshot {
         let defaultUID: String?
+        let systemSoundUID: String?
         let outputDevices: [MixerOutputDevice]
         /// Nil where process taps do not exist (before macOS 14.4): the app
         /// list stays empty and no process object is looked at.
@@ -687,7 +713,9 @@ final class AppVolumeMixer: ObservableObject {
         lastAutomaticLoweredOutputUID = snapshot.lowered.lastAutomaticLoweredOutputUID
         loweredOutput = snapshot.lowered.loweredOutput
 
-        if snapshot.defaultUID != currentOutputDeviceUID, outputSwitchError != nil {
+        if (snapshot.defaultUID != currentOutputDeviceUID
+            || snapshot.systemSoundUID != currentSystemSoundOutputDeviceUID),
+           outputSwitchError != nil {
             outputSwitchError = nil
         }
         let audioEnvironmentChanged = currentOutputDeviceUID != nil
@@ -703,6 +731,9 @@ final class AppVolumeMixer: ObservableObject {
         // only real changes or a chatty HAL re-renders the panel continuously.
         if currentOutputDeviceUID != snapshot.defaultUID {
             currentOutputDeviceUID = snapshot.defaultUID
+        }
+        if currentSystemSoundOutputDeviceUID != snapshot.systemSoundUID {
+            currentSystemSoundOutputDeviceUID = snapshot.systemSoundUID
         }
         if snapshot.outputDevices != outputDevices {
             outputDevices = snapshot.outputDevices
@@ -733,7 +764,9 @@ final class AppVolumeMixer: ObservableObject {
     /// Runs on `halQueue`. Every CoreAudio read of a refresh happens here and
     /// nothing outside the returned snapshot is touched.
     private static func readSnapshot(_ request: RefreshRequest) -> RefreshSnapshot {
-        let defaultUID = defaultOutputDeviceUID()
+        let defaultUID = defaultOutputDeviceUID(selector: kAudioHardwarePropertyDefaultOutputDevice)
+        let systemSoundUID = defaultOutputDeviceUID(
+            selector: kAudioHardwarePropertyDefaultSystemOutputDevice)
         let nextOutputDevices = outputDevices(defaultUID: defaultUID)
         let availableUIDs = Set(nextOutputDevices.map(\.uid))
         let lowered = loweringOutputVolumeIfHeadphonesDisconnected(
@@ -747,6 +780,7 @@ final class AppVolumeMixer: ObservableObject {
 
         guard isSupported else {
             return RefreshSnapshot(defaultUID: defaultUID,
+                                   systemSoundUID: systemSoundUID,
                                    outputDevices: nextOutputDevices,
                                    apps: nil,
                                    processObjects: [],
@@ -862,6 +896,7 @@ final class AppVolumeMixer: ObservableObject {
         next = coalescingAppsWithDuplicateIDs(next)
 
         return RefreshSnapshot(defaultUID: defaultUID,
+                               systemSoundUID: systemSoundUID,
                                outputDevices: nextOutputDevices,
                                apps: next,
                                processObjects: processObjects,
@@ -1427,10 +1462,12 @@ final class AppVolumeMixer: ObservableObject {
         return read(deviceID, selector, &value, scope: kAudioObjectPropertyScopeOutput) && value != 0
     }
 
-    private static func defaultOutputDeviceUID() -> String? {
+    private static func defaultOutputDeviceUID(
+        selector: AudioObjectPropertySelector = kAudioHardwarePropertyDefaultOutputDevice
+    ) -> String? {
         var defaultDevice = AudioObjectID(0)
         guard read(AudioObjectID(kAudioObjectSystemObject),
-                   kAudioHardwarePropertyDefaultOutputDevice, &defaultDevice),
+                   selector, &defaultDevice),
               defaultDevice != 0 else { return nil }
         var uidRef: CFString = "" as CFString
         guard read(defaultDevice, kAudioDevicePropertyDeviceUID, &uidRef) else { return nil }

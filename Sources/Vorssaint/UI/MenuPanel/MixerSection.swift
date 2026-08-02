@@ -29,7 +29,7 @@ struct MixerSection: View {
     var body: some View {
         PanelSection(.mixer, title: l10n.s.mixerSection, collapsible: collapsible) {
             VStack(alignment: .leading, spacing: 8) {
-                universalOutputPicker
+                outputPickers
                 headphoneDisconnectProtectionToggle
                 if AppFeature.soundOutputSwitcher.isAvailable {
                     soundOutputSwitcherControls
@@ -63,6 +63,17 @@ struct MixerSection: View {
         }
         .onAppear {
             soundOutputSwitcherUIDs = SoundOutputSwitcher.shared.selectedDeviceUIDs()
+        }
+    }
+
+    private var outputPickers: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            universalOutputPicker
+            systemSoundOutputPicker
+            if let outputSwitchError = mixer.outputSwitchError {
+                inputMessage(String(format: l10n.s.mixerSystemOutputErrorFormat, outputSwitchError),
+                             systemImage: "exclamationmark.triangle")
+            }
         }
     }
 
@@ -105,9 +116,50 @@ struct MixerSection: View {
 
             if universalOutputDevices.isEmpty {
                 inputMessage(l10n.s.mixerSystemOutputNoDevices, systemImage: "speaker.slash")
-            } else if let outputSwitchError = mixer.outputSwitchError {
-                inputMessage(String(format: l10n.s.mixerSystemOutputErrorFormat, outputSwitchError),
-                             systemImage: "exclamationmark.triangle")
+            }
+        }
+    }
+
+    private var systemSoundOutputPicker: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Label {
+                    Text(l10n.s.mixerSoundEffectsOutputTitle)
+                        .font(.system(size: 11.5, weight: .medium))
+                } icon: {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 10.5, weight: .semibold))
+                }
+                .foregroundStyle(.secondary)
+
+                Spacer(minLength: 6)
+
+                Picker(l10n.s.mixerSoundEffectsOutputTooltip,
+                       selection: systemSoundOutputSelectionBinding) {
+                    if mixer.currentSystemSoundOutputDeviceUID == nil {
+                        Text(l10n.s.mixerOutputUnavailable)
+                            .tag(MixerRoutingSupport.systemDefaultSelectionID)
+                    }
+                    ForEach(systemSoundOutputDevices) { device in
+                        Text(systemSoundOutputDeviceTitle(device))
+                            .tag(device.uid)
+                    }
+                    if let selected = mixer.currentSystemSoundOutputDeviceUID,
+                       !systemSoundOutputDevices.contains(where: { $0.uid == selected }) {
+                        Text(l10n.s.mixerOutputUnavailable)
+                            .tag(selected)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .frame(width: 164)
+                .disabled(systemSoundOutputDevices.isEmpty)
+                .help(l10n.s.mixerSoundEffectsOutputTooltip)
+            }
+
+            if systemSoundOutputDevices.isEmpty {
+                inputMessage(l10n.s.mixerSystemOutputNoDevices, systemImage: "bell.slash")
             }
         }
     }
@@ -116,12 +168,29 @@ struct MixerSection: View {
         mixer.outputDevices.filter(\.canBeDefaultOutput)
     }
 
+    private var systemSoundOutputDevices: [MixerOutputDevice] {
+        mixer.outputDevices.filter(\.canBeDefaultSystemOutput)
+    }
+
     private var universalOutputSelectionBinding: Binding<String> {
         Binding(
             get: { mixer.currentOutputDeviceUID ?? MixerRoutingSupport.systemDefaultSelectionID },
             set: { selection in
                 guard selection != MixerRoutingSupport.systemDefaultSelectionID else { return }
                 mixer.setUniversalOutputDeviceUID(selection)
+            }
+        )
+    }
+
+    private var systemSoundOutputSelectionBinding: Binding<String> {
+        Binding(
+            get: {
+                mixer.currentSystemSoundOutputDeviceUID
+                    ?? MixerRoutingSupport.systemDefaultSelectionID
+            },
+            set: { selection in
+                guard selection != MixerRoutingSupport.systemDefaultSelectionID else { return }
+                mixer.setSystemSoundOutputDeviceUID(selection)
             }
         )
     }
@@ -409,6 +478,12 @@ struct MixerSection: View {
 
     private func outputDeviceTitle(_ device: MixerOutputDevice) -> String {
         device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name
+    }
+
+    private func systemSoundOutputDeviceTitle(_ device: MixerOutputDevice) -> String {
+        device.uid == mixer.currentSystemSoundOutputDeviceUID
+            ? "\(device.name) (\(l10n.s.mixerOutputCurrent))"
+            : device.name
     }
 
     private func inputMessage(_ text: String, systemImage: String) -> some View {

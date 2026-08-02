@@ -889,6 +889,8 @@ extension Strings {
         switcherCurrentSpaceOnly: "Показывать только текущий рабочий стол",
         switcherCurrentSpaceOnlyCaption: "В переключателе видны только окна рабочего стола, на котором вы находитесь. Выбор окна никогда не переносит вас на другой рабочий стол.",
         shelfFileMissing: "Файл больше не существует",
-        previewSizeSmall: "Маленький"
+        previewSizeSmall: "Маленький",
+        mixerSoundEffectsOutputTitle: "Системные звуки",
+        mixerSoundEffectsOutputTooltip: "Выбрать устройство для оповещений и звуковых эффектов"
     )
 }

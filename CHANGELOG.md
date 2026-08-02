@@ -8,8 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.0 records and edits the screen, captures long scrolling pages and
-restores recent Window Layout placements. Finder gains image paste and a rename
-shortcut, while previews, the App Switcher, Scratchpad and radial menu gain clearer controls.
+restores recent Window Layout placements. Finder gains image tools and shortcuts,
+while the Volume Mixer routes system sounds separately.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
@@ -30,6 +30,8 @@ shortcut, while previews, the App Switcher, Scratchpad and radial menu gain clea
   Under Quick Tools. Thanks to @hash00.
 
 ### Changed
+- System sounds can use a different output from apps, chosen directly in the
+  Volume Mixer. Thanks to @p3P4.
 - The Scratchpad now has a pin that keeps the current note open until you close
   it. Thanks to @hash00.
 - Window Layout's Restore action now steps back through recent placements.

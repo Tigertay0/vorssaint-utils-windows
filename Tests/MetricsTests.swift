@@ -6240,6 +6240,11 @@ struct MetricsTests {
             expectFormat(strings.shelfSelectedFormat, ["d"], "\(prefix) shelf selection format")
             expectFormat(strings.powerAdapterMaxFormat, ["@"], "\(prefix) adapter max format")
             expectFormat(strings.mixerInputErrorFormat, ["@"], "\(prefix) mixer input error format")
+            expect(!strings.mixerSoundEffectsOutputTitle.isEmpty
+                   && !strings.mixerSoundEffectsOutputTooltip.isEmpty
+                   && !strings.mixerSoundEffectsOutputTitle.contains("—")
+                   && !strings.mixerSoundEffectsOutputTooltip.contains("—"),
+                   "\(prefix) system sound output labels are present without em dash")
             expectFormat(strings.homebrewConfirmInstallBodyFormat, ["@"], "\(prefix) Homebrew install format")
             expectFormat(strings.homebrewConfirmUninstallBodyFormat, ["@"], "\(prefix) Homebrew uninstall format")
             expectFormat(strings.homebrewConfirmUpgradeBodyFormat, ["@"], "\(prefix) Homebrew upgrade format")
