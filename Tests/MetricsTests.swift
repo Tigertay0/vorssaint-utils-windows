@@ -7799,6 +7799,12 @@ struct MetricsTests {
         expect(ScreenshotSupport.scrollingStitchPieces(
             frameHeights: [120, 120], topCrops: [0, 120]) == nil,
                "scrolling stitch geometry rejects an empty slice")
+        expectClose(Double(ScreenshotSupport.captureScale(fromDPI: 144) ?? 0), 2,
+                    "the cached screenshot restores its Retina scale from PNG metadata")
+        expect(ScreenshotSupport.captureScale(fromDPI: nil) == nil
+                && ScreenshotSupport.captureScale(fromDPI: 0) == nil
+                && ScreenshotSupport.captureScale(fromDPI: .infinity) == nil,
+               "missing or broken PNG scale metadata never opens a misleading capture")
 
         let dragRect = ScreenshotSupport.selectionRect(from: CGPoint(x: 100, y: 80),
                                                        to: CGPoint(x: 40, y: 200))
@@ -8249,11 +8255,21 @@ struct MetricsTests {
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotShortcut] as? String
                 == "control+option+command:21",
                "the default screenshot shortcut is control option command 4")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotLastCaptureShortcutEnabled]
+                as? Bool == false,
+               "the latest screenshot editor shortcut ships off")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotLastCaptureShortcut] as? String
+                == "control+option+command:14",
+               "the latest screenshot editor shortcut defaults to control option command E")
         expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityScreenshot] as? Bool == true,
                "the panel row ships visible like its siblings")
         expect(GlobalShortcutRole.screenshot.requiredEnableKeys == [DefaultsKey.screenshotShortcutEnabled]
                 && GlobalShortcutRole.screenshot.feature == .screenshot,
                "the screenshot shortcut role gates on its toggle and feature")
+        expect(GlobalShortcutRole.screenshotLastCapture.requiredEnableKeys
+                == [DefaultsKey.screenshotLastCaptureShortcutEnabled]
+                && GlobalShortcutRole.screenshotLastCapture.feature == .screenshot,
+               "the latest screenshot shortcut gates on its own toggle and the screenshot feature")
 
         expect(Defaults.registeredDefaults[DefaultsKey.cameraPreviewShortcutEnabled] as? Bool == false,
                "the camera preview shortcut ships off like the other quick tools")
@@ -8773,6 +8789,8 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.screenshotShowLastRegion)
                 && backupKeys.contains(DefaultsKey.screenshotToolOrder)
                 && backupKeys.contains(DefaultsKey.screenshotToolShortcutsEnabled)
+                && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcutEnabled)
+                && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcut)
                 && backupKeys.contains(DefaultsKey.panelUtilityScreenshot),
                "screenshot preferences travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.whatsAppDownloadsAutomaticEnabled)

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import ImageIO
 
 /// The screenshot tool: freeze-first area, window and full screen capture
 /// with an annotation editor, pinned floating captures and direct clipboard
@@ -12,8 +13,10 @@ final class ScreenshotService: ObservableObject {
     static let shared = ScreenshotService()
 
     @Published private(set) var shortcutRegistrationFailed = false
+    @Published private(set) var lastCaptureShortcutRegistrationFailed = false
 
     private let hotkey = QuickToolHotkey(id: 15)
+    private let lastCaptureHotkey = QuickToolHotkey(id: 22)
     private var session: ScreenshotSelectionController?
     private var preview: ScreenshotQuickPreviewController?
     private var editors: [ScreenshotEditorController] = []
@@ -34,23 +37,40 @@ final class ScreenshotService: ObservableObject {
 
     private init() {
         hotkey.onPress = { [weak self] in self?.capture() }
+        lastCaptureHotkey.onPress = { [weak self] in self?.openLastCapture() }
     }
 
     func syncWithPreferences() {
         guard AppFeature.screenshot.isAvailable else {
             shortcutRegistrationFailed = false
+            lastCaptureShortcutRegistrationFailed = false
             hotkey.unregister()
+            lastCaptureHotkey.unregister()
+            ScreenshotLastCaptureStore.clear()
             teardownSurfaces()
             return
         }
-        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotShortcutEnabled)
+        let defaults = UserDefaults.standard
+        let enabled = defaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled)
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.screenshotShortcut,
                                             fallback: .screenshotDefault)
         shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut)
+        let lastCaptureEnabled = defaults.bool(
+            forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
+        let lastCaptureShortcut = GlobalShortcut.saved(
+            for: DefaultsKey.screenshotLastCaptureShortcut,
+            fallback: .screenshotLastCaptureDefault)
+        lastCaptureShortcutRegistrationFailed = !lastCaptureHotkey.sync(
+            enabled: lastCaptureEnabled,
+            shortcut: lastCaptureShortcut)
+        if !lastCaptureEnabled {
+            ScreenshotLastCaptureStore.clear()
+        }
     }
 
     func suspend() {
         hotkey.unregister()
+        lastCaptureHotkey.unregister()
     }
 
     /// Hub-off means gone: open editors, pins and a selection in progress
@@ -215,6 +235,10 @@ final class ScreenshotService: ObservableObject {
     /// exists to reach for.
     private func route(_ capture: ScreenshotSelectionController.Capture) {
         preview?.close()
+        if UserDefaults.standard.bool(
+            forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled) {
+            ScreenshotLastCaptureStore.save(capture)
+        }
         if UserDefaults.standard.bool(forKey: DefaultsKey.screenshotCopyToClipboard) {
             autoCopy(capture)
         }
@@ -268,6 +292,16 @@ final class ScreenshotService: ObservableObject {
         let editor = ScreenshotEditorController(capture: capture)
         editors.append(editor)
         editor.show()
+    }
+
+    private func openLastCapture() {
+        guard let capture = ScreenshotLastCaptureStore.load() else {
+            QuickToolHUD.show(icon: "camera.viewfinder", message: strings.lastCaptureMissing)
+            return
+        }
+        preview?.close()
+        preview = nil
+        openEditor(with: capture)
     }
 
     func editorDidClose(_ editor: ScreenshotEditorController) {
@@ -429,5 +463,54 @@ final class ScreenshotService: ObservableObject {
             return
         }
         defaults.set(consumed, forKey: DefaultsKey.screenshotFileNumberNext)
+    }
+}
+
+/// One discardable PNG on disk keeps this shortcut useful across launches
+/// without holding a full-resolution screenshot in memory while the app rests.
+enum ScreenshotLastCaptureStore {
+    private static var fileURL: URL? {
+        guard let base = FileManager.default.urls(for: .cachesDirectory,
+                                                  in: .userDomainMask).first,
+              let bundleID = Bundle.main.bundleIdentifier
+        else { return nil }
+        return base
+            .appendingPathComponent(bundleID, isDirectory: true)
+            .appendingPathComponent("LatestScreenshot.png")
+    }
+
+    static func save(_ capture: ScreenshotSelectionController.Capture) {
+        guard let fileURL,
+              let data = ScreenshotRenderer.pngData(from: capture.image, scale: capture.scale)
+        else {
+            clear()
+            return
+        }
+        do {
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            clear()
+        }
+    }
+
+    static func load() -> ScreenshotSelectionController.Capture? {
+        guard let fileURL else { return nil }
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(fileURL as CFURL, sourceOptions),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as NSDictionary?,
+              let dpi = properties[kCGImagePropertyDPIWidth] as? NSNumber,
+              let scale = ScreenshotSupport.captureScale(fromDPI: dpi.doubleValue)
+        else { return nil }
+        let imageOptions = [kCGImageSourceShouldCacheImmediately: true] as CFDictionary
+        guard let image = CGImageSourceCreateImageAtIndex(source, 0, imageOptions) else { return nil }
+        return ScreenshotSelectionController.Capture(image: image, scale: scale, anchorRect: .zero)
+    }
+
+    static func clear() {
+        guard let fileURL else { return }
+        try? FileManager.default.removeItem(at: fileURL)
     }
 }

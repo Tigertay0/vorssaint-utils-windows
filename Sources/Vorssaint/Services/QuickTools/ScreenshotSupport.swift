@@ -203,6 +203,14 @@ enum ScreenshotSupport {
         return (longestRun, matchingRows, Double(totalDifference) / Double(comparedPixels))
     }
 
+    /// Restores the pixels-per-point scale stored as standard PNG DPI.
+    static func captureScale(fromDPI dpi: Double?) -> CGFloat? {
+        guard let dpi, dpi.isFinite else { return nil }
+        let scale = dpi / 72
+        guard (0.5...4).contains(scale) else { return nil }
+        return CGFloat(scale)
+    }
+
     // MARK: - Selection geometry
 
     /// Rectangle between two drag points. `square` constrains to the largest

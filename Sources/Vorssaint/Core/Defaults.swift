@@ -378,6 +378,8 @@ enum DefaultsKey {
     // Screenshot capture and editor.
     static let screenshotShortcutEnabled = "screenshotShortcutEnabled"
     static let screenshotShortcut = "screenshotShortcut"
+    static let screenshotLastCaptureShortcutEnabled = "screenshotLastCaptureShortcutEnabled"
+    static let screenshotLastCaptureShortcut = "screenshotLastCaptureShortcut"
     static let screenshotFreeze = "screenshotFreeze"
     static let screenshotSaveFolder = "screenshotSaveFolder"
     static let screenshotSaveSubfolder = "screenshotSaveSubfolder"
@@ -956,6 +958,8 @@ enum Defaults {
         DefaultsKey.panelUtilityScreenRecorder: true,
         DefaultsKey.screenshotShortcutEnabled: false,
         DefaultsKey.screenshotShortcut: GlobalShortcut.screenshotDefault.storageValue,
+        DefaultsKey.screenshotLastCaptureShortcutEnabled: false,
+        DefaultsKey.screenshotLastCaptureShortcut: GlobalShortcut.screenshotLastCaptureDefault.storageValue,
         DefaultsKey.screenshotFreeze: true,
         DefaultsKey.screenshotSaveFolder: "",
         DefaultsKey.screenshotSaveSubfolder: "",

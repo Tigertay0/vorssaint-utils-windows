@@ -9,6 +9,8 @@ struct ScreenshotSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @AppStorage(DefaultsKey.screenshotShortcutEnabled) private var shortcutEnabled = false
+    @AppStorage(DefaultsKey.screenshotLastCaptureShortcutEnabled)
+    private var lastCaptureShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
     @AppStorage(DefaultsKey.screenshotSaveSubfolder) private var saveSubfolder = ""
@@ -60,6 +62,20 @@ struct ScreenshotSettings: View {
                     ScreenshotService.shared.syncWithPreferences()
                 }
                 if shortcutEnabled, service.shortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                Toggle(strings.editLastCapture, isOn: $lastCaptureShortcutEnabled)
+                    .onChange(of: lastCaptureShortcutEnabled) { _, _ in
+                        ScreenshotService.shared.syncWithPreferences()
+                    }
+                ShortcutPreferenceRow(role: .screenshotLastCapture,
+                                      isEnabled: lastCaptureShortcutEnabled) {
+                    ScreenshotService.shared.syncWithPreferences()
+                }
+                if lastCaptureShortcutEnabled,
+                   service.lastCaptureShortcutRegistrationFailed {
                     Text(l10n.s.shortcutUnavailable)
                         .font(.caption)
                         .foregroundStyle(.orange)
