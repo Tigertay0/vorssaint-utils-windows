@@ -11,7 +11,8 @@ Vorssaint 3.3.0 records the screen and opens each recording in an editor that
 cuts it, smooths the pointer, zooms on clicks and adds a background, while
 Window Layout steps back through recent placements. Window previews can be
 smaller, the App Switcher reopens apps without windows and appears without a
-pop-in, and the Scratchpad can keep the current note open.
+pop-in, the Scratchpad can keep the current note open, and the radial menu holds
+with the Super Key.
 
 ### Added
 - Screen recording. Records an area, a window or the whole screen with the
@@ -38,6 +39,8 @@ pop-in, and the Scratchpad can keep the current note open.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- The radial menu now stays open while the Super Key is held and follows the
+  pointer until the key is released. Thanks to @AB-boi.
 - The clipboard history no longer drops plain identifier codes when it is set
   to skip text that looks sensitive.
 - Picking a window on another desktop now switches over right away, instead of
