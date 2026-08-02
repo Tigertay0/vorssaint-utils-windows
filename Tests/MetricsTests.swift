@@ -1607,6 +1607,10 @@ struct MetricsTests {
         expect(registeredDefaults[DefaultsKey.clipboardHistoryShortcut] as? String
                == GlobalShortcut.clipboardDefault.storageValue,
                "clipboard history shortcut defaults to Ctrl+Opt+Cmd+V")
+        expect(registeredDefaults[DefaultsKey.finderRenameEnabled] as? Bool == false,
+               "the Finder rename shortcut is opt-in")
+        expect(registeredDefaults[DefaultsKey.finderRenameShortcut] as? String == ":120",
+               "the Finder rename shortcut starts on bare F2")
         expect(GlobalShortcut(keyCode: Int64(kVK_ANSI_V), modifiers: [.command])
                    .isStandardPasteCommand,
                "Cmd+V is recognized when plain-text paste must release its own hotkey")
@@ -2094,6 +2098,17 @@ struct MetricsTests {
                "delete with a real modifier records instead of clearing")
         expect(!GlobalShortcut.clearsShortcut(keyCode: Int64(kVK_ANSI_D), modifiers: []),
                "an ordinary key never clears the shortcut")
+        expect(GlobalShortcut.finderRenameDefault.isValid
+                && GlobalShortcut.finderRenameDefault.displayString == "F2"
+                && GlobalShortcut(storageValue: GlobalShortcut.finderRenameDefault.storageValue)
+                    == .finderRenameDefault,
+               "a standalone function key records, displays and survives storage")
+        expect(!GlobalShortcut(keyCode: Int64(kVK_ANSI_F), modifiers: []).isValid,
+               "a bare letter still cannot become a shortcut")
+        expect(GlobalShortcut.finderRenameDefault.matches(keyCode: Int64(kVK_F2), modifiers: [])
+                && !GlobalShortcut.finderRenameDefault.matches(
+                    keyCode: Int64(kVK_F2), modifiers: [.command]),
+               "Finder rename matches the chosen key and no extra modifiers")
 
         // MARK: Shortcuts the app silences while a field is listening (#308)
 
@@ -2104,6 +2119,8 @@ struct MetricsTests {
                "every configurable shortcut's feature is silenced while recording")
         expect(silenced.contains(.windowLayout),
                "the window layout keys are silenced too, though they have no role")
+        expect(silenced.contains(.finderRename),
+               "the scoped Finder key steps aside while its recorder is listening")
         expect(silenced.contains(.switcher) && silenced.contains(.radialMenu)
                && silenced.contains(.keepAwake) && silenced.contains(.clipboardHistory),
                "the features that hold a global key are all in the silenced list")
@@ -6598,14 +6615,14 @@ struct MetricsTests {
 
         // MARK: Features hub catalog
 
-        expect(AppFeature.allCases.count == 48, "feature catalog has 48 features")
+        expect(AppFeature.allCases.count == 49, "feature catalog has 49 features")
         expect(Set(AppFeature.allCases.map(\.rawValue)).count == AppFeature.allCases.count,
                "feature ids are unique")
         expect(AppFeature.allCases.map(\.rawValue) == [
             "switcher", "dockPreview", "dockClick", "windowMaximizer", "windowLayout", "autoQuit",
             "scrollInverter", "smoothScroll", "mouseNavigation", "mouseButtonShortcuts", "middleClick",
             "keyboardDebounce", "textSnippets", "superKey",
-            "clipboardHistory", "pastePlain", "finderCutPaste", "shelf", "urlCleaner",
+            "clipboardHistory", "pastePlain", "finderCutPaste", "finderRename", "shelf", "urlCleaner",
             "mixer", "soundOutputSwitcher", "micMute", "musicBlock",
             "keepAwake", "brightness", "extraBrightness",
             "quickLauncher", "quickToggles", "colorPicker", "screenOCR", "cleaningMode", "mediaTools",
@@ -6642,6 +6659,8 @@ struct MetricsTests {
                "with nothing enabled only on-demand features use accessibility")
         expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterEnabled]).contains(.scrollInverter),
                "an enabled feature counts as using its permission")
+        expect(activeSet(.accessibility, on: [DefaultsKey.finderRenameEnabled]).contains(.finderRename),
+               "the enabled Finder rename shortcut uses accessibility")
         expect(!activeSet(.accessibility, available: [], on: [DefaultsKey.scrollInverterEnabled])
                 .contains(.scrollInverter),
                "an unavailable feature never uses a permission")
@@ -6857,6 +6876,14 @@ struct MetricsTests {
                    "every scratchpad string is set for \(language.rawValue)")
             expect(scratchpadValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible scratchpad strings (\(language.rawValue))")
+            let finderRenameValues = Mirror(
+                reflecting: FeatureStrings.finderRename(language)).children
+                .compactMap { $0.value as? String }
+            expect(finderRenameValues.count == 6
+                    && finderRenameValues.allSatisfy { !$0.isEmpty },
+                   "every Finder rename string is set for \(language.rawValue)")
+            expect(finderRenameValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible Finder rename strings (\(language.rawValue))")
             let whatsAppValues = Mirror(reflecting: FeatureStrings.whatsAppDownloads(language)).children
                 .compactMap { $0.value as? String }
             expect(whatsAppValues.count == 40 && whatsAppValues.allSatisfy { !$0.isEmpty },
@@ -6945,6 +6972,7 @@ struct MetricsTests {
                 && AppFeature.textSnippets.energyProfile == .inputs
                 && AppFeature.dockPreview.energyProfile == .mouse
                 && AppFeature.switcher.energyProfile == .keyboard
+                && AppFeature.finderRename.energyProfile == .keyboard
                 && AppFeature.colorPicker.energyProfile == .idle
                 && AppFeature.keepAwake.energyProfile == .idle
                 && AppFeature.brightness.energyProfile == .idle
@@ -6988,6 +7016,10 @@ struct MetricsTests {
                "app pages never hide")
         expect(!pageVisible(.shelf, available: allFeatures.subtracting([.shelf])),
                "single-feature pages follow their feature")
+        expect(pageVisible(.cutPaste, available: [.finderRename])
+                && pageVisible(.cutPaste, available: [.finderCutPaste])
+                && !pageVisible(.cutPaste, available: []),
+               "either Finder shortcut keeps their shared page visible")
         expect(!pageVisible(.cleaner,
                             available: allFeatures.subtracting([.cleaner])),
                "cleaner settings, including WhatsApp downloads, follow the cleaner module")
@@ -8563,6 +8595,12 @@ struct MetricsTests {
                    "no em-dash in visible clipboard skip list strings (\(language.rawValue))")
         }
 
+        expect(FinderRenameSupport.acceptsFocusedRole("AXOutline")
+                && !FinderRenameSupport.acceptsFocusedRole("AXTextField")
+                && !FinderRenameSupport.acceptsFocusedRole("AXTextArea")
+                && !FinderRenameSupport.acceptsFocusedRole(nil),
+               "Finder rename only acts outside editable fields with a known focus")
+
         // MARK: Settings backup
 
         let backupKeys = SettingsBackupSupport.exportKeys()
@@ -8578,6 +8616,9 @@ struct MetricsTests {
                "the launch at login choice travels with the settings backup")
         expect(backupKeys.contains(DefaultsKey.appearance),
                "the light or dark choice travels with the settings backup")
+        expect(backupKeys.contains(DefaultsKey.finderRenameEnabled)
+                && backupKeys.contains(DefaultsKey.finderRenameShortcut),
+               "the Finder rename choice and shortcut travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.textSnippets)
                 && backupKeys.contains(DefaultsKey.textSnippetsEnabled),
                "snippets travel with the settings backup")

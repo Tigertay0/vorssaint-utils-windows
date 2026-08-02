@@ -30,7 +30,7 @@ enum FeatureVisibilitySupport {
         case .windowLayout: return [.windowLayout]
         case .autoQuit: return [.autoQuit]
         case .clipboard: return [.clipboardHistory, .pastePlain]
-        case .cutPaste: return [.finderCutPaste]
+        case .cutPaste: return [.finderCutPaste, .finderRename]
         case .shelf: return [.shelf]
         case .media: return [.mediaTools]
         case .quickTools: return [.quickLauncher, .quickToggles, .colorPicker, .screenOCR, .micMute,
