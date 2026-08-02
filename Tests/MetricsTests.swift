@@ -6623,6 +6623,10 @@ struct MetricsTests {
                "every feature belongs to exactly one group")
         expect(!FeatureGroup.allCases.contains { AppFeature.features(in: $0).isEmpty },
                "no hub group is empty")
+        expect(AppPermission.allCases.map(\.rawValue) == [
+            "accessibility", "screenRecording", "fullDiskAccess", "filesAndFolders", "notifications",
+            "automationFinder", "automationTerminal", "audioCapture", "camera", "appManagement",
+        ], "permission portal contains every supported permission")
 
         func activeSet(_ permission: AppPermission,
                        available: Set<AppFeature> = Set(AppFeature.allCases),
@@ -6700,6 +6704,10 @@ struct MetricsTests {
         expect(AppFeature.quickToggles.permissions == [.automationFinder],
                "the quick toggles need no permission beyond the Trash's Finder ask")
         expect(activeSet(.automationTerminal) == [.homebrew], "homebrew drives the Terminal")
+        expect(activeSet(.appManagement) == [.homebrew, .appUpdates],
+               "package and app updates declare App Management access")
+        expect(AppFeature.homebrew.permissions == [.automationTerminal, .appManagement],
+               "the package manager declares both permissions used by its operations")
         expect(activeSet(.audioCapture) == [.mixer], "the mixer is the only audio capture user")
         expect(activeSet(.audioCapture, available: Set(AppFeature.allCases).subtracting([.mixer])) == [],
                "audio capture reads as unused once the mixer is off in the hub")
@@ -8923,9 +8931,9 @@ struct MetricsTests {
                 && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesLastCheck),
                "the schedule travels in a backup, the last check does not")
         expect(AppFeature.appUpdates.enabledKeys.isEmpty
-                && AppFeature.appUpdates.permissions == [.notifications]
+                && AppFeature.appUpdates.permissions == [.notifications, .appManagement]
                 && AppFeature.appUpdates.group == .tools,
-               "app updates is an on demand tool that can only notify")
+               "app updates is an on demand tool that declares its update access")
         expect(FeatureVisibilitySupport.features(for: .appUpdates) == [.appUpdates]
                 && !FeatureVisibilitySupport.isPageVisible(.appUpdates, isAvailable: { _ in false }),
                "the page follows the feature in the hub")

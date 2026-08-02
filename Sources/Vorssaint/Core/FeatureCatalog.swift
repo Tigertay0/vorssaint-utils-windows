@@ -41,7 +41,7 @@ enum FeatureGroup: String, CaseIterable {
 /// System permissions surfaced by the hub's transparency portal.
 enum AppPermission: String, CaseIterable {
     case accessibility, screenRecording, fullDiskAccess, filesAndFolders, notifications,
-         automationFinder, automationTerminal, audioCapture, camera
+         automationFinder, automationTerminal, audioCapture, camera, appManagement
 }
 
 extension AppFeature {
@@ -195,8 +195,8 @@ extension AppFeature {
         case .brightness: return [.accessibility]
         case .cleaner: return [.fullDiskAccess, .filesAndFolders, .notifications]
         case .uninstaller: return [.fullDiskAccess, .automationFinder]
-        case .homebrew: return [.automationTerminal]
-        case .appUpdates: return [.notifications]
+        case .homebrew: return [.automationTerminal, .appManagement]
+        case .appUpdates: return [.notifications, .appManagement]
         case .mixer: return [.audioCapture]
         case .monitorCPU, .monitorMemory, .monitorDisk, .monitorPower: return [.notifications]
         case .clipboardHistory, .shelf, .urlCleaner,
@@ -305,6 +305,7 @@ extension AppPermission {
         case .automationFinder, .automationTerminal: return "gearshape.2"
         case .audioCapture: return "waveform"
         case .camera: return "camera"
+        case .appManagement: return "app.badge"
         }
     }
 }

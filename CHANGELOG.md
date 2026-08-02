@@ -41,6 +41,8 @@ with the Super Key.
 ### Fixed
 - The radial menu now stays open while the Super Key is held and follows the
   pointer until the key is released. Thanks to @AB-boi.
+- The permissions page now explains the App Management access needed before
+  updating installed apps. Thanks to @AB-boi.
 - The clipboard history no longer drops plain identifier codes when it is set
   to skip text that looks sensitive.
 - Picking a window on another desktop now switches over right away, instead of
