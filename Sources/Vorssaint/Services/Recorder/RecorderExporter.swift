@@ -245,27 +245,29 @@ final class RecorderExporter {
         let queue = DispatchQueue(label: "com.vorssaint." + label, qos: .userInitiated)
         await withCheckedContinuation { continuation in
             let finished = OnceFlag()
+            // AVFoundation invokes this callback only on the serial queue above.
+            nonisolated(unsafe) let serializedInput = input
             input.requestMediaDataWhenReady(on: queue) {
-                while input.isReadyForMoreMediaData {
+                while serializedInput.isReadyForMoreMediaData {
                     if cancelled.isCancelled {
                         if finished.set() {
-                            input.markAsFinished()
+                            serializedInput.markAsFinished()
                             continuation.resume()
                         }
                         return
                     }
                     guard let buffer = next() else {
                         if finished.set() {
-                            input.markAsFinished()
+                            serializedInput.markAsFinished()
                             continuation.resume()
                         }
                         return
                     }
-                    if input.append(buffer) {
+                    if serializedInput.append(buffer) {
                         onAppended()
                     } else {
                         if finished.set() {
-                            input.markAsFinished()
+                            serializedInput.markAsFinished()
                             continuation.resume()
                         }
                         return
