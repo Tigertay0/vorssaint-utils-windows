@@ -90,6 +90,11 @@ struct ScreenshotFeatureStrings {
     let openEditorCaption: String
     let autoCopyToggle: String
     let autoCopyCaption: String
+    let scrollingCaptureButton: String
+    let scrollingCaptureTitle: String
+    let scrollingCaptureProgressHUD: String
+    let scrollingCaptureHintOff: String
+    let scrollingCaptureHintOn: String
     let hintLoupe: String
     let lastRegionToggle: String
     let backdropBlurLabel: String
@@ -202,6 +207,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "The capture skips the floating preview and opens ready to annotate.",
         autoCopyToggle: "Copy to the clipboard automatically",
         autoCopyCaption: "Every capture goes to the clipboard as soon as it is taken, ready to paste. Saving a file stays a separate choice.",
+        scrollingCaptureButton: "Scrolling capture",
+        scrollingCaptureTitle: "Scrolling screenshot",
+        scrollingCaptureProgressHUD: "Capturing scroll...",
+        scrollingCaptureHintOff: "S toggles scrolling",
+        scrollingCaptureHintOn: "Scrolling on",
         hintLoupe: "Z toggles the loupe",
         lastRegionToggle: "Show the last capture outline",
         backdropBlurLabel: "Blur"
@@ -293,6 +303,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "A captura pula a pré-visualização flutuante e já abre pronta para anotar.",
         autoCopyToggle: "Copiar para a área de transferência automaticamente",
         autoCopyCaption: "Toda captura vai para a área de transferência assim que é feita, pronta para colar. Salvar um arquivo continua sendo uma escolha à parte.",
+        scrollingCaptureButton: "Captura com rolagem",
+        scrollingCaptureTitle: "Captura com rolagem",
+        scrollingCaptureProgressHUD: "Capturando rolagem...",
+        scrollingCaptureHintOff: "S alterna rolagem",
+        scrollingCaptureHintOn: "Rolagem ligada",
         hintLoupe: "Z alterna a lupa",
         lastRegionToggle: "Mostrar o contorno da última captura",
         backdropBlurLabel: "Desfoque"
@@ -384,6 +399,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "Yakalama, yüzen önizlemeyi atlar ve işaretlemeye hazır şekilde açılır.",
         autoCopyToggle: "Otomatik olarak panoya kopyala",
         autoCopyCaption: "Her yakalama alınır alınmaz panoya gider ve yapıştırmaya hazır olur. Dosya olarak kaydetmek ayrı bir seçim olarak kalır.",
+        scrollingCaptureButton: "Kaydırmalı yakalama",
+        scrollingCaptureTitle: "Kaydırmalı ekran görüntüsü",
+        scrollingCaptureProgressHUD: "Kaydırma yakalanıyor...",
+        scrollingCaptureHintOff: "S kaydırmayı açar",
+        scrollingCaptureHintOn: "Kaydırma açık",
         hintLoupe: "Z büyüteci açar/kapatır",
         lastRegionToggle: "Son yakalamanın çerçevesini göster",
         backdropBlurLabel: "Bulanıklık"
@@ -475,6 +495,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "Снимок пропускает плавающее окно предпросмотра и сразу открывается готовым к пометкам.",
         autoCopyToggle: "Автоматически копировать в буфер обмена",
         autoCopyCaption: "Каждый снимок попадает в буфер обмена сразу после съёмки и готов к вставке. Сохранение файла остаётся отдельным выбором.",
+        scrollingCaptureButton: "Снимок с прокруткой",
+        scrollingCaptureTitle: "Снимок с прокруткой",
+        scrollingCaptureProgressHUD: "Снимаем прокрутку...",
+        scrollingCaptureHintOff: "S включает прокрутку",
+        scrollingCaptureHintOn: "Прокрутка включена",
         hintLoupe: "Z включает лупу",
         lastRegionToggle: "Показывать контур последней области",
         backdropBlurLabel: "Размытие"
@@ -566,6 +591,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "La captura omite la previsualización flotante y se abre lista para anotar.",
         autoCopyToggle: "Copiar al portapapeles automáticamente",
         autoCopyCaption: "Cada captura va al portapapeles en cuanto se toma, lista para pegar. Guardar un archivo sigue siendo una elección aparte.",
+        scrollingCaptureButton: "Captura con desplazamiento",
+        scrollingCaptureTitle: "Captura con desplazamiento",
+        scrollingCaptureProgressHUD: "Capturando desplazamiento...",
+        scrollingCaptureHintOff: "S activa desplazamiento",
+        scrollingCaptureHintOn: "Desplazamiento activo",
         hintLoupe: "Z activa la lupa",
         lastRegionToggle: "Mostrar sombra de la última captura",
         backdropBlurLabel: "Desenfoque"
@@ -657,6 +687,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "Die Aufnahme überspringt die schwebende Vorschau und öffnet sich bereit für Anmerkungen.",
         autoCopyToggle: "Automatisch in die Zwischenablage kopieren",
         autoCopyCaption: "Jede Aufnahme landet sofort in der Zwischenablage, bereit zum Einfügen. Das Speichern als Datei bleibt eine eigene Entscheidung.",
+        scrollingCaptureButton: "Scroll-Aufnahme",
+        scrollingCaptureTitle: "Scroll-Screenshot",
+        scrollingCaptureProgressHUD: "Scroll wird aufgenommen...",
+        scrollingCaptureHintOff: "S schaltet Scrollen um",
+        scrollingCaptureHintOn: "Scrollen aktiv",
         hintLoupe: "Z schaltet die Lupe um",
         lastRegionToggle: "Umriss der letzten Aufnahme anzeigen",
         backdropBlurLabel: "Unschärfe"
@@ -748,6 +783,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "La capture ignore l'aperçu flottant et s'ouvre prête à être annotée.",
         autoCopyToggle: "Copier automatiquement dans le presse-papiers",
         autoCopyCaption: "Chaque capture va dans le presse-papiers dès qu'elle est prise, prête à être collée. Enregistrer un fichier reste un choix distinct.",
+        scrollingCaptureButton: "Capture avec défilement",
+        scrollingCaptureTitle: "Capture avec défilement",
+        scrollingCaptureProgressHUD: "Capture du défilement...",
+        scrollingCaptureHintOff: "S active le défilement",
+        scrollingCaptureHintOn: "Défilement activé",
         hintLoupe: "Z active la loupe",
         lastRegionToggle: "Afficher le contour de la dernière capture",
         backdropBlurLabel: "Flou"
@@ -839,6 +879,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "La cattura salta l'anteprima flottante e si apre pronta per le annotazioni.",
         autoCopyToggle: "Copia automaticamente negli appunti",
         autoCopyCaption: "Ogni cattura va negli appunti appena viene fatta, pronta da incollare. Salvare un file resta una scelta a parte.",
+        scrollingCaptureButton: "Cattura con scorrimento",
+        scrollingCaptureTitle: "Screenshot con scorrimento",
+        scrollingCaptureProgressHUD: "Cattura scorrimento...",
+        scrollingCaptureHintOff: "S attiva scorrimento",
+        scrollingCaptureHintOn: "Scorrimento attivo",
         hintLoupe: "Z attiva la lente",
         lastRegionToggle: "Mostra il contorno dell'ultima cattura",
         backdropBlurLabel: "Sfocatura"
@@ -930,6 +975,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "撮影はフローティングプレビューを飛ばして、すぐに注釈を付けられる状態で開きます。",
         autoCopyToggle: "自動的にクリップボードへコピー",
         autoCopyCaption: "撮影した瞬間にクリップボードへ入り、すぐに貼り付けられます。ファイルとして保存するかどうかは別の選択のままです。",
+        scrollingCaptureButton: "スクロール撮影",
+        scrollingCaptureTitle: "スクロールスクリーンショット",
+        scrollingCaptureProgressHUD: "スクロールを撮影中...",
+        scrollingCaptureHintOff: "Sでスクロール切替",
+        scrollingCaptureHintOn: "スクロール有効",
         hintLoupe: "Zでルーペを切り替え",
         lastRegionToggle: "最後のキャプチャ範囲を表示",
         backdropBlurLabel: "ぼかし"
@@ -1021,6 +1071,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "캡처가 떠 있는 미리보기를 건너뛰고 바로 주석을 남길 수 있는 상태로 열립니다.",
         autoCopyToggle: "자동으로 클립보드에 복사",
         autoCopyCaption: "캡처하는 즉시 클립보드에 담겨 바로 붙여넣을 수 있습니다. 파일로 저장하는 것은 여전히 별도의 선택입니다.",
+        scrollingCaptureButton: "스크롤 캡처",
+        scrollingCaptureTitle: "스크롤 스크린샷",
+        scrollingCaptureProgressHUD: "스크롤 캡처 중...",
+        scrollingCaptureHintOff: "S로 스크롤 전환",
+        scrollingCaptureHintOn: "스크롤 켜짐",
         hintLoupe: "Z 키로 확대경 전환",
         lastRegionToggle: "마지막 캡처 영역 표시",
         backdropBlurLabel: "흐림"
@@ -1112,6 +1167,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "截屏会跳过浮动预览，直接打开即可开始标注。",
         autoCopyToggle: "自动复制到剪贴板",
         autoCopyCaption: "每次截屏后会立即进入剪贴板，随时可以粘贴。是否保存为文件仍是单独的选择。",
+        scrollingCaptureButton: "滚动截图",
+        scrollingCaptureTitle: "滚动截图",
+        scrollingCaptureProgressHUD: "正在捕捉滚动...",
+        scrollingCaptureHintOff: "按 S 切换滚动",
+        scrollingCaptureHintOn: "滚动已开启",
         hintLoupe: "按 Z 切换放大镜",
         lastRegionToggle: "显示上次截图区域轮廓",
         backdropBlurLabel: "模糊"
@@ -1203,6 +1263,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "截圖會略過浮動預覽，直接開啟即可開始標註。",
         autoCopyToggle: "自動拷貝到剪貼板",
         autoCopyCaption: "每次截圖後會立即進入剪貼板，隨時可以貼上。是否儲存為檔案仍是獨立的選擇。",
+        scrollingCaptureButton: "捲動截圖",
+        scrollingCaptureTitle: "捲動截圖",
+        scrollingCaptureProgressHUD: "正在擷取捲動...",
+        scrollingCaptureHintOff: "按 S 切換捲動",
+        scrollingCaptureHintOn: "捲動已開啟",
         hintLoupe: "按 Z 切換放大鏡",
         lastRegionToggle: "顯示上次截圖區域輪廓",
         backdropBlurLabel: "模糊"
@@ -1294,6 +1359,11 @@ extension ScreenshotFeatureStrings {
         openEditorCaption: "截圖會略過浮動預覽，直接開啟即可開始標註。",
         autoCopyToggle: "自動拷貝到剪貼板",
         autoCopyCaption: "每次截圖後會立即進入剪貼板，隨時可以貼上。是否儲存為檔案仍是獨立的選擇。",
+        scrollingCaptureButton: "捲動截圖",
+        scrollingCaptureTitle: "捲動截圖",
+        scrollingCaptureProgressHUD: "正在擷取捲動...",
+        scrollingCaptureHintOff: "按 S 切換捲動",
+        scrollingCaptureHintOn: "捲動已開啟",
         hintLoupe: "按 Z 切換放大鏡",
         lastRegionToggle: "顯示上次截圖區域輪廓",
         backdropBlurLabel: "模糊"

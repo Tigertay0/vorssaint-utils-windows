@@ -224,7 +224,7 @@ final class ScreenRecorderService: ObservableObject {
             switch outcome {
             case .region(let region):
                 self.startCountdown(for: region)
-            case .captured, .cancelled:
+            case .captured, .scrollingRegion, .cancelled:
                 break
             case .failed:
                 QuickToolHUD.show(icon: "record.circle", message: self.strings.recordFailed)

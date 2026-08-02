@@ -20,6 +20,23 @@ enum ScreenshotSupport {
         allowedDelays.contains(raw) ? raw : 0
     }
 
+    // MARK: - Scrolling capture
+
+    static let scrollingCaptureMaxFrames = 7
+
+    /// Successive scroll captures intentionally overlap: the overlap hides
+    /// small inertial-scroll differences and gives the stitched image enough
+    /// repeated context to read naturally.
+    static func scrollingCaptureOverlapPixels(regionHeight: CGFloat,
+                                              scale: CGFloat) -> Int {
+        let scaled = max(1, regionHeight * max(scale, 1))
+        return Int(min(max(scaled * 0.18, 72), scaled * 0.42).rounded())
+    }
+
+    static func scrollingCaptureStepPoints(regionHeight: CGFloat) -> CGFloat {
+        min(max(regionHeight * 0.82, 60), 900)
+    }
+
     // MARK: - Selection geometry
 
     /// Rectangle between two drag points. `square` constrains to the largest

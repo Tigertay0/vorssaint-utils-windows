@@ -7739,6 +7739,17 @@ struct MetricsTests {
                 && ScreenshotSupport.sanitizedDelay(7) == 0
                 && ScreenshotSupport.sanitizedDelay(-3) == 0,
                "capture delay only accepts the offered steps")
+        expect(ScreenshotSupport.scrollingCaptureMaxFrames == 7,
+               "scrolling screenshots stop after a bounded number of slices")
+        expect(ScreenshotSupport.scrollingCaptureOverlapPixels(regionHeight: 600, scale: 2) == 216,
+               "scrolling screenshots keep a proportional overlap between slices")
+        expect(ScreenshotSupport.scrollingCaptureOverlapPixels(regionHeight: 80, scale: 1) == 34,
+               "short scrolling regions clamp overlap below half the capture")
+        expect(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 900) == 738
+                && ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 1200) == 900,
+               "scrolling screenshots cap large scroll steps")
+        expectClose(Double(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 120)), 98.4,
+                    "scrolling screenshots keep small scroll steps proportional")
 
         let dragRect = ScreenshotSupport.selectionRect(from: CGPoint(x: 100, y: 80),
                                                        to: CGPoint(x: 40, y: 200))

@@ -29,6 +29,22 @@ enum ScreenshotCaptureEngine {
                                     includePointer: includePointer)
     }
 
+    static func captureDisplayRegion(displayID: CGDirectDisplayID,
+                                     pixelRect: CGRect,
+                                     includePointer: Bool) async -> CGImage? {
+        guard var image = await captureDisplay(displayID, includePointer: includePointer)
+        else { return nil }
+        let clamped = ScreenshotSupport.clamp(
+            pixelRect,
+            to: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        guard !clamped.isEmpty else { return nil }
+        if clamped.width < CGFloat(image.width) || clamped.height < CGFloat(image.height) {
+            guard let cropped = image.cropping(to: clamped) else { return nil }
+            image = cropped
+        }
+        return image
+    }
+
     /// Captures every given screen, keyed by display id. Screens that fail
     /// are simply absent; the caller decides how to degrade.
     static func captureAllDisplays(includePointer: Bool) async -> [CGDirectDisplayID: CGImage] {

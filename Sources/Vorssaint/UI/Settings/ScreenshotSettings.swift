@@ -37,6 +37,11 @@ struct ScreenshotSettings: View {
                 } label: {
                     Label(strings.captureButton, systemImage: "camera.viewfinder")
                 }
+                Button {
+                    ScreenshotService.shared.captureScrolling()
+                } label: {
+                    Label(strings.scrollingCaptureButton, systemImage: "rectangle.stack")
+                }
                 Text(strings.panelCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -55,6 +60,9 @@ struct ScreenshotSettings: View {
                 }
                 if !permissions.screenRecording {
                     PermissionRow(kind: .screenRecording)
+                }
+                if !permissions.accessibility {
+                    PermissionRow(kind: .accessibility)
                 }
             } header: {
                 Text(strings.pageTitle)

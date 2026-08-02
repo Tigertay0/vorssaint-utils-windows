@@ -19,6 +19,12 @@ final class ScreenshotService: ObservableObject {
     private var editors: [ScreenshotEditorController] = []
     private var countdown: DispatchWorkItem?
     private var countdownRemaining = 0
+    private var countdownMode: CaptureMode = .standard
+
+    private enum CaptureMode {
+        case standard
+        case scrolling
+    }
 
     private var strings: ScreenshotFeatureStrings {
         FeatureStrings.screenshot(L10n.shared.language)
@@ -66,6 +72,14 @@ final class ScreenshotService: ObservableObject {
     /// Starts a capture; pressing the shortcut again while a countdown runs
     /// cancels it, and a session in progress is left alone.
     func capture() {
+        startCapture(.standard)
+    }
+
+    func captureScrolling() {
+        startCapture(.scrolling)
+    }
+
+    private func startCapture(_ mode: CaptureMode) {
         // Another feature may already own the capture surface (copying text
         // off the screen picks an area the same way).
         guard session == nil, !ScreenshotSelectionController.isSessionOnScreen else { return }
@@ -78,20 +92,26 @@ final class ScreenshotService: ObservableObject {
             Permissions.shared.requestScreenRecording()
             return
         }
+        if mode == .scrolling, !Permissions.shared.accessibility {
+            Permissions.shared.requestAccessibility()
+            return
+        }
         let delay = ScreenshotSupport.sanitizedDelay(
             UserDefaults.standard.integer(forKey: DefaultsKey.screenshotDelay))
         if delay > 0 {
+            countdownMode = mode
             countdownRemaining = delay
             tickCountdown()
         } else {
-            beginSelection()
+            beginSelection(mode)
         }
     }
 
     private func tickCountdown() {
         guard countdownRemaining > 0 else {
+            let mode = countdownMode
             countdown = nil
-            beginSelection()
+            beginSelection(mode)
             return
         }
         QuickToolHUD.showCountdown(countdownRemaining)
@@ -104,7 +124,7 @@ final class ScreenshotService: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }
 
-    private func beginSelection() {
+    private func beginSelection(_ mode: CaptureMode) {
         guard session == nil, !ScreenshotSelectionController.isSessionOnScreen else { return }
         preview?.close()
         preview = nil
@@ -112,7 +132,10 @@ final class ScreenshotService: ObservableObject {
         let controller = ScreenshotSelectionController(
             freeze: defaults.bool(forKey: DefaultsKey.screenshotFreeze),
             includePointer: defaults.bool(forKey: DefaultsKey.screenshotIncludePointer),
-            showLastRegion: defaults.bool(forKey: DefaultsKey.screenshotShowLastRegion))
+            showLastRegion: defaults.bool(forKey: DefaultsKey.screenshotShowLastRegion),
+            purpose: mode == .scrolling ? strings.scrollingCaptureTitle : nil,
+            mode: mode == .scrolling ? .geometry : .image,
+            supportsScrollingCapture: mode == .standard)
         session = controller
         controller.begin { [weak self] outcome in
             guard let self else { return }
@@ -120,14 +143,35 @@ final class ScreenshotService: ObservableObject {
             switch outcome {
             case .captured(let capture):
                 self.route(capture)
-            case .region:
-                // Only the recorder asks for geometry; this session never does.
-                break
+            case .region(let region):
+                guard mode == .scrolling else { break }
+                self.captureScrolling(region)
+            case .scrollingRegion(let region):
+                self.captureScrolling(region)
             case .cancelled:
                 break
             case .failed:
                 QuickToolHUD.show(icon: "camera.viewfinder", message: self.strings.captureFailed)
             }
+        }
+    }
+
+    private func captureScrolling(_ region: RecorderSupport.Region) {
+        guard Permissions.shared.accessibility else {
+            Permissions.shared.requestAccessibility()
+            return
+        }
+        QuickToolHUD.show(icon: "rectangle.stack", message: strings.scrollingCaptureProgressHUD)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let capture = await ScreenshotScrollingCapture.capture(
+                region: region,
+                includePointer: false)
+            else {
+                QuickToolHUD.show(icon: "camera.viewfinder", message: self.strings.captureFailed)
+                return
+            }
+            self.route(capture)
         }
     }
 
