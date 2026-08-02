@@ -78,6 +78,11 @@ if [[ -d "$PINNED_SDK" ]]; then
 else
     SDK="$(xcrun --show-sdk-path)"
 fi
+SDK_COMPAT_FLAGS=()
+if [[ "$SDK" == "$PINNED_SDK" ]]; then
+    # Swift 6.4 can read the SDK 26 interfaces when given their compiler version.
+    SDK_COMPAT_FLAGS=(-Xfrontend -interface-compiler-version -Xfrontend 6.3.2)
+fi
 
 # --test: compile and run the standalone unit tests (pure helpers only: metrics,
 # Homebrew parsing, defaults, localization contracts; no app, no UI, no IOKit),
@@ -86,7 +91,7 @@ if (( TEST )); then
     echo "▸ Building & running unit tests against $(basename "$SDK")…"
     rm -rf build
     mkdir -p build
-    swiftc -O -target "$TARGET" -sdk "$SDK" \
+    swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" \
         Sources/Vorssaint/Services/Media/MediaSupport.swift \
         Sources/Vorssaint/Core/Defaults.swift \
         Sources/Vorssaint/Core/FeatureCatalog.swift \
@@ -203,7 +208,7 @@ fi
 echo "▸ Compiling (release) against $(basename "$SDK")…"
 rm -rf build
 mkdir -p build
-swiftc -O -target "$TARGET" -sdk "$SDK" \
+swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" \
     Sources/Vorssaint/**/*.swift \
     -o "build/$EXECUTABLE"
 

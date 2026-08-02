@@ -9,7 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen and opens each recording in an editor that
 cuts it, smooths the pointer, zooms on clicks and adds a background. Window
-previews can also be made smaller.
+previews can also be made smaller, and the App Switcher opens a window when you
+select an app without one.
 
 ### Added
 - Screen recording. Records an area, a window or the whole screen with the
@@ -23,6 +24,8 @@ previews can also be made smaller.
 ### Changed
 - App Switcher and Dock Preview now have a Small size that reduces previews and
   the space between them. Thanks to @CSkjolden.
+- Selecting an app with no open window in the App Switcher now asks it to open
+  one. Thanks to @Yahddyyp.
 - The clipboard history no longer saves a copy that an app marks as a
   password, whatever the other options are set to.
 - The remaining-time menu bar option now lives with Keep Awake session settings
