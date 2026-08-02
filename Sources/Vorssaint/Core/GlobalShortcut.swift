@@ -621,8 +621,11 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         }
     }
 
-    static func conflict(for shortcut: GlobalShortcut, excluding role: GlobalShortcutRole) -> GlobalShortcutRole? {
-        allCases.first { candidate in
+    static func conflict(for shortcut: GlobalShortcut,
+                         excluding role: GlobalShortcutRole?,
+                         isOn: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) },
+                         isAvailable: (AppFeature) -> Bool = { $0.isAvailable }) -> GlobalShortcutRole? {
+        activeRoles(isOn: isOn, isAvailable: isAvailable).first { candidate in
             candidate != role && candidate.savedShortcut == shortcut
         }
     }
