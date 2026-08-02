@@ -25,6 +25,8 @@ pause in chosen apps, and the App Switcher, Scratchpad and radial menu gain clea
   starts on F2, off by default. Thanks to @Mito450.
 - Copied images can become PNG files with ⌘V in Finder, off by default under
   Clipboard. Thanks to @AsphaltDemon.
+- A slider makes the Scratchpad background more solid, up to fully opaque.
+  Under Quick Tools. Thanks to @hash00.
 
 ### Changed
 - The Scratchpad now has a pin that keeps the current note open until you close
