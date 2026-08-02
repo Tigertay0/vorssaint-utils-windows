@@ -32,16 +32,22 @@ struct ScreenshotSettings: View {
     var body: some View {
         Form {
             Section {
-                Button {
-                    ScreenshotService.shared.capture()
-                } label: {
-                    Label(strings.captureButton, systemImage: "camera.viewfinder")
+                HStack(spacing: 10) {
+                    Button {
+                        ScreenshotService.shared.capture()
+                    } label: {
+                        Label(strings.captureButton, systemImage: "camera.viewfinder")
+                            .frame(maxWidth: .infinity)
+                    }
+                    Button {
+                        ScreenshotService.shared.captureScrolling()
+                    } label: {
+                        Label(strings.scrollingCaptureButton, systemImage: "rectangle.stack")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-                Button {
-                    ScreenshotService.shared.captureScrolling()
-                } label: {
-                    Label(strings.scrollingCaptureButton, systemImage: "rectangle.stack")
-                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
                 Text(strings.panelCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -60,9 +66,6 @@ struct ScreenshotSettings: View {
                 }
                 if !permissions.screenRecording {
                     PermissionRow(kind: .screenRecording)
-                }
-                if !permissions.accessibility {
-                    PermissionRow(kind: .accessibility)
                 }
             } header: {
                 Text(strings.pageTitle)

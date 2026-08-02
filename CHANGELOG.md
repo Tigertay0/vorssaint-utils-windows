@@ -7,14 +7,15 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.0]
 
 ### Summary
-Vorssaint 3.3.0 records the screen and edits recordings with cuts, zooms,
-pressed keys, reusable presets and direct copy or export. Window Layout restores
-recent placements, Finder gains image paste and a rename shortcut, previews can
-pause in chosen apps, and the App Switcher, Scratchpad and radial menu gain clearer controls.
+Vorssaint 3.3.0 records and edits the screen, captures long scrolling pages and
+restores recent Window Layout placements. Finder gains image paste and a rename
+shortcut, while previews, the App Switcher, Scratchpad and radial menu gain clearer controls.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
   reusable presets and direct copy, plus video and GIF export. Off by default.
+- Scrolling screenshots join long pages and documents into one image, from
+  Screenshot or the Command Bar. Thanks to @ruvelro.
 - A slider for how solid the Dock preview panel looks. Under Switcher, with
   Dock Preview on. Thanks to @ruvelro.
 - Window thumbnail capture can pause while chosen apps are in front. Under

@@ -7739,17 +7739,61 @@ struct MetricsTests {
                 && ScreenshotSupport.sanitizedDelay(7) == 0
                 && ScreenshotSupport.sanitizedDelay(-3) == 0,
                "capture delay only accepts the offered steps")
-        expect(ScreenshotSupport.scrollingCaptureMaxFrames == 7,
-               "scrolling screenshots stop after a bounded number of slices")
-        expect(ScreenshotSupport.scrollingCaptureOverlapPixels(regionHeight: 600, scale: 2) == 216,
-               "scrolling screenshots keep a proportional overlap between slices")
-        expect(ScreenshotSupport.scrollingCaptureOverlapPixels(regionHeight: 80, scale: 1) == 34,
-               "short scrolling regions clamp overlap below half the capture")
-        expect(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 900) == 738
-                && ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 1200) == 900,
+        expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 120
+                && ScreenshotSupport.scrollingCaptureMaximumPixels == 60_000_000,
+               "scrolling screenshots have explicit loop and memory safeguards")
+        expect(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 900) == 558
+                && ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 1200) == 720,
                "scrolling screenshots cap large scroll steps")
-        expectClose(Double(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 120)), 98.4,
+        expectClose(Double(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 120)), 74.4,
                     "scrolling screenshots keep small scroll steps proportional")
+
+        func scrollingSample(offset: Int) -> ScreenshotSupport.ScrollingSample {
+            let width = 16
+            let height = 120
+            var pixels = [UInt8](repeating: 0, count: width * height)
+            for row in 0..<height {
+                let contentRow = row + offset
+                for column in 0..<width {
+                    pixels[row * width + column] = UInt8(
+                        (contentRow * 17 + column * 31 + (contentRow / 7) * 13) % 251)
+                }
+            }
+            return ScreenshotSupport.ScrollingSample(width: width,
+                                                     height: height,
+                                                     pixels: pixels)
+        }
+        let firstScrollSample = scrollingSample(offset: 0)
+        let nextScrollSample = scrollingSample(offset: 76)
+        expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
+                                                     current: nextScrollSample)
+                == .advanced(overlap: 44),
+               "scrolling screenshots find the exact shared rows deterministically")
+        expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
+                                                     current: firstScrollSample)
+                == .advanced(overlap: 44),
+               "scrolling screenshots match either Core Graphics row orientation")
+        expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
+                                                     current: nextScrollSample) == .end,
+               "an unchanged capture marks the real end of scrolling")
+        var unmatchedScrollPixels = [UInt8](repeating: 0, count: 16 * 120)
+        for index in unmatchedScrollPixels.indices {
+            unmatchedScrollPixels[index] = UInt8((index * 47 + index / 11) % 253)
+        }
+        let unmatchedScrollSample = ScreenshotSupport.ScrollingSample(
+            width: 16, height: 120, pixels: unmatchedScrollPixels)
+        expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
+                                                     current: unmatchedScrollSample) == .unmatched,
+               "ambiguous content fails instead of inventing a seam")
+        expect(ScreenshotSupport.scrollingStitchPieces(
+            frameHeights: [120, 120, 120], topCrops: [0, 44, 50]) == [
+                .init(sourceY: 0, height: 120, destinationY: 146),
+                .init(sourceY: 44, height: 76, destinationY: 70),
+                .init(sourceY: 50, height: 70, destinationY: 0),
+            ], "scrolling stitch geometry crops every overlap exactly once")
+        expect(ScreenshotSupport.scrollingStitchPieces(
+            frameHeights: [120, 120], topCrops: [0, 120]) == nil,
+               "scrolling stitch geometry rejects an empty slice")
 
         let dragRect = ScreenshotSupport.selectionRect(from: CGPoint(x: 100, y: 80),
                                                        to: CGPoint(x: 40, y: 200))

@@ -32,17 +32,31 @@ enum ScreenshotCaptureEngine {
     static func captureDisplayRegion(displayID: CGDirectDisplayID,
                                      pixelRect: CGRect,
                                      includePointer: Bool) async -> CGImage? {
-        guard var image = await captureDisplay(displayID, includePointer: includePointer)
+        guard let content = try? await SCShareableContent.excludingDesktopWindows(
+            false, onScreenWindowsOnly: true),
+            let display = content.displays.first(where: { $0.displayID == displayID })
         else { return nil }
-        let clamped = ScreenshotSupport.clamp(
-            pixelRect,
-            to: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let scale = screenScale(for: displayID)
+        let displayPixels = CGRect(x: 0, y: 0,
+                                   width: CGFloat(display.width) * scale,
+                                   height: CGFloat(display.height) * scale)
+        let clamped = ScreenshotSupport.clamp(pixelRect, to: displayPixels).integral
         guard !clamped.isEmpty else { return nil }
-        if clamped.width < CGFloat(image.width) || clamped.height < CGFloat(image.height) {
-            guard let cropped = image.cropping(to: clamped) else { return nil }
-            image = cropped
+        let ownWindows = content.windows.filter {
+            $0.owningApplication?.processID == getpid()
         }
-        return image
+        let filter = SCContentFilter(display: display, excludingWindows: ownWindows)
+        let configuration = SCStreamConfiguration()
+        configuration.sourceRect = CGRect(x: clamped.minX / scale,
+                                          y: clamped.minY / scale,
+                                          width: clamped.width / scale,
+                                          height: clamped.height / scale)
+        configuration.width = max(1, Int(clamped.width))
+        configuration.height = max(1, Int(clamped.height))
+        configuration.showsCursor = includePointer
+        configuration.colorSpaceName = CGColorSpace.sRGB
+        return try? await SCScreenshotManager.captureImage(contentFilter: filter,
+                                                           configuration: configuration)
     }
 
     /// Captures every given screen, keyed by display id. Screens that fail

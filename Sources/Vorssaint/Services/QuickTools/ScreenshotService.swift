@@ -20,6 +20,8 @@ final class ScreenshotService: ObservableObject {
     private var countdown: DispatchWorkItem?
     private var countdownRemaining = 0
     private var countdownMode: CaptureMode = .standard
+    private var scrollingTask: Task<Void, Never>?
+    private var scrollingCaptureID: UUID?
 
     private enum CaptureMode {
         case standard
@@ -56,6 +58,9 @@ final class ScreenshotService: ObservableObject {
     private func teardownSurfaces() {
         countdown?.cancel()
         countdown = nil
+        scrollingTask?.cancel()
+        scrollingTask = nil
+        scrollingCaptureID = nil
         session?.cancel()
         session = nil
         preview?.close()
@@ -80,6 +85,12 @@ final class ScreenshotService: ObservableObject {
     }
 
     private func startCapture(_ mode: CaptureMode) {
+        // The same entry point is also the cancel action while a long capture
+        // is running. It can never open a second selection or capture task.
+        if let scrollingTask {
+            scrollingTask.cancel()
+            return
+        }
         // Another feature may already own the capture surface (copying text
         // off the screen picks an area the same way).
         guard session == nil, !ScreenshotSelectionController.isSessionOnScreen else { return }
@@ -135,7 +146,7 @@ final class ScreenshotService: ObservableObject {
             showLastRegion: defaults.bool(forKey: DefaultsKey.screenshotShowLastRegion),
             purpose: mode == .scrolling ? strings.scrollingCaptureTitle : nil,
             mode: mode == .scrolling ? .geometry : .image,
-            supportsScrollingCapture: mode == .standard)
+            supportsScrollingCapture: mode == .standard && Permissions.shared.accessibility)
         session = controller
         controller.begin { [weak self] outcome in
             guard let self else { return }
@@ -157,21 +168,32 @@ final class ScreenshotService: ObservableObject {
     }
 
     private func captureScrolling(_ region: RecorderSupport.Region) {
+        guard scrollingTask == nil else { return }
         guard Permissions.shared.accessibility else {
             Permissions.shared.requestAccessibility()
             return
         }
         QuickToolHUD.show(icon: "rectangle.stack", message: strings.scrollingCaptureProgressHUD)
-        Task { @MainActor [weak self] in
+        let captureID = UUID()
+        scrollingCaptureID = captureID
+        scrollingTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            guard let capture = await ScreenshotScrollingCapture.capture(
-                region: region,
-                includePointer: false)
-            else {
+            let result = await ScreenshotScrollingCapture.capture(region: region,
+                                                                  includePointer: false)
+            guard self.scrollingCaptureID == captureID else { return }
+            self.scrollingCaptureID = nil
+            self.scrollingTask = nil
+            switch result {
+            case .success(let capture):
+                self.route(capture)
+            case .cancelled:
+                QuickToolHUD.show(icon: "xmark", message: L10n.shared.s.mediaCancelled)
+            case .tooLong:
+                QuickToolHUD.show(icon: "rectangle.stack",
+                                  message: self.strings.scrollingCaptureTooLongHUD)
+            case .failed:
                 QuickToolHUD.show(icon: "camera.viewfinder", message: self.strings.captureFailed)
-                return
             }
-            self.route(capture)
         }
     }
 
