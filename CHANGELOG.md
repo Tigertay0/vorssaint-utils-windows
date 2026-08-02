@@ -10,7 +10,8 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.0 records and edits the screen, captures long scrolling pages and
 restores recent Window Layout placements. Finder gains image tools and shortcuts,
 Screenshot adds direct full-screen capture and reopens its latest capture, while
-the Volume Mixer routes system sounds separately.
+the Volume Mixer routes system sounds separately and three-finger middle clicks
+become more reliable.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
@@ -50,6 +51,8 @@ the Volume Mixer routes system sounds separately.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- Three-finger middle clicks now stay reliable when macOS initially reads the
+  press as a secondary click. Thanks to @justareported-blip.
 - The App Switcher no longer stalls when certain apps are open. Thanks to
   @Sirtx.
 - Radial menu submenus now open their action list after creation and keep it
