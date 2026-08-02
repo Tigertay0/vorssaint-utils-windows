@@ -175,6 +175,12 @@ enum SwitcherSupport {
         !simpleMode
     }
 
+    static func shouldPausePreviewCapture(frontmostBundleIdentifier: String?,
+                                          excludedBundleIdentifiers: [String]) -> Bool {
+        guard let frontmostBundleIdentifier else { return false }
+        return excludedBundleIdentifiers.contains(frontmostBundleIdentifier)
+    }
+
     static func needsScreenRecording(switcherEnabled: Bool,
                                      simpleMode: Bool,
                                      dockPreviewEnabled: Bool) -> Bool {
