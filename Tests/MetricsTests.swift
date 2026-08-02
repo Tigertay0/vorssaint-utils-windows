@@ -6872,7 +6872,7 @@ struct MetricsTests {
                    "no em-dash in WhatsApp organizer strings (\(language.rawValue))")
             let recorderValues = Mirror(reflecting: FeatureStrings.recorder(language)).children
                 .compactMap { $0.value as? String }
-            expect(recorderValues.count == 93 && recorderValues.allSatisfy { !$0.isEmpty },
+            expect(recorderValues.count == 106 && recorderValues.allSatisfy { !$0.isEmpty },
                    "every screen recorder string is set for \(language.rawValue)")
             expect(recorderValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible screen recorder strings (\(language.rawValue))")
@@ -7928,11 +7928,20 @@ struct MetricsTests {
                 && ScreenshotSupport.cardCornerRadius(for: CGSize(width: 1600, height: 900), factor: 1) == 180
                 && ScreenshotSupport.cardCornerRadius(for: CGSize(width: 1600, height: 900), factor: 2) == 180,
                "card corner radius clamps and scales with the short side")
-
+        expect(abs(ScreenshotSupport.backdropBlurRadius(
+                    for: CGSize(width: 1600, height: 900), factor: 1) - 31.5) < 0.001
+                && ScreenshotSupport.backdropBlurRadius(
+                    for: CGSize(width: 1600, height: 900), factor: -1) == 0,
+               "background blur scales with the canvas and clamps its slider")
         let solidStyle = ScreenshotSupport.BackdropStyle(kind: .solid, colors: [[0.2, 0.4, 0.9]],
-                                                         padding: 0.3, cornerRadius: 0.2)
+                                                         padding: 0.3, cornerRadius: 0.2,
+                                                         blur: 0.6)
         let solidRoundTrip = ScreenshotSupport.BackdropStyle.decoded(solidStyle.encoded())
         expect(solidRoundTrip == solidStyle, "a backdrop style round-trips through JSON")
+        let legacyStyle = ScreenshotSupport.BackdropStyle.decoded(
+            #"{"kind":"solid","colors":[[0.2,0.4,0.9]],"padding":0.3,"cornerRadius":0.2}"#)
+        expect(legacyStyle.kind == .solid && legacyStyle.blur == 0,
+               "backgrounds saved before blur keep decoding without changing")
         expect(ScreenshotSupport.BackdropStyle.decoded(nil).kind == .none
                 && ScreenshotSupport.BackdropStyle.decoded("").kind == .none
                 && ScreenshotSupport.BackdropStyle.decoded("not json").kind == .none,
@@ -7943,8 +7952,10 @@ struct MetricsTests {
         expect(brokenSolid.sanitized().kind == .none,
                "a solid style without colors demotes to none")
         let wildSliders = ScreenshotSupport.BackdropStyle(kind: .preset, presetID: "ocean",
-                                                          padding: 9, cornerRadius: -3)
-        expect(wildSliders.sanitized().padding == 1 && wildSliders.sanitized().cornerRadius == 0,
+                                                          padding: 9, cornerRadius: -3, blur: 8)
+        expect(wildSliders.sanitized().padding == 1
+                && wildSliders.sanitized().cornerRadius == 0
+                && wildSliders.sanitized().blur == 1,
                "backdrop sliders clamp to their range")
         expect(ScreenshotSupport.BackdropStyle(kind: .preset, presetID: "bogus").sanitized().kind == .none
                 && ScreenshotSupport.BackdropStyle(kind: .image, imagePath: nil).sanitized().kind == .none,
@@ -9426,6 +9437,45 @@ struct MetricsTests {
                "an edit written next to the recording comes back exactly as it was")
         expect(RecorderEditDocument.decoded(Data("not json".utf8)).trimStart == 0,
                "an unreadable edit opens the recording untouched instead of failing")
+        let click = RecorderMotion.Click(time: 3, isDown: true)
+        let recoveredZooms = RecorderEditDocument(zoomEnabled: true,
+                                                  zoomSegments: [],
+                                                  zoomsGenerated: true)
+            .restoringAutomaticZooms(clicks: [click], duration: 10)
+        expect(recoveredZooms.zoomSegments.count == 1
+                && recoveredZooms.zoomSegments[0].followsPointer,
+               "turning automatic zoom back on recovers a click-based zoom that was deleted")
+        var intentionalZoom = RecorderTimeline.ZoomSegment(start: 2, end: 4, amount: 2.2)
+        intentionalZoom.focusX = 0.2
+        intentionalZoom.focusY = 0.3
+        let preservedZooms = RecorderEditDocument(zoomEnabled: true,
+                                                  zoomSegments: [intentionalZoom])
+            .restoringAutomaticZooms(clicks: [click], duration: 10)
+        expect(preservedZooms.zoomSegments == [intentionalZoom],
+               "recovering automatic zoom never replaces a zoom that is still on the timeline")
+
+        let keyboardTrack = RecorderKeyboardTrack(presses: [
+            .init(time: 1, label: "⌘K"),
+            .init(time: 1.2, label: "S"),
+        ])
+        expect(RecorderKeyboardTrack.decoded(keyboardTrack.encoded()) == keyboardTrack,
+               "the optional keyboard track round-trips next to the recording")
+        expect(RecorderKeystrokeRenderer.image(labels: ["⌘K", "S"], canvasHeight: 1080) != nil,
+               "pressed keys draw as lightweight keycaps for the finished frame")
+        expect(keyboardTrack.overlay(at: 1.25)?.labels == ["⌘K", "S"]
+                && keyboardTrack.overlay(at: 2.56) == nil,
+               "recent keys group together and then leave the picture")
+
+        var styled = RecorderEditDocument(backdrop: "style", zoomAmount: 2.4,
+                                          texts: [RecorderTextOverlay(text: "Keep", start: 0,
+                                                                      end: 1)])
+        let preset = RecorderEditPreset(name: "Demo", document: styled)
+        styled.backdrop = "other"
+        styled.texts.append(RecorderTextOverlay(text: "Also keep", start: 1, end: 2))
+        let appliedPreset = preset.applying(to: styled)
+        expect(appliedPreset.backdrop == "style" && appliedPreset.zoomAmount == 2.4
+                && appliedPreset.texts.count == 2,
+               "an editor preset changes the look without touching timeline edits")
 
         // MARK: Screen recorder motion
 

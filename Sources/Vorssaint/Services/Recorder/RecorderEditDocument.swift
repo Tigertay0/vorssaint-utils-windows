@@ -41,6 +41,8 @@ struct RecorderEditDocument: Codable, Equatable {
     var zoomsGenerated: Bool
     /// Lines of text laid over the recording, in the recording's own time.
     var texts: [RecorderTextOverlay]
+    /// Whether the optional key track recorded with this take is drawn.
+    var showsKeystrokes: Bool
 
     init(trimStart: Double = 0,
          trimEnd: Double = 0,
@@ -59,7 +61,8 @@ struct RecorderEditDocument: Codable, Equatable {
          cuts: [RecorderTimeline.Cut] = [],
          zoomSegments: [RecorderTimeline.ZoomSegment] = [],
          zoomsGenerated: Bool = false,
-         texts: [RecorderTextOverlay] = []) {
+         texts: [RecorderTextOverlay] = [],
+         showsKeystrokes: Bool = true) {
         self.trimStart = trimStart
         self.trimEnd = trimEnd
         self.quality = quality
@@ -78,6 +81,7 @@ struct RecorderEditDocument: Codable, Equatable {
         self.zoomSegments = zoomSegments
         self.zoomsGenerated = zoomsGenerated
         self.texts = texts
+        self.showsKeystrokes = showsKeystrokes
     }
 
     /// A document written before these fields existed still opens: every one
@@ -107,6 +111,8 @@ struct RecorderEditDocument: Codable, Equatable {
                                                      forKey: .zoomSegments) ?? []
         zoomsGenerated = try container.decodeIfPresent(Bool.self, forKey: .zoomsGenerated) ?? false
         texts = try container.decodeIfPresent([RecorderTextOverlay].self, forKey: .texts) ?? []
+        showsKeystrokes = try container.decodeIfPresent(Bool.self,
+                                                        forKey: .showsKeystrokes) ?? true
     }
 
     // MARK: - Timeline
@@ -132,6 +138,22 @@ struct RecorderEditDocument: Codable, Equatable {
     func activeZoomSegments(duration: Double) -> [RecorderTimeline.ZoomSegment] {
         guard zoomEnabled else { return [] }
         return RecorderTimeline.normalized(segments: zoomSegments, duration: duration)
+    }
+
+    /// Turning automatic zoom back on is an explicit request to recover the
+    /// click-based zooms when the timeline was emptied by mistake.
+    func restoringAutomaticZooms(clicks: [RecorderMotion.Click],
+                                 duration: Double) -> RecorderEditDocument {
+        guard zoomEnabled, zoomSegments.isEmpty else { return self }
+        let generated = RecorderTimeline.generatedSegments(
+            clicks: clicks,
+            duration: duration,
+            amount: RecorderSupport.sanitizedZoomAmount(zoomAmount))
+        guard !generated.isEmpty else { return self }
+        var next = self
+        next.zoomSegments = generated
+        next.zoomsGenerated = true
+        return next
     }
 
     var resolvedBackdrop: ScreenshotSupport.BackdropStyle {
@@ -166,6 +188,7 @@ struct RecorderEditDocument: Codable, Equatable {
             next.pointerSmoothing = RecorderMotion.Smoothing.off.rawValue
             next.showsClickRing = false
             next.zoomEnabled = false
+            next.showsKeystrokes = false
         case .clean:
             next.backdrop = ""
             next.aspect = RecorderSupport.Aspect.original.rawValue
@@ -173,6 +196,7 @@ struct RecorderEditDocument: Codable, Equatable {
             next.pointerSmoothing = RecorderMotion.Smoothing.smooth.rawValue
             next.showsClickRing = true
             next.zoomEnabled = true
+            next.showsKeystrokes = true
         case .studio:
             next.backdrop = ScreenshotSupport.BackdropStyle(
                 kind: .preset,
@@ -183,8 +207,20 @@ struct RecorderEditDocument: Codable, Equatable {
             next.pointerSmoothing = RecorderMotion.Smoothing.smooth.rawValue
             next.showsClickRing = true
             next.zoomEnabled = true
+            next.showsKeystrokes = true
         }
         return next
+    }
+
+    func matches(_ look: Look) -> Bool {
+        let expected = applying(look)
+        return backdrop == expected.backdrop
+            && aspect == expected.aspect
+            && showsPointer == expected.showsPointer
+            && pointerSmoothing == expected.pointerSmoothing
+            && showsClickRing == expected.showsClickRing
+            && zoomEnabled == expected.zoomEnabled
+            && showsKeystrokes == expected.showsKeystrokes
     }
 
     var resolvedQuality: RecorderSupport.Quality {
@@ -217,6 +253,7 @@ struct RecorderEditDocument: Codable, Equatable {
             || zoomSegments != other.zoomSegments
             || cuts != other.cuts
             || texts != other.texts
+            || showsKeystrokes != other.showsKeystrokes
     }
 
     /// Whether the finished video would run differently, which is what forces
@@ -265,5 +302,49 @@ struct RecorderEditDocument: Codable, Equatable {
         guard let data, let document = try? JSONDecoder().decode(RecorderEditDocument.self, from: data)
         else { return RecorderEditDocument() }
         return document
+    }
+}
+
+/// A named visual starting point. Timeline edits, captions and sound are never
+/// part of a preset, so applying one cannot undo real editing work.
+struct RecorderEditPreset: Codable, Equatable, Identifiable {
+    let id: UUID
+    var name: String
+    let backdrop: String
+    let aspect: String
+    let showsPointer: Bool
+    let pointerSmoothing: String
+    let pointerSize: Double
+    let showsClickRing: Bool
+    let zoomEnabled: Bool
+    let zoomAmount: Double
+    let showsKeystrokes: Bool
+
+    init(id: UUID = UUID(), name: String, document: RecorderEditDocument) {
+        self.id = id
+        self.name = name
+        backdrop = document.backdrop
+        aspect = document.aspect
+        showsPointer = document.showsPointer
+        pointerSmoothing = document.pointerSmoothing
+        pointerSize = document.pointerSize
+        showsClickRing = document.showsClickRing
+        zoomEnabled = document.zoomEnabled
+        zoomAmount = document.zoomAmount
+        showsKeystrokes = document.showsKeystrokes
+    }
+
+    func applying(to document: RecorderEditDocument) -> RecorderEditDocument {
+        var next = document
+        next.backdrop = backdrop
+        next.aspect = aspect
+        next.showsPointer = showsPointer
+        next.pointerSmoothing = pointerSmoothing
+        next.pointerSize = pointerSize
+        next.showsClickRing = showsClickRing
+        next.zoomEnabled = zoomEnabled
+        next.zoomAmount = zoomAmount
+        next.showsKeystrokes = showsKeystrokes
+        return next
     }
 }

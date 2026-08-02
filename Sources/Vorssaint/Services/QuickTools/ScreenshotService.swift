@@ -94,7 +94,7 @@ final class ScreenshotService: ObservableObject {
             beginSelection()
             return
         }
-        QuickToolHUD.show(icon: "timer", message: "\(countdownRemaining)")
+        QuickToolHUD.showCountdown(countdownRemaining)
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.countdownRemaining -= 1

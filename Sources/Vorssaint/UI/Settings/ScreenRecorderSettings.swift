@@ -21,6 +21,7 @@ struct ScreenRecorderSettings: View {
     @AppStorage(DefaultsKey.recorderGIFSize) private var gifSizeRaw =
         RecorderSupport.GIFSize.medium.rawValue
     @AppStorage(DefaultsKey.recorderGIFFrameRate) private var gifFrameRate = 12
+    @AppStorage(DefaultsKey.recorderShowKeystrokes) private var showsKeystrokes = false
     @State private var showsMoreOptions = false
 
     private var strings: RecorderFeatureStrings {
@@ -94,6 +95,18 @@ struct ScreenRecorderSettings: View {
                     Text(strings.openEditorCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle(strings.keystrokesToggle, isOn: $showsKeystrokes)
+                        .onChange(of: showsKeystrokes) { _, enabled in
+                            if enabled { permissions.requestAccessibility() }
+                        }
+                    Text(strings.keystrokesCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if showsKeystrokes, !permissions.accessibility {
+                        PermissionRow(kind: .accessibility)
+                    }
                 }
             }
 

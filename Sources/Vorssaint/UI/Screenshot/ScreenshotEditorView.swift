@@ -155,6 +155,10 @@ struct ScreenshotEditorView: View {
         return ZStack {
             if model.showsBackdrop {
                 backdropFillView
+                    .scaleEffect(1 + CGFloat(model.backdropStyle.blur) * 0.08)
+                    .blur(radius: ScreenshotSupport.backdropBlurRadius(
+                        for: contentPixelSize,
+                        factor: CGFloat(model.backdropStyle.blur)) * zoom)
             }
             Canvas { context, size in
                 context.withCGContext { cg in

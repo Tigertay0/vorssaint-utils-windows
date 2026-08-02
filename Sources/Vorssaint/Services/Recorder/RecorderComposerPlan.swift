@@ -20,6 +20,7 @@ extension RecorderComposer {
     /// drawn sharp.
     static func makePlan(document: RecorderEditDocument,
                          track: RecorderPointerTrack,
+                         keyboard: RecorderKeyboardTrack = RecorderKeyboardTrack(),
                          sourceSize: CGSize,
                          frameRate: Int,
                          duration: Double,
@@ -45,7 +46,9 @@ extension RecorderComposer {
         let needsCanvas = hasBackdrop || fullCanvas != RecorderSupport.evenSize(sourceSize)
         let hasCuts = !document.cuts.isEmpty
         let texts = RecorderTextOverlay.normalized(document.texts, duration: duration)
+        let showsKeystrokes = document.showsKeystrokes && !keyboard.isEmpty
         guard showsPointer || !segments.isEmpty || needsCanvas || hasCuts || !texts.isEmpty
+                || showsKeystrokes
         else { return nil }
 
         // Everything the pointer track knows is in the RECORDING's own time,
@@ -177,6 +180,16 @@ extension RecorderComposer {
             }
         }
 
+        var keystrokeLabels = [[String]](repeating: [], count: frames)
+        var keystrokeOpacity = [Double](repeating: 0, count: frames)
+        if showsKeystrokes {
+            for (index, state) in keyboard.overlays(at: sourceTimes).enumerated() {
+                guard let overlay = state else { continue }
+                keystrokeLabels[index] = overlay.labels
+                keystrokeOpacity[index] = overlay.opacity
+            }
+        }
+
         let corner = hasBackdrop
             ? RecorderSupport.cardCorner(style.cornerRadius, cardSize: card.size)
             : 0
@@ -216,7 +229,9 @@ extension RecorderComposer {
                     plate: plate,
                     mask: mask,
                     texts: texts,
-                    textOpacity: textOpacity)
+                    textOpacity: textOpacity,
+                    keystrokeLabels: keystrokeLabels,
+                    keystrokeOpacity: keystrokeOpacity)
     }
 
     // MARK: - Plate
@@ -241,6 +256,13 @@ extension RecorderComposer {
         context.setFillColor(CGColor(gray: 0, alpha: 1))
         context.fill(CGRect(origin: .zero, size: canvas))
         drawFill(style: style, in: context, canvas: canvas)
+        if style.blur > 0, let background = context.makeImage() {
+            let bounds = CGRect(origin: .zero, size: canvas)
+            let blurred = ScreenshotRenderer.blurredBackdrop(
+                background, factor: CGFloat(style.blur))
+            context.clear(bounds)
+            context.draw(blurred, in: bounds)
+        }
 
         if corner > 0 || style.kind != .none {
             // The recording sits on the background rather than in it, and a

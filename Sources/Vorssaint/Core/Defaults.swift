@@ -409,6 +409,8 @@ enum DefaultsKey {
     static let recorderOpenEditor = "recorderOpenEditor"
     static let recorderGIFSize = "recorderGIFSize"
     static let recorderGIFFrameRate = "recorderGIFFrameRate"
+    static let recorderShowKeystrokes = "recorderShowKeystrokes"
+    static let recorderEditorPresets = "recorderEditorPresets"
     static let panelUtilityScreenRecorder = "panelUtilityScreenRecorder"
 
     // Window Layout — snapping, global shortcuts and optional pointer gestures.
@@ -939,6 +941,8 @@ enum Defaults {
         DefaultsKey.recorderOpenEditor: true,
         DefaultsKey.recorderGIFSize: RecorderSupport.GIFSize.medium.rawValue,
         DefaultsKey.recorderGIFFrameRate: 12,
+        DefaultsKey.recorderShowKeystrokes: false,
+        DefaultsKey.recorderEditorPresets: Data(),
         DefaultsKey.panelUtilityScreenRecorder: true,
         DefaultsKey.screenshotShortcutEnabled: false,
         DefaultsKey.screenshotShortcut: GlobalShortcut.screenshotDefault.storageValue,

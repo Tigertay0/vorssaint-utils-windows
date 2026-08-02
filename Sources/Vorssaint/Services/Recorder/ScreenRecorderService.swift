@@ -13,6 +13,7 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
     let region: RecorderSupport.Region
     private let engine = RecorderCaptureEngine()
     private let pointer: RecorderPointerSampler
+    private let keyboard: RecorderKeystrokeSampler?
     /// Immutable for the whole session, which is what makes it safe to touch
     /// from the capture queue while the main thread watches the clock.
     private let writer: RecorderWriter
@@ -22,7 +23,8 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
     init?(take: RecorderTakeStore.Take,
           region: RecorderSupport.Region,
           frameRate: Int,
-          capturesSystemAudio: Bool) {
+          capturesSystemAudio: Bool,
+          capturesKeystrokes: Bool) {
         guard let writer = RecorderWriter(url: take.videoURL,
                                           pixelSize: region.pixelSize,
                                           frameRate: frameRate,
@@ -32,6 +34,7 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
         self.region = region
         self.writer = writer
         pointer = RecorderPointerSampler(region: region)
+        keyboard = capturesKeystrokes ? RecorderKeystrokeSampler() : nil
         super.init()
         engine.delegate = self
     }
@@ -48,6 +51,7 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
             return failure
         }
         pointer.start()
+        keyboard?.start()
         return nil
     }
 
@@ -56,10 +60,14 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
     func stop() async -> Bool {
         await engine.stop()
         let track = pointer.stop()
+        let keyboardTrack = keyboard?.stop() ?? RecorderKeyboardTrack()
         let end = CMClockGetTime(CMClockGetHostTimeClock())
         let written = await writer.finish(at: end)
         if written, !track.isEmpty {
             try? track.encoded().write(to: take.pointerURL, options: .atomic)
+        }
+        if written, !keyboardTrack.isEmpty, let data = keyboardTrack.encoded() {
+            try? data.write(to: take.keyboardURL, options: .atomic)
         }
         return written
     }
@@ -67,6 +75,7 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
     func abandon() async {
         await engine.stop()
         _ = pointer.stop()
+        _ = keyboard?.stop()
         writer.cancel()
     }
 
@@ -242,7 +251,7 @@ final class ScreenRecorderService: ObservableObject {
             beginRecording(region: region)
             return
         }
-        QuickToolHUD.show(icon: "timer", message: "\(countdownRemaining)")
+        QuickToolHUD.showCountdown(countdownRemaining)
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.countdownRemaining -= 1
@@ -263,11 +272,14 @@ final class ScreenRecorderService: ObservableObject {
         let frameRate = RecorderSupport.sanitizedFrameRate(
             defaults.integer(forKey: DefaultsKey.recorderFrameRate))
         let capturesSystemAudio = defaults.bool(forKey: DefaultsKey.recorderSystemAudio)
+        let capturesKeystrokes = defaults.bool(forKey: DefaultsKey.recorderShowKeystrokes)
+            && Permissions.shared.accessibility
 
         guard let session = RecorderSession(take: take,
                                             region: region,
                                             frameRate: frameRate,
-                                            capturesSystemAudio: capturesSystemAudio) else {
+                                            capturesSystemAudio: capturesSystemAudio,
+                                            capturesKeystrokes: capturesKeystrokes) else {
             RecorderTakeStore.shared.delete(take)
             QuickToolHUD.show(icon: "record.circle", message: strings.recordFailed)
             return

@@ -7,17 +7,14 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.0]
 
 ### Summary
-Vorssaint 3.3.0 records the screen and opens each recording in an editor that
-cuts it, smooths the pointer, zooms on clicks and adds a background, while
-Window Layout steps back through recent placements. Window previews can be
-smaller, the App Switcher reopens apps without windows and appears without a
-pop-in, the Scratchpad can keep the current note open, and the radial menu holds
-with the Super Key.
+Vorssaint 3.3.0 records the screen and edits recordings with cuts, zooms,
+pressed keys, reusable presets and direct copy or export. Window Layout restores
+recent placements, while previews, Scratchpad, the App Switcher and radial menu
+gain faster, more flexible controls.
 
 ### Added
-- Screen recording. Records an area, a window or the whole screen with the
-  sound of the Mac, and saves a video or a GIF. Under Screen recording, off by
-  default.
+- Screen recording with a clean editor, adjustable backgrounds, key presses,
+  reusable presets and direct copy, plus video and GIF export. Off by default.
 - A slider for how solid the Dock preview panel looks. Under Switcher, with
   Dock Preview on. Thanks to @ruvelro.
 - Apps the clipboard history skips, so nothing copied in them is saved. Under
