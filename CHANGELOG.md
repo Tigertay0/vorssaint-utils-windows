@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen and edits recordings with cuts, zooms,
 pressed keys, reusable presets and direct copy or export. Window Layout restores
-recent placements, Finder gains a rename shortcut, and the App Switcher,
-previews, Scratchpad and radial menu gain faster, clearer controls.
+recent placements, Finder gains image paste and a rename shortcut, and the App
+Switcher, previews, Scratchpad and radial menu gain faster, clearer controls.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
@@ -21,6 +21,8 @@ previews, Scratchpad and radial menu gain faster, clearer controls.
   Clipboard. Thanks to @CSkjolden.
 - A configurable shortcut renames selected files and folders in Finder. It
   starts on F2, off by default. Thanks to @Mito450.
+- Copied images can become PNG files with ⌘V in Finder, off by default under
+  Clipboard. Thanks to @AsphaltDemon.
 
 ### Changed
 - The Scratchpad now has a pin that keeps the current note open until you close

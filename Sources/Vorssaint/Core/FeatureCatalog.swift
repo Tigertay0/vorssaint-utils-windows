@@ -151,7 +151,8 @@ extension AppFeature {
         case .radialMenu: return [DefaultsKey.radialMenuEnabled]
         case .clipboardHistory: return [DefaultsKey.clipboardHistoryEnabled]
         case .pastePlain: return [DefaultsKey.pastePlainEnabled]
-        case .finderCutPaste: return [DefaultsKey.finderCutPasteEnabled]
+        case .finderCutPaste: return [DefaultsKey.finderCutPasteEnabled,
+                                      DefaultsKey.finderPasteImageAsFile]
         case .finderRename: return [DefaultsKey.finderRenameEnabled]
         case .shelf: return [DefaultsKey.shelfEnabled]
         case .urlCleaner: return [DefaultsKey.urlCleanerEnabled]

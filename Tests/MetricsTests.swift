@@ -4330,6 +4330,25 @@ struct MetricsTests {
         expect(CutPasteProgressSupport.displayPosition(completed: 5, total: 5) == 5,
                "the counter never runs past the batch size")
 
+        // MARK: Paste copied image as file (issue #429)
+
+        expect(FinderPasteImageSupport.preferredImageType(in: ["public.utf8-plain-text"]) == nil,
+               "text never replaces Finder's normal paste")
+        expect(FinderPasteImageSupport.preferredImageType(in: ["public.tiff", "public.png"])
+                == "public.png",
+               "PNG wins when the pasteboard offers several image representations")
+        expect(FinderPasteImageSupport.preferredImageType(
+            in: ["public.file-url", "public.png"]
+        ) == nil, "a copied image file stays a normal Finder file paste")
+        expect(FinderPasteImageSupport.preferredImageType(in: ["public.jpeg"])
+                == "public.jpeg",
+               "a non-PNG image representation can be converted")
+        expect(FinderPasteImageSupport.fileName(
+            for: Date(timeIntervalSince1970: 0),
+            timeZone: TimeZone(secondsFromGMT: 0)!
+        ) == "Pasted_Image_19700101_000000.png",
+               "pasted images receive the stable timestamped PNG name")
+
         // MARK: Update installer helpers
 
         expect(GlobalShortcutRole.activeRoles(isOn: { _ in false }).isEmpty,
@@ -6735,6 +6754,9 @@ struct MetricsTests {
         expect(activeSet(.automationFinder, on: [DefaultsKey.finderCutPasteEnabled])
                 == [.finderCutPaste, .uninstaller, .quickToggles],
                "finder automation is used by cut and paste, the uninstaller and the quick toggles")
+        expect(activeSet(.automationFinder, on: [DefaultsKey.finderPasteImageAsFile])
+                == [.finderCutPaste, .uninstaller, .quickToggles],
+               "pasting copied images as files engages the shared Finder feature")
         expect(AppFeature.quickToggles.permissions == [.automationFinder],
                "the quick toggles need no permission beyond the Trash's Finder ask")
         expect(activeSet(.automationTerminal) == [.homebrew], "homebrew drives the Terminal")
@@ -6783,6 +6805,14 @@ struct MetricsTests {
                    "no em-dash in visible hub strings (\(language.rawValue))")
             expect(hub.activeCountFormat.contains("%1$d") && hub.activeCountFormat.contains("%2$d"),
                    "count format keeps positional specifiers (\(language.rawValue))")
+        }
+        for language in AppLanguage.allCases {
+            let values = Mirror(reflecting: FeatureStrings.clipboard(language)).children
+                .compactMap { $0.value as? String }
+            expect(values.count == 42 && values.allSatisfy { !$0.isEmpty },
+                   "every clipboard string is set for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible clipboard strings (\(language.rawValue))")
         }
         expect(FeatureStrings.hub(.ptBR).pageTitle == "Recursos"
                 && FeatureStrings.hub(.enUS).pageTitle == "Features",
@@ -7040,6 +7070,8 @@ struct MetricsTests {
                "cleaner settings, including WhatsApp downloads, follow the cleaner module")
         expect(pageVisible(.quickTools, available: [.quickToggles]),
                "the quick toggles alone keep the quick tools page")
+        expect(pageVisible(.clipboard, available: [.finderCutPaste]),
+               "the image paste option keeps the Clipboard page available")
 
         // MARK: Display brightness (DDC/CI helpers)
 
@@ -8694,6 +8726,9 @@ struct MetricsTests {
                "the apps each mouse feature leaves alone travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.clipboardHistoryIgnoredApps),
                "the apps the clipboard history skips travel with the settings backup")
+        expect(Defaults.registeredDefaults[DefaultsKey.finderPasteImageAsFile] as? Bool == false
+                && backupKeys.contains(DefaultsKey.finderPasteImageAsFile),
+               "pasting copied images as files is opt-in and travels with settings backup")
         expect(backupKeys.contains(DefaultsKey.panelShowToggles)
                 && backupKeys.contains(DefaultsKey.panelToggleOrder)
                 && backupKeys.contains(DefaultsKey.panelToggleDarkMode),
