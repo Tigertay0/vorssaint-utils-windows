@@ -8,9 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.0 records the screen and opens each recording in an editor that
-cuts it, smooths the pointer, zooms on clicks and adds a background. Window
-previews can be smaller, the App Switcher reopens apps without windows and
-appears without a pop-in, and the Scratchpad can keep the current note open.
+cuts it, smooths the pointer, zooms on clicks and adds a background, while
+Window Layout steps back through recent placements. Window previews can be
+smaller, the App Switcher reopens apps without windows and appears without a
+pop-in, and the Scratchpad can keep the current note open.
 
 ### Added
 - Screen recording. Records an area, a window or the whole screen with the
@@ -24,6 +25,7 @@ appears without a pop-in, and the Scratchpad can keep the current note open.
 ### Changed
 - The Scratchpad now has a pin that keeps the current note open until you close
   it. Thanks to @hash00.
+- Window Layout's Restore action now steps back through recent placements.
 - App Switcher and Dock Preview now have a Small size that reduces previews and
   the space between them. Thanks to @CSkjolden.
 - Selecting an app with no open window in the App Switcher now asks it to open
