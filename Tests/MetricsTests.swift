@@ -6788,7 +6788,7 @@ struct MetricsTests {
                    "no em-dash in visible radial menu strings (\(language.rawValue))")
             let scratchpadValues = Mirror(reflecting: FeatureStrings.scratchpad(language)).children
                 .compactMap { $0.value as? String }
-            expect(scratchpadValues.count == 16 && scratchpadValues.allSatisfy { !$0.isEmpty },
+            expect(scratchpadValues.count == 17 && scratchpadValues.allSatisfy { !$0.isEmpty },
                    "every scratchpad string is set for \(language.rawValue)")
             expect(scratchpadValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible scratchpad strings (\(language.rawValue))")
@@ -8067,6 +8067,10 @@ struct MetricsTests {
                 && ScratchpadRetention.week.maxIdleInterval == 7 * 86_400
                 && ScratchpadRetention.month.maxIdleInterval == 30 * 86_400,
                "scratchpad retention periods are a day, a week and thirty days")
+        expect(ScratchpadSupport.dismissesOnOutsideClick(isPinned: false, exportModalActive: false)
+                && !ScratchpadSupport.dismissesOnOutsideClick(isPinned: true, exportModalActive: false)
+                && !ScratchpadSupport.dismissesOnOutsideClick(isPinned: false, exportModalActive: true),
+               "the scratchpad pin and export dialog both block outside-click dismissal")
         let scratchpadNow = Date(timeIntervalSince1970: 1_784_000_000)
         expect(!ScratchpadSupport.shouldClear(lastEdited: nil, now: scratchpadNow, retention: .day)
                 && !ScratchpadSupport.shouldClear(lastEdited: scratchpadNow.addingTimeInterval(-90_000),
