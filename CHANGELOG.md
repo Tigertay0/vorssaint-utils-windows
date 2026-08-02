@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen and opens each recording in an editor that
 cuts it, smooths the pointer, zooms on clicks and adds a background. Window
-previews can also be smaller, the App Switcher reopens apps without windows and
-the Scratchpad can stay open for the current note.
+previews can be smaller, the App Switcher reopens apps without windows and
+appears without a pop-in, and the Scratchpad can keep the current note open.
 
 ### Added
 - Screen recording. Records an area, a window or the whole screen with the
@@ -28,6 +28,8 @@ the Scratchpad can stay open for the current note.
   the space between them. Thanks to @CSkjolden.
 - Selecting an app with no open window in the App Switcher now asks it to open
   one. Thanks to @Yahddyyp.
+- The App Switcher now appears immediately, without a pop-in animation. Thanks
+  to @CSkjolden.
 - The clipboard history no longer saves a copy that an app marks as a
   password, whatever the other options are set to.
 - The remaining-time menu bar option now lives with Keep Awake session settings

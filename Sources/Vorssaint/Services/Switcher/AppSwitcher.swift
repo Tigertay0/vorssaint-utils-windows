@@ -881,7 +881,10 @@ final class AppSwitcher: ObservableObject {
         hoverAnchor = NSEvent.mouseLocation
         panel.setFrame(centeredFrame(for: currentPanelSize), display: true)
         panel.invalidateShadow()
+        let animationBehavior = panel.animationBehavior
+        panel.animationBehavior = .none
         panel.orderFrontRegardless()
+        panel.animationBehavior = animationBehavior
         installDismissMonitors()
     }
 
