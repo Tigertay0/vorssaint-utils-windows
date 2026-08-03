@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records and edits the screen, captures long scrolling pages and
 restores recent Window Layout placements. Finder gains image tools and shortcuts,
-while the Volume Mixer routes system sounds separately and inactive features no
-longer reserve shortcuts.
+while system sounds can use a separate output and disabled features no longer
+reserve shortcuts.
 
 ### Added
 - Screen recording with a clean editor, adjustable backgrounds, key presses,
@@ -50,6 +50,8 @@ longer reserve shortcuts.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- App Updates no longer lists Vorssaint itself or versions that need a newer
+  macOS. Thanks to @AB-boi.
 - A disabled feature no longer blocks its saved shortcut from being used
   elsewhere. Thanks to @AB-boi.
 - Three-finger middle clicks now stay reliable when macOS initially reads the
