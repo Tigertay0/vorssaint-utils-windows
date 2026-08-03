@@ -6720,7 +6720,8 @@ struct MetricsTests {
                                           stringFor: { strings[$0] }))
         }
 
-        expect(activeSet(.accessibility) == [.windowLayout, .cleaningMode, .commandBar],
+        expect(activeSet(.accessibility)
+                == [.windowLayout, .cleaningMode, .commandBar, .screenRecorder],
                "with nothing enabled only on-demand features use accessibility")
         expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterEnabled]).contains(.scrollInverter),
                "an enabled feature counts as using its permission")
@@ -6742,6 +6743,8 @@ struct MetricsTests {
         expect(!activeSet(.accessibility, on: [DefaultsKey.brightnessControlEnabled])
                 .contains(.brightness),
                "brightness sliders alone never use accessibility")
+        expect(activeSet(.accessibility).contains(.screenRecorder),
+               "the recorder uses accessibility for anonymous typing timing while active")
 
         expect(activeSet(.screenRecording, on: [DefaultsKey.switcherEnabled])
                 == [.switcher, .screenOCR, .screenshot, .screenRecorder],
@@ -6975,7 +6978,7 @@ struct MetricsTests {
                    "no em-dash in WhatsApp organizer strings (\(language.rawValue))")
             let recorderValues = Mirror(reflecting: FeatureStrings.recorder(language)).children
                 .compactMap { $0.value as? String }
-            expect(recorderValues.count == 106 && recorderValues.allSatisfy { !$0.isEmpty },
+            expect(recorderValues.count == 105 && recorderValues.allSatisfy { !$0.isEmpty },
                    "every screen recorder string is set for \(language.rawValue)")
             expect(recorderValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible screen recorder strings (\(language.rawValue))")
@@ -9525,8 +9528,8 @@ struct MetricsTests {
                "the recording shortcut role gates on its toggle and feature")
         expect(AppFeature.screenRecorder.group == .tools
                 && AppFeature.screenRecorder.enabledKeys.isEmpty
-                && AppFeature.screenRecorder.permissions == [.screenRecording],
-               "the recorder is an on-demand tool and the sound rides the screen grant")
+                && AppFeature.screenRecorder.permissions == [.screenRecording, .accessibility],
+               "the recorder is on demand and keeps typing timing only while recording")
         expect(AppFeature.screenRecorder.energyProfile == .idle,
                "the recorder costs nothing between recordings")
         expect(pageVisible(.screenRecorder, available: [.screenRecorder])
@@ -9672,7 +9675,7 @@ struct MetricsTests {
                "unknown GIF settings fall back to the middle choice")
 
         var document = RecorderEditDocument()
-        expect(!document.isEdited(duration: 12),
+        expect(!document.isEdited(duration: 12) && !document.zoomsOnTyping,
                "a recording nobody touched is not treated as edited")
         document.trimStart = 3
         expect(document.isEdited(duration: 12),
@@ -9684,9 +9687,10 @@ struct MetricsTests {
                 && repaired.trim(duration: 12).duration > 0,
                "a damaged edit is repaired instead of wedging the editor")
         let documentRoundTrip = RecorderEditDocument.decoded(
-            RecorderEditDocument(trimStart: 1, trimEnd: 4, keepsSystemAudio: false).encoded())
+            RecorderEditDocument(trimStart: 1, trimEnd: 4, keepsSystemAudio: false,
+                                 zoomsOnTyping: true).encoded())
         expect(documentRoundTrip.trimStart == 1 && documentRoundTrip.trimEnd == 4
-                && !documentRoundTrip.keepsSystemAudio,
+                && !documentRoundTrip.keepsSystemAudio && documentRoundTrip.zoomsOnTyping,
                "an edit written next to the recording comes back exactly as it was")
         expect(RecorderEditDocument.decoded(Data("not json".utf8)).trimStart == 0,
                "an unreadable edit opens the recording untouched instead of failing")
@@ -9707,17 +9711,9 @@ struct MetricsTests {
         expect(preservedZooms.zoomSegments == [intentionalZoom],
                "recovering automatic zoom never replaces a zoom that is still on the timeline")
 
-        let keyboardTrack = RecorderKeyboardTrack(presses: [
-            .init(time: 1, label: "⌘K"),
-            .init(time: 1.2, label: "S"),
-        ])
-        expect(RecorderKeyboardTrack.decoded(keyboardTrack.encoded()) == keyboardTrack,
-               "the optional keyboard track round-trips next to the recording")
-        expect(RecorderKeystrokeRenderer.image(labels: ["⌘K", "S"], canvasHeight: 1080) != nil,
-               "pressed keys draw as lightweight keycaps for the finished frame")
-        expect(keyboardTrack.overlay(at: 1.25)?.labels == ["⌘K", "S"]
-                && keyboardTrack.overlay(at: 2.56) == nil,
-               "recent keys group together and then leave the picture")
+        let typingTrack = RecorderTypingTrack(times: [1, 1.2])
+        expect(RecorderTypingTrack.decoded(typingTrack.encoded()) == typingTrack,
+               "typing timing round-trips without storing which keys were pressed")
 
         var styled = RecorderEditDocument(backdrop: "style", zoomAmount: 2.4,
                                           texts: [RecorderTextOverlay(text: "Keep", start: 0,
@@ -9787,6 +9783,20 @@ struct MetricsTests {
                "a burst of clicks is one zoom that holds, not a flicker")
         expect(oneZoom.first.map { $0.start < 2.0 } == true,
                "the zoom begins BEFORE the click, which is only possible offline")
+        let typingZoom = RecorderMotion.zoomSegments(
+            clicks: [RecorderMotion.Click(time: 2, isDown: true)],
+            typingTimes: [4, 5, 6],
+            duration: 20)
+        expect(typingZoom.first.map { $0.end >= 7.39 } == true,
+               "typing after a click keeps that zoom on the field until writing stops")
+        let delayedTypingZoom = RecorderMotion.zoomSegments(
+            clicks: [RecorderMotion.Click(time: 2, isDown: true)],
+            typingTimes: [9, 10],
+            duration: 20)
+        expect(delayedTypingZoom.first.map { $0.end >= 11.39 } == true,
+               "a pause after focusing a field does not lose its typing zoom")
+        expect(RecorderMotion.zoomSegments(clicks: [], typingTimes: [2, 3], duration: 20).isEmpty,
+               "typing without a click never invents a place to zoom")
         let farApart = [RecorderMotion.Click(time: 2.0, isDown: true),
                         RecorderMotion.Click(time: 12.0, isDown: true)]
         expect(RecorderMotion.zoomSegments(clicks: farApart, duration: 20).count == 2,

@@ -191,9 +191,9 @@ extension AppFeature {
         case .dockPreview: return [.accessibility, .screenRecording]
         case .screenOCR: return [.screenRecording]
         case .screenshot: return [.screenRecording]
-        // The sound of the Mac rides the same grant the pixels do; nothing
-        // here uses the audio tap the mixer needs.
-        case .screenRecorder: return [.screenRecording]
+        // The sound of the Mac rides the same grant the pixels do. Accessibility
+        // keeps only typing timing while a recording is active.
+        case .screenRecorder: return [.screenRecording, .accessibility]
         case .cameraPreview: return [.camera]
         case .keepAwake: return [.accessibility]
         case .brightness: return [.accessibility]

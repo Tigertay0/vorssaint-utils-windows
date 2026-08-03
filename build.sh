@@ -121,7 +121,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Recorder/RecorderSupport.swift \
         Sources/Vorssaint/Services/Recorder/RecorderMotion.swift \
         Sources/Vorssaint/Services/Recorder/RecorderPointerTrack.swift \
-        Sources/Vorssaint/Services/Recorder/RecorderKeyboardTrack.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderTypingTrack.swift \
         Sources/Vorssaint/Services/Recorder/RecorderTimeline.swift \
         Sources/Vorssaint/Services/Recorder/RecorderTextOverlay.swift \
         Sources/Vorssaint/Services/Recorder/RecorderEditDocument.swift \
