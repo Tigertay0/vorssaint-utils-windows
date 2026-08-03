@@ -36,6 +36,8 @@ longer reserve shortcuts.
 ### Changed
 - The Volume Mixer adjusts overall volume directly and can send system sounds
   to a separate output. Thanks to @vkplayz0 and @p3P4.
+- Mute microphone now lives in Quick toggles in the menu bar panel. Thanks to
+  @AB-boi.
 - The Scratchpad now has a pin that keeps the current note open until you close
   it. Thanks to @hash00.
 - Window Layout's Restore action now steps back through recent placements.

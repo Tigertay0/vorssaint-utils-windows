@@ -194,6 +194,8 @@ enum DefaultsKey {
     static let panelShowToggles = "panelShowToggles"
     // Quick toggles tab: per-action visibility (the order lives in panelToggleOrder).
     static let panelToggleDarkMode = "panelToggleDarkMode"
+    // Keep the existing storage key so moving the row preserves its visibility choice.
+    static let panelToggleMicMute = "panelUtilityMicMute"
     static let panelToggleEmptyTrash = "panelToggleEmptyTrash"
     static let panelToggleEjectDisks = "panelToggleEjectDisks"
     static let panelToggleHiddenFiles = "panelToggleHiddenFiles"
@@ -370,7 +372,6 @@ enum DefaultsKey {
     static let panelUtilityQuickLauncher = "panelUtilityQuickLauncher"
     static let panelUtilityColorPicker = "panelUtilityColorPicker"
     static let panelUtilityScreenOCR = "panelUtilityScreenOCR"
-    static let panelUtilityMicMute = "panelUtilityMicMute"
     static let panelUtilityCameraPreview = "panelUtilityCameraPreview"
     static let panelUtilityScratchpad = "panelUtilityScratchpad"
     static let clipboardHistoryShortcutEnabled = "clipboardHistoryShortcutEnabled"
@@ -795,6 +796,7 @@ enum Defaults {
         DefaultsKey.panelShowControls: true,
         DefaultsKey.panelShowToggles: true,
         DefaultsKey.panelToggleDarkMode: true,
+        DefaultsKey.panelToggleMicMute: true,
         DefaultsKey.panelToggleEmptyTrash: true,
         DefaultsKey.panelToggleEjectDisks: true,
         DefaultsKey.panelToggleHiddenFiles: true,
@@ -939,7 +941,6 @@ enum Defaults {
         DefaultsKey.panelUtilityQuickLauncher: true,
         DefaultsKey.panelUtilityColorPicker: true,
         DefaultsKey.panelUtilityScreenOCR: true,
-        DefaultsKey.panelUtilityMicMute: true,
         DefaultsKey.panelUtilityCameraPreview: true,
         DefaultsKey.panelUtilityScratchpad: true,
         DefaultsKey.clipboardHistoryShortcutEnabled: true,

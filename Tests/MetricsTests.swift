@@ -1945,7 +1945,8 @@ struct MetricsTests {
                "Quick Controls panel section is shown by default")
         expect(registeredDefaults[DefaultsKey.panelShowToggles] as? Bool == true,
                "Quick toggles panel section is shown by default")
-        expect([DefaultsKey.panelToggleDarkMode, DefaultsKey.panelToggleEmptyTrash,
+        expect([DefaultsKey.panelToggleDarkMode, DefaultsKey.panelToggleMicMute,
+                DefaultsKey.panelToggleEmptyTrash,
                 DefaultsKey.panelToggleEjectDisks, DefaultsKey.panelToggleHiddenFiles,
                 DefaultsKey.panelToggleDesktopIcons, DefaultsKey.panelToggleLockScreen,
                 DefaultsKey.panelToggleDisplayOff, DefaultsKey.panelToggleScreenSaver]
@@ -8878,7 +8879,8 @@ struct MetricsTests {
                "the window preview exclusion list starts empty and travels with the settings backup")
         expect(backupKeys.contains(DefaultsKey.panelShowToggles)
                 && backupKeys.contains(DefaultsKey.panelToggleOrder)
-                && backupKeys.contains(DefaultsKey.panelToggleDarkMode),
+                && backupKeys.contains(DefaultsKey.panelToggleDarkMode)
+                && backupKeys.contains(DefaultsKey.panelToggleMicMute),
                "the quick toggles layout travels with the settings backup")
         expect(!backupKeys.contains(DefaultsKey.clipboardHistoryEntries)
                 && !backupKeys.contains(DefaultsKey.shelfItems)
