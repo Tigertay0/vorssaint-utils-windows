@@ -10,7 +10,8 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.0 records the screen with automatic zooms for clicks and typing,
 captures long scrolling pages and restores recent Window Layout placements.
 Finder gains image tools and shortcuts, while system sounds can use a separate
-output and disabled features no longer reserve shortcuts.
+output, overall volume is adjustable in the mixer and disabled features no
+longer reserve shortcuts.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -33,8 +34,8 @@ output and disabled features no longer reserve shortcuts.
   Under Quick Tools. Thanks to @hash00.
 
 ### Changed
-- System sounds can use a different output from apps, chosen directly in the
-  Volume Mixer. Thanks to @p3P4.
+- The Volume Mixer adjusts overall volume directly and can send system sounds
+  to a separate output. Thanks to @vkplayz0 and @p3P4.
 - The Scratchpad now has a pin that keeps the current note open until you close
   it. Thanks to @hash00.
 - Window Layout's Restore action now steps back through recent placements.

@@ -114,6 +114,31 @@ struct MixerSection: View {
                 .help(l10n.s.mixerSystemOutputTooltip)
             }
 
+            if let volume = mixer.systemOutputVolume {
+                HStack(spacing: 8) {
+                    Image(systemName: mixer.systemOutputMuted == true || volume <= 0.001
+                          ? "speaker.slash.fill"
+                          : "speaker.wave.2.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+
+                    MixerVolumeSlider(value: systemOutputVolumeBinding,
+                                      normalTint: normalSliderTint,
+                                      boostTint: normalSliderTint,
+                                      isBoosting: false,
+                                      accentRevision: accentRevision,
+                                      maximum: 1,
+                                      accessibilityLabel: l10n.s.mixerSystemOutputTitle)
+
+                    Text("\(Int((volume * 100).rounded()))%")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .frame(width: 36, alignment: .trailing)
+                }
+            }
+
             if universalOutputDevices.isEmpty {
                 inputMessage(l10n.s.mixerSystemOutputNoDevices, systemImage: "speaker.slash")
             }
@@ -179,6 +204,13 @@ struct MixerSection: View {
                 guard selection != MixerRoutingSupport.systemDefaultSelectionID else { return }
                 mixer.setUniversalOutputDeviceUID(selection)
             }
+        )
+    }
+
+    private var systemOutputVolumeBinding: Binding<Double> {
+        Binding(
+            get: { mixer.systemOutputVolume ?? 0 },
+            set: { mixer.setCurrentOutputVolume($0) }
         )
     }
 
@@ -618,6 +650,7 @@ private struct MixerRow: View {
                                           boostTint: boostColor,
                                           isBoosting: isBoosting,
                                           accentRevision: accentRevision,
+                                          maximum: AppVolumeMixer.maxVolume,
                                           accessibilityLabel: app.name)
 
                         HStack(spacing: 2) {
@@ -729,6 +762,7 @@ private struct MixerVolumeSlider: View {
     let boostTint: Color
     let isBoosting: Bool
     let accentRevision: Int
+    let maximum: Double
     let accessibilityLabel: String
 
     private var activeTint: Color { isBoosting ? boostTint : normalTint }
@@ -740,6 +774,7 @@ private struct MixerVolumeSlider: View {
                 LiquidGlassMixerSlider(value: $value,
                                        tint: activeTint,
                                        isBoosting: isBoosting,
+                                       maximum: maximum,
                                        accessibilityLabel: accessibilityLabel)
             } else {
                 nativeSlider
@@ -750,7 +785,7 @@ private struct MixerVolumeSlider: View {
     }
 
     private var nativeSlider: some View {
-        Slider(value: $value, in: 0...AppVolumeMixer.maxVolume)
+        Slider(value: $value, in: 0...maximum)
             .controlSize(.small)
             // Pass an explicit accent (not nil) for the normal state: on the
             // macOS slider, tint(nil) does not reliably clear a previously
@@ -765,6 +800,7 @@ private struct LiquidGlassMixerSlider: View {
     @Binding var value: Double
     let tint: Color
     let isBoosting: Bool
+    let maximum: Double
     let accessibilityLabel: String
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorScheme) private var colorScheme
@@ -774,8 +810,8 @@ private struct LiquidGlassMixerSlider: View {
     private let trackHeight: CGFloat = 5
 
     private var progress: CGFloat {
-        let clamped = min(max(value, 0), AppVolumeMixer.maxVolume)
-        return CGFloat(clamped / AppVolumeMixer.maxVolume)
+        let clamped = min(max(value, 0), maximum)
+        return CGFloat(clamped / maximum)
     }
 
     var body: some View {
@@ -812,7 +848,7 @@ private struct LiquidGlassMixerSlider: View {
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment:
-                value = min(AppVolumeMixer.maxVolume, value + 0.05)
+                value = min(maximum, value + 0.05)
             case .decrement:
                 value = max(0, value - 0.05)
             @unknown default:
@@ -859,6 +895,6 @@ private struct LiquidGlassMixerSlider: View {
     private func updateValue(at x: CGFloat, width: CGFloat) {
         let travel = max(width - knobWidth, 1)
         let normalized = min(max((x - knobWidth / 2) / travel, 0), 1)
-        value = Double(normalized) * AppVolumeMixer.maxVolume
+        value = Double(normalized) * maximum
     }
 }
