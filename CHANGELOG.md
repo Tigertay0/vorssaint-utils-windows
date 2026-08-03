@@ -53,6 +53,8 @@ longer reserve shortcuts.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- CPU and GPU temperatures no longer drop to impossible single-digit readings
+  when a sensor briefly reports bad data. Thanks to @georgo.
 - App Updates no longer lists Vorssaint itself or versions that need a newer
   macOS. Thanks to @AB-boi.
 - A disabled feature no longer blocks its saved shortcut from being used
