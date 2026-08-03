@@ -170,7 +170,8 @@ enum WindowEnumerator {
             }
             let axWindow = accessibilityWindows[windowOwnerPID]?.byID[CGWindowID(windowID)]
             if accessibilityWindows[windowOwnerPID] != nil, axWindow == nil,
-               !isOnHiddenSpace(CGWindowID(windowID)) {
+               (!isOnHiddenSpace(CGWindowID(windowID))
+                || SpaceWindowBridge.isExcludedFromWindowCycle(CGWindowID(windowID))) {
                 continue
             }
             let cgFrame = CGRect(x: (boundsDict["X"] as? NSNumber)?.doubleValue ?? 0,

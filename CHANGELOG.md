@@ -55,6 +55,8 @@ longer reserve shortcuts.
 ### Fixed
 - CPU and GPU temperatures no longer drop to impossible single-digit readings
   when a sensor briefly reports bad data. Thanks to @georgo.
+- The App Switcher no longer adds a blank duplicate for a window on another
+  desktop. Thanks to @CSkjolden.
 - App Updates no longer lists Vorssaint itself or versions that need a newer
   macOS. Thanks to @AB-boi.
 - A disabled feature no longer blocks its saved shortcut from being used
