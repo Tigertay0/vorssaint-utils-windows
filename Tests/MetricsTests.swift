@@ -10205,7 +10205,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let commandBarValues = Mirror(reflecting: FeatureStrings.commandBar(language)).children
                 .compactMap { $0.value as? String }
-            expect(commandBarValues.count == 123 && commandBarValues.allSatisfy { !$0.isEmpty },
+            expect(commandBarValues.count == 127 && commandBarValues.allSatisfy { !$0.isEmpty },
                    "every command bar string is set for \(language.rawValue)")
             expect(commandBarValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible command bar strings (\(language.rawValue))")
@@ -10230,6 +10230,13 @@ struct MetricsTests {
         expect(!CommandBarSearch.matchesVerb("safari", in: "Quit %@")
                 && !CommandBarSearch.matchesVerb("", in: "Quit %@"),
                "an app name alone never drags the quit rows in")
+        expect(InstalledApps.isSystemApplication(
+                    at: URL(fileURLWithPath: "/System/Applications/SystemUtility.app"))
+                && InstalledApps.isSystemApplication(
+                    at: URL(fileURLWithPath: "/Library/Apple/SystemUtility.app"))
+                && !InstalledApps.isSystemApplication(
+                    at: URL(fileURLWithPath: "/Applications/UserUtility.app")),
+               "app controls never offer system apps to the uninstaller")
 
         // MARK: Command bar search and ranking
 

@@ -10,8 +10,8 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.0 records the screen with automatic zooms, captures long scrolling
 pages and lets screenshot annotations move forward or backward. Finder gains
 image tools and shortcuts, Window Layout restores recent placements, and the
-menu bar gains better sound, process and display controls while Quit on close
-respects exceptions across bundled app components.
+Command Bar and menu bar gain better app, sound, process and display controls
+while Quit on close respects exceptions across bundled app components.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -34,6 +34,8 @@ respects exceptions across bundled app components.
   Under Quick Tools. Thanks to @hash00.
 
 ### Changed
+- The Command Bar can quit, restart, force quit or send an app to the
+  Uninstaller. Newly installed apps appear when the bar reopens.
 - Screenshot annotations can move forward or backward through the drawing
   order, with undo support. Thanks to @hash00.
 - The System panel can open the Mac's full process inspector from its usage
