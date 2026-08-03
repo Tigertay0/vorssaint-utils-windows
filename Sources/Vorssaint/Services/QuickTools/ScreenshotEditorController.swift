@@ -782,6 +782,18 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         if newTextID == selectedID { newTextID = nil }
     }
 
+    /// Moves the selected annotation one step through the drawing order, so a
+    /// box drawn last can sit behind text written first. Counters are numbered
+    /// by their place in the array, so moving one past another renumbers both,
+    /// the same way deleting one already does.
+    func moveSelected(_ move: ScreenshotSupport.LayerMove) {
+        guard let selectedID else { return }
+        let reordered = ScreenshotSupport.reordering(annotations, moving: selectedID, move)
+        guard reordered.map(\.id) != annotations.map(\.id) else { return }
+        registerUndo()
+        annotations = ScreenshotSupport.renumberingCounters(reordered)
+    }
+
     func commitText(_ id: UUID, text: String) {
         guard let index = annotations.firstIndex(where: { $0.id == id }) else { return }
         editingTextID = nil
