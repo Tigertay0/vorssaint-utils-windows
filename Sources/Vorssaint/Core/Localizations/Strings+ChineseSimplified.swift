@@ -890,6 +890,7 @@ extension Strings {
         shelfFileMissing: "文件已不存在",
         previewSizeSmall: "小",
         mixerSoundEffectsOutputTitle: "系统声音",
-        mixerSoundEffectsOutputTooltip: "选择提醒和音效的播放设备"
+        mixerSoundEffectsOutputTooltip: "选择提醒和音效的播放设备",
+        monitorOpenActivityMonitor: "打开活动监视器"
     )
 }

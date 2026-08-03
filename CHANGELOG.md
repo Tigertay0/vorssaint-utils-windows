@@ -9,9 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen with automatic zooms, captures long scrolling
 pages and lets screenshot annotations move forward or backward. Finder gains
-image tools and shortcuts, Window Layout restores recent placements, the mixer
-separates overall volume from system sounds and menu bar readings match the
-active display.
+image tools and shortcuts, Window Layout restores recent placements, and the
+menu bar gains better sound, process and display controls.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -36,6 +35,8 @@ active display.
 ### Changed
 - Screenshot annotations can move forward or backward through the drawing
   order, with undo support. Thanks to @hash00.
+- The System panel can open the Mac's full process inspector from its usage
+  list. Thanks to @hash00.
 - The Volume Mixer adjusts overall volume directly and can send system sounds
   to a separate output. Thanks to @vkplayz0 and @p3P4.
 - Mute microphone now lives in Quick toggles in the menu bar panel. Thanks to

@@ -891,6 +891,7 @@ extension Strings {
         shelfFileMissing: "Файл больше не существует",
         previewSizeSmall: "Маленький",
         mixerSoundEffectsOutputTitle: "Системные звуки",
-        mixerSoundEffectsOutputTooltip: "Выбрать устройство для оповещений и звуковых эффектов"
+        mixerSoundEffectsOutputTooltip: "Выбрать устройство для оповещений и звуковых эффектов",
+        monitorOpenActivityMonitor: "Открыть Мониторинг системы"
     )
 }

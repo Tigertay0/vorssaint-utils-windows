@@ -890,6 +890,7 @@ extension Strings {
         shelfFileMissing: "ファイルはもう存在しません",
         previewSizeSmall: "小",
         mixerSoundEffectsOutputTitle: "システムサウンド",
-        mixerSoundEffectsOutputTooltip: "通知音とサウンドエフェクトの出力先を選択"
+        mixerSoundEffectsOutputTooltip: "通知音とサウンドエフェクトの出力先を選択",
+        monitorOpenActivityMonitor: "アクティビティモニタを開く"
     )
 }

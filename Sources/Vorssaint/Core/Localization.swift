@@ -1035,6 +1035,7 @@ struct Strings {
     let previewSizeSmall: String
     let mixerSoundEffectsOutputTitle: String
     let mixerSoundEffectsOutputTooltip: String
+    let monitorOpenActivityMonitor: String
 }
 
 // MARK: - Português (Brasil)
@@ -1926,7 +1927,8 @@ extension Strings {
         shelfFileMissing: "O arquivo não existe mais",
         previewSizeSmall: "Pequeno",
         mixerSoundEffectsOutputTitle: "Sons do sistema",
-        mixerSoundEffectsOutputTooltip: "Escolher onde alertas e efeitos sonoros tocam"
+        mixerSoundEffectsOutputTooltip: "Escolher onde alertas e efeitos sonoros tocam",
+        monitorOpenActivityMonitor: "Abrir o Monitor de Atividade"
     )
 }
 
@@ -2819,6 +2821,7 @@ extension Strings {
         shelfFileMissing: "The file no longer exists",
         previewSizeSmall: "Small",
         mixerSoundEffectsOutputTitle: "System sounds",
-        mixerSoundEffectsOutputTooltip: "Choose where alerts and sound effects play"
+        mixerSoundEffectsOutputTooltip: "Choose where alerts and sound effects play",
+        monitorOpenActivityMonitor: "Open Activity Monitor"
     )
 }

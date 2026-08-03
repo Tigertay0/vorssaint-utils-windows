@@ -890,6 +890,7 @@ extension Strings {
         shelfFileMissing: "Il file non esiste più",
         previewSizeSmall: "Piccola",
         mixerSoundEffectsOutputTitle: "Suoni di sistema",
-        mixerSoundEffectsOutputTooltip: "Scegli dove riprodurre avvisi ed effetti sonori"
+        mixerSoundEffectsOutputTooltip: "Scegli dove riprodurre avvisi ed effetti sonori",
+        monitorOpenActivityMonitor: "Apri Monitoraggio Attività"
     )
 }

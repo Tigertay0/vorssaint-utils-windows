@@ -6333,6 +6333,9 @@ struct MetricsTests {
             expect(!strings.switcherShortcutHintWindows.isEmpty, "\(prefix) App Switcher window shortcut hint is present")
             expect(!strings.networkApps.isEmpty, "\(prefix) network app usage title is present")
             expect(!strings.networkAppsIdle.isEmpty, "\(prefix) network app idle text is present")
+            expect(!strings.monitorOpenActivityMonitor.isEmpty
+                   && !strings.monitorOpenActivityMonitor.contains("—"),
+                   "\(prefix) Activity Monitor action is present without em dash")
             expect(!strings.launchAtLoginNeedsApplications.isEmpty
                    && !strings.launchAtLoginNeedsApplications.contains("—"),
                    "\(prefix) launch at login location note is present without em dash")

@@ -890,6 +890,7 @@ extension Strings {
         shelfFileMissing: "Dosya artık yok",
         previewSizeSmall: "Küçük",
         mixerSoundEffectsOutputTitle: "Sistem sesleri",
-        mixerSoundEffectsOutputTooltip: "Uyarıların ve ses efektlerinin çalacağı çıkışı seç"
+        mixerSoundEffectsOutputTooltip: "Uyarıların ve ses efektlerinin çalacağı çıkışı seç",
+        monitorOpenActivityMonitor: "Etkinlik Monitörü'nü aç"
     )
 }
