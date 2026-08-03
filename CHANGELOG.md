@@ -10,7 +10,8 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.0 records the screen with automatic zooms, captures long scrolling
 pages and lets screenshot annotations move forward or backward. Finder gains
 image tools and shortcuts, Window Layout restores recent placements, and the
-menu bar gains better sound, process and display controls.
+menu bar gains better sound, process and display controls while Quit on close
+respects exceptions across bundled app components.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -56,6 +57,8 @@ menu bar gains better sound, process and display controls.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- Quit on close now protects every part of an excepted app, including windows
+  run through bundled components.
 - Menu bar readings now dim with the rest of the bar on displays that are not
   active. Thanks to @JaffryGao.
 - The App Switcher's initial selection no longer loses part of its border when

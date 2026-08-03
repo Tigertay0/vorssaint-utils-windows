@@ -2666,6 +2666,29 @@ struct MetricsTests {
         expect(Defaults.sanitizedAutoQuitExceptions(["com.example.One", Defaults.finderBundleIdentifier])
                == [Defaults.finderBundleIdentifier, "com.example.One"],
                "Finder is mandatory in the auto-quit exception list")
+        expect(AutoQuitSupport.isExcepted(bundleIdentifier: "com.example.direct",
+                                          bundleURL: nil,
+                                          exceptions: ["com.example.direct"]),
+               "AutoQuit recognizes a direct bundle identifier exception")
+        let outerApp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("VorssaintAutoQuitTests-\(UUID().uuidString)")
+            .appendingPathComponent("Container.app")
+        let nestedApp = outerApp.appendingPathComponent("Contents/MacOS/WindowHost.app")
+        try? FileManager.default.createDirectory(at: nestedApp.appendingPathComponent("Contents"),
+                                                 withIntermediateDirectories: true)
+        NSDictionary(dictionary: ["CFBundleIdentifier": "com.example.container"])
+            .write(to: outerApp.appendingPathComponent("Contents/Info.plist"), atomically: true)
+        NSDictionary(dictionary: ["CFBundleIdentifier": "com.example.window-host"])
+            .write(to: nestedApp.appendingPathComponent("Contents/Info.plist"), atomically: true)
+        expect(AutoQuitSupport.isExcepted(bundleIdentifier: "com.example.window-host",
+                                          bundleURL: nestedApp,
+                                          exceptions: ["com.example.container"]),
+               "AutoQuit extends an outer app exception to its bundled window host")
+        expect(!AutoQuitSupport.isExcepted(bundleIdentifier: "com.example.window-host",
+                                           bundleURL: nestedApp,
+                                           exceptions: ["com.example.unrelated"]),
+               "AutoQuit does not extend unrelated exceptions to a bundled window host")
+        try? FileManager.default.removeItem(at: outerApp.deletingLastPathComponent())
         expect(!AutoQuitSupport.shouldScheduleWindowCheck(for: .appDeactivated,
                                                           hasRecentCloseRequest: false),
                "AutoQuit does not treat app deactivation as a window close")
