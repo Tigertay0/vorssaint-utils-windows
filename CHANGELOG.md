@@ -7,11 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.0]
 
 ### Summary
-Vorssaint 3.3.0 records the screen with automatic zooms for clicks and typing,
-captures long scrolling pages and restores recent Window Layout placements.
-Finder gains image tools and shortcuts, while system sounds can use a separate
-output, overall volume is adjustable in the mixer and disabled features no
-longer reserve shortcuts.
+Vorssaint 3.3.0 records the screen with automatic zooms, captures long scrolling
+pages and restores recent Window Layout placements. Finder gains image tools
+and shortcuts, while the mixer handles overall volume and system sounds
+separately and disabled features stop reserving shortcuts.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -53,6 +52,8 @@ longer reserve shortcuts.
   under Energy. Thanks to @hash00.
 
 ### Fixed
+- The App Switcher's initial selection no longer loses part of its border when
+  only two apps are available. Thanks to @WiLuX-Source.
 - CPU and GPU temperatures no longer drop to impossible single-digit readings
   when a sensor briefly reports bad data. Thanks to @georgo.
 - The App Switcher no longer adds a blank duplicate for a window on another
