@@ -1586,25 +1586,19 @@ struct MetricsTests {
                "update showcase intro starts unseen")
         expect(registeredDefaults[DefaultsKey.updateShowcaseMediaOverride] as? String == "",
                "update showcase media override is empty by default")
-        expect(SupportUpdateIntroInfo.releaseVersion == "3.1.13",
-               "support prompt is deliberately pinned to 3.1.13")
-        expect(SupportUpdateIntroInfo.shouldShow(appVersion: "3.1.13", lastSeenVersion: "3.1.12"),
+        expect(SupportUpdateIntroInfo.releaseVersion == "3.3.0",
+               "support prompt is deliberately pinned to 3.3.0")
+        expect(SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: "3.2.0"),
                "support prompt shows once after updating to its pinned release")
-        expect(!SupportUpdateIntroInfo.shouldShow(appVersion: "3.1.13", lastSeenVersion: "3.1.13"),
+        expect(!SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: "3.3.0"),
                "support prompt stays hidden after it is seen")
-        expect(!SupportUpdateIntroInfo.shouldShow(appVersion: "3.1.12", lastSeenVersion: nil)
-               && !SupportUpdateIntroInfo.shouldShow(appVersion: "3.1.14", lastSeenVersion: nil),
+        expect(!SupportUpdateIntroInfo.shouldShow(appVersion: "3.2.0", lastSeenVersion: nil)
+               && !SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.1", lastSeenVersion: nil),
                "support prompt never leaks into another release")
-        expect(SupportUpdateIntroInfo.installCommand == "brew install --cask vorssaint",
-               "official Homebrew install command stays unqualified")
-        expect(SupportUpdateIntroInfo.migrationCommand == "brew untap --force vorssaint/tap",
-               "old tap migration removes only the tap")
-        expect(SupportUpdateIntroStep.homebrew.next == .community
-               && SupportUpdateIntroStep.community.next == .support
+        expect(SupportUpdateIntroStep.community.next == .support
                && SupportUpdateIntroStep.support.next == nil,
-               "update intro keeps Homebrew before community and support")
-        expect(SupportUpdateIntroStep.homebrew.previous == nil
-               && SupportUpdateIntroStep.community.previous == .homebrew
+               "update intro moves from community to support")
+        expect(SupportUpdateIntroStep.community.previous == nil
                && SupportUpdateIntroStep.support.previous == .community,
                "update intro navigates back without closing")
         // AppInfo.version falls back to "dev" in this bare harness, so read
@@ -1614,20 +1608,18 @@ struct MetricsTests {
         let plistVersion = (NSDictionary(contentsOfFile: "Resources/Info.plist")?["CFBundleShortVersionString"] as? String) ?? ""
         expect(plistVersion == "3.3.0",
                "bumping the app version requires re-deciding the support prompt pin above")
-        expect(SupportUpdateIntroInfo.releaseVersion == "3.1.13",
-               "3.3.0 deliberately does NOT re-show the support ask; the pin stays where it is")
-        // 3.2.0 is a feature release, so the tour pin moves to it and the
-        // pages are re-curated: mouse button shortcuts is the headline. Later
-        // 3.2.0 tasks that add headline features extend the pages, the same
-        // way the changelog block grows.
-        expect(UpdateHighlightsInfo.releaseVersion == "3.2.0",
+        expect(SupportUpdateIntroInfo.releaseVersion == "3.3.0",
+               "3.3.0 shows the deliberately curated community and support intro")
+        // 3.3.0 is a feature release, so the tour is re-curated around only
+        // the features that are genuinely new in this version.
+        expect(UpdateHighlightsInfo.releaseVersion == "3.3.0",
                "re-decide the highlights tour on a feature release: re-curate its rows and move the pin to the shipping version")
-        expect(UpdateHighlightsInfo.shouldShow(appVersion: "3.2.0", lastSeenVersion: "3.1.15")
-               && UpdateHighlightsInfo.shouldShow(appVersion: "3.2.0", lastSeenVersion: nil),
+        expect(UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: "3.2.0")
+               && UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: nil),
                "highlights tour shows once after updating to its pinned release")
-        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.2.0", lastSeenVersion: "3.2.0"),
+        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: "3.3.0"),
                "highlights tour stays hidden after it is seen")
-        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.1.15", lastSeenVersion: nil),
+        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.2.0", lastSeenVersion: nil),
                "highlights tour never leaks into another release")
         expect(registeredDefaults[DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect] as? Bool == false,
                "headphone disconnect volume lowering is opt-in")
@@ -6767,6 +6759,20 @@ struct MetricsTests {
             "accessibility", "screenRecording", "fullDiskAccess", "filesAndFolders", "notifications",
             "automationFinder", "automationTerminal", "audioCapture", "camera", "appManagement",
         ], "permission portal contains every supported permission")
+        expect(FeaturePreset.essential.features.flatMap(\.onboardingPermissions).isEmpty,
+               "the essential first-run choice asks for no broad permission")
+        expect(Set(FeaturePreset.windows.features.flatMap(\.onboardingPermissions))
+                == [.accessibility, .screenRecording],
+               "the windows first-run choice explains exactly its two broad permissions")
+        expect(AppFeature.screenshot.permissions == [.screenRecording, .accessibility]
+                && AppFeature.screenshot.onboardingPermissions == [.screenRecording],
+               "screenshots explain the general capture grant first and keep scrolling access contextual")
+        expect(AppFeature.screenRecorder.onboardingPermissions
+                == [.screenRecording, .accessibility],
+               "the recorder choice explains both permissions it needs")
+        expect(AppFeature.cleaner.onboardingPermissions.isEmpty
+                && AppFeature.cameraPreview.onboardingPermissions.isEmpty,
+               "contextual grants are not requested during first setup")
 
         func activeSet(_ permission: AppPermission,
                        available: Set<AppFeature> = Set(AppFeature.allCases),
@@ -6779,7 +6785,7 @@ struct MetricsTests {
         }
 
         expect(activeSet(.accessibility)
-                == [.windowLayout, .cleaningMode, .commandBar, .screenRecorder],
+                == [.windowLayout, .cleaningMode, .screenshot, .commandBar, .screenRecorder],
                "with nothing enabled only on-demand features use accessibility")
         expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterEnabled]).contains(.scrollInverter),
                "an enabled feature counts as using its permission")
@@ -6995,6 +7001,14 @@ struct MetricsTests {
                    "every screenshot string is set for \(language.rawValue)")
             expect(screenshotValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible screenshot strings (\(language.rawValue))")
+            let feedbackValues = Mirror(reflecting: FeatureStrings.feedback(language)).children
+                .compactMap { $0.value as? String }
+            expect(feedbackValues.count == 28 && feedbackValues.allSatisfy { !$0.isEmpty },
+                   "every feedback string is set for \(language.rawValue)")
+            expect(feedbackValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible feedback strings (\(language.rawValue))")
+            expect(FeatureStrings.feedback(language).charactersFormat.contains("%d"),
+                   "feedback character format keeps its placeholder (\(language.rawValue))")
             let cameraPreviewValues = Mirror(reflecting: FeatureStrings.cameraPreview(language)).children
                 .compactMap { $0.value as? String }
             expect(!cameraPreviewValues.isEmpty && cameraPreviewValues.allSatisfy { !$0.isEmpty },
@@ -7098,6 +7112,27 @@ struct MetricsTests {
                    !$0.permissions.contains(.accessibility)
                },
                "battery and quiet needs no accessibility permission at all")
+        let firstRunSuiteName = "com.vorssaint.tests.first-run.\(UUID().uuidString)"
+        if let firstRunDefaults = UserDefaults(suiteName: firstRunSuiteName) {
+            firstRunDefaults.register(defaults: AppFeature.availabilityDefaults)
+            FeaturePreset.prepareFirstRunAvailability(in: firstRunDefaults)
+            expect(Set(AppFeature.allCases.filter {
+                firstRunDefaults.bool(forKey: $0.availabilityKey)
+            }) == FeaturePreset.essential.features,
+            "a clean install loads only the essential feature set before onboarding")
+
+            for feature in AppFeature.allCases {
+                firstRunDefaults.set(true, forKey: feature.availabilityKey)
+            }
+            firstRunDefaults.set(2, forKey: DefaultsKey.onboardingStep)
+            FeaturePreset.prepareFirstRunAvailability(in: firstRunDefaults)
+            expect(AppFeature.allCases.allSatisfy {
+                firstRunDefaults.bool(forKey: $0.availabilityKey)
+            }, "an interrupted onboarding keeps the feature selection already applied")
+            firstRunDefaults.removePersistentDomain(forName: firstRunSuiteName)
+        } else {
+            expect(false, "first-run defaults suite can be created")
+        }
         for preset in FeaturePreset.allCases {
             expect(preset.enableKeys.allSatisfy { key in
                        preset.features.contains { $0.enabledKeys.contains(key) }
@@ -7820,7 +7855,9 @@ struct MetricsTests {
                 && ScreenshotSupport.sanitizedDelay(7) == 0
                 && ScreenshotSupport.sanitizedDelay(-3) == 0,
                "capture delay only accepts the offered steps")
-        expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 120
+        expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 30
+                && ScreenshotSupport.scrollingCaptureMaximumFrames == 32
+                && ScreenshotSupport.scrollingCaptureMaximumRawPixels == 48_000_000
                 && ScreenshotSupport.scrollingCaptureMaximumPixels == 60_000_000,
                "scrolling screenshots have explicit loop and memory safeguards")
         expect(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 900) == 558
@@ -7829,9 +7866,9 @@ struct MetricsTests {
         expectClose(Double(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 120)), 74.4,
                     "scrolling screenshots keep small scroll steps proportional")
 
-        func scrollingSample(offset: Int) -> ScreenshotSupport.ScrollingSample {
-            let width = 16
-            let height = 120
+        func scrollingSample(width: Int = 16,
+                             height: Int = 120,
+                             offset: Int) -> ScreenshotSupport.ScrollingSample {
             var pixels = [UInt8](repeating: 0, count: width * height)
             for row in 0..<height {
                 let contentRow = row + offset
@@ -7857,6 +7894,28 @@ struct MetricsTests {
         expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
                                                      current: nextScrollSample) == .end,
                "an unchanged capture marks the real end of scrolling")
+        let shortFinalScrollSample = scrollingSample(offset: 8)
+        expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
+                                                     current: shortFinalScrollSample)
+                == .advanced(overlap: 112),
+               "a short final scroll is kept instead of failing the whole capture")
+        var scrollingStressPassed = true
+        for iteration in 0..<250 {
+            let offset = [8, 76][iteration % 2]
+            let transition = ScreenshotSupport.scrollingTransition(
+                previous: firstScrollSample,
+                current: scrollingSample(offset: offset))
+            scrollingStressPassed = scrollingStressPassed
+                && transition == .advanced(overlap: 120 - offset)
+        }
+        expect(scrollingStressPassed,
+               "scroll matching stays deterministic through repeated short and long advances")
+        let retinaScrollStart = scrollingSample(width: 32, height: 900, offset: 0)
+        let retinaScrollNext = scrollingSample(width: 32, height: 900, offset: 558)
+        expect(ScreenshotSupport.scrollingTransition(previous: retinaScrollStart,
+                                                     current: retinaScrollNext)
+                == .advanced(overlap: 342),
+               "scroll matching handles a full-width sample at a realistic Retina selection height")
         var unmatchedScrollPixels = [UInt8](repeating: 0, count: 16 * 120)
         for index in unmatchedScrollPixels.indices {
             unmatchedScrollPixels[index] = UInt8((index * 47 + index / 11) % 253)
@@ -7875,6 +7934,13 @@ struct MetricsTests {
         expect(ScreenshotSupport.scrollingStitchPieces(
             frameHeights: [120, 120], topCrops: [0, 120]) == nil,
                "scrolling stitch geometry rejects an empty slice")
+        let maximumFramePlan = ScreenshotSupport.scrollingStitchPieces(
+            frameHeights: [Int](repeating: 1_800, count: 32),
+            topCrops: [0] + [Int](repeating: 1_120, count: 31))
+        expect(maximumFramePlan?.count == 32
+                && maximumFramePlan?.first?.destinationY == 21_080
+                && maximumFramePlan?.last?.destinationY == 0,
+               "the stitch plan stays exact at the full frame guard")
         expectClose(Double(ScreenshotSupport.captureScale(fromDPI: 144) ?? 0), 2,
                     "the cached screenshot restores its Retina scale from PNG metadata")
         expect(ScreenshotSupport.captureScale(fromDPI: nil) == nil
@@ -8371,6 +8437,45 @@ struct MetricsTests {
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotLastCaptureShortcut] as? String
                 == "control+option+command:14",
                "the latest screenshot editor shortcut defaults to control option command E")
+        expect(ScreenshotShareDuration.allCases.map(\.rawValue) == [3_600, 21_600, 86_400],
+               "temporary links allow only one, six or twenty-four hours")
+        let testShareEndpoint = ScreenshotSharingSupport.endpoint(
+            bundleIdentifier: ScreenshotSharingSupport.developerBundleIdentifier,
+            developerOverride: "https://test.example/")
+        expect(testShareEndpoint.absoluteString == "https://test.example"
+                && ScreenshotSharingSupport.endpoint(
+                    bundleIdentifier: "com.vorssaint.utils",
+                    developerOverride: "https://test.example").absoluteString
+                    == ScreenshotSharingSupport.productionEndpoint.absoluteString
+                && ScreenshotSharingSupport.endpoint(
+                    bundleIdentifier: ScreenshotSharingSupport.developerBundleIdentifier,
+                    developerOverride: "http://test.example")
+                    == ScreenshotSharingSupport.productionEndpoint,
+               "only the Developer build accepts a valid HTTPS test endpoint")
+        expect(ScreenshotSharingSupport.uploadURL(endpoint: testShareEndpoint,
+                                                  duration: .sixHours)?.absoluteString
+                == "https://test.example/v1/screenshots?expiresIn=21600",
+               "sharing builds the fixed upload route and expiration query")
+        let shareNow = Date(timeIntervalSince1970: 1_000)
+        let shareResponse = ScreenshotShareResponse(
+            id: String(repeating: "a", count: 32),
+            viewPath: "/s/\(String(repeating: "a", count: 32))",
+            expiresAt: "1970-01-01T01:16:40.125Z",
+            deleteToken: String(repeating: "b", count: 43))
+        expect(ScreenshotSharingSupport.record(response: shareResponse,
+                                                endpoint: testShareEndpoint,
+                                                now: shareNow)?.url.absoluteString
+                == "https://test.example/s/\(String(repeating: "a", count: 32))",
+               "a valid service response becomes an owner-held link record")
+        let forgedShareResponse = ScreenshotShareResponse(
+            id: "guessable",
+            viewPath: "/s/guessable",
+            expiresAt: "1970-01-01T01:16:40.125Z",
+            deleteToken: "short")
+        expect(ScreenshotSharingSupport.record(response: forgedShareResponse,
+                                                endpoint: testShareEndpoint,
+                                                now: shareNow) == nil,
+               "guessable ids and short deletion tokens are rejected")
         expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityScreenshot] as? Bool == true,
                "the panel row ships visible like its siblings")
         expect(GlobalShortcutRole.screenshot.requiredEnableKeys == [DefaultsKey.screenshotShortcutEnabled]
@@ -8975,7 +9080,8 @@ struct MetricsTests {
                 && !backupKeys.contains(DefaultsKey.micMuteMutedDevices)
                 && !backupKeys.contains(DefaultsKey.cleanerLastAutoRun)
                 && !backupKeys.contains(DefaultsKey.statusItemPlacementGeneration)
-                && !backupKeys.contains(DefaultsKey.displaysSwitchedOff),
+                && !backupKeys.contains(DefaultsKey.displaysSwitchedOff)
+                && !backupKeys.contains(DefaultsKey.screenshotSharingDeveloperEndpoint),
                "backup never carries private content, live state or machine markers")
         expect(Defaults.registeredDefaults[DefaultsKey.displaysSwitchedOff] == nil,
                "a display switched off is a repair note for this machine, not a setting")

@@ -1640,8 +1640,8 @@ extension Strings {
         obLanguageUpdateTitle: "Agora no seu idioma",
         obLanguageUpdateBody: "O Vorssaint agora fala vários idiomas. Escolha o que você prefere usar; dá para mudar quando quiser nos Ajustes.",
         obPurposeTitle: "O que te trouxe aqui?",
-        obPurposeBody: "Escolha uma opção e o app se monta sozinho. O resto continua a um clique nos Ajustes.",
-        obPurposeSkip: "Deixar tudo à mão",
+        obPurposeBody: "Escolha uma configuração pronta ou marque exatamente o que quer usar.",
+        obPurposeSkip: "Você pode adicionar ou remover recursos depois nos Ajustes.",
 
         tabMonitor: "Monitor",
         monitorMenuBarSection: "Na barra de menus",
@@ -2534,8 +2534,8 @@ extension Strings {
         obLanguageUpdateTitle: "Now in your language",
         obLanguageUpdateBody: "Vorssaint now speaks several languages. Choose the one you’d like to use; you can change it anytime in Settings.",
         obPurposeTitle: "What brought you here?",
-        obPurposeBody: "Pick one and the app sets itself up. Everything else stays one click away in Settings.",
-        obPurposeSkip: "Keep everything at hand",
+        obPurposeBody: "Choose a ready setup or select exactly what you want to use.",
+        obPurposeSkip: "You can add or remove features later in Settings.",
 
         tabMonitor: "Monitor",
         monitorMenuBarSection: "In the menu bar",

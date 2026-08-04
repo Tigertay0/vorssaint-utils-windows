@@ -604,8 +604,8 @@ extension Strings {
         obLanguageUpdateTitle: "現在支援你的語言",
         obLanguageUpdateBody: "Vorssaint 現在支援多種語言。選擇你想使用的語言，隨時可在設定中變更。",
         obPurposeTitle: "你想用它做什麼？",
-        obPurposeBody: "選擇一項，App 會自動設定。其餘功能在設定中一鍵可得。",
-        obPurposeSkip: "全部留在手邊",
+        obPurposeBody: "選擇一套預設，或準確勾選你想使用的功能。",
+        obPurposeSkip: "之後可隨時在設定中加入或移除功能。",
 
         tabMonitor: "監控",
         monitorMenuBarSection: "在選單列中",

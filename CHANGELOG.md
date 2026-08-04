@@ -7,17 +7,19 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.0]
 
 ### Summary
-Vorssaint 3.3.0 records the screen with automatic zooms, captures long scrolling
-pages and lets screenshot annotations move forward or backward. Finder gains
-image tools and shortcuts, Window Layout restores recent placements, and the
-Command Bar and menu bar gain better app, sound, process and display controls
-while Quit on close respects exceptions across bundled app components.
+Vorssaint 3.3.0 records the screen, captures and shares screenshots, and improves
+annotation order. Finder and Window Layout gain new tools, while setup and the
+Command Bar make features and feedback easier to reach.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
   direct copy, and video or GIF export. Off by default.
-- Scrolling screenshots join long pages and documents into one image, from
-  Screenshot or the Command Bar. Thanks to @ruvelro.
+- Screenshots can create temporary links for 1, 6 or 24 hours from the preview or
+  editor, with clear privacy details.
+- Scrolling screenshots join long pages into one image and stop exactly where
+  you choose. From Screenshot or the Command Bar. Thanks to @ruvelro.
+- Bug reports and feature ideas can be sent from General or the Command Bar,
+  with optional technical details shown before sending.
 - A slider for how solid the Dock preview panel looks. Under Switcher, with
   Dock Preview on. Thanks to @ruvelro.
 - Window thumbnail capture can pause while chosen apps are in front. Under
@@ -34,6 +36,8 @@ while Quit on close respects exceptions across bundled app components.
   Under Quick Tools. Thanks to @hash00.
 
 ### Changed
+- First setup now asks what you want before requesting only the permissions
+  those choices need. Features remain available later in Settings.
 - The Command Bar can quit, restart, force quit or send an app to the
   Uninstaller. Newly installed apps appear when the bar reopens.
 - Screenshot annotations can move forward or backward through the drawing

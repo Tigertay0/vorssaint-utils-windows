@@ -108,6 +108,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/ScratchpadStrings.swift \
         Sources/Vorssaint/Core/FinderRenameStrings.swift \
         Sources/Vorssaint/Core/CommandBarStrings.swift \
+        Sources/Vorssaint/Core/FeedbackStrings.swift \
         Sources/Vorssaint/Core/RadialMenuStrings.swift \
         Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift \
         Sources/Vorssaint/Core/AppAppearance.swift \
@@ -176,6 +177,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/MicMuteSupport.swift \
         Sources/Vorssaint/Services/QuickTools/QuickTogglesSupport.swift \
         Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift \
+        Sources/Vorssaint/Services/QuickTools/ScreenshotSharingSupport.swift \
         Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceSupport.swift \
         Sources/Vorssaint/Services/SuperKey/SuperKeySupport.swift \
         Sources/Vorssaint/Core/SuperKeyStrings.swift \

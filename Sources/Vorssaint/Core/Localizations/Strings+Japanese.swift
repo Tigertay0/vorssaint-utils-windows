@@ -603,8 +603,8 @@ extension Strings {
         obLanguageUpdateTitle: "あなたの言語に対応",
         obLanguageUpdateBody: "Vorssaint が複数の言語に対応しました。使いたい言語を選んでください。設定でいつでも変更できます。",
         obPurposeTitle: "目的を教えてください",
-        obPurposeBody: "選ぶだけでアプリが自動で整います。残りは設定からワンクリックです。",
-        obPurposeSkip: "全部手元に置いておく",
+        obPurposeBody: "用意された設定か、使いたい機能を一つずつ選んでください。",
+        obPurposeSkip: "機能は後から設定で追加または削除できます。",
 
         tabMonitor: "モニタ",
         monitorMenuBarSection: "メニューバー",
