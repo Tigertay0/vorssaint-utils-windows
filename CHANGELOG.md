@@ -7,8 +7,8 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 makes switching between windows of the current app direct and
-restores Adobe app windows across switching and Dock previews.
+Vorssaint 3.3.1 makes window switching more direct, restores missing app windows
+across switchers and Dock previews, and keeps new screenshot annotations editable.
 
 ### Changed
 - The window shortcut now opens the switcher for the app in front, without
@@ -16,6 +16,8 @@ restores Adobe app windows across switching and Dock previews.
 
 ### Fixed
 - Adobe app windows now appear in App Switcher, Command Tab and Dock Preview.
+- Newly placed screenshot annotations can be moved, resized or edited immediately
+  while their selection remains active.
 
 ## [3.3.0] - 2026-08-04
 
