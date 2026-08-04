@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.0 records the screen, captures and shares screenshots, and improves
 annotation order. Finder and Window Layout gain new tools, while setup and the
-Command Bar make features and feedback easier to reach.
+Command Bar make features, feedback and saved searches easier to use.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -99,6 +99,8 @@ Command Bar make features and feedback easier to reach.
   everywhere, including the window shortcuts. Thanks to @hash00.
 - A saved search in the Command Bar stays in the list while you type what to
   look for after its name. Thanks to @tenbux.
+- Saved Command Bar searches now work with spaces produced by Chinese input
+  methods. Thanks to @tingke.
 
 ## [3.2.0] - 2026-07-31
 
