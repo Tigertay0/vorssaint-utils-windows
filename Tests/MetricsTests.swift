@@ -4781,6 +4781,10 @@ struct MetricsTests {
                     "Preview sizing accepts the Small option")
         expectClose(Double(SwitcherIconRowLayout.scale), 0.75,
                     "App Switcher icon-row mode honors the Small option")
+        expectClose(Double(SwitcherIconRowLayout.appEntryIconSize), 49.5,
+                    "App Switcher Small keeps a windowless app icon inside its preview")
+        expectClose(Double(SwitcherIconRowLayout.appEntrySpacing), 5.25,
+                    "App Switcher Small keeps windowless app content proportionally spaced")
         expectClose(Double(DockPreviewSupport.cardSpacing), 6,
                     "Dock Preview Small previews tighten card spacing")
         expectClose(Double(DockPreviewSupport.panelPadding), 9,

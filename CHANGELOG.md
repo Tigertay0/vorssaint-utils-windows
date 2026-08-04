@@ -8,13 +8,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 makes window switching more direct, restores missing app windows
-across switchers and Dock previews, and keeps small app icons consistent.
+across previews, and keeps compact switcher layouts aligned.
 
 ### Changed
 - The window shortcut now opens the switcher for the app in front, without
   opening the app list first. Thanks to @mrevanzak.
 
 ### Fixed
+- Windowless apps now keep their labels aligned in the App Switcher's Small size.
+  Thanks to @Yahddyyp.
 - Small app icons now keep the correct artwork in Finder. Thanks to @slrgt.
 - Adobe app windows now appear in App Switcher, Command Tab and Dock Preview.
 - Newly placed screenshot annotations can be moved, resized or edited immediately
