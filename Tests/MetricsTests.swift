@@ -1493,6 +1493,22 @@ struct MetricsTests {
             executablePath: nil,
             localizedName: nil),
                "App Switcher requires a positive signal before relaxing window rules")
+        expect(SwitcherSupport.isAdobeFloatingWindow(
+            bundleIdentifier: "com.adobe.AfterEffects.application",
+            subrole: "AXFloatingWindow"),
+               "App Switcher accepts Adobe main windows with current bundle suffixes")
+        expect(SwitcherSupport.isAdobeFloatingWindow(
+            bundleIdentifier: "com.adobe.PremierePro.26",
+            subrole: "AXFloatingWindow"),
+               "App Switcher accepts versioned Adobe main windows")
+        expect(!SwitcherSupport.isAdobeFloatingWindow(
+            bundleIdentifier: "com.adobe.AfterEffects.application",
+            subrole: "AXDialog"),
+               "App Switcher does not relax ordinary Adobe dialogs")
+        expect(!SwitcherSupport.isAdobeFloatingWindow(
+            bundleIdentifier: "com.example.editor",
+            subrole: "AXFloatingWindow"),
+               "App Switcher keeps floating windows from unrelated apps filtered")
         expect(SwitcherSupport.sessionSourceItem(frontmostPID: nil,
                                                  focusedWindowID: nil,
                                                  items: [embeddedWindow]) == nil,
