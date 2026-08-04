@@ -1606,7 +1606,7 @@ struct MetricsTests {
         // per-release decision: this check fails on every version bump so the
         // decision above is made consciously, never by omission.
         let plistVersion = (NSDictionary(contentsOfFile: "Resources/Info.plist")?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.3.0",
+        expect(plistVersion == "3.3.1",
                "bumping the app version requires re-deciding the support prompt pin above")
         expect(SupportUpdateIntroInfo.releaseVersion == "3.3.0",
                "3.3.0 shows the deliberately curated community and support intro")
@@ -5334,6 +5334,34 @@ struct MetricsTests {
                                                                  selectedIndex: 2,
                                                                  delta: 1) == 2,
                "App Switcher icon-row window navigation stays put when the app has one window")
+        let frontmostScoped = SwitcherSupport.frontmostAppWindows(allItems: groupedSwitcherItems,
+                                                                    frontmostPID: 101)
+        expect(frontmostScoped.count == 2
+               && frontmostScoped.allSatisfy { $0.pid == 101 },
+               "Window-scoped session keeps only the frontmost app's windows")
+        expect(SwitcherSupport.frontmostAppWindows(allItems: groupedSwitcherItems,
+                                                   frontmostPID: 999).isEmpty,
+               "Window-scoped session has no entries when the frontmost app has no windows")
+        expect(SwitcherSupport.initialWindowScopedSelectionIndex(itemCount: 3,
+                                                                 hasForegroundItem: true,
+                                                                 reversed: false) == 1,
+               "Window-scoped session starts on the next window when several are open")
+        expect(SwitcherSupport.initialWindowScopedSelectionIndex(itemCount: 1,
+                                                                 hasForegroundItem: true,
+                                                                 reversed: false) == 0,
+               "Window-scoped session keeps the lone window selected")
+        expect(SwitcherSupport.initialWindowScopedSelectionIndex(itemCount: 3,
+                                                                 hasForegroundItem: true,
+                                                                 reversed: true) == 2,
+               "Window-scoped session starts at the far end when Shift reverses")
+        expect(SwitcherSupport.windowNavigationDelta(positionalMatch: true,
+                                                      shiftIsNavigationModifier: true,
+                                                      shiftHeld: true) == -1,
+               "Window shortcut Shift reverses a positional match")
+        expect(SwitcherSupport.windowNavigationDelta(positionalMatch: false,
+                                                      shiftIsNavigationModifier: true,
+                                                      shiftHeld: true) == 1,
+               "Window shortcut Shift stays forward when the layout needs it for the character")
         let afterFirstSwitch = WindowUseOrder.promoting(2, previous: 1, in: [])
         expect(afterFirstSwitch == [2, 1],
                "App Switcher use history records the previous window immediately after a switch")
