@@ -8,8 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.0 records the screen, captures and shares screenshots, and improves
-annotation order. Finder and Window Layout gain new tools, while setup and the
-Command Bar make features, feedback and saved searches easier to use.
+annotation order. Finder and Window Layout gain new tools and refinements, while
+setup and the Command Bar make features, feedback and saved searches easier to use.
 
 ### Added
 - Screen recording with automatic zooms for clicks and typing, reusable presets,
@@ -65,6 +65,8 @@ Command Bar make features, feedback and saved searches easier to use.
 ### Fixed
 - Quit on close now protects every part of an excepted app, including windows
   run through bundled components.
+- Window Layout shortcuts now arrange the active Settings window too. Thanks to
+  @vraravam.
 - Menu bar readings now dim with the rest of the bar on displays that are not
   active. Thanks to @JaffryGao.
 - The App Switcher's initial selection no longer loses part of its border when
