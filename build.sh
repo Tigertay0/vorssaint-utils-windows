@@ -120,6 +120,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/RadialMenu/RadialMenuSupport.swift \
         Sources/Vorssaint/Services/QuickTools/ScratchpadSupport.swift \
         Sources/Vorssaint/Services/Recorder/RecorderSupport.swift \
+        Sources/Vorssaint/Services/Recorder/RecorderTakeStore.swift \
         Sources/Vorssaint/Services/Recorder/RecorderMotion.swift \
         Sources/Vorssaint/Services/Recorder/RecorderPointerTrack.swift \
         Sources/Vorssaint/Services/Recorder/RecorderTypingTrack.swift \

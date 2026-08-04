@@ -9813,6 +9813,54 @@ struct MetricsTests {
         expect(!swept.contains(beingWritten),
                "a recording being written right now has no file yet and is left alone")
 
+        let directSaveRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vorssaint-recorder-save-\(UUID().uuidString)",
+                                    isDirectory: true)
+        try? FileManager.default.createDirectory(at: directSaveRoot,
+                                                 withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directSaveRoot) }
+
+        let savedID = UUID()
+        let savedFolder = directSaveRoot.appendingPathComponent(
+            RecorderSupport.takeFolderName(id: savedID), isDirectory: true)
+        try? FileManager.default.createDirectory(at: savedFolder,
+                                                 withIntermediateDirectories: true)
+        let savedTake = RecorderTakeStore.Take(id: savedID, folder: savedFolder)
+        let masterBytes = Data("finished recording".utf8)
+        try? masterBytes.write(to: savedTake.videoURL)
+        let savedDestination = directSaveRoot.appendingPathComponent("saved.mov")
+        do {
+            try RecorderTakeStore.shared.saveDirectly(savedTake, to: savedDestination)
+            expect((try? Data(contentsOf: savedDestination)) == masterBytes,
+                   "direct save copies the complete recording to its destination")
+            expect(!FileManager.default.fileExists(atPath: savedFolder.path),
+                   "direct save removes its internal take after the copy succeeds")
+        } catch {
+            expect(false, "a valid direct save succeeds")
+        }
+
+        let recoverableID = UUID()
+        let recoverableFolder = directSaveRoot.appendingPathComponent(
+            RecorderSupport.takeFolderName(id: recoverableID), isDirectory: true)
+        try? FileManager.default.createDirectory(at: recoverableFolder,
+                                                 withIntermediateDirectories: true)
+        let recoverableTake = RecorderTakeStore.Take(id: recoverableID, folder: recoverableFolder)
+        try? masterBytes.write(to: recoverableTake.videoURL)
+        let unavailableDestination = directSaveRoot
+            .appendingPathComponent("missing", isDirectory: true)
+            .appendingPathComponent("saved.mov")
+        var directSaveFailed = false
+        do {
+            try RecorderTakeStore.shared.saveDirectly(recoverableTake,
+                                                      to: unavailableDestination)
+        } catch {
+            directSaveFailed = true
+        }
+        expect(directSaveFailed,
+               "direct save reports a destination that cannot be written")
+        expect(FileManager.default.fileExists(atPath: recoverableTake.videoURL.path),
+               "a failed direct save keeps the take available for recovery")
+
         expect(RecorderSupport.canStart(freeBytes: 10_000_000_000)
                 && !RecorderSupport.canStart(freeBytes: 100_000_000),
                "a recording refuses to start when the disk is nearly full")
