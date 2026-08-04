@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [3.3.0]
+## [3.3.0] - 2026-08-04
 
 ### Summary
 Vorssaint 3.3.0 records the screen, captures and shares screenshots, and improves
