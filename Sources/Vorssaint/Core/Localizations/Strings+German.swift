@@ -627,13 +627,6 @@ extension Strings {
         panelNavigationCaption: "Zeigt jeweils einen Bereich. Wähle Liste, um alles in einem durchgehenden Scrollbereich zu sehen.",
         panelFooterSections: "Bereiche",
         panelFooterList: "Liste",
-        fanControlBetaShow: "Fan Control (Beta) im Panel anzeigen",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "Automatisch",
-        fanControlBetaCaption: "Beta. Die manuelle Steuerung bleibt deaktiviert, bis jedes Mac-Modell validiert ist.",
-        fanControlModeAutomatic: "Automatisch",
-        fanControlModeManual: "Manuell",
         betaBadge: "BETA",
         betaFeatureWarning: "Beta. Es können noch Fehler auftreten.",
 

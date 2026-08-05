@@ -627,13 +627,6 @@ extension Strings {
         panelNavigationCaption: "1つのセクションだけを表示します。「リスト」を選ぶと、すべてを連続スクロールで表示します。",
         panelFooterSections: "セクション",
         panelFooterList: "リスト",
-        fanControlBetaShow: "Fan Control (Beta) をパネルに表示",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "自動",
-        fanControlBetaCaption: "Beta. 手動制御はMacモデルごとの検証が完了するまで無効です。",
-        fanControlModeAutomatic: "自動",
-        fanControlModeManual: "手動",
         betaBadge: "BETA",
         betaFeatureWarning: "ベータ版です。一部の不具合が残っている場合があります。",
 

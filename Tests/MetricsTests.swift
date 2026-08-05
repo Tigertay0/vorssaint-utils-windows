@@ -6778,7 +6778,7 @@ struct MetricsTests {
 
         // MARK: Features hub catalog
 
-        expect(AppFeature.allCases.count == 49, "feature catalog has 49 features")
+        expect(AppFeature.allCases.count == 50, "feature catalog has 50 features")
         expect(Set(AppFeature.allCases.map(\.rawValue)).count == AppFeature.allCases.count,
                "feature ids are unique")
         expect(AppFeature.allCases.map(\.rawValue) == [
@@ -6792,12 +6792,16 @@ struct MetricsTests {
             "cleaner", "uninstaller", "homebrew", "appUpdates", "screenshot", "cameraPreview",
             "radialMenu", "scratchpad", "commandBar", "screenRecorder",
             "monitorCPU", "monitorGPU", "monitorMemory", "monitorNetwork", "monitorDisk", "monitorPower",
+            "fanControl",
         ], "feature ids are stable (they persist inside availability keys)")
         expect(AppFeature.switcher.availabilityKey == "featureAvailable.switcher",
                "availability key derives from the raw value")
         expect(AppFeature.availabilityDefaults.count == AppFeature.allCases.count
-                && AppFeature.availabilityDefaults.values.allSatisfy { ($0 as? Bool) == true },
-               "every feature registers as available by default")
+                && (AppFeature.availabilityDefaults[AppFeature.fanControl.availabilityKey] as? Bool) == false
+                && AppFeature.allCases.filter { $0 != .fanControl }.allSatisfy {
+                    (AppFeature.availabilityDefaults[$0.availabilityKey] as? Bool) == true
+                },
+               "fan control ships uninstalled while existing features remain available")
         expect(FeatureGroup.allCases.map { AppFeature.features(in: $0).count }.reduce(0, +)
                 == AppFeature.allCases.count,
                "every feature belongs to exactly one group")
@@ -6821,6 +6825,127 @@ struct MetricsTests {
         expect(AppFeature.cleaner.onboardingPermissions.isEmpty
                 && AppFeature.cameraPreview.onboardingPermissions.isEmpty,
                "contextual grants are not requested during first setup")
+        expect(AppFeature.fanControl.group == .monitor
+                && AppFeature.fanControl.enabledKeys.isEmpty
+                && AppFeature.fanControl.permissions.isEmpty
+                && AppFeature.fanControl.energyProfile == .idle
+                && AppFeature.fanControl.isBeta
+                && !AppFeature.monitorPower.isBeta,
+               "fan control is an on-demand beta with no broad permission")
+        expect((Defaults.registeredDefaults[DefaultsKey.panelShowFanControl] as? Bool) == true,
+               "installing fan control reveals its panel section by default")
+
+        // MARK: Fan Control safety policy
+
+        expect(FanControlPolicy.coolingDuration == 15 * 60
+                && FanControlPolicy.heartbeatLimit < 10,
+               "maximum cooling is time-bounded and loses control quickly with its client")
+        expect(FanControlPolicy.fanCount(from: 1) == 1
+                && FanControlPolicy.fanCount(from: 8) == 8
+                && FanControlPolicy.fanCount(from: 0) == nil
+                && FanControlPolicy.fanCount(from: 9) == nil
+                && FanControlPolicy.fanCount(from: 1.5) == nil
+                && FanControlPolicy.fanCount(from: .nan) == nil,
+               "fan discovery accepts only a small integral hardware count")
+        expect(FanControlPolicy.validBounds(minimum: 1_200, maximum: 5_800)
+                && !FanControlPolicy.validBounds(minimum: -1, maximum: 5_800)
+                && !FanControlPolicy.validBounds(minimum: 5_800, maximum: 5_800)
+                && !FanControlPolicy.validBounds(minimum: 1_200, maximum: 25_000),
+               "fan bounds must be finite, ordered and physically sane")
+        expect(FanControlPolicy.validReading(0)
+                && FanControlPolicy.validReading(8_000)
+                && !FanControlPolicy.validReading(-1)
+                && !FanControlPolicy.validReading(.infinity),
+               "fan readings stay within a safe display and verification range")
+
+        let floatRPM = SMCValueCodec.encode(4_850, type: "flt ", size: 4)
+        expect(floatRPM.flatMap { SMCValueCodec.decode($0, type: "flt ") } == 4_850,
+               "native fan RPM floats round-trip exactly")
+        let fixedRPM = SMCValueCodec.encode(4_850.25, type: "fpe2", size: 2)
+        expect(fixedRPM.flatMap { SMCValueCodec.decode($0, type: "fpe2") } == 4_850.25,
+               "fixed-point fan RPM values round-trip at quarter-RPM precision")
+        expect(SMCValueCodec.decode([0x12, 0x34], type: "ui16") == 0x1234
+                && SMCValueCodec.decode([0, 0, 1, 2], type: "ui32") == 258
+                && SMCValueCodec.encode(1, type: "ui8 ", size: 1) == [1],
+               "SMC integer types preserve their documented byte order")
+        expect(SMCValueCodec.encode(-1, type: "flt ", size: 4) == nil
+                && SMCValueCodec.encode(30_000, type: "fpe2", size: 2) == nil
+                && SMCValueCodec.encode(1, type: "myst", size: 1) == nil,
+               "SMC writes reject negative, overflowing and unknown encodings")
+
+        let watchdogEnd = Date(timeIntervalSince1970: 2_000)
+        expect(FanControlPolicy.restoreReason(now: watchdogEnd,
+                                              endsAt: watchdogEnd,
+                                              heartbeatAge: 0,
+                                              verificationFailures: 0,
+                                              thermalState: .nominal) == .timeLimit,
+               "the watchdog restores automatic control at the fixed deadline")
+        expect(FanControlPolicy.restoreReason(now: Date(timeIntervalSince1970: 1_900),
+                                              endsAt: watchdogEnd,
+                                              heartbeatAge: FanControlPolicy.heartbeatLimit + 0.1,
+                                              verificationFailures: 0,
+                                              thermalState: .nominal) == .heartbeatLost,
+               "the watchdog restores when the app heartbeat stops")
+        expect(FanControlPolicy.restoreReason(now: Date(timeIntervalSince1970: 1_900),
+                                              endsAt: watchdogEnd,
+                                              heartbeatAge: 0,
+                                              verificationFailures: FanControlPolicy.verificationFailureLimit,
+                                              thermalState: .nominal) == .hardwareChanged,
+               "the watchdog restores after repeated hardware verification failures")
+        expect(FanControlPolicy.restoreReason(now: Date(timeIntervalSince1970: 1_900),
+                                              endsAt: watchdogEnd,
+                                              heartbeatAge: 0,
+                                              verificationFailures: 0,
+                                              thermalState: .serious) == .thermalPressure,
+               "the watchdog returns control to the system under thermal pressure")
+        expect(FanControlPolicy.restoreReason(now: Date(timeIntervalSince1970: 1_900),
+                                              endsAt: watchdogEnd,
+                                              heartbeatAge: 0,
+                                              verificationFailures: 0,
+                                              thermalState: .nominal) == nil,
+               "a healthy maximum-cooling session remains active")
+
+        for language in AppLanguage.allCases {
+            let strings = FeatureStrings.fanControl(language)
+            let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
+            expect(values.count == 20 && values.allSatisfy { !$0.isEmpty },
+                   "fan control has every localized field for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "fan control text uses human punctuation for \(language.rawValue)")
+            expectFormat(strings.fanNameFormat, ["d"],
+                         "fan name format stays valid for \(language.rawValue)")
+            expectFormat(strings.rpmFormat, ["d"],
+                         "fan speed format stays valid for \(language.rawValue)")
+        }
+
+        let fanMigrationSuite = "com.vorssaint.tests.fan-migration.\(UUID().uuidString)"
+        if let fanMigration = UserDefaults(suiteName: fanMigrationSuite) {
+            fanMigration.set(true, forKey: DefaultsKey.monitorShowFanControlBeta)
+            Defaults.migrateFanControlVisibility(in: fanMigration)
+            expect(fanMigration.bool(forKey: DefaultsKey.panelShowFanControl)
+                    && fanMigration.bool(forKey: AppFeature.fanControl.availabilityKey)
+                    && fanMigration.object(forKey: DefaultsKey.monitorShowFanControlBeta) == nil,
+                   "an old fan opt-in keeps the feature installed and visible")
+
+            fanMigration.removePersistentDomain(forName: fanMigrationSuite)
+            fanMigration.set(false, forKey: DefaultsKey.monitorShowFanControlBeta)
+            Defaults.migrateFanControlVisibility(in: fanMigration)
+            expect(!fanMigration.bool(forKey: DefaultsKey.panelShowFanControl)
+                    && fanMigration.object(forKey: AppFeature.fanControl.availabilityKey) == nil,
+                   "an old fan opt-out does not install the feature")
+
+            fanMigration.removePersistentDomain(forName: fanMigrationSuite)
+            fanMigration.set(false, forKey: DefaultsKey.panelShowFanControl)
+            fanMigration.set(false, forKey: AppFeature.fanControl.availabilityKey)
+            fanMigration.set(true, forKey: DefaultsKey.monitorShowFanControlBeta)
+            Defaults.migrateFanControlVisibility(in: fanMigration)
+            expect(!fanMigration.bool(forKey: DefaultsKey.panelShowFanControl)
+                    && !fanMigration.bool(forKey: AppFeature.fanControl.availabilityKey),
+                   "newer fan choices win over the legacy opt-in")
+            fanMigration.removePersistentDomain(forName: fanMigrationSuite)
+        } else {
+            expect(false, "fan visibility migration suite can be created")
+        }
 
         func activeSet(_ permission: AppPermission,
                        available: Set<AppFeature> = Set(AppFeature.allCases),
@@ -9120,6 +9245,10 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.panelToggleDarkMode)
                 && backupKeys.contains(DefaultsKey.panelToggleMicMute),
                "the quick toggles layout travels with the settings backup")
+        expect(backupKeys.contains(DefaultsKey.panelShowFanControl)
+                && !backupKeys.contains(DefaultsKey.fanControlRecoveryNeeded)
+                && !backupKeys.contains(DefaultsKey.fanControlHelperVersion),
+               "fan panel preference travels while helper recovery state stays on one Mac")
         expect(!backupKeys.contains(DefaultsKey.clipboardHistoryEntries)
                 && !backupKeys.contains(DefaultsKey.shelfItems)
                 && !backupKeys.contains(DefaultsKey.sleepDisabledFlag)

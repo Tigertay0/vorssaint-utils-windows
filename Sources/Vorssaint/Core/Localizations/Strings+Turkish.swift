@@ -627,13 +627,6 @@ extension Strings {
         panelNavigationCaption: "Her seferinde bir bölüm gösterir. Her şeyi kesintisiz kaydırmada görmek için Liste'yi seç.",
         panelFooterSections: "Bölümler",
         panelFooterList: "Liste",
-        fanControlBetaShow: "Fan Control (Beta)'yı panelde göster",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "Otomatik",
-        fanControlBetaCaption: "Beta. Her Mac modeli doğrulanana kadar elle denetim kapalı kalır.",
-        fanControlModeAutomatic: "Otomatik",
-        fanControlModeManual: "Elle",
         betaBadge: "BETA",
         betaFeatureWarning: "Beta. Bazı hatalarla karşılaşabilirsin.",
 

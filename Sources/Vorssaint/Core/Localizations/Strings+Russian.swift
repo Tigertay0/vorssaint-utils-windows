@@ -628,13 +628,6 @@ extension Strings {
         panelNavigationCaption: "Показывает по одной секции за раз. Выберите «Список», чтобы просматривать всё непрерывной прокруткой.",
         panelFooterSections: "Секции",
         panelFooterList: "Список",
-        fanControlBetaShow: "Показывать Fan Control (Beta) в панели",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "Авто",
-        fanControlBetaCaption: "Бета. Ручное управление останется отключённым, пока не будут проверены все модели Mac.",
-        fanControlModeAutomatic: "Авто",
-        fanControlModeManual: "Вручную",
         betaBadge: "БЕТА",
         betaFeatureWarning: "Бета. Возможны ошибки.",
 

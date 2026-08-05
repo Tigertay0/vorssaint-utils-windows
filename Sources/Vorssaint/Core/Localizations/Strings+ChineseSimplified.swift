@@ -627,13 +627,6 @@ extension Strings {
         panelNavigationCaption: "一次显示一个分区。选择“列表”可在连续滚动中查看全部内容。",
         panelFooterSections: "分区",
         panelFooterList: "列表",
-        fanControlBetaShow: "在面板中显示 Fan Control (Beta)",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "自动",
-        fanControlBetaCaption: "Beta。手动控制会保持停用，直到每个 Mac 型号完成验证。",
-        fanControlModeAutomatic: "自动",
-        fanControlModeManual: "手动",
         betaBadge: "BETA",
         betaFeatureWarning: "测试版。你可能会遇到一些错误。",
 

@@ -7,10 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 makes window switching more direct, restores missing app windows
-across previews, and keeps compact switcher layouts aligned.
+Vorssaint 3.3.1 adds an optional Fan Control beta, makes window switching more
+direct, restores missing app windows across previews, and keeps compact layouts aligned.
 
 ### Changed
+- The optional Fan Control beta can run every detected fan at its reported maximum
+  for 15 minutes, then returns to automatic control.
 - The window shortcut now opens the switcher for the app in front, without
   opening the app list first. Thanks to @mrevanzak.
 

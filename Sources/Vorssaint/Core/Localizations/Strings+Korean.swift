@@ -628,13 +628,6 @@ extension Strings {
         panelNavigationCaption: "한 번에 하나의 섹션만 표시합니다. ‘목록’을 선택하면 모든 섹션을 연속으로 스크롤해 표시합니다.",
         panelFooterSections: "섹션",
         panelFooterList: "목록",
-        fanControlBetaShow: "패널에 Fan Control(Beta) 표시",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "자동",
-        fanControlBetaCaption: "베타 기능입니다. 수동 제어는 Mac 모델별 검증이 완료될 때까지 비활성화됩니다.",
-        fanControlModeAutomatic: "자동",
-        fanControlModeManual: "수동",
         betaBadge: "BETA",
         betaFeatureWarning: "베타 기능입니다. 일부 문제가 남아 있을 수 있습니다.",
 

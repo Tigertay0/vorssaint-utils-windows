@@ -757,13 +757,6 @@ struct Strings {
     let panelNavigationCaption: String
     let panelFooterSections: String
     let panelFooterList: String
-    let fanControlBetaShow: String
-    let fanControlBetaSection: String
-    let fanControlBetaTitle: String
-    let fanControlBetaStatus: String
-    let fanControlBetaCaption: String
-    let fanControlModeAutomatic: String
-    let fanControlModeManual: String
     let betaBadge: String
     let betaFeatureWarning: String
 
@@ -1664,13 +1657,6 @@ extension Strings {
         panelNavigationCaption: "Mostra uma seção por vez. Escolha Lista para ver tudo em uma rolagem contínua.",
         panelFooterSections: "Seções",
         panelFooterList: "Lista",
-        fanControlBetaShow: "Mostrar Fan Control (Beta) no painel",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "Automático",
-        fanControlBetaCaption: "Beta. O controle manual fica desativado até validação por modelo de Mac.",
-        fanControlModeAutomatic: "Automático",
-        fanControlModeManual: "Manual",
         betaBadge: "BETA",
         betaFeatureWarning: "Beta. Você pode encontrar alguns bugs.",
 
@@ -2558,13 +2544,6 @@ extension Strings {
         panelNavigationCaption: "Shows one section at a time. Choose List to see everything in one continuous scroll.",
         panelFooterSections: "Sections",
         panelFooterList: "List",
-        fanControlBetaShow: "Show Fan Control (Beta) in the panel",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "Automatic",
-        fanControlBetaCaption: "Beta. Manual control stays disabled until each Mac model is validated.",
-        fanControlModeAutomatic: "Automatic",
-        fanControlModeManual: "Manual",
         betaBadge: "BETA",
         betaFeatureWarning: "Beta. You may run into some bugs.",
 

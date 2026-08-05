@@ -628,13 +628,6 @@ extension Strings {
         panelNavigationCaption: "一次顯示一個區段。選擇「清單」即可連續捲動檢視全部內容。",
         panelFooterSections: "區段",
         panelFooterList: "清單",
-        fanControlBetaShow: "在面板中顯示風扇控制 (Beta)",
-        fanControlBetaSection: "風扇控制",
-        fanControlBetaTitle: "風扇控制",
-        fanControlBetaStatus: "自動",
-        fanControlBetaCaption: "Beta。手動控制會保持停用，直到每個 Mac 型號完成驗證。",
-        fanControlModeAutomatic: "自動",
-        fanControlModeManual: "手動",
         betaBadge: "BETA",
         betaFeatureWarning: "測試版。你可能會遇到一些問題。",
 

@@ -627,13 +627,6 @@ extension Strings {
         panelNavigationCaption: "Affiche une section à la fois. Choisissez Liste pour tout voir dans un défilement continu.",
         panelFooterSections: "Sections",
         panelFooterList: "Liste",
-        fanControlBetaShow: "Afficher Fan Control (Beta) dans le panneau",
-        fanControlBetaSection: "Fan Control",
-        fanControlBetaTitle: "Fan Control",
-        fanControlBetaStatus: "Automatique",
-        fanControlBetaCaption: "Beta. Le contrôle manuel reste désactivé jusqu’à la validation de chaque modèle de Mac.",
-        fanControlModeAutomatic: "Automatique",
-        fanControlModeManual: "Manuel",
         betaBadge: "BETA",
         betaFeatureWarning: "Bêta. Vous pouvez rencontrer quelques bugs.",
 
