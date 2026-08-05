@@ -836,6 +836,7 @@ struct SwitcherSettings: View {
                     Text(l10n.s.switcherWindowlessAppsCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    SwitcherAppRulesList()
                 }
             }
             if AppFeature.dockPreview.isAvailable || AppFeature.dockClick.isAvailable {

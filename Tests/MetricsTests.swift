@@ -1518,6 +1518,8 @@ struct MetricsTests {
         expect(registeredDefaults[DefaultsKey.switcherWindowlessApps] as? String
                == SwitcherWindowlessApps.finder.rawValue,
                "the switcher offers the desktop app without windows, and nothing else, by default")
+        expect((registeredDefaults[DefaultsKey.switcherAppRules] as? [String: String])?.isEmpty == true,
+               "per-app switcher rules start empty, so existing choices stay unchanged")
         expect(registeredDefaults[DefaultsKey.switcherCurrentSpaceOnly] as? Bool == false,
                "the switcher keeps showing every desktop unless the user opts out (issue #337)")
 
@@ -1538,6 +1540,20 @@ struct MetricsTests {
         let plainApp = SwitcherAppCandidate(pid: 502, bundleIdentifier: "com.example.editor")
         let otherApp = SwitcherAppCandidate(pid: 503, bundleIdentifier: "com.example.notes")
         let windowlessCandidates = [desktopApp, plainApp, otherApp]
+        let sanitizedAppRules = SwitcherAppRule.rules(storedValue: [
+            " com.example.editor ": SwitcherAppRule.showWithoutWindows.rawValue,
+            "com.example.notes": SwitcherAppRule.hidden.rawValue,
+            "com.example.broken": "unknown",
+            "": SwitcherAppRule.windowsOnly.rawValue,
+        ])
+        expect(sanitizedAppRules == [
+            "com.example.editor": .showWithoutWindows,
+            "com.example.notes": .hidden,
+        ], "per-app switcher rules trim identities and drop unreadable entries")
+        expect(SwitcherAppRule.storedValue(sanitizedAppRules) == [
+            "com.example.editor": SwitcherAppRule.showWithoutWindows.rawValue,
+            "com.example.notes": SwitcherAppRule.hidden.rawValue,
+        ], "per-app switcher rules keep only portable bundle identities and known choices")
         expect(SwitcherSupport.windowlessAppPIDs(mode: .off,
                                                  candidates: windowlessCandidates,
                                                  pidsWithWindows: [],
@@ -1574,6 +1590,49 @@ struct MetricsTests {
                                                  pidsWithWithheldWindows: [],
                                                  desktopAppBundleIdentifier: Defaults.finderBundleIdentifier).isEmpty,
                "the desktop app with a window of its own does not also get an entry for itself")
+        expect(SwitcherSupport.windowlessAppPIDs(
+                mode: .off,
+                candidates: windowlessCandidates,
+                pidsWithWindows: [],
+                pidsWithWithheldWindows: [],
+                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
+                appRules: ["com.example.editor": .showWithoutWindows]) == [502],
+               "an app rule can add one windowless app without turning the global list on")
+        expect(SwitcherSupport.windowlessAppPIDs(
+                mode: .off,
+                candidates: windowlessCandidates,
+                pidsWithWindows: [502],
+                pidsWithWithheldWindows: [],
+                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
+                appRules: ["com.example.editor": .showWithoutWindows]).isEmpty,
+               "an explicit show rule never duplicates an app that already has a window entry")
+        expect(SwitcherSupport.windowlessAppPIDs(
+                mode: .all,
+                candidates: windowlessCandidates,
+                pidsWithWindows: [],
+                pidsWithWithheldWindows: [],
+                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
+                appRules: ["com.example.editor": .windowsOnly,
+                           "com.example.notes": .hidden]) == [501],
+               "window-only and hidden rules both keep an app-only entry out of the global list")
+        expect(SwitcherSupport.windowlessAppPIDs(
+                mode: .off,
+                candidates: windowlessCandidates,
+                pidsWithWindows: [],
+                pidsWithWithheldWindows: [502],
+                desktopAppBundleIdentifier: Defaults.finderBundleIdentifier,
+                appRules: ["com.example.editor": .showWithoutWindows]).isEmpty,
+               "a show rule never restores an app whose windows were withheld on another desktop")
+        expect(SwitcherSupport.hidesApp(
+                    bundleIdentifier: "com.example.notes",
+                    appRules: ["com.example.notes": .hidden])
+               && !SwitcherSupport.hidesApp(
+                    bundleIdentifier: "com.example.notes",
+                    appRules: ["com.example.notes": .windowsOnly])
+               && !SwitcherSupport.hidesApp(
+                    bundleIdentifier: nil,
+                    appRules: ["com.example.notes": .hidden]),
+               "only the hidden rule removes an identified app's real windows")
 
         expect(WindowUseOrder.promoting(target: 7, previous: 3, in: [3, 5, 7]) == [7, 3, 5],
                "committing to a window puts it first and the one left behind second")
@@ -9349,6 +9408,17 @@ struct MetricsTests {
                    "no em-dash in visible clipboard skip list strings (\(language.rawValue))")
         }
 
+        for language in AppLanguage.allCases {
+            let strings = FeatureStrings.switcherAppRules(language)
+            let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
+            expect(values.count == 8 && values.allSatisfy { !$0.isEmpty },
+                   "every per-app switcher rule string is set for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "no em-dash in per-app switcher rule strings (\(language.rawValue))")
+            expect(Set([strings.showWithoutWindows, strings.windowsOnly, strings.hidden]).count == 3,
+                   "each per-app switcher choice is distinct for \(language.rawValue)")
+        }
+
         expect(FinderRenameSupport.acceptsFocusedRole("AXOutline")
                 && !FinderRenameSupport.acceptsFocusedRole("AXTextField")
                 && !FinderRenameSupport.acceptsFocusedRole("AXTextArea")
@@ -9449,6 +9519,8 @@ struct MetricsTests {
                "the apps each mouse feature leaves alone travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.clipboardHistoryIgnoredApps),
                "the apps the clipboard history skips travel with the settings backup")
+        expect(backupKeys.contains(DefaultsKey.switcherAppRules),
+               "per-app switcher rules travel with the settings backup")
         expect(Defaults.registeredDefaults[DefaultsKey.finderPasteImageAsFile] as? Bool == false
                 && backupKeys.contains(DefaultsKey.finderPasteImageAsFile),
                "pasting copied images as files is opt-in and travels with settings backup")
@@ -9535,6 +9607,7 @@ struct MetricsTests {
                 DefaultsKey.smoothScrollEnabled: "yes please",
                 DefaultsKey.monitorInterval: "soon",
                 DefaultsKey.smoothScrollStep: 60,
+                DefaultsKey.switcherAppRules: "not a rule dictionary",
             ] as [String: Any],
         ]
         let shapeChecked = SettingsBackupSupport.sanitizedSettings(from: wrongShapes)
@@ -9542,8 +9615,24 @@ struct MetricsTests {
                "text where a switch belongs is dropped on import")
         expect(shapeChecked?[DefaultsKey.monitorInterval] == nil,
                "text where a number belongs is dropped on import")
+        expect(shapeChecked?[DefaultsKey.switcherAppRules] == nil,
+               "text where a per-app rule dictionary belongs is dropped on import")
         expect(shapeChecked?[DefaultsKey.smoothScrollStep] as? Int == 60,
                "a value of the right shape still restores")
+        let switcherRulesBackup: [String: Any] = [
+            SettingsBackupSupport.formatVersionKey: 1,
+            SettingsBackupSupport.settingsKey: [
+                DefaultsKey.switcherAppRules: [
+                    "com.example.editor": SwitcherAppRule.windowsOnly.rawValue,
+                ] as [String: Any],
+            ] as [String: Any],
+        ]
+        let restoredSwitcherRules = SettingsBackupSupport.sanitizedSettings(from: switcherRulesBackup)?[
+            DefaultsKey.switcherAppRules
+        ] as? [String: Any]
+        expect(restoredSwitcherRules?["com.example.editor"] as? String
+                == SwitcherAppRule.windowsOnly.rawValue,
+               "per-app Switcher rules keep their bundle identity and behavior through backup import")
 
         // MARK: App updates
 
