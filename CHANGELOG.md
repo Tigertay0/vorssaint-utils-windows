@@ -9,10 +9,12 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds an optional Fan Control beta and makes window switching more
 direct, with passive Dock previews and restored missing windows. Compact layouts,
-panel navigation, Settings scrolling, battery readings, listed apps and side-wheel
-mouse shortcuts now behave more reliably.
+panel navigation, Settings scrolling, battery readings, listed apps, mouse exceptions
+and side-wheel mouse shortcuts now behave more reliably.
 
 ### Changed
+- Mouse feature exceptions can now choose apps from anywhere on the Mac.
+  Thanks to @kyteidev.
 - The optional Fan Control beta can run every detected fan at its reported maximum
   for 15 minutes, then returns to automatic control.
 - The window shortcut now opens the switcher for the app in front, without
