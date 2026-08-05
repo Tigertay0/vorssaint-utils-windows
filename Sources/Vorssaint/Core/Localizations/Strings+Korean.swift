@@ -216,7 +216,7 @@ extension Strings {
         switcherNoOpenWindow: "열린 윈도우 없음",
         dockPreviewName: "Dock 미리보기",
         dockPreviewEnable: "Dock에서 윈도우 미리보기",
-        dockPreviewEnableCaption: "Dock의 열린 앱 위에 포인터를 올리면 윈도우를 확인하고 잠시 표시할 수 있습니다.",
+        dockPreviewEnableCaption: "Dock의 열린 앱 위에 포인터를 올려 윈도우를 확인한 다음 원하는 윈도우를 클릭하세요.",
         dockPreviewBackgroundOpacity: "패널 배경",
         dockPreviewBackgroundOpacityCaption: "낮추면 패널 뒤에 있는 것이 더 많이 보입니다.",
         dockClickMinimize: "Dock 클릭으로 최소화",

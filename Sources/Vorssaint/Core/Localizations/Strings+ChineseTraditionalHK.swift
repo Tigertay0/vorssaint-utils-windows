@@ -216,7 +216,7 @@ extension Strings {
         switcherNoOpenWindow: "沒有開啟視窗",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "在 Dock 中預覽視窗",
-        dockPreviewEnableCaption: "將指標停留在 Dock 中已開啟的 App 上，即可查看並暫時顯示它的視窗。",
+        dockPreviewEnableCaption: "將指標停在 Dock 中已開啟的 App 上查看視窗，然後點按要開啟的視窗。",
         dockPreviewBackgroundOpacity: "面板背景",
         dockPreviewBackgroundOpacityCaption: "調低後可以看到更多面板後面的內容。",
         dockClickMinimize: "點按 Dock 圖示最小化",

@@ -215,7 +215,7 @@ extension Strings {
         switcherNoOpenWindow: "Kein geöffnetes Fenster",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Fenster im Dock vorab anzeigen",
-        dockPreviewEnableCaption: "Zeige auf eine geöffnete App im Dock, um ihre Fenster zu sehen und kurz einzublenden.",
+        dockPreviewEnableCaption: "Zeige auf eine geöffnete App im Dock, um ihre Fenster zu sehen, und klicke dann auf das gewünschte.",
         dockPreviewBackgroundOpacity: "Hintergrund des Panels",
         dockPreviewBackgroundOpacityCaption: "Verringere ihn, um mehr von dem zu sehen, was hinter dem Panel liegt.",
         dockClickMinimize: "Klick aufs Dock-Symbol minimiert",

@@ -4707,10 +4707,6 @@ struct MetricsTests {
         let neighborIcon = CGRect(x: iconBottom.maxX + 8, y: 0, width: 80, height: 80)
         expect(!corridor.contains(CGPoint(x: neighborIcon.midX, y: neighborIcon.midY)),
                "Dock Preview corridor excludes the neighbouring Dock icon so app switching works")
-        expect(DockPreviewSupport.shouldRestoreOnEnd(committed: false),
-               "Dock Preview restores the previous window when cancelled")
-        expect(!DockPreviewSupport.shouldRestoreOnEnd(committed: true),
-               "Dock Preview does not restore after a confirmed click")
         expect(DockPreviewSupport.dockProximityBand(tileSize: 64) >= 160,
                "Dock proximity band covers a default-size Dock")
         expect(DockPreviewSupport.dockProximityBand(tileSize: 200)
@@ -5590,70 +5586,36 @@ struct MetricsTests {
                "Dock Preview navigation handles an empty window list")
         expect(DockPreviewSupport.mouseDownDecision(isVisible: true,
                                                     isPinned: true,
-                                                    isInsidePanel: false,
-                                                    clickedDock: false)
-               == DockPreviewMouseDownDecision(shouldEndSession: false, restoreOrigin: false),
+                                                    isInsidePanel: false)
+               == DockPreviewMouseDownDecision(shouldEndSession: false),
                "Dock Preview pinned panel ignores outside clicks")
         expect(DockPreviewSupport.mouseDownDecision(isVisible: true,
                                                     isPinned: false,
-                                                    isInsidePanel: true,
-                                                    clickedDock: false)
-               == DockPreviewMouseDownDecision(shouldEndSession: false, restoreOrigin: false),
+                                                    isInsidePanel: true)
+               == DockPreviewMouseDownDecision(shouldEndSession: false),
                "Dock Preview panel clicks are handled by the panel")
         expect(DockPreviewSupport.mouseDownDecision(isVisible: true,
                                                     isPinned: false,
-                                                    isInsidePanel: false,
-                                                    clickedDock: true)
-               == DockPreviewMouseDownDecision(shouldEndSession: true, restoreOrigin: false),
-               "Dock Preview Dock clicks close without restoring the previous window")
-        expect(DockPreviewSupport.mouseDownDecision(isVisible: true,
-                                                    isPinned: false,
-                                                    isInsidePanel: false,
-                                                    clickedDock: false)
-               == DockPreviewMouseDownDecision(shouldEndSession: true, restoreOrigin: true),
-               "Dock Preview outside clicks close and restore the previous window")
-        expect(!DockPreviewSupport.shouldRestoreOriginAfterMinimize(originPID: 10,
-                                                                    originWindowID: 44,
-                                                                    targetPID: 10,
-                                                                    targetWindowID: 44),
-               "Dock Preview does not restore the same window after minimizing it")
-        expect(DockPreviewSupport.shouldRestoreOriginAfterMinimize(originPID: 10,
-                                                                   originWindowID: 44,
-                                                                   targetPID: 10,
-                                                                   targetWindowID: 45),
-               "Dock Preview can restore a different source window after minimizing a preview")
-        expect(DockPreviewSupport.shouldRestoreOriginAfterMinimize(originPID: 10,
-                                                                   originWindowID: 44,
-                                                                   targetPID: 20,
-                                                                   targetWindowID: 45),
-               "Dock Preview can restore a different source app after minimizing a preview")
+                                                    isInsidePanel: false)
+               == DockPreviewMouseDownDecision(shouldEndSession: true),
+               "Dock Preview outside clicks close the panel")
         let closeMiddle = DockPreviewSupport.closeState(afterRemoving: 22,
                                                         windowIDs: [11, 22, 33],
-                                                        selectedWindowID: 22,
-                                                        activePeekWindowID: 22,
-                                                        desiredWindowID: 22)
+                                                        selectedWindowID: 22)
         expect(closeMiddle.remainingWindowIDs == [11, 33],
                "Dock Preview close removes only the closed window")
-        expect(closeMiddle.selectedWindowID == nil
-               && closeMiddle.activePeekWindowID == nil
-               && closeMiddle.desiredWindowID == nil,
-               "Dock Preview close clears selection and peek for the closed window")
+        expect(closeMiddle.selectedWindowID == nil,
+               "Dock Preview close clears selection for the closed window")
         expect(!closeMiddle.shouldEndSession,
                "Dock Preview close keeps the panel open when other windows remain")
         let closeUnselected = DockPreviewSupport.closeState(afterRemoving: 22,
                                                             windowIDs: [11, 22, 33],
-                                                            selectedWindowID: 11,
-                                                            activePeekWindowID: 33,
-                                                            desiredWindowID: 33)
-        expect(closeUnselected.selectedWindowID == 11
-               && closeUnselected.activePeekWindowID == 33
-               && closeUnselected.desiredWindowID == 33,
-               "Dock Preview close preserves selection and peek for other windows")
+                                                            selectedWindowID: 11)
+        expect(closeUnselected.selectedWindowID == 11,
+               "Dock Preview close preserves selection for other windows")
         let closeLast = DockPreviewSupport.closeState(afterRemoving: 44,
                                                       windowIDs: [44],
-                                                      selectedWindowID: 44,
-                                                      activePeekWindowID: nil,
-                                                      desiredWindowID: nil)
+                                                      selectedWindowID: 44)
         expect(closeLast.shouldEndSession && closeLast.remainingWindowIDs.isEmpty,
                "Dock Preview close ends the panel when the last window is removed")
         let dockPreviewWindow = SwitcherItem.window(id: 77,

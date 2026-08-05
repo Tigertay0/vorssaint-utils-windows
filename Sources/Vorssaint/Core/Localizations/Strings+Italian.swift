@@ -215,7 +215,7 @@ extension Strings {
         switcherNoOpenWindow: "Senza finestre aperte",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Anteprima finestre dal Dock",
-        dockPreviewEnableCaption: "Passa il mouse su un'app aperta nel Dock per vedere e mostrare al volo le sue finestre.",
+        dockPreviewEnableCaption: "Passa il mouse su un'app aperta nel Dock per vedere le sue finestre, poi fai clic su quella da aprire.",
         dockPreviewBackgroundOpacity: "Sfondo del pannello",
         dockPreviewBackgroundOpacityCaption: "Abbassalo per vedere di più di ciò che sta dietro al pannello.",
         dockClickMinimize: "Riduci con un clic sul Dock",

@@ -215,7 +215,7 @@ extension Strings {
         switcherNoOpenWindow: "Açık penceresi yok",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Dock'tan pencereleri önizle",
-        dockPreviewEnableCaption: "Pencerelerini önizlemek ve göz atmak için Dock'ta açık bir uygulamanın üzerine gel.",
+        dockPreviewEnableCaption: "Pencerelerini görmek için Dock'taki açık bir uygulamanın üzerine gel, ardından açmak istediğin pencereye tıkla.",
         dockPreviewBackgroundOpacity: "Panel arka planı",
         dockPreviewBackgroundOpacityCaption: "Panelin arkasındakileri daha çok görmek için azalt.",
         dockClickMinimize: "Dock simgesine tıklayınca küçült",

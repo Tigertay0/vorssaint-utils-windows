@@ -7,11 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds an optional Fan Control beta, makes window switching more
-direct, restores missing app windows across previews, and keeps compact layouts,
-panel navigation and Settings scrolling clear.
-System Monitor hides battery readings on Macs without one, and listed apps keep
-the scrolling they generate.
+Vorssaint 3.3.1 adds an optional Fan Control beta and makes window switching more
+direct, with passive Dock previews and restored missing windows. Compact layouts,
+panel navigation, Settings scrolling, battery readings and listed apps now behave
+more reliably.
 
 ### Changed
 - The optional Fan Control beta can run every detected fan at its reported maximum
@@ -33,6 +32,8 @@ the scrolling they generate.
   scroll normally.
 - Apps listed under Apps to leave alone now also keep scrolling they generate
   themselves.
+- Dock Preview cards now leave your current app in front while you browse.
+  A window opens only when you click its card.
 
 ## [3.3.0] - 2026-08-04
 

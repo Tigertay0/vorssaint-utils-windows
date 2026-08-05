@@ -215,7 +215,7 @@ extension Strings {
         switcherNoOpenWindow: "ウインドウなし",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Dock でウインドウをプレビュー",
-        dockPreviewEnableCaption: "Dock の開いているアプリにポインタを重ねると、ウインドウを確認して一時表示できます。",
+        dockPreviewEnableCaption: "Dock の開いているアプリにポインタを重ねてウインドウを確認し、開きたいウインドウをクリックします。",
         dockPreviewBackgroundOpacity: "パネルの背景",
         dockPreviewBackgroundOpacityCaption: "下げると、パネルの後ろにあるものがより見えるようになります。",
         dockClickMinimize: "Dock クリックでしまう",
