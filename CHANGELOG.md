@@ -8,9 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds an optional Fan Control beta, Previous Display for Window Layout,
-configurable screenshot preview placement and more direct window switching. Passive
-Dock previews, missing windows, compact layouts, panel navigation, Settings scrolling,
-battery readings, listed apps, mouse exceptions and side-wheel shortcuts are more reliable.
+configurable screenshot preview placement and more direct window switching. App removal
+finds more verified leftovers, while previews, panels and mouse controls are more reliable.
 
 ### Changed
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.
@@ -23,6 +22,8 @@ battery readings, listed apps, mouse exceptions and side-wheel shortcuts are mor
   Under Screenshot. Thanks to @lmilojevicc.
 - The window shortcut now opens the switcher for the app in front, without
   opening the app list first. Thanks to @mrevanzak.
+- The Uninstaller now finds more configuration, cache and helper files owned by
+  the selected app. Thanks to @lmilojevicc.
 
 ### Fixed
 - Windowless apps now keep their labels aligned in the App Switcher's Small size.

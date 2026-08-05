@@ -2542,6 +2542,42 @@ struct MetricsTests {
                "system domains and this app can never be junk owners")
         expect(!CleanerSupport.isProtectedBundleID("com.vendor.editor"),
                "third party identifiers are eligible for the leftover check")
+        expect(UninstallerSupport.verifiedBundleID("com.vendor.editor") == "com.vendor.editor"
+               && UninstallerSupport.verifiedBundleID("com.vendor.editor.helper") == "com.vendor.editor.helper",
+               "the uninstaller accepts exact third party bundle identifiers and embedded helpers")
+        expect(UninstallerSupport.verifiedBundleID(nil) == nil
+               && UninstallerSupport.verifiedBundleID("") == nil
+               && UninstallerSupport.verifiedBundleID("plain-name") == nil
+               && UninstallerSupport.verifiedBundleID("com.vendor../escape") == nil
+               && UninstallerSupport.verifiedBundleID("com.vorssaint.utils") == nil
+               && UninstallerSupport.verifiedBundleID("com.apple.system") == nil,
+               "malformed, protected and current app identifiers never enter uninstall paths")
+        let uninstallIDs: Set<String> = ["com.vendor.editor", "com.vendor.editor.helper"]
+        let deepUninstall = UninstallerSupport.exactDeepCandidates(
+            home: URL(fileURLWithPath: "/Users/tester"),
+            bundleIDs: uninstallIDs,
+            darwinCache: URL(fileURLWithPath: "/private/var/folders/test/C"),
+            darwinTemp: URL(fileURLWithPath: "/private/var/folders/test/T"))
+        expect(deepUninstall.count == 10
+               && deepUninstall.contains(where: { $0.url.path == "/Users/tester/.config/com.vendor.editor" })
+               && deepUninstall.contains(where: { $0.url.path == "/private/var/folders/test/C/com.vendor.editor.helper" })
+               && !deepUninstall.contains(where: { $0.url.path.contains("Editor") }),
+               "deeper paths use exact owned identifiers and never the display name")
+        let hostUUID = "B787EFF9-B8E2-5296-96AF-DF9D3CD3AC4F"
+        expect(UninstallerSupport.matchesByHostPreference(
+                   "com.vendor.editor.\(hostUUID).plist", bundleIDs: uninstallIDs)
+               && !UninstallerSupport.matchesByHostPreference(
+                   "com.vendor.editor2.\(hostUUID).plist", bundleIDs: uninstallIDs)
+               && !UninstallerSupport.matchesByHostPreference(
+                   "com.vendor.editor.arbitrary.plist", bundleIDs: uninstallIDs),
+               "per-host preferences require an owned identifier and the system UUID format")
+        expect(UninstallerSupport.matchesGroupContainer("group.com.vendor.editor", bundleIDs: uninstallIDs)
+               && !UninstallerSupport.matchesGroupContainer("TEAM.shared.vendor", bundleIDs: uninstallIDs)
+               && !UninstallerSupport.matchesGroupContainer("group.com.vendor.editor.shared", bundleIDs: uninstallIDs),
+               "group containers require an exact app identifier instead of a shared vendor guess")
+        expect(UninstallerSupport.matchesLaunchItem("com.vendor.editor.helper.plist", bundleIDs: uninstallIDs)
+               && !UninstallerSupport.matchesLaunchItem("com.vendor.editor.helper.extra.plist", bundleIDs: uninstallIDs),
+               "launch items must exactly match an owned app or helper identifier")
         expect(CleanerSupport.isProtectedBundleID("systemgroup.com.apple.icloud.searchpartyd.sharedsettings")
                && CleanerSupport.isProtectedBundleID("243LU875E5.groups.com.apple.podcasts")
                && CleanerSupport.isProtectedBundleID("developer.apple.wwdc")
