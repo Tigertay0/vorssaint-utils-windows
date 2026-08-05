@@ -2074,18 +2074,19 @@ struct MetricsTests {
         }
         expect(assignedLayoutShortcutValues.count == assignedLayoutShortcutKeys.count,
                "every established window layout action has a registered shortcut")
-        let unassignedSixthShortcutKeys = [
+        let unassignedLayoutShortcutKeys = [
             DefaultsKey.windowLayoutShortcutTopLeftSixth,
             DefaultsKey.windowLayoutShortcutTopCenterSixth,
             DefaultsKey.windowLayoutShortcutTopRightSixth,
             DefaultsKey.windowLayoutShortcutBottomLeftSixth,
             DefaultsKey.windowLayoutShortcutBottomCenterSixth,
             DefaultsKey.windowLayoutShortcutBottomRightSixth,
+            DefaultsKey.windowLayoutShortcutPreviousDisplay,
         ]
-        expect(unassignedSixthShortcutKeys.allSatisfy {
+        expect(unassignedLayoutShortcutKeys.allSatisfy {
                    registeredDefaults[$0] as? String == WindowLayoutAction.clearedShortcutStorageValue
                },
-               "sixth layout shortcuts start unassigned")
+               "new window layout shortcuts start unassigned")
         expect(Set(assignedLayoutShortcutValues).count == assignedLayoutShortcutValues.count,
                "window layout shortcuts do not conflict with each other by default")
         let globalShortcutValues = GlobalShortcutRole.allCases
@@ -2113,12 +2114,19 @@ struct MetricsTests {
                 && Defaults.registeredDefaults[DefaultsKey.windowLayoutShortcutFullScreen] as? String
                     == WindowLayoutAction.clearedShortcutStorageValue,
                "full screen starts with no combination of its own")
+        expect(WindowLayoutAction.allCases.contains(.previousDisplay)
+                && WindowLayoutAction.previousDisplay.shortcutID == 54
+                && WindowLayoutAction(shortcutID: 54) == .previousDisplay,
+               "previous display exists and answers to its own shortcut id")
+        expect(WindowLayoutAction.previousDisplay.defaultShortcut == nil,
+               "previous display does not claim a new system-wide combination")
         expect(Set(WindowLayoutAction.allCases.map(\.shortcutID)).count
                 == WindowLayoutAction.allCases.count,
                "every layout action keeps a distinct shortcut id")
         for language in AppLanguage.allCases {
-            expect(!FeatureStrings.windowLayout(language).fullScreen.isEmpty,
-                   "\(language.rawValue) names the full screen action")
+            let layoutStrings = FeatureStrings.windowLayout(language)
+            expect(!layoutStrings.fullScreen.isEmpty && !layoutStrings.previousDisplay.isEmpty,
+                   "\(language.rawValue) names the latest window layout actions")
         }
         expect(WindowLayoutGeometry.accepts(actualRect: .zero, targetRect: .zero,
                                             action: .fullScreen, anchorTolerance: 10) == false,
@@ -2940,21 +2948,65 @@ struct MetricsTests {
         }
         let nextDisplayFrame = CGRect(x: 1440, y: 80, width: 1920, height: 1000)
         let rightHalfWindow = CGRect(x: 720, y: 40, width: 720, height: 860)
-        expect(WindowLayoutGeometry.rectForNextDisplay(current: rightHalfWindow,
-                                                       sourceVisibleFrame: visibleFrame,
-                                                       destinationVisibleFrame: nextDisplayFrame)
+        expect(WindowLayoutGeometry.rectForDisplay(current: rightHalfWindow,
+                                                   sourceVisibleFrame: visibleFrame,
+                                                   destinationVisibleFrame: nextDisplayFrame)
                == CGRect(x: 2400, y: 80, width: 960, height: 1000),
-               "window layout next display preserves relative placement and size")
+               "window layout display transfer preserves relative placement and size")
         let oversizedWindow = CGRect(x: -40, y: 0, width: 2000, height: 1200)
-        expect(WindowLayoutGeometry.rectForNextDisplay(current: oversizedWindow,
-                                                       sourceVisibleFrame: visibleFrame,
-                                                       destinationVisibleFrame: nextDisplayFrame)
+        expect(WindowLayoutGeometry.rectForDisplay(current: oversizedWindow,
+                                                   sourceVisibleFrame: visibleFrame,
+                                                   destinationVisibleFrame: nextDisplayFrame)
                == nextDisplayFrame,
-               "window layout next display clamps oversized windows to the destination visible frame")
+               "window layout display transfer clamps oversized windows to the destination visible frame")
+        let horizontalDisplays = [
+            CGRect(x: 0, y: 0, width: 1440, height: 900),
+            CGRect(x: -1200, y: -200, width: 1200, height: 1920),
+            CGRect(x: 1440, y: 300, width: 2560, height: 1440),
+        ]
+        expect(WindowLayoutGeometry.adjacentDisplayIndex(currentIndex: 0,
+                                                         frames: horizontalDisplays,
+                                                         movingForward: false) == 1
+                && WindowLayoutGeometry.adjacentDisplayIndex(currentIndex: 2,
+                                                             frames: horizontalDisplays,
+                                                             movingForward: true) == 1,
+               "window layout orders unequal displays left to right and wraps both ways")
+        let verticalDisplays = [
+            CGRect(x: 0, y: 0, width: 1440, height: 900),
+            CGRect(x: 0, y: 900, width: 900, height: 1440),
+            CGRect(x: 0, y: -1200, width: 1920, height: 1200),
+        ]
+        expect(WindowLayoutGeometry.adjacentDisplayIndex(currentIndex: 0,
+                                                         frames: verticalDisplays,
+                                                         movingForward: false) == 2
+                && WindowLayoutGeometry.adjacentDisplayIndex(currentIndex: 0,
+                                                             frames: verticalDisplays,
+                                                             movingForward: true) == 1,
+               "window layout orders stacked displays by their vertical origin")
+        expect(WindowLayoutGeometry.adjacentDisplayIndex(currentIndex: 0,
+                                                         frames: [visibleFrame],
+                                                         movingForward: false) == nil
+                && WindowLayoutGeometry.adjacentDisplayIndex(currentIndex: 3,
+                                                             frames: horizontalDisplays,
+                                                             movingForward: true) == nil,
+               "window layout leaves one display and invalid selections unchanged")
+        let portraitFrame = CGRect(x: -1200, y: -200, width: 1200, height: 1800)
+        let scaledFrame = CGRect(x: 1440, y: 100, width: 2000, height: 1000)
+        let portraitWindow = CGRect(x: -900, y: 250, width: 600, height: 900)
+        let scaledWindow = WindowLayoutGeometry.rectForDisplay(current: portraitWindow,
+                                                               sourceVisibleFrame: portraitFrame,
+                                                               destinationVisibleFrame: scaledFrame)
+        expect(scaledWindow == CGRect(x: 1940, y: 350, width: 1000, height: 500)
+                && WindowLayoutGeometry.rectForDisplay(current: scaledWindow,
+                                                       sourceVisibleFrame: scaledFrame,
+                                                       destinationVisibleFrame: portraitFrame)
+                    == portraitWindow,
+               "display transfer preserves relative size and placement across rotated and scaled frames")
         expect(WindowLayoutAction.shortcutActions.count == WindowLayoutAction.allCases.count,
                "every window layout action can register a global shortcut")
-        expect(WindowLayoutAction.shortcutActions.contains(.nextDisplay),
-               "next display registers a global shortcut")
+        expect(WindowLayoutAction.shortcutActions.contains(.previousDisplay)
+                && WindowLayoutAction.shortcutActions.contains(.nextDisplay),
+               "both display directions can register a global shortcut")
         expect(Set(WindowLayoutAction.shortcutActions.map(\.shortcutKey)).count
                == WindowLayoutAction.shortcutActions.count,
                "every window layout shortcut has its own defaults key")
@@ -9214,8 +9266,9 @@ struct MetricsTests {
                "snippets travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.windowGestureEnabled)
                 && backupKeys.contains(DefaultsKey.windowGestureModifiers)
-                && backupKeys.contains(DefaultsKey.windowGestureRaiseWindow),
-               "window gesture choices travel with the settings backup")
+                && backupKeys.contains(DefaultsKey.windowGestureRaiseWindow)
+                && backupKeys.contains(DefaultsKey.windowLayoutShortcutPreviousDisplay),
+               "window layout choices travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.screenshotFreeze)
                 && backupKeys.contains(DefaultsKey.screenshotSaveFolder)
                 && backupKeys.contains(DefaultsKey.screenshotFullScreenShortcutEnabled)
