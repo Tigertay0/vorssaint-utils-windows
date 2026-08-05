@@ -2027,8 +2027,10 @@ struct MetricsTests {
                "menu bar disk activity is opt-in")
         expect(registeredDefaults[DefaultsKey.menuBarPeripheralBattery] as? Bool == false,
                "menu bar peripheral battery is opt-in")
+        expect(registeredDefaults[DefaultsKey.menuBarFanSpeed] as? Bool == false,
+               "menu bar fan speed is opt-in")
         expect(registeredDefaults[DefaultsKey.menuBarMetricOrder] as? String
-               == "cpu,cpuTemperature,gpu,gpuTemperature,memory,battery,batteryTime,batteryTemperature,peripheralBattery,network,diskUsage,diskActivity,power",
+               == "cpu,cpuTemperature,gpu,gpuTemperature,memory,battery,batteryTime,batteryTemperature,peripheralBattery,network,diskUsage,diskActivity,power,fanSpeed",
                "menu bar metric order keeps temperature sensors next to their components and disk near live I/O")
         expect(registeredDefaults[DefaultsKey.menuBarCombineTemperatures] as? Bool == true,
                "menu bar combines usage and temperature by default")
@@ -2706,11 +2708,11 @@ struct MetricsTests {
         expect(Defaults.sanitizedMenuBarMemoryStyle("bad") == "percent", "invalid memory style falls back to percent")
         expect(Defaults.sanitizedMenuBarMetricOrder("cpu,gpu,memory,network,battery,power")
                == ["cpu", "gpu", "memory", "network", "battery", "power",
-                   "cpuTemperature", "gpuTemperature", "batteryTime", "batteryTemperature", "peripheralBattery", "diskUsage", "diskActivity"],
+                   "cpuTemperature", "gpuTemperature", "batteryTime", "batteryTemperature", "peripheralBattery", "diskUsage", "diskActivity", "fanSpeed"],
                "menu bar metric order appends temperature sensors without rewriting existing saved order")
         expect(Defaults.sanitizedMenuBarMetricOrder("temperature,cpu,cpu,bad")
                == ["cpuTemperature", "gpuTemperature", "batteryTemperature",
-                   "cpu", "gpu", "memory", "battery", "batteryTime", "peripheralBattery", "network", "diskUsage", "diskActivity", "power"],
+                   "cpu", "gpu", "memory", "battery", "batteryTime", "peripheralBattery", "network", "diskUsage", "diskActivity", "power", "fanSpeed"],
                "menu bar metric order migrates the old generic temperature value")
         expect(Defaults.sanitizedBundleIdentifierList([" com.example.One ", "", "com.example.One", "com.example.Two"])
                == ["com.example.One", "com.example.Two"],
@@ -6680,6 +6682,8 @@ struct MetricsTests {
                "monitor disk sampling slows down in menu-bar-only mode without exceeding DiskSampler.maxGap")
         expect(MonitorSamplingPolicy.sampleStride(for: .peripheralBattery, intervalSeconds: 2, foreground: false) == 30,
                "monitor peripheral battery sampling is heavily throttled in menu-bar-only mode")
+        expect(MonitorSamplingPolicy.sampleStride(for: .fanSpeed, intervalSeconds: 2, foreground: false) == 3,
+               "fan speed refreshes without waking the monitor every base tick")
         expect(MonitorSamplingPolicy.sampleStride(for: .disk, intervalSeconds: 2, foreground: true) == 1,
                "monitor disk sampling stays live while the panel is open")
         expect(MonitorSamplingPolicy.shouldSample(.disk, tick: 4, intervalSeconds: 2, foreground: false) == false,
@@ -6691,6 +6695,8 @@ struct MetricsTests {
                "monitor wakes every tick while an every-tick metric is on")
         expect(MonitorSamplingPolicy.wakeTicks(for: [.temperature], intervalSeconds: 2, foreground: false) == 8,
                "monitor with only temperature wakes once per temperature stride")
+        expect(MonitorSamplingPolicy.wakeTicks(for: [.fanSpeed], intervalSeconds: 2, foreground: false) == 3,
+               "monitor with only fan speed wakes once per fan stride")
         expect(MonitorSamplingPolicy.wakeTicks(for: [.peripheralBattery], intervalSeconds: 2, foreground: false) == 30,
                "monitor with only peripheral battery wakes once per minute")
         expect(MonitorSamplingPolicy.wakeTicks(for: [.disk, .peripheralBattery], intervalSeconds: 2, foreground: false) == 5,
@@ -6701,7 +6707,8 @@ struct MetricsTests {
                "monitor wake cadence defaults to every tick with no needs")
         // Exactness invariant: the cadence always divides every needed stride,
         // so grid-aligned ticks keep hitting each stride exactly on schedule.
-        let wakeKinds: [MonitorSamplingKind] = [.disk, .power, .gpuUsage, .temperature, .peripheralBattery]
+        let wakeKinds: [MonitorSamplingKind] = [.disk, .power, .gpuUsage, .temperature,
+                                                .fanSpeed, .peripheralBattery]
         let cadence = MonitorSamplingPolicy.wakeTicks(for: wakeKinds, intervalSeconds: 2, foreground: false)
         expect(wakeKinds.allSatisfy {
             MonitorSamplingPolicy.sampleStride(for: $0, intervalSeconds: 2, foreground: false) % cadence == 0
@@ -6912,6 +6919,25 @@ struct MetricsTests {
                 && !FanControlPolicy.validReading(-1)
                 && !FanControlPolicy.validReading(.infinity),
                "fan readings stay within a safe display and verification range")
+        expect(FanControlPolicy.telemetryReadings(expectedCount: 1, readings: [1_200]) == [1_200]
+                && FanControlPolicy.telemetryReadings(expectedCount: 2,
+                                                      readings: [1_200, 1_350]) == [1_200, 1_350],
+               "fan telemetry preserves one or several ordered readings")
+        expect(FanControlPolicy.telemetryReadings(expectedCount: 0, readings: []) == nil
+                && FanControlPolicy.telemetryReadings(expectedCount: 2, readings: [1_200]) == nil
+                && FanControlPolicy.telemetryReadings(expectedCount: 2, readings: [1_200, nil]) == nil
+                && FanControlPolicy.telemetryReadings(expectedCount: 1, readings: [.infinity]) == nil
+                && FanControlPolicy.telemetryReadings(expectedCount: 1, readings: [-1]) == nil,
+               "fan telemetry rejects no-fan, missing and malformed sensor sets")
+        expect(FanControlPolicy.menuBarValue(for: [1_249.6]) == "1250"
+                && FanControlPolicy.menuBarValue(for: [1_200, 1_350]) == "1200/1350"
+                && FanControlPolicy.menuBarValue(for: []) == nil
+                && FanControlPolicy.menuBarValue(for: [.infinity]) == nil,
+               "fan RPM menu bar text supports one or several validated fans")
+        expect(FanControlPolicy.menuBarWidthUnits(fanCount: 1) == 12
+                && FanControlPolicy.menuBarWidthUnits(fanCount: 2) == 18
+                && FanControlPolicy.menuBarWidthUnits(fanCount: 0) == 0,
+               "fan RPM menu bar width reserves one or several five-digit readings")
 
         let floatRPM = SMCValueCodec.encode(4_850, type: "flt ", size: 4)
         expect(floatRPM.flatMap { SMCValueCodec.decode($0, type: "flt ") } == 4_850,
@@ -6963,7 +6989,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let strings = FeatureStrings.fanControl(language)
             let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
-            expect(values.count == 20 && values.allSatisfy { !$0.isEmpty },
+            expect(values.count == 21 && values.allSatisfy { !$0.isEmpty },
                    "fan control has every localized field for \(language.rawValue)")
             expect(values.allSatisfy { !$0.contains("—") },
                    "fan control text uses human punctuation for \(language.rawValue)")
@@ -9435,9 +9461,10 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.panelToggleMicMute),
                "the quick toggles layout travels with the settings backup")
         expect(backupKeys.contains(DefaultsKey.panelShowFanControl)
+                && backupKeys.contains(DefaultsKey.menuBarFanSpeed)
                 && !backupKeys.contains(DefaultsKey.fanControlRecoveryNeeded)
                 && !backupKeys.contains(DefaultsKey.fanControlHelperVersion),
-               "fan panel preference travels while helper recovery state stays on one Mac")
+               "fan display preferences travel while helper recovery state stays on one Mac")
         expect(!backupKeys.contains(DefaultsKey.clipboardHistoryEntries)
                 && !backupKeys.contains(DefaultsKey.shelfItems)
                 && !backupKeys.contains(DefaultsKey.sleepDisabledFlag)

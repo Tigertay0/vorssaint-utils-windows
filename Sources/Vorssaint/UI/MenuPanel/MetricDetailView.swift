@@ -5,7 +5,7 @@ import AppKit
 import SwiftUI
 
 enum MetricDetailKind: String, Equatable, Identifiable {
-    case cpu, gpu, memory, network, disk, battery, power
+    case cpu, gpu, memory, network, disk, battery, power, fan
 
     var id: String { rawValue }
 
@@ -19,6 +19,8 @@ enum MetricDetailKind: String, Equatable, Identifiable {
             return .disk
         case .power:
             return .power
+        case .fan:
+            return .fanControl
         }
     }
 
@@ -31,6 +33,7 @@ enum MetricDetailKind: String, Equatable, Identifiable {
         case .disk: return "internaldrive"
         case .battery: return "battery.100"
         case .power: return "powerplug.fill"
+        case .fan: return "fanblades"
         }
     }
 
@@ -56,6 +59,8 @@ enum MetricDetailKind: String, Equatable, Identifiable {
             return SystemMonitorPanelNeeds(peripheralBattery: true)
         case .power:
             return SystemMonitorPanelNeeds(power: true)
+        case .fan:
+            return SystemMonitorPanelNeeds(fanSpeed: true)
         }
     }
 
@@ -68,6 +73,7 @@ enum MetricDetailKind: String, Equatable, Identifiable {
         case .disk: return s.diskSection
         case .battery: return s.batteryLabel
         case .power: return s.powerSection
+        case .fan: return FeatureStrings.fanControl(L10n.shared.language).menuBarTitle
         }
     }
 
@@ -78,7 +84,7 @@ enum MetricDetailKind: String, Equatable, Identifiable {
         case .memory: return .memory
         case .power: return .energy
         case .network: return .network
-        case .disk, .battery: return nil
+        case .disk, .battery, .fan: return nil
         }
     }
 }
@@ -100,6 +106,8 @@ extension MenuBarMetric {
             return .battery
         case .batteryTime, .power:
             return .power
+        case .fanSpeed:
+            return .fan
         }
     }
 }
@@ -220,6 +228,8 @@ struct MetricDetailView: View {
             }
         case .power:
             historyGraph(monitor.snapshot.systemPowerHistory, color: summaryColor)
+        case .fan:
+            EmptyView()
         }
     }
 
@@ -417,6 +427,15 @@ struct MetricDetailView: View {
                 }
             }
             return rows
+        case .fan:
+            let strings = FeatureStrings.fanControl(l10n.language)
+            guard !snapshot.fanSpeeds.isEmpty else {
+                return [row(strings.menuBarTitle, l10n.s.monitorUnavailable)]
+            }
+            return snapshot.fanSpeeds.enumerated().map { index, rpm in
+                row(String(format: strings.fanNameFormat, index + 1),
+                    String(format: strings.rpmFormat, Int(rpm.rounded())))
+            }
         }
     }
 
@@ -442,6 +461,10 @@ struct MetricDetailView: View {
                 .map { "\($0.percent)%" } ?? "-"
         case .power:
             return snapshot.power?.systemWatts.map(MetricFormat.wattsCompact) ?? "-"
+        case .fan:
+            let strings = FeatureStrings.fanControl(l10n.language)
+            guard let rpm = snapshot.fanSpeeds.first else { return "-" }
+            return String(format: strings.rpmFormat, Int(rpm.rounded()))
         }
     }
 
@@ -468,6 +491,11 @@ struct MetricDetailView: View {
                 ?? l10n.s.peripheralBatteryNoDevices
         case .power:
             return powerSubtitle(snapshot.power)
+        case .fan:
+            let strings = FeatureStrings.fanControl(l10n.language)
+            return snapshot.fanSpeeds.isEmpty
+                ? strings.menuBarTitle
+                : String(format: strings.fanNameFormat, 1)
         }
     }
 
@@ -485,6 +513,8 @@ struct MetricDetailView: View {
             return PanelMetricColor.green(for: colorScheme)
         case .power:
             return PanelMetricColor.orange(for: colorScheme)
+        case .fan:
+            return PanelMetricColor.cyan(for: colorScheme)
         }
     }
 

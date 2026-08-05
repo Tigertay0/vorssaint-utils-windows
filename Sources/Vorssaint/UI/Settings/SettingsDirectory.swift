@@ -49,7 +49,8 @@ enum SettingsDirectory {
                                                  FeatureStrings.keepAwakeAutomation(language).powerToggle]),
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "chart.line.uptrend.xyaxis",
                                       keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle,
-                                                 s.monitorMemoryPressureDot]),
+                                                 s.monitorMemoryPressureDot,
+                                                 FeatureStrings.fanControl(language).menuBarTitle]),
             ]),
             (categories.windowsControls, [
                 SettingsDirectoryItem(page: .mouse, title: s.tabMouse, icon: "computermouse",

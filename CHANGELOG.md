@@ -14,8 +14,8 @@ finds more verified leftovers, while previews, panels and mouse controls are mor
 ### Changed
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.
   Thanks to @kyteidev.
-- The optional Fan Control beta can run every detected fan at its reported maximum
-  for 15 minutes, then returns to automatic control.
+- The optional Fan Control beta shows live fan speed in the panel and menu bar.
+  It can cool at maximum for 15 minutes, then returns to automatic control.
 - Window Layout can move the active window to the previous display, with an optional
   shortcut. Thanks to @owen-vromans.
 - The screenshot preview can stay near the capture or appear in any screen corner.
