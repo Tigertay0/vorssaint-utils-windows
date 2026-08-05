@@ -134,7 +134,9 @@ struct MonitorSettings: View {
                 }
                 if AppFeature.monitorPower.isAvailable {
                     Toggle(l10n.s.monitorShowPowerLabel, isOn: $graphPower)
-                    Toggle(l10n.s.batteryLabel, isOn: $graphBattery)
+                    if PowerSampler.hasInternalBattery {
+                        Toggle(l10n.s.batteryLabel, isOn: $graphBattery)
+                    }
                 }
                 Text(l10n.s.monitorGraphsCaption)
                     .font(.caption)
@@ -312,7 +314,7 @@ private struct MenuBarMetricOrderEditor: View {
     /// Metrics whose family left the hub keep their saved slot but stay out
     /// of the editor until they return.
     private var visibleOrder: [MenuBarMetric] {
-        order.filter { $0.feature.isAvailable }
+        order.filter { $0.feature.isAvailable && $0.isAvailableOnCurrentHardware }
     }
 }
 

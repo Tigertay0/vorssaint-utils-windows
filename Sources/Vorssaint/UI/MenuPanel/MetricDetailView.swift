@@ -47,10 +47,13 @@ enum MetricDetailKind: String, Equatable, Identifiable {
         case .disk:
             return SystemMonitorPanelNeeds(disk: true)
         case .battery:
-            return SystemMonitorPanelNeeds(power: true,
-                                           battery: true,
-                                           peripheralBattery: true,
-                                           batteryTemperature: true)
+            if PowerSampler.hasInternalBattery {
+                return SystemMonitorPanelNeeds(power: true,
+                                               battery: true,
+                                               peripheralBattery: true,
+                                               batteryTemperature: true)
+            }
+            return SystemMonitorPanelNeeds(peripheralBattery: true)
         case .power:
             return SystemMonitorPanelNeeds(power: true)
         }
@@ -212,7 +215,9 @@ struct MetricDetailView: View {
         case .disk:
             diskGraph
         case .battery:
-            historyGraph(monitor.snapshot.batteryHistory, color: summaryColor, maxValue: 1)
+            if PowerSampler.hasInternalBattery {
+                historyGraph(monitor.snapshot.batteryHistory, color: summaryColor, maxValue: 1)
+            }
         case .power:
             historyGraph(monitor.snapshot.systemPowerHistory, color: summaryColor)
         }
@@ -375,13 +380,16 @@ struct MetricDetailView: View {
             ]
         case .battery:
             let power = snapshot.power
-            var rows = [
-                row(l10n.s.batteryCharge, power?.chargePercent.map { "\($0)%" } ?? l10n.s.networkMeasuring),
-                row(l10n.s.powerBattery, batteryFlowText(power)),
-                row(l10n.s.temperatures, snapshot.batteryTemperature.map(formatTemperature) ?? l10n.s.monitorUnavailable),
-                row(l10n.s.powerHealth, power?.healthPercent.map { "\(Int($0.rounded()))%" } ?? "-"),
-                row(l10n.s.powerCycles, power?.cycleCount.map(String.init) ?? "-"),
-            ]
+            var rows: [MetricDetailRow] = []
+            if PowerSampler.hasInternalBattery {
+                rows.append(contentsOf: [
+                    row(l10n.s.batteryCharge, power?.chargePercent.map { "\($0)%" } ?? l10n.s.networkMeasuring),
+                    row(l10n.s.powerBattery, batteryFlowText(power)),
+                    row(l10n.s.temperatures, snapshot.batteryTemperature.map(formatTemperature) ?? l10n.s.monitorUnavailable),
+                    row(l10n.s.powerHealth, power?.healthPercent.map { "\(Int($0.rounded()))%" } ?? "-"),
+                    row(l10n.s.powerCycles, power?.cycleCount.map(String.init) ?? "-"),
+                ])
+            }
             if snapshot.peripheralBatteries.isEmpty {
                 rows.append(row(l10n.s.monitorShowPeripheralBattery,
                                 l10n.s.peripheralBatteryNoDevices,
@@ -397,14 +405,16 @@ struct MetricDetailView: View {
             var rows = [
                 row(l10n.s.powerSystem, power?.systemWatts.map(MetricFormat.watts) ?? l10n.s.networkMeasuring),
                 row(l10n.s.powerAdapter, adapterText(power)),
-                row(l10n.s.powerBattery, batteryFlowText(power)),
             ]
-            if let power, power.hasBattery,
-               !power.externalConnected, !power.isCharging {
-                let strings = FeatureStrings.batteryTime(l10n.language)
-                rows.append(row(strings.title,
-                                power.timeRemainingSeconds.flatMap(BatteryTimeSupport.formatted)
-                                    ?? strings.calculating))
+            if PowerSampler.hasInternalBattery {
+                rows.append(row(l10n.s.powerBattery, batteryFlowText(power)))
+                if let power, power.hasBattery,
+                   !power.externalConnected, !power.isCharging {
+                    let strings = FeatureStrings.batteryTime(l10n.language)
+                    rows.append(row(strings.title,
+                                    power.timeRemainingSeconds.flatMap(BatteryTimeSupport.formatted)
+                                        ?? strings.calculating))
+                }
             }
             return rows
         }
@@ -425,7 +435,11 @@ struct MetricDetailView: View {
         case .disk:
             return primaryDisk(from: snapshot.disk).map { MetricFormat.percent($0.usedFraction) } ?? "-"
         case .battery:
-            return snapshot.power?.chargePercent.map { "\($0)%" } ?? "-"
+            if PowerSampler.hasInternalBattery {
+                return snapshot.power?.chargePercent.map { "\($0)%" } ?? "-"
+            }
+            return PeripheralBatterySupport.sorted(snapshot.peripheralBatteries).first
+                .map { "\($0.percent)%" } ?? "-"
         case .power:
             return snapshot.power?.systemWatts.map(MetricFormat.wattsCompact) ?? "-"
         }
@@ -447,7 +461,11 @@ struct MetricDetailView: View {
             guard let disk = primaryDisk(from: snapshot.disk) else { return l10n.s.diskNoDisks }
             return "\(MetricFormat.diskBytes(disk.freeBytes)) \(l10n.s.diskFree)"
         case .battery:
-            return (snapshot.power?.isCharging ?? false) ? l10n.s.powerCharging : l10n.s.powerOnBattery
+            if PowerSampler.hasInternalBattery {
+                return (snapshot.power?.isCharging ?? false) ? l10n.s.powerCharging : l10n.s.powerOnBattery
+            }
+            return PeripheralBatterySupport.sorted(snapshot.peripheralBatteries).first?.name
+                ?? l10n.s.peripheralBatteryNoDevices
         case .power:
             return powerSubtitle(snapshot.power)
         }

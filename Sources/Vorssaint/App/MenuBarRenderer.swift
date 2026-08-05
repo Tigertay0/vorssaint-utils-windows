@@ -95,16 +95,27 @@ enum MenuBarMetric: String, CaseIterable, Identifiable {
         }
     }
 
+    var isAvailableOnCurrentHardware: Bool {
+        switch self {
+        case .battery, .batteryTime, .batteryTemperature:
+            return PowerSampler.hasInternalBattery
+        default:
+            return true
+        }
+    }
+
     static func enabled(in defaults: UserDefaults) -> [MenuBarMetric] {
         order(in: defaults).filter {
-            defaults.bool(forKey: $0.defaultsKey)
+            $0.isAvailableOnCurrentHardware
+                && defaults.bool(forKey: $0.defaultsKey)
                 && defaults.bool(forKey: $0.feature.availabilityKey)
         }
     }
 
     static func anyEnabled(in defaults: UserDefaults) -> Bool {
         allCases.contains {
-            defaults.bool(forKey: $0.defaultsKey)
+            $0.isAvailableOnCurrentHardware
+                && defaults.bool(forKey: $0.defaultsKey)
                 && defaults.bool(forKey: $0.feature.availabilityKey)
         }
     }

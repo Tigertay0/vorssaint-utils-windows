@@ -450,7 +450,9 @@ private struct PermissionPortalRow: View {
     }
 
     private var activeFeatures: [AppFeature] {
-        AppFeature.activeFeatures(using: permission)
+        AppFeature.activeFeatures(using: permission).filter {
+            permission != .notifications || $0 != .monitorPower || PowerSampler.hasInternalBattery
+        }
     }
 
     private var usedByLine: String {

@@ -417,15 +417,17 @@ struct EnergySettings: View {
                     SettingsCaptionText(automationStrings.automationCaption)
                     KeepAwakeAutomationEditor()
                 }
-                Section(l10n.s.batteryProtectionSection) {
-                    Picker(l10n.s.batteryDisableBelow, selection: $batteryLimit) {
-                        Text(l10n.s.batteryNever).tag(0)
-                        Text("5%").tag(5)
-                        Text("10%").tag(10)
-                        Text("15%").tag(15)
-                        Text("20%").tag(20)
+                if PowerSampler.hasInternalBattery {
+                    Section(l10n.s.batteryProtectionSection) {
+                        Picker(l10n.s.batteryDisableBelow, selection: $batteryLimit) {
+                            Text(l10n.s.batteryNever).tag(0)
+                            Text("5%").tag(5)
+                            Text("10%").tag(10)
+                            Text("15%").tag(15)
+                            Text("20%").tag(20)
+                        }
+                        SettingsCaptionText(l10n.s.batteryProtectionCaption)
                     }
-                    SettingsCaptionText(l10n.s.batteryProtectionCaption)
                 }
                 Section(l10n.s.keepAwakeTitle) {
                     KeepAwakeIconPicker(iconValue: $keepAwakeActiveIcon,

@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.1 adds an optional Fan Control beta, makes window switching more
 direct, restores missing app windows across previews, and keeps compact layouts
 and panel navigation clear.
+System Monitor now also hides battery readings on Macs without one.
 
 ### Changed
 - The optional Fan Control beta can run every detected fan at its reported maximum
@@ -26,6 +27,7 @@ and panel navigation clear.
   while their selection remains active.
 - The menu bar panel no longer leaves a focus outline on a different section than
   the one being shown.
+- The System panel no longer shows battery readings on Macs without a battery.
 
 ## [3.3.0] - 2026-08-04
 
