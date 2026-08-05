@@ -83,6 +83,7 @@ struct MenuPanelView: View {
     @State private var updateBannerHeight: CGFloat = 0
     @State private var selectedSection: PanelSectionID = .keepAwake
     @State private var selectedMetric: MetricDetailKind?
+    @FocusState private var focusedSection: PanelSectionID?
 
     /// Cap the panel to the usable screen height so it never overflows the menu
     /// bar; taller content scrolls inside. Measured against the display the
@@ -125,6 +126,9 @@ struct MenuPanelView: View {
         .onChange(of: panelFocus.request) { _, request in
             applyFocus(request)
         }
+        .onChange(of: focusedSection) { _, section in
+            if let section { selectedSection = section }
+        }
     }
 
     private var monitorNeeds: SystemMonitorPanelNeeds {
@@ -153,7 +157,9 @@ struct MenuPanelView: View {
             guard isSectionVisible(section) else { return }
             selectedMetric = nil
             selectedSection = section
+            focusedSection = section
         case .metric(let metric):
+            focusedSection = nil
             selectedMetric = metric
             selectedSection = metric.panelSection
         }
@@ -316,6 +322,7 @@ struct MenuPanelView: View {
                 let isActive = activeSection == id
                 Button {
                     selectedSection = id
+                    focusedSection = id
                 } label: {
                     Image(systemName: id.symbolName)
                         .font(.system(size: 13.5, weight: .semibold))
@@ -324,6 +331,7 @@ struct MenuPanelView: View {
                         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .focused($focusedSection, equals: id)
                 .foregroundStyle(isActive ? Color.accentColor : Color.secondary.opacity(0.86))
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)

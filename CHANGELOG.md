@@ -8,7 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds an optional Fan Control beta, makes window switching more
-direct, restores missing app windows across previews, and keeps compact layouts aligned.
+direct, restores missing app windows across previews, and keeps compact layouts
+and panel navigation clear.
 
 ### Changed
 - The optional Fan Control beta can run every detected fan at its reported maximum
@@ -23,6 +24,8 @@ direct, restores missing app windows across previews, and keeps compact layouts 
 - Adobe app windows now appear in App Switcher, Command Tab and Dock Preview.
 - Newly placed screenshot annotations can be moved, resized or edited immediately
   while their selection remains active.
+- The menu bar panel no longer leaves a focus outline on a different section than
+  the one being shown.
 
 ## [3.3.0] - 2026-08-04
 
