@@ -126,6 +126,7 @@ enum SettingsDirectory {
                                       title: FeatureStrings.screenshot(language).pageTitle,
                                       icon: "camera.viewfinder",
                                       keywords: [FeatureStrings.screenshot(language).freezeToggle,
+                                                 FeatureStrings.screenshot(language).previewPositionLabel,
                                                  FeatureStrings.screenshot(language).pinButton,
                                                  FeatureStrings.screenshot(language).toolPixelate,
                                                  FeatureStrings.screenshot(language).toolArrow]),

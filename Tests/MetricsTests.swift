@@ -4534,6 +4534,11 @@ struct MetricsTests {
                "settings search finds a page by an option living inside it")
         expect(!SettingsSearchSupport.matches(query: "lid", title: "Energy", keywords: []),
                "without keywords the same query stays a miss")
+        expect(SettingsSearchSupport.matches(
+            query: "preview position",
+            title: FeatureStrings.screenshot(.enUS).pageTitle,
+            keywords: [FeatureStrings.screenshot(.enUS).previewPositionLabel]),
+               "preview position is a searchable Screenshot keyword")
 
         let freshSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
                                                                  availableHeight: 1200)
@@ -8199,11 +8204,63 @@ struct MetricsTests {
             expect(false, "gregorian calendar produced the fixed pattern date")
         }
 
-        let cornerFrame = ScreenshotSupport.quickPreviewCornerFrame(
+        let cornerFrame = ScreenshotSupport.quickPreviewFrame(
             size: CGSize(width: 310, height: 210),
-            visibleFrame: CGRect(x: 0, y: 0, width: 1440, height: 900))
+            anchor: .zero,
+            pointer: .zero,
+            visibleFrame: CGRect(x: 0, y: 0, width: 1440, height: 900),
+            position: .bottomRight)
         expect(cornerFrame == CGRect(x: 1114, y: 16, width: 310, height: 210),
                "the after-capture confirmation sits inset in the bottom-right corner")
+        let previewSize = CGSize(width: 310, height: 210)
+        let previewScreen = CGRect(x: -1920, y: 50, width: 1440, height: 900)
+        func configuredPreviewFrame(_ position: ScreenshotSupport.QuickPreviewPosition) -> CGRect {
+            ScreenshotSupport.quickPreviewFrame(
+                size: previewSize,
+                anchor: .zero,
+                pointer: .zero,
+                visibleFrame: previewScreen,
+                position: position)
+        }
+        expect(configuredPreviewFrame(.topLeft)
+                == CGRect(x: -1904, y: 724, width: 310, height: 210)
+                && configuredPreviewFrame(.topRight)
+                == CGRect(x: -806, y: 724, width: 310, height: 210)
+                && configuredPreviewFrame(.bottomLeft)
+                == CGRect(x: -1904, y: 66, width: 310, height: 210)
+                && configuredPreviewFrame(.bottomRight)
+                == CGRect(x: -806, y: 66, width: 310, height: 210),
+               "every configured preview corner respects the display origin and inset")
+        let previewScreens = [
+            (frame: CGRect(x: -1920, y: 0, width: 1920, height: 1080),
+             visibleFrame: CGRect(x: -1920, y: 0, width: 1920, height: 1055)),
+            (frame: CGRect(x: 0, y: 0, width: 1440, height: 900),
+             visibleFrame: CGRect(x: 0, y: 40, width: 1440, height: 860)),
+            (frame: CGRect(x: 1440, y: 300, width: 1280, height: 1024),
+             visibleFrame: CGRect(x: 1440, y: 300, width: 1280, height: 999)),
+        ]
+        expect(ScreenshotSupport.quickPreviewVisibleFrame(
+            anchor: CGRect(x: -900, y: 200, width: 500, height: 400),
+            pointer: CGPoint(x: -500, y: 300),
+            screens: previewScreens,
+            fallback: .zero) == previewScreens[0].visibleFrame,
+               "a capture uses the visible frame of its display in a three-display layout")
+        expect(ScreenshotSupport.quickPreviewVisibleFrame(
+            anchor: CGRect(x: 1300, y: 500, width: 500, height: 500),
+            pointer: CGPoint(x: 1700, y: 650),
+            screens: previewScreens,
+            fallback: .zero) == previewScreens[2].visibleFrame,
+               "a capture crossing displays uses the screen containing most of it")
+        expect(ScreenshotSupport.quickPreviewVisibleFrame(
+            anchor: CGRect(x: 5000, y: 5000, width: 400, height: 300),
+            pointer: CGPoint(x: 700, y: 500),
+            screens: previewScreens,
+            fallback: .zero) == previewScreens[1].visibleFrame,
+               "a disconnected capture display falls back to the current pointer display")
+        expect(ScreenshotSupport.QuickPreviewPosition.allCases.map(\.rawValue)
+                == ["", "topLeft", "topRight", "bottomLeft", "bottomRight"]
+                && ScreenshotSupport.QuickPreviewPosition(rawValue: "bogus") == nil,
+               "preview positions keep stable storage values and reject unknown values")
         expect(ScreenshotDefaultAction(rawValue: "") == ScreenshotDefaultAction.none
                 && ScreenshotDefaultAction(rawValue: "saveAndCopy") == .saveAndCopy
                 && ScreenshotDefaultAction(rawValue: "bogus") == nil,
@@ -8612,6 +8669,8 @@ struct MetricsTests {
                "the previous capture outline stays visible by default, as it always was")
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotToolShortcutsEnabled] as? Bool == true,
                "screenshot number shortcuts ship enabled")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotPreviewPosition] as? String == "",
+               "screenshot preview placement preserves the existing automatic behavior by default")
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotToolOrder] as? String
                 == ScreenshotSupport.Tool.defaultOrderStorage,
                "the screenshot rail ships in its useful numbered order")
@@ -9278,6 +9337,7 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.screenshotToolShortcutsEnabled)
                 && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcutEnabled)
                 && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcut)
+                && backupKeys.contains(DefaultsKey.screenshotPreviewPosition)
                 && backupKeys.contains(DefaultsKey.panelUtilityScreenshot),
                "screenshot preferences travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.whatsAppDownloadsAutomaticEnabled)

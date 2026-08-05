@@ -7,10 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds an optional Fan Control beta, Previous Display for Window Layout
-and more direct window switching. Passive Dock previews, missing windows, compact
-layouts, panel navigation, Settings scrolling, battery readings, listed apps, mouse
-exceptions and side-wheel mouse shortcuts now behave more reliably.
+Vorssaint 3.3.1 adds an optional Fan Control beta, Previous Display for Window Layout,
+configurable screenshot preview placement and more direct window switching. Passive
+Dock previews, missing windows, compact layouts, panel navigation, Settings scrolling,
+battery readings, listed apps, mouse exceptions and side-wheel shortcuts are more reliable.
 
 ### Changed
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.
@@ -19,6 +19,8 @@ exceptions and side-wheel mouse shortcuts now behave more reliably.
   for 15 minutes, then returns to automatic control.
 - Window Layout can move the active window to the previous display, with an optional
   shortcut. Thanks to @owen-vromans.
+- The screenshot preview can stay near the capture or appear in any screen corner.
+  Under Screenshot. Thanks to @lmilojevicc.
 - The window shortcut now opens the switcher for the app in front, without
   opening the app list first. Thanks to @mrevanzak.
 
