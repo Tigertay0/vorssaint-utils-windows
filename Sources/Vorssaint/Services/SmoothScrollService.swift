@@ -72,9 +72,11 @@ final class SmoothScrollService: ObservableObject {
 
     private func start() {
         guard tap == nil else {
+            MouseAppExceptions.shared.setSourceTracking(true, for: .smoothScroll)
             isRunning = true
             return
         }
+        MouseAppExceptions.shared.setSourceTracking(true, for: .smoothScroll)
         guard let tap = CGEvent.tapCreate(
             tap: .cghidEventTap,
             place: .headInsertEventTap,
@@ -87,6 +89,7 @@ final class SmoothScrollService: ObservableObject {
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
+            MouseAppExceptions.shared.setSourceTracking(false, for: .smoothScroll)
             isRunning = false
             return
         }
@@ -100,6 +103,7 @@ final class SmoothScrollService: ObservableObject {
     }
 
     private func stop() {
+        MouseAppExceptions.shared.setSourceTracking(false, for: .smoothScroll)
         if let tap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
@@ -120,8 +124,9 @@ final class SmoothScrollService: ObservableObject {
         }
         guard type == .scrollWheel else { return Unmanaged.passUnretained(event) }
         // Our own glide stream coming back through the tap.
+        let sourceProcessID = event.getIntegerValueField(.eventSourceUnixProcessID)
         guard event.getIntegerValueField(.eventSourceUserData) != ScrollWheelSupport.syntheticTag,
-              event.getIntegerValueField(.eventSourceUnixProcessID) != Self.ownProcessID else {
+              sourceProcessID != Self.ownProcessID else {
             return Unmanaged.passUnretained(event)
         }
         // Touch devices are already smooth; only mouse wheels glide. The
@@ -151,7 +156,10 @@ final class SmoothScrollService: ObservableObject {
         // glide would arrive as a much longer move inside apps that read the
         // wheel themselves (issue #358).
         let exceptions = MouseAppExceptions.shared
-        guard !exceptions.excludesPointerTarget(.smoothScroll, at: event.location) else {
+        guard !exceptions.excludesPointerTarget(
+                .smoothScroll,
+                at: event.location,
+                sourceProcessID: sourceProcessID) else {
             return Unmanaged.passUnretained(event)
         }
 
@@ -162,7 +170,10 @@ final class SmoothScrollService: ObservableObject {
         // exception list: an app excepted there must keep the system's
         // direction even while its wheel glides.
         let invertHere = ScrollInverter.shared.isRunning
-            && !exceptions.excludesPointerTarget(.scrollDirection, at: event.location)
+            && !exceptions.excludesPointerTarget(
+                .scrollDirection,
+                at: event.location,
+                sourceProcessID: sourceProcessID)
         let invert = invertHere ? -1.0 : 1.0
         let shiftPressed = event.flags.contains(.maskShift)
         let vertical: Double

@@ -9068,6 +9068,19 @@ struct MetricsTests {
                 && !MouseAppExceptionSupport.isExcepted(nil, exceptions: exceptionSet)
                 && !MouseAppExceptionSupport.isExcepted("com.example.modeler", exceptions: []),
                "an app is excepted only when its identifier is on a list that has entries")
+        expect(MouseAppExceptionSupport.isExcepted(["com.example.modeler"],
+                                                    exceptions: exceptionSet)
+                && MouseAppExceptionSupport.isExcepted(
+                    ["com.example.helper", "com.example.modeler"],
+                    exceptions: exceptionSet)
+                && !MouseAppExceptionSupport.isExcepted(["com.example.other"],
+                                                         exceptions: exceptionSet),
+               "a source app or one of its bundled helpers can carry an exception")
+        expect(MouseAppExceptionSupport.sourceProcessID(42) == 42
+                && MouseAppExceptionSupport.sourceProcessID(0) == nil
+                && MouseAppExceptionSupport.sourceProcessID(-1) == nil
+                && MouseAppExceptionSupport.sourceProcessID(Int64(Int32.max) + 1) == nil,
+               "only positive process ids supported by the workspace enter source tracking")
 
         let pointer = CGPoint(x: 100, y: 100)
         let ownWindow = MouseAppExceptionSupport.Window(
