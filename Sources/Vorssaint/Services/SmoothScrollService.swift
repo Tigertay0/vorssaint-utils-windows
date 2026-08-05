@@ -148,6 +148,27 @@ final class SmoothScrollService: ObservableObject {
         guard ScrollWheelSupport.isMouseWheel(traits,
                                               secondsSinceLastGesturePhase: secondsSinceGesturePhase)
         else { return Unmanaged.passUnretained(event) }
+        if MouseButtonShortcutService.hasActiveSideWheelInterest,
+           let input = MouseButtonShortcutSupport.sideWheelInput(
+            isContinuous: traits.isContinuous,
+            vertical: (
+                line: Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis1)),
+                fixedPoint: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1),
+                point: Double(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1))
+            ),
+            horizontal: (
+                line: Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis2)),
+                fixedPoint: event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2),
+                point: Double(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2))
+            )),
+           MouseButtonShortcutService.claimsSideWheel(
+               input,
+               at: event.location,
+               sourceProcessID: sourceProcessID,
+               eventTimestamp: UInt64(event.timestamp)
+           ) {
+            return Unmanaged.passUnretained(event)
+        }
         // Control-scroll drives screen zoom; keep its stepping predictable.
         guard !event.flags.contains(.maskControl) else {
             return Unmanaged.passUnretained(event)

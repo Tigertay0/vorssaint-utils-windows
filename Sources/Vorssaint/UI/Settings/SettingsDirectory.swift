@@ -56,6 +56,8 @@ enum SettingsDirectory {
                                       keywords: [s.invertMouseScroll, s.middleClickTapPicker,
                                                  s.smoothScrollName, s.mouseNavigationEnable,
                                                  FeatureStrings.mouseButtons(language).pageTitle,
+                                                 FeatureStrings.mouseButtons(language).sideWheelLeftName,
+                                                 FeatureStrings.mouseButtons(language).sideWheelRightName,
                                                  FeatureStrings.mouseExceptions(language).listTitle]),
                 SettingsDirectoryItem(page: .switcher, title: s.tabSwitcher, icon: "rectangle.on.rectangle",
                                       keywords: [s.switcherEnable, s.dockClickMinimize,

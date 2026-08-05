@@ -7047,6 +7047,14 @@ struct MetricsTests {
             expect(values.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible clipboard strings (\(language.rawValue))")
         }
+        for language in AppLanguage.allCases {
+            let values = Mirror(reflecting: FeatureStrings.mouseButtons(language)).children
+                .compactMap { $0.value as? String }
+            expect(values.count == 23 && values.allSatisfy { !$0.isEmpty },
+                   "every mouse button string is set for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "no em-dash in visible mouse button strings (\(language.rawValue))")
+        }
         expect(FeatureStrings.hub(.ptBR).pageTitle == "Recursos"
                 && FeatureStrings.hub(.enUS).pageTitle == "Features",
                "hub page title reads naturally in the owner languages")
@@ -8802,9 +8810,12 @@ struct MetricsTests {
                "the hub knows the feature's switch, permission and group")
 
         expect(MouseButtonShortcutSupport.canMap(3) && MouseButtonShortcutSupport.canMap(31)
+                && MouseButtonShortcutSupport.canMap(MouseButtonShortcutSupport.sideWheelLeftInput)
+                && MouseButtonShortcutSupport.canMap(MouseButtonShortcutSupport.sideWheelRightInput)
                 && !MouseButtonShortcutSupport.canMap(0) && !MouseButtonShortcutSupport.canMap(1)
-                && !MouseButtonShortcutSupport.canMap(2) && !MouseButtonShortcutSupport.canMap(32),
-               "only the extra buttons above the middle can carry a shortcut")
+                && !MouseButtonShortcutSupport.canMap(2) && !MouseButtonShortcutSupport.canMap(32)
+                && !MouseButtonShortcutSupport.canMap(-3),
+               "only extra buttons and both side-wheel directions can carry a shortcut")
         expect(MouseButtonShortcutSupport.backButtonNumber == MouseNavigationSupport.backButtonNumber
                 && MouseButtonShortcutSupport.forwardButtonNumber == MouseNavigationSupport.forwardButtonNumber,
                "button shortcuts and mouse navigation agree on which button is which")
@@ -8813,22 +8824,72 @@ struct MetricsTests {
         let decodedButtons = MouseButtonShortcutSupport.decode([
             "3": buttonCombo.storageValue,
             "4": "command:11",
+            String(MouseButtonShortcutSupport.sideWheelLeftInput): "command:11",
             "2": "command:11",
             "40": "command:11",
             "junk": "command:11",
             "5": "garbage",
             "6": ":48",
         ])
-        expect(decodedButtons.count == 2 && decodedButtons[3] == buttonCombo && decodedButtons[4] != nil,
-               "decoding keeps valid extra-button mappings and drops everything else")
+        expect(decodedButtons.count == 3 && decodedButtons[3] == buttonCombo && decodedButtons[4] != nil
+                && decodedButtons[MouseButtonShortcutSupport.sideWheelLeftInput] != nil,
+               "decoding keeps valid button and side-wheel mappings and drops everything else")
         expect(MouseButtonShortcutSupport.decode(MouseButtonShortcutSupport.encode(decodedButtons))
                 == decodedButtons,
                "mappings round-trip through their stored form")
         expect(MouseButtonShortcutSupport.decode(nil).isEmpty,
                "no stored mappings decode to none")
-        expect(MouseButtonShortcutSupport.sortedButtons([5: buttonCombo, 3: buttonCombo, 12: buttonCombo])
-                == [3, 5, 12],
-               "settings rows sort by button number")
+        expect(MouseButtonShortcutSupport.sortedButtons([
+            5: buttonCombo,
+            MouseButtonShortcutSupport.sideWheelRightInput: buttonCombo,
+            MouseButtonShortcutSupport.sideWheelLeftInput: buttonCombo,
+            3: buttonCombo,
+            12: buttonCombo,
+        ]) == [MouseButtonShortcutSupport.sideWheelLeftInput,
+               MouseButtonShortcutSupport.sideWheelRightInput, 3, 5, 12],
+               "settings rows keep side-wheel directions together before numbered buttons")
+        expect(MouseButtonShortcutSupport.sideWheelInput(isContinuous: false,
+                                                         vertical: (0, 0, 0),
+                                                         horizontal: (1, 0, 0))
+                == MouseButtonShortcutSupport.sideWheelLeftInput
+                && MouseButtonShortcutSupport.sideWheelInput(isContinuous: false,
+                                                             vertical: (0, 0, 0),
+                                                             horizontal: (0, -0.25, 0))
+                == MouseButtonShortcutSupport.sideWheelRightInput
+                && MouseButtonShortcutSupport.sideWheelInput(isContinuous: true,
+                                                             vertical: (0, 0, 0),
+                                                             horizontal: (0, 0, 3))
+                == MouseButtonShortcutSupport.sideWheelLeftInput
+                && MouseButtonShortcutSupport.sideWheelInput(isContinuous: true,
+                                                             vertical: (0, 0, 0),
+                                                             horizontal: (0, 0, 0)) == nil,
+               "side-wheel directions follow AppKit's horizontal sign for discrete and continuous mice")
+        expect(MouseButtonShortcutSupport.sideWheelInput(isContinuous: false,
+                                                         vertical: (2, 2, 20),
+                                                         horizontal: (1, 1, 10)) == nil
+                && MouseButtonShortcutSupport.sideWheelInput(isContinuous: false,
+                                                             vertical: (1, 1, 10),
+                                                             horizontal: (1, 1, 10)) == nil
+                && MouseButtonShortcutSupport.sideWheelInput(isContinuous: true,
+                                                             vertical: (0, 0, 3),
+                                                             horizontal: (0, 0, 4))
+                == MouseButtonShortcutSupport.sideWheelLeftInput,
+               "vertical and diagonal scrolling cannot leak into a side-wheel shortcut")
+
+        var sideWheelGesture = MouseButtonShortcutSupport.SideWheelGestureGate()
+        let wheelLeft = MouseButtonShortcutSupport.sideWheelLeftInput
+        let wheelRight = MouseButtonShortcutSupport.sideWheelRightInput
+        expect(sideWheelGesture.shouldFire(wheelLeft, at: 0)
+                && !sideWheelGesture.shouldFire(wheelLeft, at: 10_000_000)
+                && sideWheelGesture.shouldFire(wheelRight, at: 20_000_000)
+                && !sideWheelGesture.shouldFire(wheelLeft, at: 30_000_000)
+                && !sideWheelGesture.shouldFire(wheelRight, at: 40_000_000),
+               "one wheel burst fires each deliberate direction exactly once")
+        expect(sideWheelGesture.shouldFire(wheelLeft, at: 300_000_001),
+               "a quiet gap arms the next side-wheel gesture")
+        sideWheelGesture.reset()
+        expect(sideWheelGesture.shouldFire(wheelRight, at: 1),
+               "stopping the tap clears the side-wheel gesture state")
 
         expect(MouseButtonShortcutSupport.firesShortcut(for: 3, isAvailable: true, isEnabled: true,
                                                         mappings: [3: buttonCombo],
@@ -8854,8 +8915,12 @@ struct MetricsTests {
                 == MouseButtonFeatureStrings.enUS.backButtonName
                 && MouseButtonShortcutSupport.buttonName(for: 4, strings: .enUS)
                 == MouseButtonFeatureStrings.enUS.forwardButtonName
+                && MouseButtonShortcutSupport.buttonName(
+                    for: MouseButtonShortcutSupport.sideWheelLeftInput, strings: .enUS) == "Side wheel left"
+                && MouseButtonShortcutSupport.buttonName(
+                    for: MouseButtonShortcutSupport.sideWheelRightInput, strings: .enUS) == "Side wheel right"
                 && MouseButtonShortcutSupport.buttonName(for: 5, strings: .enUS) == "Button 6",
-               "buttons are named by their job or their printed count")
+               "buttons and side-wheel directions have clear names")
 
         // A synthesized press has to carry the same flags a finger produces,
         // or the system matches it against no shortcut of its own (issue #401).

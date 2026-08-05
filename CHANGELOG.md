@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds an optional Fan Control beta and makes window switching more
 direct, with passive Dock previews and restored missing windows. Compact layouts,
-panel navigation, Settings scrolling, battery readings and listed apps now behave
-more reliably.
+panel navigation, Settings scrolling, battery readings, listed apps and side-wheel
+mouse shortcuts now behave more reliably.
 
 ### Changed
 - The optional Fan Control beta can run every detected fan at its reported maximum
@@ -34,6 +34,7 @@ more reliably.
   themselves.
 - Dock Preview cards now leave your current app in front while you browse.
   A window opens only when you click its card.
+- Side-wheel directions can now carry separate mouse shortcuts. Thanks to @JoeMo-GenX.
 
 ## [3.3.0] - 2026-08-04
 

@@ -105,8 +105,14 @@ final class MouseAppExceptions: ObservableObject {
     /// command to the app in front, while the click they swallow belonged to
     /// the app under the pointer, so an exception on either side means hands
     /// off.
-    func excludesActionTarget(_ scope: MouseExceptionScope, at point: CGPoint) -> Bool {
+    func excludesActionTarget(_ scope: MouseExceptionScope,
+                              at point: CGPoint,
+                              sourceProcessID: Int64 = 0) -> Bool {
         guard let exceptions = lookups[scope], !exceptions.isEmpty else { return false }
+        if let pid = MouseAppExceptionSupport.sourceProcessID(sourceProcessID),
+           sourceProcessIDs[scope]?.contains(pid) == true {
+            return true
+        }
         if MouseAppExceptionSupport.isExcepted(pointerBundleID(at: point), exceptions: exceptions) {
             return true
         }
@@ -114,9 +120,9 @@ final class MouseAppExceptions: ObservableObject {
                                                   exceptions: exceptions)
     }
 
-    /// The scroll services call this with their tap lifecycle. With either
-    /// feature off, unavailable or carrying an empty list, no workspace
-    /// observer or source cache remains alive.
+    /// Services that intercept wheel events call this with their tap lifecycle.
+    /// With every such feature off, unavailable or carrying an empty list, no
+    /// workspace observer or source cache remains alive.
     func setSourceTracking(_ active: Bool, for scope: MouseExceptionScope) {
         if active {
             trackedSourceScopes.insert(scope)
