@@ -885,6 +885,8 @@ extension Strings {
         previewSizeSmall: "小",
         mixerSoundEffectsOutputTitle: "系統聲音",
         mixerSoundEffectsOutputTooltip: "選擇提示音和音效的播放裝置",
-        monitorOpenActivityMonitor: "打開活動監視器"
+        monitorOpenActivityMonitor: "打開活動監視器",
+        dockClickHide: "點按 Dock 圖示隱藏 App",
+        dockClickHideCaption: "點按目前 App 的 Dock 圖示即可隱藏它。再點按一次即可帶回。"
     )
 }

@@ -1029,6 +1029,8 @@ struct Strings {
     let mixerSoundEffectsOutputTitle: String
     let mixerSoundEffectsOutputTooltip: String
     let monitorOpenActivityMonitor: String
+    let dockClickHide: String
+    let dockClickHideCaption: String
 }
 
 // MARK: - Português (Brasil)
@@ -1914,7 +1916,9 @@ extension Strings {
         previewSizeSmall: "Pequeno",
         mixerSoundEffectsOutputTitle: "Sons do sistema",
         mixerSoundEffectsOutputTooltip: "Escolher onde alertas e efeitos sonoros tocam",
-        monitorOpenActivityMonitor: "Abrir o Monitor de Atividade"
+        monitorOpenActivityMonitor: "Abrir o Monitor de Atividade",
+        dockClickHide: "Clicar no Dock oculta o app",
+        dockClickHideCaption: "O app ativo é ocultado ao clicar no ícone dele no Dock. Clique de novo para trazê-lo de volta."
     )
 }
 
@@ -2801,6 +2805,8 @@ extension Strings {
         previewSizeSmall: "Small",
         mixerSoundEffectsOutputTitle: "System sounds",
         mixerSoundEffectsOutputTooltip: "Choose where alerts and sound effects play",
-        monitorOpenActivityMonitor: "Open Activity Monitor"
+        monitorOpenActivityMonitor: "Open Activity Monitor",
+        dockClickHide: "Click the Dock icon to hide the app",
+        dockClickHideCaption: "The active app hides when you click its Dock icon. Click again to bring it back."
     )
 }

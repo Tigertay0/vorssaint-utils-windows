@@ -1644,6 +1644,8 @@ struct MetricsTests {
                "Dock Preview is opt-in for clean installs")
         expect(registeredDefaults[DefaultsKey.dockPreviewBackgroundOpacity] as? Double == 1.0,
                "the Dock Preview panel starts fully solid")
+        expect(registeredDefaults[DefaultsKey.dockClickHide] as? Bool == false,
+               "hiding the active app from its Dock icon is opt-in")
         expect(DockPreviewSupport.sanitizedBackgroundOpacity(0.7) == 0.7,
                "a Dock Preview background opacity inside the range is kept")
         expect(DockPreviewSupport.sanitizedBackgroundOpacity(0)
@@ -1771,6 +1773,8 @@ struct MetricsTests {
                "panel switcher control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlDockPreview] as? Bool == true,
                "panel Dock Preview control is visible by default")
+        expect(registeredDefaults[DefaultsKey.panelControlDockClickHide] as? Bool == true,
+               "panel Dock hide control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlCutPaste] as? Bool == true,
                "panel cut and paste control is visible by default")
         expect(registeredDefaults[DefaultsKey.colorPickerBareHex] as? Bool == false,
@@ -4636,6 +4640,10 @@ struct MetricsTests {
             title: FeatureStrings.screenshot(.enUS).pageTitle,
             keywords: [FeatureStrings.screenshot(.enUS).previewPositionLabel]),
                "preview position is a searchable Screenshot keyword")
+        expect(SettingsSearchSupport.matches(query: "hide",
+                                             title: Strings.enUS.tabSwitcher,
+                                             keywords: [Strings.enUS.dockClickHide]),
+               "Dock hiding is findable through a localized Settings keyword")
 
         let freshSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
                                                                  availableHeight: 1200)
@@ -5209,6 +5217,82 @@ struct MetricsTests {
                                        unminimizedWindowCount: 1) == .passThrough,
                "cycling alone never minimizes a single-window app")
         expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true) == .hide,
+               "dock click hides the frontmost app when hiding is enabled")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: false,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true) == .hide,
+               "hiding also works for a frontmost app with no windows")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: false,
+                                       hasMinimizedWindows: true,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true) == .hide,
+               "hiding is app-level even when every window is minimized")
+        expect(DockClickSupport.action(appIsFrontmost: false,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true) == .passThrough,
+               "hiding lets the Dock activate a background app")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: true,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true) == .hide,
+               "hiding follows the app-level command even with a fullscreen window")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: true,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true) == .passThrough,
+               "hiding preserves every native modifier click")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: true,
+                                       hideEnabled: true) == .hide,
+               "hiding wins safely if imported preferences enable both actions")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true,
+                                       cycleWindowsEnabled: false,
+                                       unminimizedWindowCount: 3) == .hide,
+               "hiding treats a multi-window app as one app when cycling is off")
+        expect(DockClickSupport.action(appIsFrontmost: true,
+                                       hasUnminimizedWindows: true,
+                                       hasMinimizedWindows: false,
+                                       hasFullscreenWindows: false,
+                                       hasModifiers: false,
+                                       minimizeEnabled: false,
+                                       hideEnabled: true,
+                                       cycleWindowsEnabled: true,
+                                       unminimizedWindowCount: 3) == .cycleWindows,
+               "window cycling stays ahead of hiding when several windows are available")
+        expect(DockClickSupport.action(appIsFrontmost: true,
                                        hasUnminimizedWindows: false,
                                        hasMinimizedWindows: true,
                                        hasFullscreenWindows: false,
@@ -5228,6 +5312,15 @@ struct MetricsTests {
                "cycling lets the Dock activate apps that are not frontmost")
         expect(DockClickSupport.repeatDecision(lastAction: .cycleWindows, elapsed: 0.5) == .deriveFromState,
                "a repeated click after a cycle keeps cycling from live state")
+        expect(DockClickSupport.repeatDecision(lastAction: .hide, elapsed: 0.5) == .deriveFromState,
+               "a click after hiding lets the Dock bring the app back")
+        expect(DockClickSupport.repeatDecision(lastAction: .hide, elapsed: 0.1) == .swallow,
+               "an accidental double-click never hides and immediately reopens the app")
+        expect(DockClickSupport.isOwnBundleIdentifier("com.vorssaint.utils")
+                && DockClickSupport.isOwnBundleIdentifier("com.vorssaint.utils.dev")
+                && !DockClickSupport.isOwnBundleIdentifier("com.example.editor")
+                && !DockClickSupport.isOwnBundleIdentifier(nil),
+               "Dock clicks never target either build of this app")
 
         expect(DockClickSupport.repeatDecision(lastAction: nil, elapsed: nil) == .deriveFromState,
                "dock click derives the first click from window state")
@@ -6492,6 +6585,11 @@ struct MetricsTests {
             expect(!strings.switcherWindowlessAppsCaption.isEmpty
                    && !strings.switcherWindowlessAppsCaption.contains("—"),
                    "\(prefix) App Switcher windowless apps caption is present without em dash")
+            expect(!strings.dockClickHide.isEmpty
+                   && !strings.dockClickHideCaption.isEmpty
+                   && !strings.dockClickHide.contains("—")
+                   && !strings.dockClickHideCaption.contains("—"),
+                   "\(prefix) Dock hide labels are present without em dash")
             expect(!strings.switcherWindowlessAppsOff.isEmpty
                    && !strings.switcherWindowlessAppsFinder.isEmpty
                    && !strings.switcherWindowlessAppsAll.isEmpty
@@ -7134,6 +7232,10 @@ struct MetricsTests {
                          on: [DefaultsKey.switcherSimpleMode, DefaultsKey.dockPreviewEnabled])
                 .contains(.dockPreview),
                "dock preview keeps screen recording in use regardless of switcher mode")
+        expect(AppFeature.dockClick.enabledKeys == [DefaultsKey.dockClickMinimize,
+                                                    DefaultsKey.dockClickHide,
+                                                    DefaultsKey.dockClickCycleWindows],
+               "the Dock click feature tracks every action that can keep its shared tap alive")
 
         expect(activeSet(.notifications) == [],
                "no alerts and no schedule means notifications are unused")
@@ -9449,6 +9551,9 @@ struct MetricsTests {
                "the launch at login choice travels with the settings backup")
         expect(backupKeys.contains(DefaultsKey.appearance),
                "the light or dark choice travels with the settings backup")
+        expect(backupKeys.contains(DefaultsKey.dockClickHide)
+                && backupKeys.contains(DefaultsKey.panelControlDockClickHide),
+               "Dock hiding and its panel visibility travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.finderRenameEnabled)
                 && backupKeys.contains(DefaultsKey.finderRenameShortcut),
                "the Finder rename choice and shortcut travel with the settings backup")

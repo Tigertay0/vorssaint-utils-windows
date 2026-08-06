@@ -141,7 +141,9 @@ extension AppFeature {
         switch self {
         case .switcher: return [DefaultsKey.switcherEnabled]
         case .dockPreview: return [DefaultsKey.dockPreviewEnabled]
-        case .dockClick: return [DefaultsKey.dockClickMinimize, DefaultsKey.dockClickCycleWindows]
+        case .dockClick: return [DefaultsKey.dockClickMinimize,
+                                 DefaultsKey.dockClickHide,
+                                 DefaultsKey.dockClickCycleWindows]
         case .windowMaximizer: return [DefaultsKey.windowMaximizeEnabled]
         case .autoQuit: return [DefaultsKey.autoQuitEnabled]
         case .scrollInverter: return [DefaultsKey.scrollInverterEnabled]

@@ -884,6 +884,8 @@ extension Strings {
         previewSizeSmall: "小",
         mixerSoundEffectsOutputTitle: "システムサウンド",
         mixerSoundEffectsOutputTooltip: "通知音とサウンドエフェクトの出力先を選択",
-        monitorOpenActivityMonitor: "アクティビティモニタを開く"
+        monitorOpenActivityMonitor: "アクティビティモニタを開く",
+        dockClickHide: "Dock クリックでアプリを隠す",
+        dockClickHideCaption: "手前のアプリの Dock アイコンをクリックすると、そのアプリを隠します。もう一度クリックすると戻ります。"
     )
 }

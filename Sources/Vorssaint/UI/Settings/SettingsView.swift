@@ -762,6 +762,7 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
     @AppStorage(DefaultsKey.dockPreviewBackgroundOpacity) private var dockPreviewBackgroundOpacity = 1.0
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickMinimize = false
+    @AppStorage(DefaultsKey.dockClickHide) private var dockClickHide = false
     @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleWindows = false
     @AppStorage(DefaultsKey.previewSize) private var previewSize = "normal"
 
@@ -865,10 +866,19 @@ struct SwitcherSettings: View {
                     }
                     if AppFeature.dockClick.isAvailable {
                         Toggle(l10n.s.dockClickMinimize, isOn: $dockClickMinimize)
-                            .onChange(of: dockClickMinimize) { _, _ in
+                            .onChange(of: dockClickMinimize) { _, enabled in
+                                if enabled { dockClickHide = false }
                                 DockClickService.shared.syncWithPreferences()
                             }
                         Text(l10n.s.dockClickMinimizeCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Toggle(l10n.s.dockClickHide, isOn: $dockClickHide)
+                            .onChange(of: dockClickHide) { _, enabled in
+                                if enabled { dockClickMinimize = false }
+                                DockClickService.shared.syncWithPreferences()
+                            }
+                        Text(l10n.s.dockClickHideCaption)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)

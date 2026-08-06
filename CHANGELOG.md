@@ -7,13 +7,15 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, Previous Display
-and configurable screenshot previews. App removal finds more verified leftovers,
-while switching, previews, panels and mouse controls are more reliable.
+Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, Previous Display,
+configurable screenshot previews and Dock clicks that hide the active app. App removal
+finds more verified leftovers, while previews, panels and mouse controls are more reliable.
 
 ### Added
 - Per-app Switcher rules can include apps without windows, keep them window-only,
   or hide them from the Switcher. Under Switcher. Thanks to @Yahddyyp.
+- Dock clicks can hide the active app instead of minimizing its windows, off by
+  default under Switcher. Thanks to @sidbena.
 
 ### Changed
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.

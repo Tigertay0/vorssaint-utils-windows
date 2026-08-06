@@ -966,7 +966,7 @@ struct UtilitiesSection: View {
 
 private enum ControlPanelItem: String, PanelOrderItem, Identifiable {
     case mouseScroll, mouseNavigation, switcher, cutPaste, autoQuit, shelf, windowMaximize, dockPreview, keyDebounce,
-         dockClick, dockClickCycle, middleClick, textSnippets, radialMenu, mouseButtonShortcuts, superKey
+         dockClick, dockClickHide, dockClickCycle, middleClick, textSnippets, radialMenu, mouseButtonShortcuts, superKey
 
     var id: String { rawValue }
 
@@ -983,7 +983,7 @@ private enum ControlPanelItem: String, PanelOrderItem, Identifiable {
         case .windowMaximize: return .windowMaximizer
         case .dockPreview: return .dockPreview
         case .keyDebounce: return .keyboardDebounce
-        case .dockClick, .dockClickCycle: return .dockClick
+        case .dockClick, .dockClickHide, .dockClickCycle: return .dockClick
         case .middleClick: return .middleClick
         case .textSnippets: return .textSnippets
         case .radialMenu: return .radialMenu
@@ -1002,7 +1002,7 @@ private enum ControlCategory: String, CaseIterable, Identifiable {
 
     static func category(for item: ControlPanelItem) -> ControlCategory {
         switch item {
-        case .switcher, .dockPreview, .dockClick, .dockClickCycle, .windowMaximize, .autoQuit:
+        case .switcher, .dockPreview, .dockClick, .dockClickHide, .dockClickCycle, .windowMaximize, .autoQuit:
             return .windows
         case .mouseScroll, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .keyDebounce,
              .textSnippets, .radialMenu, .superKey:
@@ -1039,6 +1039,7 @@ struct QuickControlsSection: View {
     @AppStorage(DefaultsKey.keyboardDebounceEnabled) private var keyDebounceEnabled = false
     @AppStorage(DefaultsKey.keyboardDebounceWindowMs) private var keyDebounceWindow = Defaults.defaultKeyboardDebounceWindowMs
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickEnabled = false
+    @AppStorage(DefaultsKey.dockClickHide) private var dockClickHideEnabled = false
     @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleEnabled = false
     @AppStorage(DefaultsKey.middleClickEnabled) private var middleClickEnabled = false
     @AppStorage(DefaultsKey.textSnippetsEnabled) private var textSnippetsEnabled = false
@@ -1055,6 +1056,7 @@ struct QuickControlsSection: View {
     @AppStorage(DefaultsKey.panelControlWindowMaximize) private var showWindowMaximize = true
     @AppStorage(DefaultsKey.panelControlKeyDebounce) private var showKeyDebounce = true
     @AppStorage(DefaultsKey.panelControlDockClick) private var showDockClick = true
+    @AppStorage(DefaultsKey.panelControlDockClickHide) private var showDockClickHide = true
     @AppStorage(DefaultsKey.panelControlDockClickCycle) private var showDockClickCycle = true
     @AppStorage(DefaultsKey.panelControlMiddleClick) private var showMiddleClick = true
     @AppStorage(DefaultsKey.panelControlTextSnippets) private var showTextSnippets = true
@@ -1170,6 +1172,7 @@ struct QuickControlsSection: View {
         case .dockPreview: return dockPreviewEnabled
         case .keyDebounce: return keyDebounceEnabled
         case .dockClick: return dockClickEnabled
+        case .dockClickHide: return dockClickHideEnabled
         case .dockClickCycle: return dockClickCycleEnabled
         case .middleClick: return middleClickEnabled
         case .textSnippets: return textSnippetsEnabled
@@ -1243,6 +1246,7 @@ struct QuickControlsSection: View {
         case .windowMaximize: return showWindowMaximize
         case .dockPreview: return showDockPreview
         case .dockClick: return showDockClick
+        case .dockClickHide: return showDockClickHide
         case .dockClickCycle: return showDockClickCycle
         case .middleClick: return showMiddleClick
         case .textSnippets: return showTextSnippets
@@ -1426,6 +1430,23 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(dockClickEnabled))
                 .onChange(of: dockClickEnabled) { _, enabled in
+                    if enabled { dockClickHideEnabled = false }
+                    DockClickService.shared.syncWithPreferences()
+                    requestAccessibilityIfNeeded(enabled)
+                }
+        case .dockClickHide:
+            PanelToggleRow(title: l10n.s.dockClickHide,
+                           caption: caption(l10n.s.dockClickHideCaption, needsAccessibility: dockClickHideEnabled),
+                           systemImage: "eye.slash",
+                           isOn: $dockClickHideEnabled,
+                           isEditing: editing,
+                           showsDragHandle: true,
+                           visibility: $showDockClickHide,
+                           needsAttention: dockClickHideEnabled && !permissions.accessibility,
+                           permissionButtonTitle: l10n.s.permissionRequest,
+                           permissionAction: accessibilityPermissionAction(dockClickHideEnabled))
+                .onChange(of: dockClickHideEnabled) { _, enabled in
+                    if enabled { dockClickEnabled = false }
                     DockClickService.shared.syncWithPreferences()
                     requestAccessibilityIfNeeded(enabled)
                 }
@@ -1582,6 +1603,7 @@ struct QuickControlsSection: View {
         showDockPreview = true
         showKeyDebounce = true
         showDockClick = true
+        showDockClickHide = true
         showDockClickCycle = true
         showMiddleClick = true
         showTextSnippets = true

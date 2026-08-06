@@ -885,6 +885,8 @@ extension Strings {
         previewSizeSmall: "Маленький",
         mixerSoundEffectsOutputTitle: "Системные звуки",
         mixerSoundEffectsOutputTooltip: "Выбрать устройство для оповещений и звуковых эффектов",
-        monitorOpenActivityMonitor: "Открыть Мониторинг системы"
+        monitorOpenActivityMonitor: "Открыть Мониторинг системы",
+        dockClickHide: "Скрывать приложение кликом по Dock",
+        dockClickHideCaption: "Активное приложение скрывается при клике по его значку в Dock. Нажмите ещё раз, чтобы вернуть его."
     )
 }

@@ -884,6 +884,8 @@ extension Strings {
         previewSizeSmall: "Küçük",
         mixerSoundEffectsOutputTitle: "Sistem sesleri",
         mixerSoundEffectsOutputTooltip: "Uyarıların ve ses efektlerinin çalacağı çıkışı seç",
-        monitorOpenActivityMonitor: "Etkinlik Monitörü'nü aç"
+        monitorOpenActivityMonitor: "Etkinlik Monitörü'nü aç",
+        dockClickHide: "Dock simgesine tıklayınca uygulamayı gizle",
+        dockClickHideCaption: "Etkin uygulamanın Dock simgesine tıklayınca uygulama gizlenir. Geri getirmek için yeniden tıklayın."
     )
 }

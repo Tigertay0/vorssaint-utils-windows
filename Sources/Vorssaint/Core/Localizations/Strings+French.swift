@@ -884,6 +884,8 @@ extension Strings {
         previewSizeSmall: "Petite",
         mixerSoundEffectsOutputTitle: "Sons du système",
         mixerSoundEffectsOutputTooltip: "Choisir où sont diffusés les alertes et effets sonores",
-        monitorOpenActivityMonitor: "Ouvrir le Moniteur d’activité"
+        monitorOpenActivityMonitor: "Ouvrir le Moniteur d’activité",
+        dockClickHide: "Masquer l’app d’un clic sur le Dock",
+        dockClickHideCaption: "L’app active se masque lorsque vous cliquez sur son icône dans le Dock. Cliquez à nouveau pour la faire revenir."
     )
 }
