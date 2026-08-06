@@ -72,6 +72,7 @@ enum SettingsDirectory {
                                       title: FeatureStrings.windowLayout(language).title,
                                       icon: "rectangle.3.group",
                                       keywords: [s.dockClickCycleWindows,
+                                                 FeatureStrings.windowLayout(language).edgeSnapEnable,
                                                  FeatureStrings.windowLayout(language).gestureEnable,
                                                  FeatureStrings.windowLayout(language).gestureResize]),
                 SettingsDirectoryItem(page: .autoQuit, title: s.autoQuitName, icon: "xmark.rectangle",

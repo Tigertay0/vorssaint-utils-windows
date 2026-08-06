@@ -6,6 +6,7 @@ import ApplicationServices
 import Carbon.HIToolbox
 import Combine
 import CoreGraphics
+import QuartzCore
 
 enum WindowLayoutError: Equatable {
     case missingAccessibility
@@ -20,8 +21,9 @@ enum WindowLayoutResult: Equatable {
 }
 
 /// Window placement through explicit panel actions, global shortcuts and an
-/// optional pointer gesture. The event tap only performs Accessibility work
-/// after the user presses an exact shown chord over a compatible window.
+/// optional pointer gesture. The active taps only perform Accessibility work
+/// after a deliberate gesture. Edge snapping changes an event only after the
+/// same window has visibly followed the pointer to the top of a screen.
 final class WindowLayoutService: ObservableObject {
     static let shared = WindowLayoutService()
 
@@ -39,8 +41,19 @@ final class WindowLayoutService: ObservableObject {
     private var registeredShortcuts: [WindowLayoutAction: GlobalShortcut] = [:]
     private var gestureTap: CFMachPort?
     private var gestureRunLoopSource: CFRunLoopSource?
+    private var edgeSnapTap: CFMachPort?
+    private var edgeSnapRunLoopSource: CFRunLoopSource?
     private var activeGesture: WindowPointerGesture?
     private var pendingGesture: PendingWindowGesture?
+    private var edgeSnapPressOrigin: CGPoint?
+    private var edgeSnapPressCandidate: WindowServerWindowCandidate?
+    private var edgeSnapSequenceSuppressed = false
+    private var edgeSnapResolveAttempts = 0
+    private var edgeSnapLastResolveAt: TimeInterval = 0
+    private var edgeSnapDrag: WindowEdgeSnapDrag?
+    private var edgeSnapSequenceGeneration = 0
+    private var edgeSnapPreviewPanel: NSPanel?
+    private var edgeSnapPreviewGeneration = 0
     private var assistiveModeSuspensions: [CGWindowID: EnhancedUserInterfaceSuspension] = [:]
     private var settleTimers: [CGWindowID: Timer] = [:]
     private var gestureAssistiveMode: EnhancedUserInterfaceSuspension?
@@ -57,6 +70,7 @@ final class WindowLayoutService: ObservableObject {
     // the intermediate size and position when they receive resize writes at
     // pointer-reporting speed, so resize is deliberately coalesced to 60 Hz.
     private let resizeGestureUpdateInterval: TimeInterval = 1.0 / 60.0
+    private let edgeSnapSampleInterval: TimeInterval = 1.0 / 30.0
 
     private init() {}
 
@@ -72,6 +86,12 @@ final class WindowLayoutService: ObservableObject {
             && UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled)
             && trusted
         wantsGesture ? startGestureTap() : stopGestureTap()
+
+        let wantsEdgeSnap = available
+            && UserDefaults.standard.bool(forKey: DefaultsKey.windowEdgeSnapEnabled)
+            && !WindowEdgeSnapSupport.isSystemTilingEnabled
+            && trusted
+        wantsEdgeSnap ? startEdgeSnapTap() : stopEdgeSnapTap()
     }
 
     /// Stops every Window Layout input hook before Accessibility is revoked or
@@ -80,6 +100,7 @@ final class WindowLayoutService: ObservableObject {
     func suspend() {
         unregisterHotkeys()
         stopGestureTap()
+        stopEdgeSnapTap()
         for timer in settleTimers.values { timer.invalidate() }
         settleTimers.removeAll()
         let suspensions = assistiveModeSuspensions.values
@@ -170,22 +191,39 @@ final class WindowLayoutService: ObservableObject {
             frameHistory.discardLatest(for: target.key)
             return finish(.failure(.failed))
         }
-        let previousAction = lastActions[target.key]
+        return applyPlacement(action,
+                              to: target,
+                              visibleFrame: screen.visibleFrame)
+    }
+
+    private func finish(_ result: WindowLayoutResult) -> WindowLayoutResult {
+        resultGeneration += 1
+        lastResult = result
+        return result
+    }
+
+    private func applyPlacement(_ action: WindowLayoutAction,
+                                to target: WindowLayoutTarget,
+                                visibleFrame: NSRect,
+                                historyFrame: WindowLayoutFrame? = nil,
+                                cyclesRepeatedAction: Bool = true) -> WindowLayoutResult {
+        let currentRect = appKitFrame(fromAX: target.frame)
+        let previousAction = cyclesRepeatedAction ? lastActions[target.key] : nil
         let effectiveAction = WindowLayoutGeometry.effectiveAction(for: action,
                                                                    current: currentRect,
-                                                                   visibleFrame: screen.visibleFrame,
+                                                                   visibleFrame: visibleFrame,
                                                                    previousAction: previousAction)
         let placement = placement(for: effectiveAction,
                                   current: target.frame,
-                                  visibleFrame: screen.visibleFrame)
+                                  visibleFrame: visibleFrame)
         if placement.frame == target.frame {
             lastActions[target.key] = effectiveAction
             return finish(.success(restored: false))
         }
-        frameHistory.record(target.frame, for: target.key)
+        frameHistory.record(historyFrame ?? target.frame, for: target.key)
         if setFrame(placement.frame,
                     targetRect: placement.rect,
-                    screenVisibleFrame: screen.visibleFrame,
+                    screenVisibleFrame: visibleFrame,
                     action: effectiveAction,
                     on: target.window,
                     windowKey: target.key) {
@@ -194,12 +232,6 @@ final class WindowLayoutService: ObservableObject {
         }
         frameHistory.discardLatest(for: target.key)
         return finish(.failure(.failed))
-    }
-
-    private func finish(_ result: WindowLayoutResult) -> WindowLayoutResult {
-        resultGeneration += 1
-        lastResult = result
-        return result
     }
 
     private func focusedTarget() -> WindowLayoutTarget? {
@@ -591,6 +623,413 @@ final class WindowLayoutService: ObservableObject {
         failedShortcutActions.removeAll()
     }
 
+    // MARK: - Drag to screen edge
+
+    /// The callback copies scalar values and gets out of the input path before
+    /// any Accessibility or UI work. It only adjusts the exact top coordinate
+    /// after a window move has already been confirmed on the main queue.
+    private func startEdgeSnapTap() {
+        guard edgeSnapTap == nil else { return }
+        let mask = CGEventMask(1 << CGEventType.leftMouseDown.rawValue)
+            | CGEventMask(1 << CGEventType.leftMouseDragged.rawValue)
+            | CGEventMask(1 << CGEventType.leftMouseUp.rawValue)
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: mask,
+            callback: { _, type, event, userInfo in
+                guard let userInfo else { return Unmanaged.passUnretained(event) }
+                let service = Unmanaged<WindowLayoutService>.fromOpaque(userInfo).takeUnretainedValue()
+                return service.observeEdgeSnapEvent(type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else { return }
+
+        edgeSnapTap = tap
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        edgeSnapRunLoopSource = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private func stopEdgeSnapTap() {
+        edgeSnapSequenceGeneration += 1
+        edgeSnapPressOrigin = nil
+        edgeSnapPressCandidate = nil
+        edgeSnapSequenceSuppressed = false
+        edgeSnapResolveAttempts = 0
+        edgeSnapDrag = nil
+        hideEdgeSnapPreview(immediately: true)
+        if let edgeSnapRunLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), edgeSnapRunLoopSource, .commonModes)
+        }
+        if let edgeSnapTap {
+            CGEvent.tapEnable(tap: edgeSnapTap, enable: false)
+            CFMachPortInvalidate(edgeSnapTap)
+        }
+        edgeSnapTap = nil
+        edgeSnapRunLoopSource = nil
+        edgeSnapPreviewPanel = nil
+    }
+
+    private func observeEdgeSnapEvent(type: CGEventType,
+                                      event: CGEvent) -> Unmanaged<CGEvent>? {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let edgeSnapTap { CGEvent.tapEnable(tap: edgeSnapTap, enable: true) }
+            DispatchQueue.main.async { [weak self] in self?.cancelEdgeSnapTracking() }
+            return Unmanaged.passUnretained(event)
+        }
+        guard event.getIntegerValueField(.eventSourceUserData) != Self.syntheticEventMarker,
+              event.getIntegerValueField(.eventSourceUnixProcessID) != Self.ownProcessID
+        else { return Unmanaged.passUnretained(event) }
+
+        if type == .leftMouseDown {
+            edgeSnapSequenceSuppressed = WindowEdgeSnapSupport.isSystemTilingEnabled
+        } else if edgeSnapSequenceSuppressed {
+            if type == .leftMouseUp { edgeSnapSequenceSuppressed = false }
+            return Unmanaged.passUnretained(event)
+        }
+        guard !edgeSnapSequenceSuppressed else { return Unmanaged.passUnretained(event) }
+
+        let input: WindowEdgeSnapPointerInput
+        switch type {
+        case .leftMouseDown:
+            input = .down(location: event.location, flags: event.flags)
+        case .leftMouseDragged:
+            let originalLocation = event.location
+            input = .dragged(location: originalLocation)
+            if let drag = edgeSnapDrag,
+               drag.isMoving,
+               drag.protectsSystemTopEdge {
+                event.location = WindowEdgeSnapSupport.locationAvoidingSystemTopDrag(
+                    originalLocation,
+                    screenFrames: drag.quartzScreenFrames
+                )
+            }
+        case .leftMouseUp:
+            input = .up(location: event.location)
+        default:
+            return Unmanaged.passUnretained(event)
+        }
+        DispatchQueue.main.async { [weak self] in self?.handleEdgeSnapInput(input) }
+        return Unmanaged.passUnretained(event)
+    }
+
+    private func handleEdgeSnapInput(_ input: WindowEdgeSnapPointerInput) {
+        switch input {
+        case .down(let location, let flags):
+            cancelEdgeSnapTracking()
+            edgeSnapSequenceSuppressed = false
+            guard AppFeature.windowLayout.isAvailable,
+                  UserDefaults.standard.bool(forKey: DefaultsKey.windowEdgeSnapEnabled),
+                  !WindowEdgeSnapSupport.isSystemTilingEnabled,
+                  AXIsProcessTrusted(),
+                  !edgeSnapConflictsWithWindowGesture(flags: flags)
+            else {
+                edgeSnapSequenceSuppressed = true
+                return
+            }
+            guard let candidate = WindowServerWindowHitTest.candidate(at: location, pidIsEligible: {
+                guard let app = NSRunningApplication(processIdentifier: $0) else { return false }
+                return !app.isTerminated && app.activationPolicy == .regular
+            }),
+            !WindowEdgeSnapSupport.startsAtResizeHandle(location, frame: candidate.frame)
+            else {
+                edgeSnapSequenceSuppressed = true
+                return
+            }
+            edgeSnapPressOrigin = location
+            edgeSnapPressCandidate = candidate
+            edgeSnapResolveAttempts = 0
+            edgeSnapLastResolveAt = 0
+
+        case .dragged(let location):
+            guard let pressOrigin = edgeSnapPressOrigin,
+                  let pressCandidate = edgeSnapPressCandidate,
+                  activeGesture == nil, pendingGesture == nil
+            else {
+                cancelEdgeSnapTracking()
+                return
+            }
+            if edgeSnapDrag == nil,
+               WindowGestureSupport.exceedsDragSlop(from: pressOrigin, to: location) {
+                let now = ProcessInfo.processInfo.systemUptime
+                if edgeSnapResolveAttempts < 4, now - edgeSnapLastResolveAt >= 0.08 {
+                    edgeSnapResolveAttempts += 1
+                    edgeSnapLastResolveAt = now
+                    edgeSnapDrag = makeEdgeSnapDrag(pointerStart: pressOrigin,
+                                                    pressCandidate: pressCandidate)
+                }
+            }
+            updateEdgeSnapDrag(at: location, forceSample: false)
+
+        case .up(let location):
+            let pressOrigin = edgeSnapPressOrigin
+            let pressCandidate = edgeSnapPressCandidate
+            if edgeSnapDrag == nil,
+               let pressOrigin, let pressCandidate,
+               WindowGestureSupport.exceedsDragSlop(from: pressOrigin, to: location) {
+                edgeSnapDrag = makeEdgeSnapDrag(pointerStart: pressOrigin,
+                                                pressCandidate: pressCandidate)
+            }
+            updateEdgeSnapDrag(at: location, forceSample: true)
+            let completed = edgeSnapDrag
+            edgeSnapPressOrigin = nil
+            edgeSnapPressCandidate = nil
+            edgeSnapResolveAttempts = 0
+            edgeSnapDrag = nil
+            hideEdgeSnapPreview(immediately: false)
+            let generation = edgeSnapSequenceGeneration
+            guard let completed else {
+                guard let pressOrigin, let pressCandidate,
+                      WindowGestureSupport.exceedsDragSlop(from: pressOrigin, to: location)
+                else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self] in
+                    guard let self, generation == self.edgeSnapSequenceGeneration,
+                          let delayed = self.makeEdgeSnapDrag(pointerStart: pressOrigin,
+                                                              pressCandidate: pressCandidate)
+                    else { return }
+                    self.applyDelayedEdgeSnapIfMoved(delayed, releaseLocation: location)
+                }
+                return
+            }
+            if !completed.isMoving {
+                guard let pressOrigin,
+                      WindowGestureSupport.exceedsDragSlop(from: pressOrigin, to: location)
+                else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self] in
+                    guard let self, generation == self.edgeSnapSequenceGeneration else { return }
+                    self.applyDelayedEdgeSnapIfMoved(completed, releaseLocation: location)
+                }
+                return
+            }
+            guard let target = completed.target else { return }
+            // The callback has already forwarded this mouse-up. One
+            // more main-loop turn lets the target app finish its own drag
+            // before the placement writes the final frame.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, generation == self.edgeSnapSequenceGeneration else { return }
+                self.applyEdgeSnap(completed, target: target)
+            }
+        }
+    }
+
+    private func applyDelayedEdgeSnapIfMoved(_ drag: WindowEdgeSnapDrag,
+                                             releaseLocation: CGPoint) {
+        guard let current = frame(of: drag.window),
+              WindowEdgeSnapSupport.classify(
+                initialFrame: drag.initialFrame,
+                currentFrame: CGRect(origin: current.origin, size: current.size),
+                pointerStart: drag.pointerStart,
+                pointerNow: releaseLocation
+              ) == .moving,
+              let target = edgeSnapTarget(atQuartzPoint: releaseLocation)
+        else { return }
+        applyEdgeSnap(drag, target: target)
+    }
+
+    private func edgeSnapConflictsWithWindowGesture(flags: CGEventFlags) -> Bool {
+        guard UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled) else { return false }
+        let move = WindowGestureSupport.modifiers(
+            from: UserDefaults.standard.string(forKey: DefaultsKey.windowGestureModifiers)
+        )
+        return WindowGestureSupport.modifiersMatch(eventFlags: flags, expected: move)
+            || WindowGestureSupport.modifiersMatch(
+                eventFlags: flags,
+                expected: WindowGestureSupport.resizeModifiers(from: move)
+            )
+    }
+
+    private func makeEdgeSnapDrag(pointerStart: CGPoint,
+                                  pressCandidate: WindowServerWindowCandidate) -> WindowEdgeSnapDrag? {
+        guard let app = NSRunningApplication(processIdentifier: pressCandidate.pid),
+              !app.isTerminated, app.activationPolicy == .regular else { return nil }
+        let axApp = AXUIElementCreateApplication(pressCandidate.pid)
+        AXUIElementSetMessagingTimeout(axApp, 0.25)
+        guard let window = windowsAttribute(axApp)?.first(where: {
+                  AXWindowResolver.windowID(for: $0) == pressCandidate.windowID
+              }) else { return nil }
+        AXUIElementSetMessagingTimeout(window, 0.25)
+        guard let onScreenWindowIDs = onScreenWindowIDs(),
+              let target = target(from: window,
+                                  app: app,
+                                  onScreenWindowIDs: onScreenWindowIDs) else { return nil }
+        return WindowEdgeSnapDrag(window: target.window,
+                                  key: target.key,
+                                  initialFrame: pressCandidate.frame,
+                                  pointerStart: pointerStart,
+                                  protectsSystemTopEdge: WindowEdgeSnapSupport.isSystemTopWindowOverviewDragEnabled,
+                                  quartzScreenFrames: edgeSnapQuartzScreenFrames(),
+                                  lastSampleAt: 0,
+                                  mismatchCount: 0,
+                                  isMoving: false,
+                                  target: nil)
+    }
+
+    private func updateEdgeSnapDrag(at location: CGPoint, forceSample: Bool) {
+        guard var drag = edgeSnapDrag else { return }
+        if !drag.isMoving {
+            let now = ProcessInfo.processInfo.systemUptime
+            guard forceSample || now - drag.lastSampleAt >= edgeSnapSampleInterval else { return }
+            drag.lastSampleAt = now
+            guard let current = frame(of: drag.window) else {
+                cancelEdgeSnapTracking()
+                return
+            }
+            let currentFrame = CGRect(origin: current.origin, size: current.size)
+            switch WindowEdgeSnapSupport.classify(initialFrame: drag.initialFrame,
+                                                  currentFrame: currentFrame,
+                                                  pointerStart: drag.pointerStart,
+                                                  pointerNow: location) {
+            case .waiting:
+                edgeSnapDrag = drag
+                return
+            case .moving:
+                drag.isMoving = true
+                drag.mismatchCount = 0
+            case .resizing:
+                cancelEdgeSnapTracking()
+                return
+            case .unrelated:
+                drag.mismatchCount += 1
+                if drag.mismatchCount >= 3 {
+                    cancelEdgeSnapTracking()
+                } else {
+                    edgeSnapDrag = drag
+                }
+                return
+            }
+        }
+
+        let target = edgeSnapTarget(atQuartzPoint: location)
+        if target != drag.target {
+            drag.target = target
+            if let target {
+                showEdgeSnapPreview(frame: target.frame)
+            } else {
+                hideEdgeSnapPreview(immediately: false)
+            }
+        }
+        edgeSnapDrag = drag
+    }
+
+    private func edgeSnapTarget(atQuartzPoint point: CGPoint) -> WindowEdgeSnapTarget? {
+        let appKitPoint = CGPoint(x: point.x, y: menuBarScreenTopY - point.y)
+        let screens = NSScreen.screens.map {
+            WindowEdgeSnapScreen(frame: $0.frame, visibleFrame: $0.visibleFrame)
+        }
+        return WindowEdgeSnapSupport.target(at: appKitPoint,
+                                            screens: screens)
+    }
+
+    private func edgeSnapQuartzScreenFrames() -> [CGRect] {
+        let top = menuBarScreenTopY
+        return NSScreen.screens.map {
+            CGRect(x: $0.frame.minX,
+                   y: top - $0.frame.maxY,
+                   width: $0.frame.width,
+                   height: $0.frame.height)
+        }
+    }
+
+    private func applyEdgeSnap(_ drag: WindowEdgeSnapDrag,
+                               target: WindowEdgeSnapTarget) {
+        guard AppFeature.windowLayout.isAvailable,
+              UserDefaults.standard.bool(forKey: DefaultsKey.windowEdgeSnapEnabled),
+              !WindowEdgeSnapSupport.isSystemTilingEnabled,
+              AXIsProcessTrusted(),
+              canSetFrame(on: drag.window),
+              AXWindowResolver.windowID(for: drag.window) == drag.key.windowID,
+              let currentFrame = frame(of: drag.window)
+        else { return }
+        var processID = pid_t(0)
+        guard AXUIElementGetPid(drag.window, &processID) == .success,
+              processID == drag.key.processID else { return }
+
+        let layoutTarget = WindowLayoutTarget(window: drag.window,
+                                              key: drag.key,
+                                              frame: currentFrame)
+        pruneWindowState(keeping: drag.key)
+        let history = WindowLayoutFrame(origin: drag.initialFrame.origin,
+                                        size: drag.initialFrame.size)
+        _ = applyPlacement(target.action,
+                           to: layoutTarget,
+                           visibleFrame: target.visibleFrame,
+                           historyFrame: history,
+                           cyclesRepeatedAction: false)
+    }
+
+    private func cancelEdgeSnapTracking() {
+        edgeSnapSequenceGeneration += 1
+        edgeSnapPressOrigin = nil
+        edgeSnapPressCandidate = nil
+        edgeSnapSequenceSuppressed = true
+        edgeSnapResolveAttempts = 0
+        edgeSnapDrag = nil
+        hideEdgeSnapPreview(immediately: false)
+    }
+
+    private func showEdgeSnapPreview(frame: CGRect) {
+        edgeSnapPreviewGeneration += 1
+        let panel: NSPanel
+        if let existing = edgeSnapPreviewPanel {
+            panel = existing
+        } else {
+            panel = makeEdgeSnapPreviewPanel()
+            edgeSnapPreviewPanel = panel
+        }
+        panel.setFrame(frame, display: true)
+        if !panel.isVisible {
+            panel.alphaValue = 0
+            panel.orderFrontRegardless()
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.09
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+        }
+    }
+
+    private func hideEdgeSnapPreview(immediately: Bool) {
+        guard let panel = edgeSnapPreviewPanel, panel.isVisible else { return }
+        edgeSnapPreviewGeneration += 1
+        let generation = edgeSnapPreviewGeneration
+        if immediately {
+            panel.alphaValue = 0
+            panel.orderOut(nil)
+            return
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.08
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self, weak panel] in
+            guard let self, let panel,
+                  generation == self.edgeSnapPreviewGeneration else { return }
+            panel.orderOut(nil)
+        }
+    }
+
+    private func makeEdgeSnapPreviewPanel() -> NSPanel {
+        let panel = NSPanel(contentRect: .zero,
+                            styleMask: [.borderless, .nonactivatingPanel],
+                            backing: .buffered,
+                            defer: false)
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = false
+        panel.ignoresMouseEvents = true
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.level = .statusBar
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary,
+                                    .transient, .ignoresCycle]
+        panel.animationBehavior = .none
+        panel.contentView = WindowEdgeSnapPreviewView(frame: .zero)
+        return panel
+    }
+
     // MARK: - Move and resize gesture
 
     private func startGestureTap() {
@@ -632,11 +1071,12 @@ final class WindowLayoutService: ObservableObject {
         // A press still under custody has to go back to the app before the
         // tap that is holding it disappears, or that click is simply lost.
         flushPending(proxy: nil, at: nil)
-        if let gestureTap {
-            CGEvent.tapEnable(tap: gestureTap, enable: false)
-        }
         if let gestureRunLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), gestureRunLoopSource, .commonModes)
+        }
+        if let gestureTap {
+            CGEvent.tapEnable(tap: gestureTap, enable: false)
+            CFMachPortInvalidate(gestureTap)
         }
         gestureTap = nil
         gestureRunLoopSource = nil
@@ -1156,6 +1596,25 @@ private struct WindowGestureTarget {
     let frame: WindowLayoutFrame
 }
 
+private enum WindowEdgeSnapPointerInput {
+    case down(location: CGPoint, flags: CGEventFlags)
+    case dragged(location: CGPoint)
+    case up(location: CGPoint)
+}
+
+private struct WindowEdgeSnapDrag {
+    let window: AXUIElement
+    let key: WindowLayoutWindowKey
+    let initialFrame: CGRect
+    let pointerStart: CGPoint
+    let protectsSystemTopEdge: Bool
+    let quartzScreenFrames: [CGRect]
+    var lastSampleAt: TimeInterval
+    var mismatchCount: Int
+    var isMoving: Bool
+    var target: WindowEdgeSnapTarget?
+}
+
 /// A press the tap is holding while it is still undecided. It keeps the
 /// original event so the click can be handed back untouched, with its
 /// modifiers and its click count intact.
@@ -1186,6 +1645,37 @@ private struct WindowPointerGesture {
     let originalFrame: CGRect
     let pointerStart: CGPoint
     var lastAppliedAt: TimeInterval
+}
+
+private final class WindowEdgeSnapPreviewView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        updateAppearance()
+        setAccessibilityElement(false)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        wantsLayer = true
+        updateAppearance()
+        setAccessibilityElement(false)
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateAppearance()
+    }
+
+    private func updateAppearance() {
+        guard let layer else { return }
+        let accent = NSColor.controlAccentColor
+        layer.cornerRadius = 14
+        layer.cornerCurve = .continuous
+        layer.backgroundColor = accent.withAlphaComponent(0.16).cgColor
+        layer.borderColor = accent.withAlphaComponent(0.88).cgColor
+        layer.borderWidth = 2
+    }
 }
 
 private extension NSRect {

@@ -192,7 +192,12 @@ extension WindowLayoutFeatureStrings {
         nextDisplay: "다음 디스플레이",
         restore: "복원",
         fullScreen: "전체 화면",
-        previousDisplay: "이전 디스플레이"
+        previousDisplay: "이전 디스플레이",
+        edgeSnapEnable: "화면 가장자리에 윈도우 맞추기",
+        edgeSnapCaption: "여기에서 켠 다음 윈도우 제목 막대를 화면 가장자리나 모서리로 드래그하여 놓으세요.",
+        edgeSnapSystemConflict: "macOS가 같은 가장자리를 사용 중입니다. 데스크탑 및 Dock에서 윈도우 타일링을 끄면 Vorssaint가 사용할 수 있습니다.",
+        edgeSnapOpenSystemSettings: "데스크탑 및 Dock 열기",
+        edgeSnapWaitingForSystem: "Vorssaint에서 켜졌습니다. macOS 타일링을 끄면 바로 작동합니다."
     )
 }
 
@@ -996,6 +1001,11 @@ struct WindowLayoutFeatureStrings {
     let restore: String
     let fullScreen: String
     let previousDisplay: String
+    let edgeSnapEnable: String
+    let edgeSnapCaption: String
+    let edgeSnapSystemConflict: String
+    let edgeSnapOpenSystemSettings: String
+    let edgeSnapWaitingForSystem: String
 
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window layout",
@@ -1048,7 +1058,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Next display",
         restore: "Restore",
         fullScreen: "Full Screen",
-        previousDisplay: "Previous display"
+        previousDisplay: "Previous display",
+        edgeSnapEnable: "Snap windows at screen edges",
+        edgeSnapCaption: "Turn this on, then drag a window title bar to any screen edge or corner and release.",
+        edgeSnapSystemConflict: "macOS is using the same edges. Turn off window tiling in Desktop & Dock so Vorssaint can take over.",
+        edgeSnapOpenSystemSettings: "Open Desktop & Dock",
+        edgeSnapWaitingForSystem: "Enabled in Vorssaint. It starts working as soon as macOS tiling is off."
     )
 
     static let ptBR = WindowLayoutFeatureStrings(
@@ -1102,7 +1117,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Próximo display",
         restore: "Restaurar",
         fullScreen: "Tela cheia",
-        previousDisplay: "Display anterior"
+        previousDisplay: "Display anterior",
+        edgeSnapEnable: "Encaixar janelas nas bordas da tela",
+        edgeSnapCaption: "Ative aqui. Depois arraste a barra de título até qualquer borda ou canto da tela e solte.",
+        edgeSnapSystemConflict: "O macOS está usando as mesmas bordas. Desligue o encaixe em Mesa e Dock para o Vorssaint assumir.",
+        edgeSnapOpenSystemSettings: "Abrir Mesa e Dock",
+        edgeSnapWaitingForSystem: "Ativado no Vorssaint. Começa a funcionar assim que o encaixe do macOS for desligado."
     )
 
     static let tr = WindowLayoutFeatureStrings(
@@ -1156,7 +1176,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Sonraki ekran",
         restore: "Geri yükle",
         fullScreen: "Tam ekran",
-        previousDisplay: "Önceki ekran"
+        previousDisplay: "Önceki ekran",
+        edgeSnapEnable: "Pencereleri ekran kenarlarına yerleştir",
+        edgeSnapCaption: "Buradan açın, sonra pencerenin başlık çubuğunu herhangi bir ekran kenarına veya köşeye sürükleyip bırakın.",
+        edgeSnapSystemConflict: "macOS aynı kenarları kullanıyor. Vorssaint’ın devralması için Masaüstü ve Dock’taki pencere döşemeyi kapatın.",
+        edgeSnapOpenSystemSettings: "Masaüstü ve Dock’u Aç",
+        edgeSnapWaitingForSystem: "Vorssaint’ta açık. macOS döşemesi kapanınca çalışmaya başlar."
     )
 
     static let ru = WindowLayoutFeatureStrings(
@@ -1210,7 +1235,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Следующий дисплей",
         restore: "Восстановить",
         fullScreen: "Во весь экран",
-        previousDisplay: "Предыдущий дисплей"
+        previousDisplay: "Предыдущий дисплей",
+        edgeSnapEnable: "Привязывать окна к краям экрана",
+        edgeSnapCaption: "Включите здесь, затем перетащите заголовок окна к любой границе экрана или углу и отпустите.",
+        edgeSnapSystemConflict: "macOS использует те же края. Отключите размещение окон в разделе «Рабочий стол и Dock», чтобы их использовал Vorssaint.",
+        edgeSnapOpenSystemSettings: "Открыть «Рабочий стол и Dock»",
+        edgeSnapWaitingForSystem: "Включено в Vorssaint. Заработает сразу после отключения размещения окон macOS."
     )
 
     static let es = WindowLayoutFeatureStrings(
@@ -1264,7 +1294,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Siguiente pantalla",
         restore: "Restaurar",
         fullScreen: "Pantalla completa",
-        previousDisplay: "Pantalla anterior"
+        previousDisplay: "Pantalla anterior",
+        edgeSnapEnable: "Ajustar ventanas a los bordes de la pantalla",
+        edgeSnapCaption: "Actívalo aquí y arrastra la barra de título a cualquier borde o esquina de la pantalla; luego suelta.",
+        edgeSnapSystemConflict: "macOS usa los mismos bordes. Desactiva el ajuste de ventanas en Escritorio y Dock para que Vorssaint tome el control.",
+        edgeSnapOpenSystemSettings: "Abrir Escritorio y Dock",
+        edgeSnapWaitingForSystem: "Activado en Vorssaint. Funcionará en cuanto se desactive el ajuste de ventanas de macOS."
     )
 
     static let de = WindowLayoutFeatureStrings(
@@ -1318,7 +1353,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Nächstes Display",
         restore: "Wiederherstellen",
         fullScreen: "Vollbild",
-        previousDisplay: "Vorheriges Display"
+        previousDisplay: "Vorheriges Display",
+        edgeSnapEnable: "Fenster an Bildschirmrändern einrasten",
+        edgeSnapCaption: "Hier einschalten, dann die Titelleiste an einen Bildschirmrand oder eine Ecke ziehen und loslassen.",
+        edgeSnapSystemConflict: "macOS verwendet dieselben Ränder. Deaktiviere die Fensteranordnung unter Schreibtisch & Dock, damit Vorssaint übernimmt.",
+        edgeSnapOpenSystemSettings: "Schreibtisch & Dock öffnen",
+        edgeSnapWaitingForSystem: "In Vorssaint aktiviert. Es funktioniert, sobald die Fensteranordnung von macOS aus ist."
     )
 
     static let fr = WindowLayoutFeatureStrings(
@@ -1372,7 +1412,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Écran suivant",
         restore: "Restaurer",
         fullScreen: "Plein écran",
-        previousDisplay: "Écran précédent"
+        previousDisplay: "Écran précédent",
+        edgeSnapEnable: "Ancrer les fenêtres aux bords de l’écran",
+        edgeSnapCaption: "Activez ici, puis faites glisser la barre de titre vers n’importe quel bord ou coin de l’écran et relâchez.",
+        edgeSnapSystemConflict: "macOS utilise les mêmes bords. Désactivez le placement des fenêtres dans Bureau et Dock pour laisser Vorssaint prendre le relais.",
+        edgeSnapOpenSystemSettings: "Ouvrir Bureau et Dock",
+        edgeSnapWaitingForSystem: "Activé dans Vorssaint. Il fonctionnera dès que le placement des fenêtres de macOS sera désactivé."
     )
 
     static let it = WindowLayoutFeatureStrings(
@@ -1426,7 +1471,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "Display successivo",
         restore: "Ripristina",
         fullScreen: "Schermo intero",
-        previousDisplay: "Display precedente"
+        previousDisplay: "Display precedente",
+        edgeSnapEnable: "Allinea le finestre ai bordi dello schermo",
+        edgeSnapCaption: "Attiva qui, poi trascina la barra del titolo verso un bordo o un angolo dello schermo e rilascia.",
+        edgeSnapSystemConflict: "macOS usa gli stessi bordi. Disattiva l’affiancamento in Scrivania e Dock per lasciare il controllo a Vorssaint.",
+        edgeSnapOpenSystemSettings: "Apri Scrivania e Dock",
+        edgeSnapWaitingForSystem: "Attivato in Vorssaint. Funzionerà appena l’affiancamento di macOS sarà disattivato."
     )
 
     static let ja = WindowLayoutFeatureStrings(
@@ -1480,7 +1530,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "次のディスプレイ",
         restore: "復元",
         fullScreen: "フルスクリーン",
-        previousDisplay: "前のディスプレイ"
+        previousDisplay: "前のディスプレイ",
+        edgeSnapEnable: "画面の端にウインドウをスナップ",
+        edgeSnapCaption: "ここでオンにしてから、タイトルバーを画面の端または隅へドラッグして放します。",
+        edgeSnapSystemConflict: "macOSが同じ画面端を使用しています。Vorssaintで使うには「デスクトップとDock」でウインドウのタイル表示をオフにしてください。",
+        edgeSnapOpenSystemSettings: "デスクトップとDockを開く",
+        edgeSnapWaitingForSystem: "Vorssaintでオンになっています。macOSのタイル表示をオフにすると動作します。"
     )
 
     static let zhHans = WindowLayoutFeatureStrings(
@@ -1534,7 +1589,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "下一台显示器",
         restore: "恢复",
         fullScreen: "全屏幕",
-        previousDisplay: "上一台显示器"
+        previousDisplay: "上一台显示器",
+        edgeSnapEnable: "将窗口贴靠到屏幕边缘",
+        edgeSnapCaption: "在此开启，然后将窗口标题栏拖到屏幕任意边缘或角落并松开。",
+        edgeSnapSystemConflict: "macOS 正在使用相同的屏幕边缘。请在“桌面与程序坞”中关闭窗口平铺，让 Vorssaint 接管。",
+        edgeSnapOpenSystemSettings: "打开桌面与程序坞",
+        edgeSnapWaitingForSystem: "已在 Vorssaint 中开启。关闭 macOS 窗口平铺后即可使用。"
     )
 
     static let zhTW = WindowLayoutFeatureStrings(
@@ -1588,7 +1648,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "下一台顯示器",
         restore: "還原",
         fullScreen: "全螢幕",
-        previousDisplay: "上一台顯示器"
+        previousDisplay: "上一台顯示器",
+        edgeSnapEnable: "將視窗貼齊螢幕邊緣",
+        edgeSnapCaption: "在此開啟，然後將視窗標題列拖到螢幕任一邊緣或角落並放開。",
+        edgeSnapSystemConflict: "macOS 正在使用相同的螢幕邊緣。請在「桌面與 Dock」關閉視窗並排，讓 Vorssaint 接管。",
+        edgeSnapOpenSystemSettings: "開啟桌面與 Dock",
+        edgeSnapWaitingForSystem: "已在 Vorssaint 中開啟。關閉 macOS 視窗並排後即可使用。"
     )
 
     static let zhHK = WindowLayoutFeatureStrings(
@@ -1642,7 +1707,12 @@ struct WindowLayoutFeatureStrings {
         nextDisplay: "下一部顯示器",
         restore: "還原",
         fullScreen: "全螢幕",
-        previousDisplay: "上一部顯示器"
+        previousDisplay: "上一部顯示器",
+        edgeSnapEnable: "將視窗貼齊螢幕邊緣",
+        edgeSnapCaption: "在此開啟，然後將視窗標題列拖到螢幕任一邊緣或角落並放開。",
+        edgeSnapSystemConflict: "macOS 正在使用相同的螢幕邊緣。請在「桌面與 Dock」關閉視窗並排，讓 Vorssaint 接管。",
+        edgeSnapOpenSystemSettings: "開啟桌面與 Dock",
+        edgeSnapWaitingForSystem: "已在 Vorssaint 中開啟。關閉 macOS 視窗並排後即可使用。"
     )
 }
 

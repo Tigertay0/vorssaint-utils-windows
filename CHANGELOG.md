@@ -7,12 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, safer screenshot controls,
-Previous Display, tabbed Scratchpads and faster Keep Awake controls. The Command Bar opens
-typed web addresses, the radial menu runs Quick toggle actions, and screen text recognition,
-recording, clipboard history and panels are more reliable.
+Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, edge snapping with a live
+preview and tabbed Scratchpads. It also brings faster controls, safer captures and more reliable everyday tools.
 
 ### Added
+- Window Layout can preview and place a window dragged to any screen edge or corner.
+  Off by default.
 - Per-app Switcher rules can include apps without windows, keep them window-only,
   or hide them from the Switcher. Under Switcher. Thanks to @Yahddyyp.
 - Dock clicks can hide the active app instead of minimizing its windows, off by

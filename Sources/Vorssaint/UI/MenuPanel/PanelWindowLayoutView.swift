@@ -8,10 +8,12 @@ struct PanelWindowLayoutView: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = WindowLayoutService.shared
     @AppStorage(DefaultsKey.windowLayoutShortcutsEnabled) private var shortcutsEnabled = true
+    @AppStorage(DefaultsKey.windowEdgeSnapEnabled) private var edgeSnapEnabled = false
     @AppStorage(DefaultsKey.windowGestureEnabled) private var gestureEnabled = false
     @AppStorage(DefaultsKey.windowGestureModifiers) private var gestureModifiers = WindowGestureSupport.defaultModifierStorageValue
     @AppStorage(DefaultsKey.windowLayoutHiddenActions) private var hiddenActionsRaw = ""
     @State private var editingActions = false
+    @State private var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
 
     var onClose: () -> Void
 
@@ -45,7 +47,14 @@ struct PanelWindowLayoutView: View {
                     .panelCard()
             }
         }
-        .onAppear { PanelInteractionState.shared.keepsPopoverOpen = true }
+        .onAppear {
+            PanelInteractionState.shared.keepsPopoverOpen = true
+            refreshSystemTilingState()
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification)) { _ in
+            refreshSystemTilingState()
+        }
         .onDisappear { PanelInteractionState.shared.keepsPopoverOpen = false }
     }
 
@@ -92,6 +101,35 @@ struct PanelWindowLayoutView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Toggle(text.edgeSnapEnable, isOn: $edgeSnapEnabled)
+                .toggleStyle(.checkbox)
+                .controlSize(.small)
+                .font(.system(size: 10.5, weight: .medium))
+                .onChange(of: edgeSnapEnabled) { _, _ in
+                    WindowLayoutService.shared.syncWithPreferences()
+                }
+            Text(text.edgeSnapCaption)
+                .font(.system(size: 9.5))
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            if systemTilingEnabled {
+                Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                if edgeSnapEnabled {
+                    Text(text.edgeSnapWaitingForSystem)
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button(text.edgeSnapOpenSystemSettings) {
+                    NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+            }
+            Divider()
             Text(text.caption)
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
@@ -146,6 +184,11 @@ struct PanelWindowLayoutView: View {
             }
         }
         .panelCard()
+    }
+
+    private func refreshSystemTilingState() {
+        systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
+        WindowLayoutService.shared.syncWithPreferences()
     }
 
     @ViewBuilder

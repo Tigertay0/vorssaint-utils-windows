@@ -236,6 +236,17 @@ struct MetricsTests {
                    && !layoutStrings.gestureResizeHint.isEmpty
                    && !layoutStrings.gestureRaiseWindow.isEmpty,
                    "\(language.rawValue) window gesture controls are localized")
+            expect(!layoutStrings.edgeSnapEnable.isEmpty
+                   && !layoutStrings.edgeSnapCaption.isEmpty
+                   && !layoutStrings.edgeSnapSystemConflict.isEmpty
+                   && !layoutStrings.edgeSnapOpenSystemSettings.isEmpty
+                   && !layoutStrings.edgeSnapWaitingForSystem.isEmpty
+                   && !layoutStrings.edgeSnapEnable.contains("—")
+                   && !layoutStrings.edgeSnapCaption.contains("—")
+                   && !layoutStrings.edgeSnapSystemConflict.contains("—")
+                   && !layoutStrings.edgeSnapOpenSystemSettings.contains("—")
+                   && !layoutStrings.edgeSnapWaitingForSystem.contains("—"),
+                   "\(language.rawValue) window edge snap controls are localized")
             let alertStrings = FeatureStrings.monitorAlerts(language)
             expect(alertStrings.caption.contains("12"),
                    "\(language.rawValue) monitor alert caption explains the CPU spike window")
@@ -2161,6 +2172,8 @@ struct MetricsTests {
                "battery time is shown in the Power panel by default")
         expect(registeredDefaults[DefaultsKey.windowLayoutShortcutsEnabled] as? Bool == false,
                "window layout shortcuts stay off until enabled")
+        expect(registeredDefaults[DefaultsKey.windowEdgeSnapEnabled] as? Bool == false,
+               "dragging windows to screen edges is opt-in")
         expect(registeredDefaults[DefaultsKey.windowGestureEnabled] as? Bool == false,
                "window move and resize gestures are opt-in")
         expect(registeredDefaults[DefaultsKey.windowGestureModifiers] as? String == "control+command",
@@ -3036,6 +3049,126 @@ struct MetricsTests {
 
         let visibleFrame = CGRect(x: 0, y: 40, width: 1440, height: 860)
         let currentWindow = CGRect(x: 200, y: 200, width: 800, height: 500)
+        let snapVisibleFrame = CGRect(x: 0, y: 40, width: 1440, height: 835)
+        let snapScreen = WindowEdgeSnapScreen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                                              visibleFrame: snapVisibleFrame)
+        func snapTarget(_ point: CGPoint,
+                        screens: [WindowEdgeSnapScreen] = [snapScreen]) -> WindowEdgeSnapTarget? {
+            WindowEdgeSnapSupport.target(at: point, screens: screens)
+        }
+        let topSnapFrame = WindowLayoutGeometry.rect(for: .topHalf,
+                                                     current: snapVisibleFrame,
+                                                     visibleFrame: snapVisibleFrame)
+        expect(snapTarget(CGPoint(x: 720, y: snapVisibleFrame.maxY))
+               == WindowEdgeSnapTarget(action: .topHalf,
+                                       frame: topSnapFrame,
+                                       visibleFrame: snapVisibleFrame),
+               "touching the lower edge of the menu bar previews the upper half")
+        expect(snapTarget(CGPoint(x: 720, y: 900))?.action == .topHalf,
+               "the full menu bar band remains a top snap target")
+        expect(snapTarget(CGPoint(x: 720, y: snapVisibleFrame.maxY - 13)) == nil,
+               "the top target does not reach below its activation band")
+        expect(snapTarget(CGPoint(x: 0, y: 450))?.action == .leftHalf
+               && snapTarget(CGPoint(x: 1440, y: 450))?.action == .rightHalf
+               && snapTarget(CGPoint(x: 720, y: 0))?.action == .bottomHalf,
+               "all four straight edges choose their matching halves")
+        expect(snapTarget(CGPoint(x: 0, y: snapVisibleFrame.maxY))?.action == .topLeft
+               && snapTarget(CGPoint(x: 1440, y: snapVisibleFrame.maxY))?.action == .topRight
+               && snapTarget(CGPoint(x: 0, y: 0))?.action == .bottomLeft
+               && snapTarget(CGPoint(x: 1440, y: 0))?.action == .bottomRight,
+               "inclusive screen corners take priority over straight edges")
+        expect(snapTarget(CGPoint(x: 720, y: 450)) == nil,
+               "dragging inside a display never creates a snap target")
+
+        let leftSnapScreen = WindowEdgeSnapScreen(
+            frame: CGRect(x: -1280, y: 0, width: 1280, height: 800),
+            visibleFrame: CGRect(x: -1280, y: 25, width: 1280, height: 775)
+        )
+        expect(snapTarget(CGPoint(x: -1280, y: 400), screens: [leftSnapScreen])?.frame
+               == CGRect(x: -1280, y: 25, width: 640, height: 775),
+               "edge snapping keeps negative display origins and its visible frame")
+        let rightSnapScreen = WindowEdgeSnapScreen(
+            frame: CGRect(x: 1440, y: 0, width: 1920, height: 1080),
+            visibleFrame: CGRect(x: 1440, y: 40, width: 1920, height: 1040)
+        )
+        expect(snapTarget(CGPoint(x: 1440, y: 450),
+                          screens: [snapScreen, rightSnapScreen]) == nil,
+               "a shared display seam stays open for moving a window across")
+        expect(WindowEdgeSnapSupport.target(at: CGPoint(x: 1415, y: 450),
+                                            screens: [snapScreen, rightSnapScreen],
+                                            distance: 30) == nil,
+               "the whole activation band around a shared seam stays open")
+        let upperSnapScreen = WindowEdgeSnapScreen(
+            frame: CGRect(x: 0, y: 900, width: 1280, height: 800),
+            visibleFrame: CGRect(x: 0, y: 900, width: 1280, height: 775)
+        )
+        expect(snapTarget(CGPoint(x: 720, y: snapVisibleFrame.maxY),
+                          screens: [snapScreen, upperSnapScreen]) == nil,
+               "a menu bar boundary below another display remains an open seam")
+        expect(WindowEdgeSnapSupport.systemTilingEnabled { _ in nil },
+               "unwritten system tiling choices keep their enabled default")
+        expect(!WindowEdgeSnapSupport.systemTilingEnabled { _ in false },
+               "edge snapping can start after every conflicting system choice is off")
+        expect(WindowEdgeSnapSupport.systemTilingEnabled {
+                   $0 == "EnableTilingByEdgeDrag" ? true : false
+               },
+               "one enabled system edge gesture is enough to prevent competing previews")
+
+        let dragFrame = CGRect(x: 100, y: 100, width: 800, height: 500)
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: dragFrame,
+                   currentFrame: dragFrame.offsetBy(dx: 40, dy: 20),
+                   pointerStart: CGPoint(x: 200, y: 200),
+                   pointerNow: CGPoint(x: 240, y: 220)) == .moving,
+               "edge snap confirms a window that follows the pointer")
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: dragFrame,
+                   currentFrame: dragFrame,
+                   pointerStart: CGPoint(x: 200, y: 200),
+                   pointerNow: CGPoint(x: 300, y: 300)) == .waiting,
+               "a content drag with a still window never becomes window snapping")
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: dragFrame,
+                   currentFrame: CGRect(x: 100, y: 100, width: 840, height: 500),
+                   pointerStart: CGPoint(x: 200, y: 200),
+                   pointerNow: CGPoint(x: 240, y: 200)) == .resizing,
+               "native window resizing cancels edge snapping")
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                   currentFrame: CGRect(x: 100, y: 50, width: 800, height: 500),
+                   pointerStart: CGPoint(x: 200, y: 100),
+                   pointerNow: CGPoint(x: 300, y: 150)) == .moving,
+               "a tiled window restoring its size while dragged is still a window move")
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: CGRect(x: 0, y: 0, width: 720, height: 900),
+                   currentFrame: CGRect(x: 100, y: 0, width: 800, height: 900),
+                   pointerStart: CGPoint(x: 200, y: 100),
+                   pointerNow: CGPoint(x: 300, y: 100)) == .moving,
+               "a side tile restoring only its width is still a horizontal window move")
+        expect(WindowEdgeSnapSupport.startsAtResizeHandle(
+                   CGPoint(x: dragFrame.maxX, y: dragFrame.maxY),
+                   frame: dragFrame),
+               "a symmetric corner resize is rejected before movement classification")
+        expect(WindowEdgeSnapSupport.startsAtResizeHandle(
+                   CGPoint(x: dragFrame.midX, y: dragFrame.minY + 3),
+                   frame: dragFrame),
+               "a symmetric edge resize is rejected at the native resize handle")
+        expect(!WindowEdgeSnapSupport.startsAtResizeHandle(
+                   CGPoint(x: dragFrame.midX, y: dragFrame.minY + 14),
+                   frame: dragFrame),
+               "the title bar stays available away from resize corners")
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: dragFrame,
+                   currentFrame: dragFrame.offsetBy(dx: 40, dy: 0),
+                   pointerStart: CGPoint(x: 200, y: 200),
+                   pointerNow: CGPoint(x: 160, y: 200)) == .unrelated,
+               "an unrelated window move cannot follow a pointer going the other way")
+        expect(WindowEdgeSnapSupport.classify(
+                   initialFrame: dragFrame,
+                   currentFrame: dragFrame.offsetBy(dx: 10, dy: 0),
+                   pointerStart: CGPoint(x: 200, y: 200),
+                   pointerNow: CGPoint(x: 240, y: 200)) == .moving,
+               "a short Accessibility lag still confirms the same drag")
         expect(WindowLayoutGeometry.rect(for: .leftHalf, current: currentWindow, visibleFrame: visibleFrame)
                == CGRect(x: 0, y: 40, width: 720, height: 860),
                "window layout left half targets the full left side")
@@ -7726,6 +7859,25 @@ struct MetricsTests {
         } else {
             UserDefaults.standard.removeObject(forKey: DefaultsKey.windowGestureEnabled)
         }
+        let previousWindowEdgeSnapEnergy = UserDefaults.standard.object(
+            forKey: DefaultsKey.windowEdgeSnapEnabled
+        )
+        UserDefaults.standard.set(false, forKey: DefaultsKey.windowGestureEnabled)
+        UserDefaults.standard.set(true, forKey: DefaultsKey.windowEdgeSnapEnabled)
+        expect(AppFeature.windowLayout.energyProfile == .pointer,
+               "edge snapping reports its trackpad and mouse listener")
+        if let previousWindowEdgeSnapEnergy {
+            UserDefaults.standard.set(previousWindowEdgeSnapEnergy,
+                                      forKey: DefaultsKey.windowEdgeSnapEnabled)
+        } else {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.windowEdgeSnapEnabled)
+        }
+        if let previousWindowGestureEnergy {
+            UserDefaults.standard.set(previousWindowGestureEnergy,
+                                      forKey: DefaultsKey.windowGestureEnabled)
+        } else {
+            UserDefaults.standard.removeObject(forKey: DefaultsKey.windowGestureEnabled)
+        }
 
         // MARK: Settings page visibility
 
@@ -9841,6 +9993,7 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.textSnippetsEnabled),
                "snippets travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.windowGestureEnabled)
+                && backupKeys.contains(DefaultsKey.windowEdgeSnapEnabled)
                 && backupKeys.contains(DefaultsKey.windowGestureModifiers)
                 && backupKeys.contains(DefaultsKey.windowGestureRaiseWindow)
                 && backupKeys.contains(DefaultsKey.windowLayoutShortcutPreviousDisplay),

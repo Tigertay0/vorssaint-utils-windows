@@ -97,7 +97,9 @@ extension AppFeature {
         case .textSnippets, .autoQuit:
             return .inputs
         case .windowLayout:
-            return UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled) ? .pointer : .idle
+            return UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled)
+                || UserDefaults.standard.bool(forKey: DefaultsKey.windowEdgeSnapEnabled)
+                ? .pointer : .idle
         case .radialMenu:
             // With a side button configured the trigger is a mouse tap;
             // shortcut-only costs nothing at rest.
