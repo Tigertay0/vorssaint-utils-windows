@@ -11225,7 +11225,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let commandBarValues = Mirror(reflecting: FeatureStrings.commandBar(language)).children
                 .compactMap { $0.value as? String }
-            expect(commandBarValues.count == 127 && commandBarValues.allSatisfy { !$0.isEmpty },
+            expect(commandBarValues.count == 128 && commandBarValues.allSatisfy { !$0.isEmpty },
                    "every command bar string is set for \(language.rawValue)")
             expect(commandBarValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible command bar strings (\(language.rawValue))")
@@ -11471,6 +11471,29 @@ struct MetricsTests {
                     title: CommandBarLinks.rankingTitle(name: "gh", query: "gh vorssaint utils"),
                     keywords: "Link", query: "gh vorssaint utils") != nil,
                "a saved search stays in the list while what to look for is typed")
+
+        // MARK: Open what was typed as a URL
+        for address in ["example.com", "example.com/x", "https://example.com",
+                        "example.com:8080/path", "http://example.com/path?q=1",
+                        "sub.domain.co.uk", "https://example.museum", "https://例子.中国"] {
+            expect(CommandBarLinks.typedURL(address) != nil,
+                   "\"\(address)\" reads like a URL")
+        }
+        for plain in ["hello", "file.txt", "3.14", "version 2.0", "notes",
+                      "a b c", "", "  ", "v1.2", "localhost",
+                      "user@example.com", "something/else", "https://", "http:notes",
+                      "https://exa mple.com", "ftp://files.example.org"] {
+            expect(CommandBarLinks.typedURL(plain) == nil,
+                   "\"\(plain)\" is a search, not a URL")
+        }
+        expect(CommandBarLinks.typedURL("example.com")?.absoluteString == "https://example.com",
+               "a typed bare domain is opened with an https scheme")
+        expect(CommandBarLinks.typedURL("example.com:8080/path")?.absoluteString
+                == "https://example.com:8080/path",
+               "a port on a bare domain does not become a fake scheme")
+        expect(CommandBarLinks.typedURL("https://example.com/x")?.absoluteString
+                == "https://example.com/x",
+               "a typed address with a scheme keeps its scheme")
 
         expect(CommandBarText.wordCount("uma frase com cinco palavras") == 5
                 && CommandBarText.wordCount("  espaços   demais  ") == 2
