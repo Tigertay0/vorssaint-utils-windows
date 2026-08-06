@@ -8323,6 +8323,51 @@ struct MetricsTests {
 
         // MARK: Screenshot tool
 
+        let ownScreenshotWindows: Set<CGWindowID> = [11, 12, 13]
+        let protectedScreenshotWindows: Set<CGWindowID> = [12, 99]
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotHideVorssaintWindows]
+                as? Bool == true,
+               "screenshots hide Vorssaint windows by default")
+        expect(SettingsBackupSupport.exportKeys().contains(
+            DefaultsKey.screenshotHideVorssaintWindows),
+               "the screenshot window visibility preference travels in backups")
+        expect(ScreenshotCapturePolicy.excludedWindowIDs(
+            hideVorssaintWindows: true,
+            ownWindowIDs: ownScreenshotWindows,
+            protectedWindowIDs: protectedScreenshotWindows
+        ) == ownScreenshotWindows,
+        "screenshot hiding Vorssaint excludes every own window")
+        expect(ScreenshotCapturePolicy.excludedWindowIDs(
+            hideVorssaintWindows: false,
+            ownWindowIDs: ownScreenshotWindows,
+            protectedWindowIDs: protectedScreenshotWindows
+        ) == [12],
+        "screenshot keeps protected windows excluded while Vorssaint is visible")
+        expect(ScreenshotCapturePolicy.canPickWindow(
+            7,
+            isOwnWindow: false,
+            hideVorssaintWindows: true,
+            protectedWindowIDs: protectedScreenshotWindows
+        ), "screenshot can always pick an ordinary external window")
+        expect(!ScreenshotCapturePolicy.canPickWindow(
+            11,
+            isOwnWindow: true,
+            hideVorssaintWindows: true,
+            protectedWindowIDs: protectedScreenshotWindows
+        ), "screenshot cannot pick a Vorssaint window while hiding them")
+        expect(ScreenshotCapturePolicy.canPickWindow(
+            11,
+            isOwnWindow: true,
+            hideVorssaintWindows: false,
+            protectedWindowIDs: protectedScreenshotWindows
+        ), "screenshot can pick an ordinary Vorssaint window when visible")
+        expect(!ScreenshotCapturePolicy.canPickWindow(
+            12,
+            isOwnWindow: true,
+            hideVorssaintWindows: false,
+            protectedWindowIDs: protectedScreenshotWindows
+        ), "screenshot cannot pick its own protected capture UI")
+
         expect(ScreenshotSupport.sanitizedDelay(5) == 5
                 && ScreenshotSupport.sanitizedDelay(7) == 0
                 && ScreenshotSupport.sanitizedDelay(-3) == 0,
