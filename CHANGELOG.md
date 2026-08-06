@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, screenshot controls,
+Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, safer screenshot controls,
 Previous Display, tabbed Scratchpads and faster Keep Awake controls. The Command Bar opens
 typed web addresses, the radial menu runs Quick toggle actions, and screen text recognition,
 recording, clipboard history and panels are more reliable.
@@ -22,6 +22,8 @@ recording, clipboard history and panels are more reliable.
   Thanks to @PathGao.
 
 ### Changed
+- Temporary screenshot links can be disabled under Screenshot, removing the sharing
+  controls from the preview and editor.
 - The radial menu can run Quick toggle actions such as appearance, screen lock
   and hidden files.
 - The Command Bar opens a web address typed directly into it. Thanks to @tingke.

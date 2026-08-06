@@ -31,6 +31,7 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotToolShortcutsEnabled) private var toolShortcutsEnabled = true
     @AppStorage(DefaultsKey.screenshotCopyToClipboard) private var copyToClipboard = false
     @AppStorage(DefaultsKey.screenshotPreviewPosition) private var previewPositionRaw = ""
+    @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
@@ -152,9 +153,12 @@ struct ScreenshotSettings: View {
             }
 
             Section {
-                Text(strings.shareCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Toggle(strings.shareEnabledToggle, isOn: $sharingEnabled)
+                if sharingEnabled {
+                    Text(strings.shareCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Button {
                     showingSharePrivacy = true
                 } label: {

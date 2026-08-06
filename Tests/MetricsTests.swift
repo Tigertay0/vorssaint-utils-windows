@@ -9090,6 +9090,8 @@ struct MetricsTests {
                "screenshot number shortcuts ship enabled")
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotPreviewPosition] as? String == "",
                "screenshot preview placement preserves the existing automatic behavior by default")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotSharingEnabled] as? Bool == true,
+               "temporary screenshot links preserve their existing availability by default")
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotToolOrder] as? String
                 == ScreenshotSupport.Tool.defaultOrderStorage,
                "the screenshot rail ships in its useful numbered order")
@@ -9922,6 +9924,8 @@ struct MetricsTests {
                 && !backupKeys.contains(DefaultsKey.fanControlRecoveryNeeded)
                 && !backupKeys.contains(DefaultsKey.fanControlHelperVersion),
                "fan display preferences travel while helper recovery state stays on one Mac")
+        expect(backupKeys.contains(DefaultsKey.screenshotSharingEnabled),
+               "the temporary screenshot links preference travels with settings backup")
         expect(!backupKeys.contains(DefaultsKey.clipboardHistoryEntries)
                 && !backupKeys.contains(DefaultsKey.shelfItems)
                 && !backupKeys.contains(DefaultsKey.sleepDisabledFlag)

@@ -375,6 +375,7 @@ private struct ScreenshotQuickPreviewView: View {
     let deleteSharedLink: () -> Void
     let showQR: () -> Void
     let hoverChanged: (Bool) -> Void
+    @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
 
     var body: some View {
         VStack(spacing: 10) {
@@ -430,7 +431,7 @@ private struct ScreenshotQuickPreviewView: View {
                              disabled: model.disabledActions.contains(.copy)) {
                     perform(.copy)
                 }
-                if model.sharedRecord == nil {
+                if sharingEnabled, model.sharedRecord == nil {
                     shareMenu
                 }
                 Spacer(minLength: 4)
