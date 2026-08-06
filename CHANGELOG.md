@@ -7,11 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, memory readout choices,
-Previous Display, configurable screenshot previews, optional capture of Vorssaint windows,
-tabbed Scratchpads, faster Keep Awake control and Dock clicks that hide the active app. App
-removal finds more verified leftovers, while update downloads, clipboard history, previews,
-panels, shortcuts and mouse controls are more useful.
+Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, screenshot controls,
+Previous Display, tabbed Scratchpads and faster Keep Awake controls. App removal finds more
+verified leftovers, while updates, clipboard history, panels, shortcuts, mouse controls and
+Cleaning Mode are more reliable.
 
 ### Added
 - Per-app Switcher rules can include apps without windows, keep them window-only,
@@ -47,6 +46,8 @@ panels, shortcuts and mouse controls are more useful.
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
+- Cleaning Mode stays active while the keyboard is being cleaned, then unlocks
+  after one minute without a new key press.
 - Windowless apps now keep their labels aligned in the App Switcher's Small size.
   Thanks to @Yahddyyp.
 - Small app icons now keep the correct artwork in Finder. Thanks to @slrgt.
