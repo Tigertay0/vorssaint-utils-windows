@@ -10,7 +10,7 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, Previous Display,
 configurable screenshot previews, optional capture of Vorssaint windows, tabbed Scratchpads
 and Dock clicks that hide the active app. App removal finds more verified leftovers, while
-updates, clipboard history, previews, panels, shortcuts and mouse controls are more reliable.
+update downloads, clipboard history, previews, panels, shortcuts and mouse controls are more useful.
 
 ### Added
 - Per-app Switcher rules can include apps without windows, keep them window-only,
@@ -22,6 +22,8 @@ updates, clipboard history, previews, panels, shortcuts and mouse controls are m
   Thanks to @PathGao.
 
 ### Changed
+- Clipboard history keeps the full selected text, image or file paths visible beside
+  the list. Thanks to @notdanna.
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.
   Thanks to @kyteidev.
 - The optional Fan Control beta shows live fan speed in the panel and menu bar.

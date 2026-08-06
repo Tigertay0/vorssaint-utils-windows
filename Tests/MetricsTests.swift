@@ -253,6 +253,22 @@ struct MetricsTests {
                "clipboard quick window starts keyboard navigation on the first item")
         expect(ClipboardHistorySelection.initialIndex(totalCount: 0) == 0,
                "clipboard quick window keeps an empty selection index safe")
+        let previewID = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
+        let nextPreviewID = UUID(uuidString: "00000000-0000-0000-0000-000000000102")!
+        let updatedPreview = ClipboardHistoryEntry(id: previewID, text: "updated")
+        let nextPreview = ClipboardHistoryEntry(id: nextPreviewID, text: "next")
+        expect(ClipboardHistorySelection.previewEntry(preferredID: previewID,
+                                                      visibleEntries: [updatedPreview, nextPreview],
+                                                      selectedEntry: nextPreview)?.text == "updated",
+               "clipboard preview resolves the current payload for its UUID")
+        expect(ClipboardHistorySelection.previewEntry(preferredID: previewID,
+                                                      visibleEntries: [nextPreview],
+                                                      selectedEntry: nextPreview)?.id == nextPreviewID,
+               "clipboard search falls back to the selected visible entry")
+        expect(ClipboardHistorySelection.previewEntry(preferredID: previewID,
+                                                      visibleEntries: [],
+                                                      selectedEntry: nil) == nil,
+               "clipboard preview clears after removing the final visible entry")
         expectEqual(ClipboardHistoryBatch.combinedText(["First", "Second", "Third"]),
                     "First\nSecond\nThird",
                     "clipboard batch joins selected entries as a single paste")
@@ -7403,7 +7419,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let values = Mirror(reflecting: FeatureStrings.clipboard(language)).children
                 .compactMap { $0.value as? String }
-            expect(values.count == 42 && values.allSatisfy { !$0.isEmpty },
+            expect(values.count == 43 && values.allSatisfy { !$0.isEmpty },
                    "every clipboard string is set for \(language.rawValue)")
             expect(values.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible clipboard strings (\(language.rawValue))")

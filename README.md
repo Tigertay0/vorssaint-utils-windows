@@ -97,7 +97,7 @@ The rest bends the same way: panel sections reorder and hide, the compact layout
 
 ### Clipboard, files and links
 
-- **Clipboard history.** Local history of text, images and files with pinned favorites, search and quick paste shortcuts.
+- **Clipboard history.** Local history of text, images and files with pinned favorites, search, a full content preview and quick paste shortcuts.
 - **Paste as plain text.** One shortcut pastes without fonts, colors or links, and the original stays on the clipboard.
 - **Shelf.** Park files, text and links near your cursor mid drag, then drop them where they belong later.
 - **Finder shortcuts.** ⌘X and ⌘V move files, an optional F2 shortcut renames the selection, and copied images can become PNG files with ⌘V.
