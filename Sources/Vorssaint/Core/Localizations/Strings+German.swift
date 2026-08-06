@@ -890,6 +890,9 @@ extension Strings {
         memoryMetricUsed: "Genutzter Speicher",
         memoryMetricApp: "App-Speicher",
         keepAwakeRightClickToggle: "Menüleistensymbol rechtsklicken, um Wachhalten umzuschalten",
-        keepAwakeRightClickToggleCaption: "Ersetzt das Kontextmenü beim Rechtsklick."
+        keepAwakeRightClickToggleCaption: "Ersetzt das Kontextmenü beim Rechtsklick.",
+        urlCleanerCustomTitle: "Weitere Namen zum Entfernen",
+        urlCleanerCustomPlaceholder: "ref, quelle",
+        urlCleanerCustomCaption: "Trenne Parameternamen durch Kommas. Sie werden aus jedem Link entfernt."
     )
 }

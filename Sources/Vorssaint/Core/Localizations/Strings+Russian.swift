@@ -891,6 +891,9 @@ extension Strings {
         memoryMetricUsed: "Занято памяти",
         memoryMetricApp: "Память приложений",
         keepAwakeRightClickToggle: "Щёлкните правой кнопкой значок в строке меню, чтобы включить или выключить «Не давать уснуть»",
-        keepAwakeRightClickToggleCaption: "Заменяет контекстное меню правой кнопки мыши."
+        keepAwakeRightClickToggleCaption: "Заменяет контекстное меню правой кнопки мыши.",
+        urlCleanerCustomTitle: "Другие названия для удаления",
+        urlCleanerCustomPlaceholder: "ref, source",
+        urlCleanerCustomCaption: "Разделяйте названия параметров запятыми. Они будут удаляться из всех ссылок."
     )
 }

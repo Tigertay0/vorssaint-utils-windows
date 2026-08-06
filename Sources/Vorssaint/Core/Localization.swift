@@ -1035,6 +1035,9 @@ struct Strings {
     let memoryMetricApp: String
     let keepAwakeRightClickToggle: String
     let keepAwakeRightClickToggleCaption: String
+    let urlCleanerCustomTitle: String
+    let urlCleanerCustomPlaceholder: String
+    let urlCleanerCustomCaption: String
 }
 
 // MARK: - Português (Brasil)
@@ -1926,7 +1929,10 @@ extension Strings {
         memoryMetricUsed: "Memória usada",
         memoryMetricApp: "Memória de apps",
         keepAwakeRightClickToggle: "Clique com o botão direito no ícone da barra de menus para alternar “Manter acordado”",
-        keepAwakeRightClickToggleCaption: "Substitui o menu de contexto do clique com o botão direito."
+        keepAwakeRightClickToggleCaption: "Substitui o menu de contexto do clique com o botão direito.",
+        urlCleanerCustomTitle: "Mais nomes para remover",
+        urlCleanerCustomPlaceholder: "ref, origem",
+        urlCleanerCustomCaption: "Separe os nomes dos parâmetros com vírgulas. Eles serão removidos de todos os links."
     )
 }
 
@@ -2819,6 +2825,9 @@ extension Strings {
         memoryMetricUsed: "Memory Used",
         memoryMetricApp: "App Memory",
         keepAwakeRightClickToggle: "Right-click the menu bar icon to toggle Keep Awake",
-        keepAwakeRightClickToggleCaption: "Replaces the right-click context menu."
+        keepAwakeRightClickToggleCaption: "Replaces the right-click context menu.",
+        urlCleanerCustomTitle: "More names to remove",
+        urlCleanerCustomPlaceholder: "ref, source",
+        urlCleanerCustomCaption: "Separate parameter names with commas. They are removed from every link."
     )
 }

@@ -148,6 +148,7 @@ enum DefaultsKey {
     static let settingsWindowHeight = "settingsWindowHeight"
     static let shelfItems = "shelfItems"                  // Data: [ShelfPersistedItem] JSON
     static let urlCleanerEnabled = "urlCleanerEnabled"
+    static let urlCleanerCustomParameters = "urlCleanerCustomParameters"
     static let windowMaximizeEnabled = "windowMaximizeEnabled"
     static let keyboardDebounceEnabled = "keyboardDebounceEnabled"
     static let keyboardDebounceWindowMs = "keyboardDebounceWindowMs"
@@ -764,6 +765,7 @@ enum Defaults {
         DefaultsKey.whatsAppOrganizerLastDuplicates: 0,
         DefaultsKey.whatsAppOrganizerLastFailed: 0,
         DefaultsKey.urlCleanerEnabled: false,
+        DefaultsKey.urlCleanerCustomParameters: "",
         DefaultsKey.textSnippetsEnabled: false,
         DefaultsKey.snippetLibraryEnabled: false,
         DefaultsKey.snippetLibraryShortcut: GlobalShortcut.snippetLibraryDefault.storageValue,

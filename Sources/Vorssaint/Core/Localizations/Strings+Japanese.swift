@@ -890,6 +890,9 @@ extension Strings {
         memoryMetricUsed: "使用中のメモリ",
         memoryMetricApp: "Appメモリ",
         keepAwakeRightClickToggle: "メニューバーアイコンの右クリックでスリープ防止を切り替える",
-        keepAwakeRightClickToggleCaption: "右クリックのコンテキストメニューを置き換えます。"
+        keepAwakeRightClickToggleCaption: "右クリックのコンテキストメニューを置き換えます。",
+        urlCleanerCustomTitle: "削除する名前を追加",
+        urlCleanerCustomPlaceholder: "ref, source",
+        urlCleanerCustomCaption: "パラメータ名をカンマで区切って入力します。すべてのリンクから削除されます。"
     )
 }

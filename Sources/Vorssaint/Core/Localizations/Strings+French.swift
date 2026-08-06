@@ -890,6 +890,9 @@ extension Strings {
         memoryMetricUsed: "Mémoire utilisée",
         memoryMetricApp: "Mémoire des apps",
         keepAwakeRightClickToggle: "Faire un clic droit sur l’icône de la barre des menus pour basculer « Garder éveillé »",
-        keepAwakeRightClickToggleCaption: "Remplace le menu contextuel du clic droit."
+        keepAwakeRightClickToggleCaption: "Remplace le menu contextuel du clic droit.",
+        urlCleanerCustomTitle: "Autres noms à retirer",
+        urlCleanerCustomPlaceholder: "ref, source",
+        urlCleanerCustomCaption: "Séparez les noms des paramètres par des virgules. Ils seront retirés de chaque lien."
     )
 }

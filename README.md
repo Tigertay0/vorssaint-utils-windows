@@ -101,7 +101,7 @@ The rest bends the same way: panel sections reorder and hide, the compact layout
 - **Paste as plain text.** One shortcut pastes without fonts, colors or links, and the original stays on the clipboard.
 - **Shelf.** Park files, text and links near your cursor mid drag, then drop them where they belong later.
 - **Finder shortcuts.** ⌘X and ⌘V move files, an optional F2 shortcut renames the selection, and copied images can become PNG files with ⌘V.
-- **Clean URL.** Strips tracking parameters from copied links, on demand or automatically.
+- **Clean URL.** Strips tracking parameters and extra names you choose from copied links, on demand or automatically.
 
 ### Everyday tools
 

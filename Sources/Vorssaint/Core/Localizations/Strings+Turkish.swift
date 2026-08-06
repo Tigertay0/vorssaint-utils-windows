@@ -890,6 +890,9 @@ extension Strings {
         memoryMetricUsed: "Kullanılan Bellek",
         memoryMetricApp: "Uygulama Belleği",
         keepAwakeRightClickToggle: "Uyanık tutmayı açıp kapatmak için menü çubuğu simgesine sağ tıkla",
-        keepAwakeRightClickToggleCaption: "Sağ tık bağlam menüsünün yerini alır."
+        keepAwakeRightClickToggleCaption: "Sağ tık bağlam menüsünün yerini alır.",
+        urlCleanerCustomTitle: "Kaldırılacak diğer adlar",
+        urlCleanerCustomPlaceholder: "ref, kaynak",
+        urlCleanerCustomCaption: "Parametre adlarını virgülle ayırın. Her bağlantıdan kaldırılırlar."
     )
 }

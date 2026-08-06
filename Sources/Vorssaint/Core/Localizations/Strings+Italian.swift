@@ -890,6 +890,9 @@ extension Strings {
         memoryMetricUsed: "Memoria usata",
         memoryMetricApp: "Memoria app",
         keepAwakeRightClickToggle: "Fai clic destro sull'icona della barra dei menu per attivare o disattivare «Mantieni attivo»",
-        keepAwakeRightClickToggleCaption: "Sostituisce il menu contestuale del clic destro."
+        keepAwakeRightClickToggleCaption: "Sostituisce il menu contestuale del clic destro.",
+        urlCleanerCustomTitle: "Altri nomi da rimuovere",
+        urlCleanerCustomPlaceholder: "ref, origine",
+        urlCleanerCustomCaption: "Separa i nomi dei parametri con virgole. Verranno rimossi da ogni link."
     )
 }

@@ -890,6 +890,9 @@ extension Strings {
         memoryMetricUsed: "已用内存",
         memoryMetricApp: "App 内存",
         keepAwakeRightClickToggle: "右键点按菜单栏图标以切换“保持唤醒”",
-        keepAwakeRightClickToggleCaption: "将取代右键点按菜单。"
+        keepAwakeRightClickToggleCaption: "将取代右键点按菜单。",
+        urlCleanerCustomTitle: "添加要移除的名称",
+        urlCleanerCustomPlaceholder: "ref, source",
+        urlCleanerCustomCaption: "请用逗号分隔参数名称。它们会从所有链接中移除。"
     )
 }

@@ -891,6 +891,9 @@ extension Strings {
         memoryMetricUsed: "사용 중인 메모리",
         memoryMetricApp: "앱 메모리",
         keepAwakeRightClickToggle: "메뉴 막대 아이콘을 오른쪽 클릭하여 절전 방지 전환",
-        keepAwakeRightClickToggleCaption: "오른쪽 클릭 메뉴를 대체합니다."
+        keepAwakeRightClickToggleCaption: "오른쪽 클릭 메뉴를 대체합니다.",
+        urlCleanerCustomTitle: "삭제할 이름 추가",
+        urlCleanerCustomPlaceholder: "ref, source",
+        urlCleanerCustomCaption: "매개변수 이름을 쉼표로 구분하세요. 모든 링크에서 삭제됩니다."
     )
 }

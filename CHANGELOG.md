@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, edge snapping with a live
-preview and tabbed Scratchpads. Scrolling screenshots improve, and copied images can open directly in the editor.
+preview and tabbed Scratchpads. Scrolling screenshots improve, URL cleaning accepts custom names, and copied images can open directly in the editor.
 
 ### Added
 - A configurable shortcut opens a copied image directly in the screenshot editor.
@@ -24,6 +24,8 @@ preview and tabbed Scratchpads. Scrolling screenshots improve, and copied images
   Thanks to @PathGao.
 
 ### Changed
+- Clean URL can remove additional parameter names you choose under its Settings page.
+  Thanks to @lmilojevicc.
 - Temporary screenshot links can be disabled under Screenshot, removing the sharing
   controls from the preview and editor.
 - The radial menu can run Quick toggle actions such as appearance, screen lock

@@ -6546,6 +6546,20 @@ struct MetricsTests {
         expectEqual(URLCleaning.cleanedString(from: "https://example.com/?id=42") ?? "",
                     "https://example.com/?id=42",
                     "URL cleaner leaves clean URLs alone")
+        let customURLParameters = URLCleaning.customParameters(from: " Ref, source\nref,  ")
+        expect(customURLParameters == ["ref", "source"],
+               "URL cleaner normalizes comma-separated custom parameter names")
+        expectEqual(URLCleaning.cleanedString(from: "https://example.com/?REF=one&id=42&source=two",
+                                              customParameters: customURLParameters) ?? "",
+                    "https://example.com/?id=42",
+                    "URL cleaner removes custom parameters by exact case-insensitive name")
+        expectEqual(URLCleaning.cleanedString(from: "https://example.com/?reference=one",
+                                              customParameters: customURLParameters) ?? "",
+                    "https://example.com/?reference=one",
+                    "URL cleaner does not treat custom parameter names as prefixes")
+        expect(Defaults.registeredDefaults[DefaultsKey.urlCleanerCustomParameters] as? String == ""
+                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.urlCleanerCustomParameters),
+               "custom URL cleaner parameters start empty and travel in Settings backups")
         expect(URLCleaning.cleanedString(from: "not a url") == nil,
                "URL cleaner rejects plain text")
 
@@ -7785,6 +7799,10 @@ struct MetricsTests {
             expect(!strings.obPurposeTitle.isEmpty && !strings.obPurposeBody.isEmpty
                     && !strings.obPurposeSkip.isEmpty,
                    "the purpose step speaks \(language.rawValue)")
+            expect(!strings.urlCleanerCustomTitle.isEmpty
+                    && !strings.urlCleanerCustomPlaceholder.isEmpty
+                    && !strings.urlCleanerCustomCaption.isEmpty,
+                   "custom URL cleaner settings speak \(language.rawValue)")
         }
 
         // MARK: Hub presets and energy badges
