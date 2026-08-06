@@ -8,8 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, Previous Display,
-configurable screenshot previews and Dock clicks that hide the active app. App removal
-finds more verified leftovers, while previews, panels, shortcuts and mouse controls are more reliable.
+configurable screenshot previews, tabbed Scratchpads and Dock clicks that hide the active
+app. App removal finds more verified leftovers, while previews, panels, shortcuts and
+mouse controls are more reliable.
 
 ### Added
 - Per-app Switcher rules can include apps without windows, keep them window-only,
@@ -30,6 +31,8 @@ finds more verified leftovers, while previews, panels, shortcuts and mouse contr
   opening the app list first. Thanks to @mrevanzak.
 - The Uninstaller now finds more configuration, cache and helper files owned by
   the selected app. Thanks to @lmilojevicc.
+- Scratchpad can keep several named notes in tabs, including their order and
+  current selection in Settings backups.
 
 ### Fixed
 - Windowless apps now keep their labels aligned in the App Switcher's Small size.

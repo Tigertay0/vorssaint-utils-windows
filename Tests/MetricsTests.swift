@@ -7492,10 +7492,13 @@ struct MetricsTests {
                    "no em-dash in visible radial menu strings (\(language.rawValue))")
             let scratchpadValues = Mirror(reflecting: FeatureStrings.scratchpad(language)).children
                 .compactMap { $0.value as? String }
-            expect(scratchpadValues.count == 20 && scratchpadValues.allSatisfy { !$0.isEmpty },
+            expect(scratchpadValues.count == 28 && scratchpadValues.allSatisfy { !$0.isEmpty },
                    "every scratchpad string is set for \(language.rawValue)")
             expect(scratchpadValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible scratchpad strings (\(language.rawValue))")
+            expect(FeatureStrings.scratchpad(language).deletePadMessageFormat.contains("%@")
+                    && FeatureStrings.scratchpad(language).padLimitFormat.contains("%d"),
+                   "scratchpad dialog formats keep their placeholders (\(language.rawValue))")
             let finderRenameValues = Mirror(
                 reflecting: FeatureStrings.finderRename(language)).children
                 .compactMap { $0.value as? String }
@@ -9091,6 +9094,88 @@ struct MetricsTests {
                 && scratchpadExportName.hasSuffix(".txt")
                 && scratchpadExportName.count == "Scratchpad ".count + 14,
                "scratchpad export file name is the title plus the local date")
+        let firstPadID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let secondPadID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        let thirdPadID = UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
+        let migratedScratchpad = ScratchpadSupport.migratedLegacyDocument(
+            text: "existing text",
+            lastEdited: scratchpadNow.addingTimeInterval(-120),
+            defaultName: "Scratchpad",
+            retention: .day,
+            now: scratchpadNow,
+            id: firstPadID)
+        expect(migratedScratchpad.pads.count == 1
+                && migratedScratchpad.pads[0].id == firstPadID
+                && migratedScratchpad.pads[0].text == "existing text"
+                && migratedScratchpad.selectedID == firstPadID,
+               "the legacy scratchpad becomes the first selected tab without losing text")
+        let twoPads = migratedScratchpad.addingPad(defaultName: "Scratchpad", id: secondPadID)
+        let threePads = twoPads?.addingPad(defaultName: "Scratchpad", id: thirdPadID)
+        expect(threePads?.pads.map(\.name) == ["Scratchpad", "Scratchpad 2", "Scratchpad 3"]
+                && threePads?.pads.map(\.id) == [firstPadID, secondPadID, thirdPadID]
+                && threePads?.selectedID == thirdPadID,
+               "new scratchpads append in order, receive clear names and become selected")
+        let renamedPad = threePads?.renaming(secondPadID, to: "  Work\nideas  ")
+        expect(renamedPad?.pads[1].name == "Work ideas"
+                && ScratchpadSupport.sanitizedPadName(String(repeating: "x", count: 50)).count
+                    == ScratchpadDocument.maximumNameLength
+                && threePads?.renaming(secondPadID, to: "   ") == nil,
+               "scratchpad names stay single-line, bounded and never empty")
+        let selectedFirst = renamedPad?.selecting(firstPadID)
+        let removedFirst = selectedFirst?.removing(firstPadID)
+        expect(removedFirst?.pads.map(\.id) == [secondPadID, thirdPadID]
+                && removedFirst?.selectedID == secondPadID,
+               "closing the selected scratchpad keeps order and selects its nearest neighbor")
+        expect(migratedScratchpad.removing(firstPadID) == nil,
+               "the last scratchpad cannot be closed")
+        expect(ScratchpadSupport.requiresCloseConfirmation(migratedScratchpad.pads[0])
+                && !ScratchpadSupport.requiresCloseConfirmation(
+                    ScratchpadDocument.initial(defaultName: "Scratchpad").pads[0]),
+               "only closing a scratchpad with content needs destructive confirmation")
+        var limitedScratchpads = migratedScratchpad
+        for _ in 2...ScratchpadDocument.maximumPadCount {
+            limitedScratchpads = limitedScratchpads.addingPad(defaultName: "Scratchpad")!
+        }
+        expect(limitedScratchpads.pads.count == ScratchpadDocument.maximumPadCount
+                && limitedScratchpads.addingPad(defaultName: "Scratchpad") == nil,
+               "scratchpads keep a small fixed upper bound")
+        var retainedScratchpads = ScratchpadDocument.initial(
+            defaultName: "Scratchpad",
+            id: firstPadID,
+            text: "expired text",
+            modifiedAt: scratchpadNow.addingTimeInterval(-90_000))
+        retainedScratchpads = retainedScratchpads.addingPad(defaultName: "Scratchpad",
+                                                             id: secondPadID)!
+        retainedScratchpads.updateSelectedText("recent text",
+                                               modifiedAt: scratchpadNow.addingTimeInterval(-300))
+        retainedScratchpads.applyRetention(.day, now: scratchpadNow)
+        expect(retainedScratchpads.pads[0].text.isEmpty
+                && retainedScratchpads.pads[1].text == "recent text",
+               "retention clears only scratchpads whose own text expired")
+        let scratchpadDocumentData = renamedPad?.encoded()
+        let decodedScratchpads = ScratchpadDocument.decoded(scratchpadDocumentData,
+                                                            defaultName: "Scratchpad")
+        expect(decodedScratchpads == renamedPad,
+               "scratchpad text, names, order and selection round-trip together")
+        let scratchpadBackup = SettingsBackupSupport.payload(appVersion: "test") { key in
+            key == DefaultsKey.scratchpadDocument ? scratchpadDocumentData : nil
+        }
+        let restoredScratchpadSettings = SettingsBackupSupport.sanitizedSettings(from: scratchpadBackup)
+        let restoredScratchpads = ScratchpadDocument.decoded(
+            restoredScratchpadSettings?[DefaultsKey.scratchpadDocument] as? Data,
+            defaultName: "Scratchpad")
+        expect(restoredScratchpads == renamedPad
+                && scratchpadDocumentData.map {
+                    SettingsBackupSupport.valueLooksRight(DefaultsKey.scratchpadDocument, $0)
+                } == true
+                && !SettingsBackupSupport.valueLooksRight(DefaultsKey.scratchpadDocument, "broken"),
+               "settings backup restores the complete scratchpad document and rejects wrong types")
+        let safeScratchpadExportName = ScratchpadSupport.exportFileName(
+            title: "Work/Ideas: 1", date: scratchpadNow)
+        expect(safeScratchpadExportName.hasPrefix("Work-Ideas- 1 ")
+                && !safeScratchpadExportName.contains("/")
+                && !safeScratchpadExportName.contains(":"),
+               "scratchpad export names cannot turn tab names into path components")
 
         // Muting every microphone, not just the one the Mac is set to: an app
         // pointed at a device of its own has to go silent too.
@@ -9651,9 +9736,11 @@ struct MetricsTests {
         expect(backupKeys.contains(DefaultsKey.scratchpadShortcut)
                 && backupKeys.contains(DefaultsKey.scratchpadShortcutEnabled)
                 && backupKeys.contains(DefaultsKey.scratchpadRetention)
+                && backupKeys.contains(DefaultsKey.scratchpadCloseOnClickOutside)
                 && backupKeys.contains(DefaultsKey.scratchpadBackgroundOpacity)
+                && backupKeys.contains(DefaultsKey.scratchpadDocument)
                 && backupKeys.contains(DefaultsKey.panelUtilityScratchpad),
-               "scratchpad preferences travel with the settings backup")
+               "scratchpad preferences and named tabs travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.radialMenuEnabled)
                 && backupKeys.contains(DefaultsKey.radialMenuShortcut)
                 && backupKeys.contains(DefaultsKey.radialMenuAtPointer)
