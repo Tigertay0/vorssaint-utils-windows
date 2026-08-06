@@ -26,12 +26,26 @@ enum ScreenshotSupport {
     /// exhaust memory. Reaching a guard keeps the valid portion and explains
     /// why the capture stopped.
     static let scrollingCaptureMaximumDuration: TimeInterval = 30
-    static let scrollingCaptureMaximumFrames = 32
-    static let scrollingCaptureMaximumRawPixels = 48_000_000
+    static let scrollingCaptureMaximumFrames = 64
+    static let scrollingCaptureMaximumRetainedPixels = 60_000_000
     static let scrollingCaptureMaximumPixels = 60_000_000
+    static let scrollingCaptureMaximumScrollDelta: Int32 = 4
 
     static func scrollingCaptureStepPoints(regionHeight: CGFloat) -> CGFloat {
         min(max(regionHeight * 0.62, 60), 720)
+    }
+
+    /// Quartz expects small wheel values. Splitting a page-sized movement into
+    /// ordinary deltas lets each target apply its normal scrolling behavior.
+    static func scrollingCaptureScrollDeltas(points: CGFloat) -> [Int32] {
+        var remaining = max(1, Int((points / 10).rounded()))
+        var deltas: [Int32] = []
+        while remaining > 0 {
+            let delta = min(remaining, Int(scrollingCaptureMaximumScrollDelta))
+            deltas.append(-Int32(delta))
+            remaining -= delta
+        }
+        return deltas
     }
 
     struct ScrollingSample: Equatable {
@@ -50,33 +64,12 @@ enum ScreenshotSupport {
         case unmatched
     }
 
-    struct ScrollingStitchPiece: Equatable {
-        let sourceY: Int
-        let height: Int
-        let destinationY: Int
-    }
-
-    /// Exact crop and placement geometry for the final canvas. Core Graphics
-    /// only draws this plan, keeping the seam math independently testable.
-    static func scrollingStitchPieces(frameHeights: [Int],
-                                      topCrops: [Int]) -> [ScrollingStitchPiece]? {
-        guard !frameHeights.isEmpty, frameHeights.count == topCrops.count,
-              zip(frameHeights, topCrops).allSatisfy({ pair in
-                  pair.0 > 0 && pair.1 >= 0 && pair.1 < pair.0
-              })
-        else { return nil }
-        let pieceHeights = zip(frameHeights, topCrops).map { pair in
-            pair.0 - pair.1
-        }
-        var destinationY = pieceHeights.reduce(0, +)
-        var pieces: [ScrollingStitchPiece] = []
-        for index in frameHeights.indices {
-            destinationY -= pieceHeights[index]
-            pieces.append(ScrollingStitchPiece(sourceY: topCrops[index],
-                                               height: pieceHeights[index],
-                                               destinationY: destinationY))
-        }
-        return destinationY == 0 ? pieces : nil
+    static func scrollingSamplesAreStable(_ previous: ScrollingSample,
+                                          _ current: ScrollingSample) -> Bool {
+        previous.isValid && current.isValid
+            && previous.width == current.width
+            && previous.height == current.height
+            && scrollingDifference(previous, current) <= 1.5
     }
 
     /// Finds how many rows two successive views share. The calculation is
@@ -90,7 +83,7 @@ enum ScreenshotSupport {
               previous.height >= 24
         else { return .unmatched }
 
-        if scrollingDifference(previous, current) <= 1.5 {
+        if scrollingSamplesAreStable(previous, current) {
             return .end
         }
 
@@ -174,7 +167,7 @@ enum ScreenshotSupport {
         -> (longestRun: Int, matchingRows: Int, difference: Double)? {
         let width = previous.width
         let sideInset = max(1, width / 12)
-        let edgeInset = max(2, previous.height / 24)
+        let edgeInset = max(2, previous.height / 10)
         let lastRow = previous.height - advance - edgeInset
         guard lastRow > edgeInset, width - sideInset * 2 > 0 else { return nil }
 

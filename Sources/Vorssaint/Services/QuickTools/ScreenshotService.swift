@@ -231,8 +231,7 @@ final class ScreenshotService: ObservableObject {
             protectedWindowIDs: { [weak self] in self?.protectedWindowIDs ?? [] },
             purpose: mode == .scrolling ? strings.scrollingCaptureTitle : nil,
             mode: mode == .scrolling ? .geometry : .image,
-            supportsScrollingCapture: mode == .standard && Permissions.shared.accessibility,
-            requiresDraggedRegion: mode == .scrolling)
+            supportsScrollingCapture: mode == .standard && Permissions.shared.accessibility)
         session = controller
         controller.begin { [weak self] outcome in
             guard let self else { return }
@@ -323,7 +322,10 @@ final class ScreenshotService: ObservableObject {
                 hideVorssaintWindows: hideWindows,
                 protectedWindowIDs: protectedIDs,
                 finishSignal: finishSignal,
-                targetPID: targetPID)
+                targetPID: targetPID,
+                onProgress: { height in
+                    QuickToolHUD.updateScrollingCapture(height: height)
+                })
             guard self.scrollingCaptureID == captureID else { return }
             self.scrollingCaptureID = nil
             self.scrollingTask = nil

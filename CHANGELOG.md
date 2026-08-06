@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, edge snapping with a live
-preview and tabbed Scratchpads. It also brings faster controls, safer captures and more reliable everyday tools.
+preview and tabbed Scratchpads. Scrolling screenshots are easier to start and handle long or slow pages more reliably.
 
 ### Added
 - Window Layout can preview and place a window dragged to any screen edge or corner.
@@ -51,6 +51,8 @@ preview and tabbed Scratchpads. It also brings faster controls, safer captures a
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
+- Scrolling screenshots accept a window with one click, wait for pages to settle
+  and keep capturing long pages without stopping early.
 - Copy text from screen retries with a different recognition path when the first
   pass finds nothing.
 - Screen recording now freezes the display while an area is chosen. Escape cancels

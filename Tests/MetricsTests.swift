@@ -8627,8 +8627,8 @@ struct MetricsTests {
                 && ScreenshotSupport.sanitizedDelay(-3) == 0,
                "capture delay only accepts the offered steps")
         expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 30
-                && ScreenshotSupport.scrollingCaptureMaximumFrames == 32
-                && ScreenshotSupport.scrollingCaptureMaximumRawPixels == 48_000_000
+                && ScreenshotSupport.scrollingCaptureMaximumFrames == 64
+                && ScreenshotSupport.scrollingCaptureMaximumRetainedPixels == 60_000_000
                 && ScreenshotSupport.scrollingCaptureMaximumPixels == 60_000_000,
                "scrolling screenshots have explicit loop and memory safeguards")
         expect(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 900) == 558
@@ -8636,6 +8636,10 @@ struct MetricsTests {
                "scrolling screenshots cap large scroll steps")
         expectClose(Double(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 120)), 74.4,
                     "scrolling screenshots keep small scroll steps proportional")
+        let scrollDeltas = ScreenshotSupport.scrollingCaptureScrollDeltas(points: 74.4)
+        expect(scrollDeltas.reduce(0, +) == -7
+                && scrollDeltas.allSatisfy { abs($0) <= 4 },
+               "scrolling screenshots emit only ordinary-sized wheel deltas")
 
         func scrollingSample(width: Int = 16,
                              height: Int = 120,
@@ -8665,11 +8669,32 @@ struct MetricsTests {
         expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
                                                      current: nextScrollSample) == .end,
                "an unchanged capture marks the real end of scrolling")
+        expect(ScreenshotSupport.scrollingSamplesAreStable(nextScrollSample,
+                                                           nextScrollSample),
+               "settling recognizes two unchanged scrolling frames")
         let shortFinalScrollSample = scrollingSample(offset: 8)
         expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
                                                      current: shortFinalScrollSample)
                 == .advanced(overlap: 112),
                "a short final scroll is kept instead of failing the whole capture")
+        func sampleWithFixedEdges(offset: Int) -> ScreenshotSupport.ScrollingSample {
+            let sample = scrollingSample(offset: offset)
+            var pixels = sample.pixels
+            for row in 0..<12 {
+                for column in 0..<sample.width {
+                    pixels[row * sample.width + column] = UInt8(row * 5 + column)
+                    let bottomRow = sample.height - row - 1
+                    pixels[bottomRow * sample.width + column] = UInt8(row * 3 + column)
+                }
+            }
+            return ScreenshotSupport.ScrollingSample(width: sample.width,
+                                                     height: sample.height,
+                                                     pixels: pixels)
+        }
+        expect(ScreenshotSupport.scrollingTransition(
+            previous: sampleWithFixedEdges(offset: 0),
+            current: sampleWithFixedEdges(offset: 50)) == .advanced(overlap: 70),
+               "fixed page edges do not hide the shared scrolling content")
         var scrollingStressPassed = true
         for iteration in 0..<250 {
             let offset = [8, 76][iteration % 2]
@@ -8696,22 +8721,6 @@ struct MetricsTests {
         expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
                                                      current: unmatchedScrollSample) == .unmatched,
                "ambiguous content fails instead of inventing a seam")
-        expect(ScreenshotSupport.scrollingStitchPieces(
-            frameHeights: [120, 120, 120], topCrops: [0, 44, 50]) == [
-                .init(sourceY: 0, height: 120, destinationY: 146),
-                .init(sourceY: 44, height: 76, destinationY: 70),
-                .init(sourceY: 50, height: 70, destinationY: 0),
-            ], "scrolling stitch geometry crops every overlap exactly once")
-        expect(ScreenshotSupport.scrollingStitchPieces(
-            frameHeights: [120, 120], topCrops: [0, 120]) == nil,
-               "scrolling stitch geometry rejects an empty slice")
-        let maximumFramePlan = ScreenshotSupport.scrollingStitchPieces(
-            frameHeights: [Int](repeating: 1_800, count: 32),
-            topCrops: [0] + [Int](repeating: 1_120, count: 31))
-        expect(maximumFramePlan?.count == 32
-                && maximumFramePlan?.first?.destinationY == 21_080
-                && maximumFramePlan?.last?.destinationY == 0,
-               "the stitch plan stays exact at the full frame guard")
         expectClose(Double(ScreenshotSupport.captureScale(fromDPI: 144) ?? 0), 2,
                     "the cached screenshot restores its Retina scale from PNG metadata")
         expect(ScreenshotSupport.captureScale(fromDPI: nil) == nil
