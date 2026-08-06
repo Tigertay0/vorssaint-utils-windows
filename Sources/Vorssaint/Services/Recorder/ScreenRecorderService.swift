@@ -211,10 +211,9 @@ final class ScreenRecorderService: ObservableObject {
     }
 
     private func beginSelection() {
-        // Live pixels while choosing, not a still: what is worth recording is
-        // usually something that moves, and freezing it would hide exactly
-        // what the person is trying to frame.
-        let controller = ScreenshotSelectionController(freeze: false,
+        // Freeze the displays while the region is chosen so the Dock, menu bar
+        // and app windows cannot move the target out from under the gesture.
+        let controller = ScreenshotSelectionController(freeze: true,
                                                        includePointer: false,
                                                        showLastRegion: true,
                                                        hideVorssaintWindows: false,

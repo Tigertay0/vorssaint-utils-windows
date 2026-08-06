@@ -52,6 +52,7 @@ final class ScreenshotSelectionController {
         otherProtectedWindowIDs().union(protectedWindowIDs)
     }
     private var keyMonitor: Any?
+    private var globalKeyMonitor: Any?
     private var completion: ((Outcome) -> Void)?
     private let freeze: Bool
     private let includePointer: Bool
@@ -228,6 +229,10 @@ final class ScreenshotSelectionController {
                 break
             }
             return nil
+        }
+        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.keyCode == UInt16(kVK_Escape) else { return }
+            self?.finish(.cancelled)
         }
     }
 
@@ -464,6 +469,10 @@ final class ScreenshotSelectionController {
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
+        }
+        if let globalKeyMonitor {
+            NSEvent.removeMonitor(globalKeyMonitor)
+            self.globalKeyMonitor = nil
         }
         // A gesture can still have events on the way, so the surfaces are made
         // inert before they leave the screen: whatever arrives after this

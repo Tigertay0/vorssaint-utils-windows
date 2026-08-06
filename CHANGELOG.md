@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, screenshot controls,
 Previous Display, tabbed Scratchpads and faster Keep Awake controls. The Command Bar opens
-typed web addresses, while app removal, updates, clipboard history, panels and shortcuts are
-more reliable.
+typed web addresses, while screen recording, app removal, updates, clipboard history, panels
+and shortcuts are more reliable.
 
 ### Added
 - Per-app Switcher rules can include apps without windows, keep them window-only,
@@ -47,6 +47,8 @@ more reliable.
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
+- Screen recording now freezes the display while an area is chosen. Escape cancels
+  selection even if another app took focus.
 - Cleaning Mode stays active while the keyboard is being cleaned, then unlocks
   after one minute without a new key press.
 - Windowless apps now keep their labels aligned in the App Switcher's Small size.
