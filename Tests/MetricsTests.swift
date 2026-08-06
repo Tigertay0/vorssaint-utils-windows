@@ -1088,9 +1088,41 @@ struct MetricsTests {
                                        freePages: 20, speculativePages: 0, fileBackedPages: 0) == 0,
                "memory used clamps impossible available memory")
 
+        // MARK: App memory
+
+        let appUsed = MetricFormat.appMemory(totalBytes: 16 * 1024,
+                                             pageSize: 1024,
+                                             internalPages: 10,
+                                             purgeablePages: 3)
+        expect(appUsed == 7 * 1024, "app memory excludes purgeable pages from internal pages")
+        expect(MetricFormat.appMemory(totalBytes: 16 * 1024, pageSize: 1024,
+                                      internalPages: 2, purgeablePages: 5) == 0,
+               "app memory is zero when purgeable pages exceed internal pages")
+        expect(MetricFormat.appMemory(totalBytes: 16, pageSize: 1,
+                                      internalPages: 100, purgeablePages: 0) == 16,
+               "app memory clamps to total physical memory")
+        expect(MetricFormat.appMemory(totalBytes: 0, pageSize: 1024,
+                                      internalPages: 10, purgeablePages: 0) == 0,
+               "app memory is zero when total is zero")
+        expect(MetricFormat.appMemory(totalBytes: 16 * 1024, pageSize: 0,
+                                      internalPages: 10, purgeablePages: 0) == 0,
+               "app memory is zero when page size is zero")
+        expect(MetricFormat.selectedMemory(used: 12, app: 7, metric: "app") == 7,
+               "the shared memory selector returns app memory")
+        expect(MetricFormat.selectedMemory(used: 12, app: 7, metric: "unknown") == 12,
+               "an unknown shared memory selector falls back to used memory")
+
         // MARK: Registered defaults
 
         let registeredDefaults = Defaults.registeredDefaults
+        expect(registeredDefaults[DefaultsKey.monitorMemoryMetric] as? String == "used",
+               "monitor memory metric defaults to memory used")
+        expect(Defaults.sanitizedMonitorMemoryMetric("app") == "app",
+               "app is an allowed memory metric")
+        expect(Defaults.sanitizedMonitorMemoryMetric("bogus") == "used",
+               "unknown memory metric values fall back to used")
+        expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.monitorMemoryMetric),
+               "monitor memory metric is included in settings backups")
         expect(registeredDefaults[DefaultsKey.appearance] as? String == AppAppearance.system.rawValue,
                "the app follows the system appearance until the user picks a side")
         expect(AppAppearance.sanitized(nil) == .system
