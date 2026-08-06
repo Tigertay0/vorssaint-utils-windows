@@ -8281,6 +8281,16 @@ struct MetricsTests {
                 && RadialMenuMediaKey.previousTrack.auxKeyType == 20
                 && RadialMenuMediaKey.nextTrack.auxKeyType == 19,
                "media slices post the aux codes of the physical keys")
+        let radialQuickToggle = RadialMenuItem(kind: .quickToggle,
+                                               payload: RadialMenuQuickToggle.darkMode.rawValue)
+        expect(RadialMenuSupport.sanitized([radialQuickToggle]) == [radialQuickToggle]
+                && radialQuickToggle.quickToggle == .darkMode
+                && RadialMenuQuickToggle.allCases.allSatisfy { !$0.symbolName.isEmpty },
+               "quick-toggle slices keep a valid action and automatic icon")
+        expect(RadialMenuSupport.sanitized([
+            RadialMenuItem(kind: .quickToggle, payload: "unknownAction"),
+        ]).isEmpty,
+               "unknown quick-toggle slices cannot leave a dead action on the wheel")
         expect(RadialMenuTool.allCases.allSatisfy { !$0.symbolName.isEmpty }
                 && RadialMenuTool.screenshot.feature == .screenshot
                 && RadialMenuTool.clipboardHistory.feature == .clipboardHistory
