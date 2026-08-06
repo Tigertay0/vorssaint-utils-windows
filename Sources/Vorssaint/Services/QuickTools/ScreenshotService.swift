@@ -15,10 +15,12 @@ final class ScreenshotService: ObservableObject {
     @Published private(set) var shortcutRegistrationFailed = false
     @Published private(set) var fullScreenShortcutRegistrationFailed = false
     @Published private(set) var lastCaptureShortcutRegistrationFailed = false
+    @Published private(set) var clipboardShortcutRegistrationFailed = false
 
     private let hotkey = QuickToolHotkey(id: 15)
     private let lastCaptureHotkey = QuickToolHotkey(id: 22)
     private let fullScreenHotkey = QuickToolHotkey(id: 23)
+    private let clipboardHotkey = QuickToolHotkey(id: 24)
     private var session: ScreenshotSelectionController?
     private var preview: ScreenshotQuickPreviewController?
     private var editors: [ScreenshotEditorController] = []
@@ -68,6 +70,7 @@ final class ScreenshotService: ObservableObject {
         hotkey.onPress = { [weak self] in self?.capture() }
         fullScreenHotkey.onPress = { [weak self] in self?.captureFullScreen() }
         lastCaptureHotkey.onPress = { [weak self] in self?.openLastCapture() }
+        clipboardHotkey.onPress = { [weak self] in self?.openClipboardImage() }
     }
 
     func syncWithPreferences() {
@@ -75,9 +78,11 @@ final class ScreenshotService: ObservableObject {
             shortcutRegistrationFailed = false
             fullScreenShortcutRegistrationFailed = false
             lastCaptureShortcutRegistrationFailed = false
+            clipboardShortcutRegistrationFailed = false
             hotkey.unregister()
             fullScreenHotkey.unregister()
             lastCaptureHotkey.unregister()
+            clipboardHotkey.unregister()
             ScreenshotLastCaptureStore.clear()
             teardownSurfaces()
             return
@@ -103,6 +108,14 @@ final class ScreenshotService: ObservableObject {
         lastCaptureShortcutRegistrationFailed = !lastCaptureHotkey.sync(
             enabled: lastCaptureEnabled,
             shortcut: lastCaptureShortcut)
+        let clipboardEnabled = defaults.bool(
+            forKey: DefaultsKey.screenshotClipboardShortcutEnabled)
+        let clipboardShortcut = GlobalShortcut.saved(
+            for: DefaultsKey.screenshotClipboardShortcut,
+            fallback: .screenshotClipboardDefault)
+        clipboardShortcutRegistrationFailed = !clipboardHotkey.sync(
+            enabled: clipboardEnabled,
+            shortcut: clipboardShortcut)
         if !lastCaptureEnabled {
             ScreenshotLastCaptureStore.clear()
         }
@@ -112,6 +125,7 @@ final class ScreenshotService: ObservableObject {
         hotkey.unregister()
         fullScreenHotkey.unregister()
         lastCaptureHotkey.unregister()
+        clipboardHotkey.unregister()
     }
 
     /// Hub-off means gone: open editors, pins and a selection in progress
@@ -442,6 +456,41 @@ final class ScreenshotService: ObservableObject {
         preview?.close()
         preview = nil
         openEditor(with: capture)
+    }
+
+    private func openClipboardImage() {
+        GeneralPasteboardAccess.shared.async { [weak self] in
+            let capture = autoreleasepool {
+                Self.clipboardCapture(from: NSPasteboard.general)
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, AppFeature.screenshot.isAvailable else { return }
+                guard let capture else {
+                    QuickToolHUD.show(icon: "photo", message: self.strings.clipboardImageMissing)
+                    return
+                }
+                self.openEditor(with: capture)
+            }
+        }
+    }
+
+    private static func clipboardCapture(
+        from pasteboard: NSPasteboard
+    ) -> ScreenshotSelectionController.Capture? {
+        guard let image = NSImage(pasteboard: pasteboard),
+              image.size.width > 0, image.size.height > 0
+        else { return nil }
+        var rect = CGRect(origin: .zero, size: image.size)
+        guard let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil),
+              cgImage.width > 0, cgImage.height > 0,
+              cgImage.width <= ScreenshotSupport.scrollingCaptureMaximumPixels / cgImage.height
+        else { return nil }
+        let pixelSize = CGSize(width: cgImage.width, height: cgImage.height)
+        let scale = ScreenshotSupport.clipboardImageScale(pixelSize: pixelSize,
+                                                          pointSize: image.size)
+        return ScreenshotSelectionController.Capture(image: cgImage,
+                                                     scale: scale,
+                                                     anchorRect: .zero)
     }
 
     func editorDidClose(_ editor: ScreenshotEditorController) {

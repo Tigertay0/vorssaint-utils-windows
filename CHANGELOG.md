@@ -8,9 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, edge snapping with a live
-preview and tabbed Scratchpads. Scrolling screenshots are easier to start and handle long or slow pages more reliably.
+preview and tabbed Scratchpads. Scrolling screenshots improve, and copied images can open directly in the editor.
 
 ### Added
+- A configurable shortcut opens a copied image directly in the screenshot editor.
+  Under Screenshot, off by default. Thanks to @neon443.
 - Window Layout can preview and place a window dragged to any screen edge or corner.
   Off by default.
 - Per-app Switcher rules can include apps without windows, keep them window-only,

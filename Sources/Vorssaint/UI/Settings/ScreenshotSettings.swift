@@ -14,6 +14,8 @@ struct ScreenshotSettings: View {
     private var fullScreenShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotLastCaptureShortcutEnabled)
     private var lastCaptureShortcutEnabled = false
+    @AppStorage(DefaultsKey.screenshotClipboardShortcutEnabled)
+    private var clipboardShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
     @AppStorage(DefaultsKey.screenshotHideVorssaintWindows) private var hideVorssaintWindows = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
@@ -97,6 +99,19 @@ struct ScreenshotSettings: View {
                 }
                 if lastCaptureShortcutEnabled,
                    service.lastCaptureShortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                Toggle(strings.editClipboardImage, isOn: $clipboardShortcutEnabled)
+                    .onChange(of: clipboardShortcutEnabled) { _, _ in
+                        ScreenshotService.shared.syncWithPreferences()
+                    }
+                ShortcutPreferenceRow(role: .screenshotClipboard,
+                                      isEnabled: clipboardShortcutEnabled) {
+                    ScreenshotService.shared.syncWithPreferences()
+                }
+                if clipboardShortcutEnabled, service.clipboardShortcutRegistrationFailed {
                     Text(l10n.s.shortcutUnavailable)
                         .font(.caption)
                         .foregroundStyle(.orange)

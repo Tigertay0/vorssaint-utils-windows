@@ -209,6 +209,20 @@ enum ScreenshotSupport {
         return CGFloat(scale)
     }
 
+    /// Uses the logical size carried by a copied image when it describes one
+    /// consistent display scale. Imported files without that metadata edit at 1x.
+    static func clipboardImageScale(pixelSize: CGSize, pointSize: CGSize) -> CGFloat {
+        guard pixelSize.width > 0, pixelSize.height > 0,
+              pointSize.width > 0, pointSize.height > 0
+        else { return 1 }
+        let horizontal = pixelSize.width / pointSize.width
+        let vertical = pixelSize.height / pointSize.height
+        guard horizontal.isFinite, vertical.isFinite,
+              abs(horizontal - vertical) <= max(horizontal, vertical) * 0.05
+        else { return 1 }
+        return captureScale(fromDPI: Double((horizontal + vertical) / 2) * 72) ?? 1
+    }
+
     // MARK: - Selection geometry
 
     /// Rectangle between two drag points. `square` constrains to the largest

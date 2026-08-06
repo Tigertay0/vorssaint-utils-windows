@@ -9325,6 +9325,23 @@ struct MetricsTests {
                 == [DefaultsKey.screenshotLastCaptureShortcutEnabled]
                 && GlobalShortcutRole.screenshotLastCapture.feature == .screenshot,
                "the latest screenshot shortcut gates on its own toggle and the screenshot feature")
+        expect(Defaults.registeredDefaults[DefaultsKey.screenshotClipboardShortcutEnabled]
+                as? Bool == false
+                && Defaults.registeredDefaults[DefaultsKey.screenshotClipboardShortcut] as? String
+                == "control+option+command:35",
+               "the clipboard image editor shortcut ships off with its own combination")
+        expect(GlobalShortcutRole.screenshotClipboard.requiredEnableKeys
+                == [DefaultsKey.screenshotClipboardShortcutEnabled]
+                && GlobalShortcutRole.screenshotClipboard.feature == .screenshot,
+               "the clipboard image shortcut gates on its own toggle and the screenshot feature")
+        expect(ScreenshotSupport.clipboardImageScale(
+            pixelSize: CGSize(width: 1200, height: 800),
+            pointSize: CGSize(width: 600, height: 400)) == 2,
+               "copied images preserve a consistent Retina scale")
+        expect(ScreenshotSupport.clipboardImageScale(
+            pixelSize: CGSize(width: 1200, height: 800),
+            pointSize: CGSize(width: 600, height: 800)) == 1,
+               "copied images with inconsistent metadata safely use 1x")
 
         expect(Defaults.registeredDefaults[DefaultsKey.cameraPreviewShortcutEnabled] as? Bool == false,
                "the camera preview shortcut ships off like the other quick tools")
@@ -10016,6 +10033,8 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.screenshotToolShortcutsEnabled)
                 && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcutEnabled)
                 && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcut)
+                && backupKeys.contains(DefaultsKey.screenshotClipboardShortcutEnabled)
+                && backupKeys.contains(DefaultsKey.screenshotClipboardShortcut)
                 && backupKeys.contains(DefaultsKey.screenshotPreviewPosition)
                 && backupKeys.contains(DefaultsKey.panelUtilityScreenshot),
                "screenshot preferences travel with the settings backup")
