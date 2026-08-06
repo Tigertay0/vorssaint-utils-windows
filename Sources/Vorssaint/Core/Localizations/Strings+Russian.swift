@@ -889,6 +889,8 @@ extension Strings {
         dockClickHideCaption: "Активное приложение скрывается при клике по его значку в Dock. Нажмите ещё раз, чтобы вернуть его.",
         monitorMemoryMetricLabel: "Как измерять память",
         memoryMetricUsed: "Занято памяти",
-        memoryMetricApp: "Память приложений"
+        memoryMetricApp: "Память приложений",
+        keepAwakeRightClickToggle: "Щёлкните правой кнопкой значок в строке меню, чтобы включить или выключить «Не давать уснуть»",
+        keepAwakeRightClickToggleCaption: "Заменяет контекстное меню правой кнопки мыши."
     )
 }

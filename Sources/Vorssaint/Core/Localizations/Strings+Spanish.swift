@@ -888,6 +888,8 @@ extension Strings {
         dockClickHideCaption: "La app activa se oculta al hacer clic en su icono del Dock. Haz clic de nuevo para recuperarla.",
         monitorMemoryMetricLabel: "Medir memoria como",
         memoryMetricUsed: "Memoria usada",
-        memoryMetricApp: "Memoria de apps"
+        memoryMetricApp: "Memoria de apps",
+        keepAwakeRightClickToggle: "Haz clic derecho en el icono de la barra de menús para activar o desactivar «Mantener activo»",
+        keepAwakeRightClickToggleCaption: "Sustituye el menú contextual del clic derecho."
     )
 }

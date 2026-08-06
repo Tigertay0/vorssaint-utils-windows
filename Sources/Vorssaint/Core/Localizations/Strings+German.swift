@@ -888,6 +888,8 @@ extension Strings {
         dockClickHideCaption: "Die aktive App wird ausgeblendet, wenn du auf ihr Dock-Symbol klickst. Ein weiterer Klick holt sie zurück.",
         monitorMemoryMetricLabel: "Speicher messen als",
         memoryMetricUsed: "Genutzter Speicher",
-        memoryMetricApp: "App-Speicher"
+        memoryMetricApp: "App-Speicher",
+        keepAwakeRightClickToggle: "Menüleistensymbol rechtsklicken, um Wachhalten umzuschalten",
+        keepAwakeRightClickToggleCaption: "Ersetzt das Kontextmenü beim Rechtsklick."
     )
 }

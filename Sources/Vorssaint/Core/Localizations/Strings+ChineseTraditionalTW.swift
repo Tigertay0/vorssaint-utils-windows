@@ -889,6 +889,8 @@ extension Strings {
         dockClickHideCaption: "點按目前 App 的 Dock 圖示即可隱藏它。再點按一次即可帶回。",
         monitorMemoryMetricLabel: "記憶體計量方式",
         memoryMetricUsed: "已用記憶體",
-        memoryMetricApp: "App 記憶體"
+        memoryMetricApp: "App 記憶體",
+        keepAwakeRightClickToggle: "在選單列圖示按右鍵來切換「保持喚醒」",
+        keepAwakeRightClickToggleCaption: "會取代按右鍵選單。"
     )
 }
