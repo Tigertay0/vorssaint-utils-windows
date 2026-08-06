@@ -761,7 +761,7 @@ extension Strings {
         keyDebounceRemoveKey: "移除按键",
         cleaningPanelCaption: "锁定键盘，便于安全清洁。",
         cleaningOverlayTitle: "键盘已锁定以便清洁",
-        cleaningOverlaySubtitle: "连按同一个键 5 次以解锁",
+        cleaningOverlaySubtitle: "按下 Esc 键 5 次以解锁",
         cleaningOverlayUnlock: "解锁",
         cleaningOverlayMouseHint: "你的鼠标和触控板仍可使用",
         cleaningNeedsAxTitle: "需要辅助功能",

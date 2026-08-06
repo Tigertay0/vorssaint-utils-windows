@@ -8,7 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds optional Fan Control, per-app Switcher rules, edge snapping with a live
-preview and tabbed Scratchpads. Scrolling screenshots improve, URL cleaning accepts custom names, and copied images can open directly in the editor.
+preview and tabbed Scratchpads. Scrolling screenshots and Cleaning Mode are more reliable,
+URL cleaning accepts custom names, and copied images can open directly in the editor.
 
 ### Added
 - A configurable shortcut opens a copied image directly in the screenshot editor.
@@ -61,8 +62,8 @@ preview and tabbed Scratchpads. Scrolling screenshots improve, URL cleaning acce
   pass finds nothing.
 - Screen recording now freezes the display while an area is chosen. Escape cancels
   selection even if another app took focus.
-- Cleaning Mode stays active while the keyboard is being cleaned, then unlocks
-  after one minute without a new key press.
+- Cleaning Mode stays locked until you click Unlock or press Escape five times.
+  Trackpad gestures no longer move the screen while cleaning.
 - Windowless apps now keep their labels aligned in the App Switcher's Small size.
   Thanks to @Yahddyyp.
 - Small app icons now keep the correct artwork in Finder. Thanks to @slrgt.

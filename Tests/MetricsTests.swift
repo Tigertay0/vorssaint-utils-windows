@@ -7191,59 +7191,61 @@ struct MetricsTests {
 
         // MARK: Cleaning-mode unlock gesture
 
-        // Five deliberate taps of the same key unlock, on the fifth.
-        var taps = CleaningUnlockCounter(threshold: 5, pressWindow: 2.0)
+        let escapeKeyCode: Int64 = 53
+
+        // Five deliberate Escape taps unlock, on the fifth.
+        var taps = CleaningUnlockCounter(requiredKeyCode: escapeKeyCode, threshold: 5, pressWindow: 2.0)
         var tapUnlock = false
         for (i, t) in [0.0, 0.3, 0.6, 0.9, 1.2].enumerated() {
-            tapUnlock = taps.registerKeyDown(code: 0, time: t, isRepeat: false)
+            tapUnlock = taps.registerKeyDown(code: escapeKeyCode, time: t, isRepeat: false)
             if i < 4 { expect(!tapUnlock, "no unlock before the fifth tap (\(i + 1))") }
         }
-        expect(tapUnlock, "five same-key taps unlock")
+        expect(tapUnlock, "five Escape taps unlock")
         expect(taps.progress == 5, "progress reaches the threshold")
 
-        // Wiping the keyboard hits many different keys: it must never unlock.
-        var wipe = CleaningUnlockCounter(threshold: 5, pressWindow: 2.0)
+        // Wiping other keys cannot make progress toward unlock.
+        var wipe = CleaningUnlockCounter(requiredKeyCode: escapeKeyCode, threshold: 5, pressWindow: 2.0)
         var wipeUnlock = false
         for (i, code) in [Int64(10), 11, 12, 13, 14, 15, 16, 17].enumerated() {
             if wipe.registerKeyDown(code: code, time: Double(i) * 0.1, isRepeat: false) { wipeUnlock = true }
         }
-        expect(!wipeUnlock, "wiping different keys never unlocks")
-        expect(wipe.progress == 1, "different keys keep progress at 1")
+        expect(!wipeUnlock, "wiping other keys never unlocks")
+        expect(wipe.progress == 0, "other keys make no unlock progress")
 
-        // A different key mid-streak resets the count.
-        var streak = CleaningUnlockCounter(threshold: 5, pressWindow: 2.0)
-        _ = streak.registerKeyDown(code: 9, time: 0.0, isRepeat: false)
-        _ = streak.registerKeyDown(code: 9, time: 0.2, isRepeat: false)
-        _ = streak.registerKeyDown(code: 9, time: 0.4, isRepeat: false)
+        // A different key mid-streak resets the count completely.
+        var streak = CleaningUnlockCounter(requiredKeyCode: escapeKeyCode, threshold: 5, pressWindow: 2.0)
+        _ = streak.registerKeyDown(code: escapeKeyCode, time: 0.0, isRepeat: false)
+        _ = streak.registerKeyDown(code: escapeKeyCode, time: 0.2, isRepeat: false)
+        _ = streak.registerKeyDown(code: escapeKeyCode, time: 0.4, isRepeat: false)
         _ = streak.registerKeyDown(code: 8, time: 0.6, isRepeat: false)
-        expect(streak.progress == 1, "a different key mid-streak resets to 1")
+        expect(streak.progress == 0, "a different key mid-streak clears progress")
 
-        // Auto-repeat (holding a key) is ignored, so resting on a key can't unlock.
-        var held = CleaningUnlockCounter(threshold: 5, pressWindow: 2.0)
+        // Auto-repeat (holding Escape) is ignored, so resting on it can't unlock.
+        var held = CleaningUnlockCounter(requiredKeyCode: escapeKeyCode, threshold: 5, pressWindow: 2.0)
         var heldUnlock = false
         for i in 0..<10 {
-            if held.registerKeyDown(code: 7, time: Double(i) * 0.1, isRepeat: true) { heldUnlock = true }
+            if held.registerKeyDown(code: escapeKeyCode, time: Double(i) * 0.1, isRepeat: true) { heldUnlock = true }
         }
         expect(!heldUnlock, "auto-repeat never unlocks")
         expect(held.progress == 0, "auto-repeat does not advance progress")
 
         // A pause longer than the window restarts the count.
-        var paused = CleaningUnlockCounter(threshold: 5, pressWindow: 2.0)
-        _ = paused.registerKeyDown(code: 3, time: 0.0, isRepeat: false)
-        _ = paused.registerKeyDown(code: 3, time: 0.5, isRepeat: false)
+        var paused = CleaningUnlockCounter(requiredKeyCode: escapeKeyCode, threshold: 5, pressWindow: 2.0)
+        _ = paused.registerKeyDown(code: escapeKeyCode, time: 0.0, isRepeat: false)
+        _ = paused.registerKeyDown(code: escapeKeyCode, time: 0.5, isRepeat: false)
         expect(paused.progress == 2, "presses within the window accumulate")
-        _ = paused.registerKeyDown(code: 3, time: 10.0, isRepeat: false)
+        _ = paused.registerKeyDown(code: escapeKeyCode, time: 10.0, isRepeat: false)
         expect(paused.progress == 1, "a pause beyond the window restarts the count")
 
         // reset() clears everything.
-        var cleared = CleaningUnlockCounter(threshold: 5, pressWindow: 2.0)
-        _ = cleared.registerKeyDown(code: 1, time: 0.0, isRepeat: false)
-        _ = cleared.registerKeyDown(code: 1, time: 0.2, isRepeat: false)
+        var cleared = CleaningUnlockCounter(requiredKeyCode: escapeKeyCode, threshold: 5, pressWindow: 2.0)
+        _ = cleared.registerKeyDown(code: escapeKeyCode, time: 0.0, isRepeat: false)
+        _ = cleared.registerKeyDown(code: escapeKeyCode, time: 0.2, isRepeat: false)
         expect(cleared.progress == 2, "progress accumulates before reset")
         cleared.reset()
         expect(cleared.progress == 0, "reset clears progress")
-        let afterReset2 = cleared.registerKeyDown(code: 1, time: 0.4, isRepeat: false)
-        expect(!afterReset2 && cleared.progress == 1, "after reset the same key starts fresh at 1")
+        let afterReset2 = cleared.registerKeyDown(code: escapeKeyCode, time: 0.4, isRepeat: false)
+        expect(!afterReset2 && cleared.progress == 1, "after reset Escape starts fresh at 1")
 
         func systemKeyData(keyCode: Int, state: Int, repeatFlag: Bool = false) -> Int {
             Int((UInt32(keyCode) << 16) | (UInt32(state) << 8) | (repeatFlag ? 1 : 0))

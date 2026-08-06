@@ -761,7 +761,7 @@ extension Strings {
         keyDebounceRemoveKey: "Eliminar tecla",
         cleaningPanelCaption: "Bloquea el teclado para limpiar con seguridad.",
         cleaningOverlayTitle: "Teclado bloqueado para limpiar",
-        cleaningOverlaySubtitle: "Pulsa la misma tecla 5 veces para desbloquear",
+        cleaningOverlaySubtitle: "Pulsa Esc 5 veces para desbloquear",
         cleaningOverlayUnlock: "Desbloquear",
         cleaningOverlayMouseHint: "El ratón y el trackpad siguen funcionando",
         cleaningNeedsAxTitle: "Se necesita Accesibilidad",

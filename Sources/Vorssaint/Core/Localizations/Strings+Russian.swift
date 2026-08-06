@@ -762,7 +762,7 @@ extension Strings {
         keyDebounceRemoveKey: "Удалить клавишу",
         cleaningPanelCaption: "Блокирует клавиатуру, чтобы можно было безопасно почистить её.",
         cleaningOverlayTitle: "Клавиатура заблокирована для чистки",
-        cleaningOverlaySubtitle: "Нажмите одну и ту же клавишу 5 раз, чтобы разблокировать",
+        cleaningOverlaySubtitle: "Нажмите Esc 5 раз, чтобы разблокировать",
         cleaningOverlayUnlock: "Разблокировать",
         cleaningOverlayMouseHint: "Мышь и трекпад продолжают работать",
         cleaningNeedsAxTitle: "Нужен Универсальный доступ",

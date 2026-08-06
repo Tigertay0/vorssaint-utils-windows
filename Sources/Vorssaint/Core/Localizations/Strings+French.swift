@@ -761,7 +761,7 @@ extension Strings {
         keyDebounceRemoveKey: "Supprimer la touche",
         cleaningPanelCaption: "Verrouille le clavier pour nettoyer en sécurité.",
         cleaningOverlayTitle: "Clavier verrouillé pour le nettoyage",
-        cleaningOverlaySubtitle: "Appuyez 5 fois sur la même touche pour déverrouiller",
+        cleaningOverlaySubtitle: "Appuyez 5 fois sur Échap pour déverrouiller",
         cleaningOverlayUnlock: "Déverrouiller",
         cleaningOverlayMouseHint: "Votre souris et votre trackpad fonctionnent toujours",
         cleaningNeedsAxTitle: "Accessibilité requise",

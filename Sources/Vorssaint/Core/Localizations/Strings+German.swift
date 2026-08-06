@@ -761,7 +761,7 @@ extension Strings {
         keyDebounceRemoveKey: "Taste entfernen",
         cleaningPanelCaption: "Sperrt die Tastatur, damit du sicher reinigen kannst.",
         cleaningOverlayTitle: "Tastatur zum Reinigen gesperrt",
-        cleaningOverlaySubtitle: "Dieselbe Taste 5-mal drücken zum Entsperren",
+        cleaningOverlaySubtitle: "Esc 5-mal drücken zum Entsperren",
         cleaningOverlayUnlock: "Entsperren",
         cleaningOverlayMouseHint: "Maus und Trackpad funktionieren weiterhin",
         cleaningNeedsAxTitle: "Bedienungshilfen erforderlich",
