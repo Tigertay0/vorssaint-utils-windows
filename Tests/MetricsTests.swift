@@ -6459,7 +6459,7 @@ struct MetricsTests {
         expect(SwitcherSupport.shouldDismissForClick(panelIsVisible: true,
                                                      panelFrame: switcherPanelFrame,
                                                      location: CGPoint(x: 200, y: 200)),
-               "App Switcher panel closes on a click outside it")
+               "App Switcher cancels synchronously when a mouse-down starts outside it")
         expect(!SwitcherSupport.shouldDismissForClick(panelIsVisible: true,
                                                       panelFrame: switcherPanelFrame,
                                                       location: CGPoint(x: 700, y: 500)),

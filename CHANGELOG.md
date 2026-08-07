@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
 Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots, Cleaning
-Mode and app removal are more reliable, while Dock Preview titles and Simplified Chinese
-wording are clearer.
+Mode, app removal and the App Switcher are more reliable, while Dock Preview titles and
+Simplified Chinese wording are clearer.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -67,6 +67,8 @@ wording are clearer.
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
+- The App Switcher opens quickly when apps run many helper processes. Clicking another
+  app now cancels the switch cleanly.
 - Scrolling screenshots now let you scroll the chosen area yourself, then finish
   with Enter or Done.
 - Copy text from screen retries with a different recognition path when the first
