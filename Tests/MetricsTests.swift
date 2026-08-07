@@ -7284,7 +7284,7 @@ struct MetricsTests {
 
         // MARK: Features hub catalog
 
-        expect(AppFeature.allCases.count == 50, "feature catalog has 50 features")
+        expect(AppFeature.allCases.count == 51, "feature catalog has 51 features")
         expect(Set(AppFeature.allCases.map(\.rawValue)).count == AppFeature.allCases.count,
                "feature ids are unique")
         expect(AppFeature.allCases.map(\.rawValue) == [
@@ -7292,6 +7292,7 @@ struct MetricsTests {
             "scrollInverter", "smoothScroll", "mouseNavigation", "mouseButtonShortcuts", "middleClick",
             "keyboardDebounce", "textSnippets", "superKey",
             "clipboardHistory", "pastePlain", "finderCutPaste", "finderRename", "shelf", "urlCleaner",
+            "diskImageInstaller",
             "mixer", "soundOutputSwitcher", "micMute", "musicBlock",
             "keepAwake", "brightness", "extraBrightness",
             "quickLauncher", "quickToggles", "colorPicker", "screenOCR", "cleaningMode", "mediaTools",
@@ -7304,10 +7305,13 @@ struct MetricsTests {
                "availability key derives from the raw value")
         expect(AppFeature.availabilityDefaults.count == AppFeature.allCases.count
                 && (AppFeature.availabilityDefaults[AppFeature.fanControl.availabilityKey] as? Bool) == false
-                && AppFeature.allCases.filter { $0 != .fanControl }.allSatisfy {
+                && (AppFeature.availabilityDefaults[AppFeature.diskImageInstaller.availabilityKey] as? Bool) == false
+                && AppFeature.allCases.filter {
+                    $0 != .fanControl && $0 != .diskImageInstaller
+                }.allSatisfy {
                     (AppFeature.availabilityDefaults[$0.availabilityKey] as? Bool) == true
                 },
-               "fan control ships uninstalled while existing features remain available")
+               "new opt-in features ship uninstalled while existing features remain available")
         expect(FeatureGroup.allCases.map { AppFeature.features(in: $0).count }.reduce(0, +)
                 == AppFeature.allCases.count,
                "every feature belongs to exactly one group")
@@ -7339,8 +7343,69 @@ struct MetricsTests {
                 && AppFeature.fanControl.isBeta
                 && !AppFeature.monitorPower.isBeta,
                "fan control is an on-demand beta with no broad permission")
+        expect(AppFeature.diskImageInstaller.group == .clipboardFiles
+                && AppFeature.diskImageInstaller.enabledKeys.isEmpty
+                && AppFeature.diskImageInstaller.permissions == [.appManagement]
+                && AppFeature.diskImageInstaller.energyProfile == .idle,
+               "the disk image installer is an event-driven file feature with contextual app access")
         expect((Defaults.registeredDefaults[DefaultsKey.panelShowFanControl] as? Bool) == true,
                "installing fan control reveals its panel section by default")
+
+        for language in AppLanguage.allCases {
+            let strings = FeatureStrings.diskImageInstaller(language)
+            let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
+            expect(values.count == 13 && values.allSatisfy { !$0.isEmpty },
+                   "disk image installer has every localized field for \(language.rawValue)")
+            expect(values.allSatisfy { !$0.contains("—") },
+                   "disk image installer text uses human punctuation for \(language.rawValue)")
+            expectFormat(strings.promptBodyFormat, ["@"],
+                         "\(language.rawValue) installer prompt format")
+            expectFormat(strings.installedBodyFormat, ["@"],
+                         "\(language.rawValue) installer success format")
+            expectFormat(strings.installedKeepingMountBodyFormat, ["@"],
+                         "\(language.rawValue) installer mounted-image format")
+            expectFormat(strings.installedKeepingDownloadBodyFormat, ["@"],
+                         "\(language.rawValue) installer kept-download format")
+            expectFormat(strings.alreadyInstalledBodyFormat, ["@"],
+                         "\(language.rawValue) installer existing-app format")
+        }
+
+        let installerInfo: [String: Any] = [
+            "images": [[
+                "image-path": "/Users/test/Downloads/App.dmg",
+                "system-entities": [[
+                    "dev-entry": "/dev/disk9s1",
+                    "mount-point": "/private/tmp/Installer Mount",
+                ]],
+            ]],
+        ]
+        if let installerData = try? PropertyListSerialization.data(fromPropertyList: installerInfo,
+                                                                    format: .xml,
+                                                                    options: 0) {
+            expect(DiskImageInstallerSupport.imageURL(
+                mountedAt: URL(fileURLWithPath: "/tmp/Installer Mount"),
+                hdiutilInfo: installerData)?.path == "/Users/test/Downloads/App.dmg",
+                "hdiutil plist maps the canonical mount path back to its disk image")
+            expect(DiskImageInstallerSupport.imageURL(
+                mountedAt: URL(fileURLWithPath: "/tmp/Other Mount"),
+                hdiutilInfo: installerData) == nil,
+                "an unrelated mounted volume is never treated as the disk image")
+        } else {
+            expect(false, "disk image installer plist fixture can be encoded")
+        }
+        expect(DiskImageInstallerSupport.destinationURL(
+            for: URL(fileURLWithPath: "/Volumes/Installer/Example.app"),
+            applicationsURL: URL(fileURLWithPath: "/Applications", isDirectory: true))?.path
+            == "/Applications/Example.app",
+            "a top-level app gets one fixed Applications destination")
+        expect(DiskImageInstallerSupport.destinationURL(
+            for: URL(fileURLWithPath: "/Volumes/Installer/.Hidden.app"),
+            applicationsURL: URL(fileURLWithPath: "/Applications", isDirectory: true)) == nil,
+            "hidden app bundles cannot create hidden Applications entries")
+        expect(DiskImageInstallerSupport.displayName(
+            preferred: "  Example\nApp\u{0007}  ",
+            appURL: URL(fileURLWithPath: "/Volumes/Installer/Fallback.app")) == "Example App",
+            "untrusted bundle names are flattened before entering an alert")
 
         // MARK: Fan Control safety policy
 
@@ -7561,8 +7626,8 @@ struct MetricsTests {
         expect(AppFeature.quickToggles.permissions == [.automationFinder],
                "the quick toggles need no permission beyond the Trash's Finder ask")
         expect(activeSet(.automationTerminal) == [.homebrew], "homebrew drives the Terminal")
-        expect(activeSet(.appManagement) == [.homebrew, .appUpdates],
-               "package and app updates declare App Management access")
+        expect(activeSet(.appManagement) == [.homebrew, .appUpdates, .diskImageInstaller],
+               "package, update and disk-image installs declare App Management access")
         expect(AppFeature.homebrew.permissions == [.automationTerminal, .appManagement],
                "the package manager declares both permissions used by its operations")
         expect(activeSet(.audioCapture) == [.mixer], "the mixer is the only audio capture user")

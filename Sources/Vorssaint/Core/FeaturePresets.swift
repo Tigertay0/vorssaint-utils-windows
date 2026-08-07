@@ -113,7 +113,8 @@ extension AppFeature {
         case .pastePlain, .mixer, .soundOutputSwitcher, .micMute,
              .musicBlock, .keepAwake, .brightness, .quickLauncher, .quickToggles, .colorPicker,
              .screenOCR, .cleaningMode, .mediaTools, .cleaner, .uninstaller, .homebrew, .screenshot,
-             .cameraPreview, .scratchpad, .commandBar, .screenRecorder, .fanControl:
+             .cameraPreview, .scratchpad, .commandBar, .screenRecorder, .fanControl,
+             .diskImageInstaller:
             return .idle
         case .appUpdates:
             // The list is on demand; only a background schedule keeps a timer.

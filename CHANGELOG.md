@@ -7,13 +7,15 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds editable system and microphone audio to screen recordings, optional Fan
-Control, per-app Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots
-and Cleaning Mode are more reliable, while copied images can open directly in the editor.
+Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
+Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots and Cleaning
+Mode are more reliable, while copied images can open directly in the editor.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
   selecting, then adjust or remove each track in the editor.
+- A mounted disk image with one app can install it into Applications, eject itself and
+  move its download to the Trash. Off by default in Features.
 - A configurable shortcut opens a copied image directly in the screenshot editor.
   Under Screenshot, off by default. Thanks to @neon443.
 - Window Layout can preview and place a window dragged to any screen edge or corner.

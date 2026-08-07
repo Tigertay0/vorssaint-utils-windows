@@ -159,6 +159,8 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Homebrew/HomebrewSupport.swift \
         Sources/Vorssaint/Services/AppUpdates/AppUpdatesSupport.swift \
         Sources/Vorssaint/Core/AppUpdateStrings.swift \
+        Sources/Vorssaint/Core/DiskImageInstallerStrings.swift \
+        Sources/Vorssaint/Services/DiskImageInstaller/DiskImageInstallerSupport.swift \
         Sources/Vorssaint/Services/Clipboard/ClipboardHistorySupport.swift \
         Sources/Vorssaint/Services/AutoQuit/AutoQuitSupport.swift \
         Sources/Vorssaint/Services/Shelf/ShelfSupport.swift \

@@ -102,6 +102,7 @@ The rest bends the same way: panel sections reorder and hide, the compact layout
 - **Shelf.** Park files, text and links near your cursor mid drag, then drop them where they belong later.
 - **Finder shortcuts.** ⌘X and ⌘V move files, an optional F2 shortcut renames the selection, and copied images can become PNG files with ⌘V.
 - **Clean URL.** Strips tracking parameters and extra names you choose from copied links, on demand or automatically.
+- **Disk image installer.** When a mounted disk image contains one app, install it into Applications with one click, eject the image and move its download to Trash.
 
 ### Everyday tools
 

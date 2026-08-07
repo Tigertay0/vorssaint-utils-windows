@@ -19,7 +19,8 @@ enum AppFeature: String, CaseIterable {
     case scrollInverter, smoothScroll, mouseNavigation, mouseButtonShortcuts, middleClick,
          keyboardDebounce, textSnippets, superKey
     // Clipboard and files
-    case clipboardHistory, pastePlain, finderCutPaste, finderRename, shelf, urlCleaner
+    case clipboardHistory, pastePlain, finderCutPaste, finderRename, shelf, urlCleaner,
+         diskImageInstaller
     // Sound
     case mixer, soundOutputSwitcher, micMute, musicBlock
     // Energy and display
@@ -52,7 +53,8 @@ extension AppFeature {
         case .scrollInverter, .smoothScroll, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
              .keyboardDebounce, .textSnippets, .superKey:
             return .mouseKeyboard
-        case .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner:
+        case .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
+             .diskImageInstaller:
             return .clipboardFiles
         case .mixer, .soundOutputSwitcher, .micMute, .musicBlock:
             return .sound
@@ -90,6 +92,7 @@ extension AppFeature {
         case .finderRename: return "pencil"
         case .shelf: return "tray.full"
         case .urlCleaner: return "link"
+        case .diskImageInstaller: return "externaldrive.badge.plus"
         case .mixer: return "slider.horizontal.3"
         case .soundOutputSwitcher: return "hifispeaker"
         case .micMute: return "mic.slash"
@@ -166,7 +169,7 @@ extension AppFeature {
         case .musicBlock: return [DefaultsKey.musicBlockEnabled]
         case .brightness: return [DefaultsKey.brightnessControlEnabled]
         case .extraBrightness: return [DefaultsKey.extraBrightnessEnabled]
-        case .windowLayout, .mixer, .micMute, .keepAwake,
+        case .windowLayout, .diskImageInstaller, .mixer, .micMute, .keepAwake,
              .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .scratchpad,
              .commandBar, .screenRecorder,
@@ -208,6 +211,7 @@ extension AppFeature {
         case .uninstaller: return [.fullDiskAccess, .automationFinder]
         case .homebrew: return [.automationTerminal, .appManagement]
         case .appUpdates: return [.notifications, .appManagement]
+        case .diskImageInstaller: return [.appManagement]
         case .mixer: return [.audioCapture]
         case .monitorCPU, .monitorMemory, .monitorDisk, .monitorPower: return [.notifications]
         case .clipboardHistory, .shelf, .urlCleaner,
@@ -240,11 +244,11 @@ extension AppFeature {
         allCases.filter { $0.group == group }
     }
 
-    /// Registered defaults preserve existing features on update. Fan Control
-    /// is the exception: it ships uninstalled while it is in beta.
+    /// Registered defaults preserve existing features on update. New opt-in
+    /// features and explicit betas ship uninstalled.
     static var availabilityDefaults: [String: Any] {
         Dictionary(uniqueKeysWithValues: allCases.map {
-            ($0.availabilityKey, $0 != .fanControl)
+            ($0.availabilityKey, $0 != .fanControl && $0 != .diskImageInstaller)
         })
     }
 
