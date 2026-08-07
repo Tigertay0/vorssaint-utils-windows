@@ -136,7 +136,10 @@ extension ClipboardFeatureStrings {
         fileCountFormat: "파일 %d개",
         pasteImageAsFile: "복사한 이미지를 파일로 붙여넣기",
         pasteImageAsFileCaption: "Finder가 활성화되어 있을 때 ⌘V를 누르면 복사한 이미지가 현재 폴더에 PNG로 저장됩니다.",
-        previewLabel: "미리보기"
+        previewLabel: "미리보기",
+        edit: "편집",
+        cancel: "취소",
+        save: "저장"
     )
 }
 
@@ -395,6 +398,9 @@ struct ClipboardFeatureStrings {
     let pasteImageAsFile: String
     let pasteImageAsFileCaption: String
     let previewLabel: String
+    let edit: String
+    let cancel: String
+    let save: String
 
     static let enUS = ClipboardFeatureStrings(
         title: "Clipboard",
@@ -439,7 +445,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d files",
         pasteImageAsFile: "Paste copied images as files",
         pasteImageAsFileCaption: "When Finder is active, ⌘V saves a copied image as a PNG in the current folder.",
-        previewLabel: "Preview"
+        previewLabel: "Preview",
+        edit: "Edit",
+        cancel: "Cancel",
+        save: "Save"
     )
 
     static let ptBR = ClipboardFeatureStrings(
@@ -485,7 +494,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d arquivos",
         pasteImageAsFile: "Colar imagens copiadas como arquivos",
         pasteImageAsFileCaption: "Com o Finder ativo, ⌘V salva uma imagem copiada como PNG na pasta atual.",
-        previewLabel: "Prévia"
+        previewLabel: "Prévia",
+        edit: "Editar",
+        cancel: "Cancelar",
+        save: "Salvar"
     )
 
     static let tr = ClipboardFeatureStrings(
@@ -531,7 +543,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d dosya",
         pasteImageAsFile: "Kopyalanan görselleri dosya olarak yapıştır",
         pasteImageAsFileCaption: "Finder etkinken ⌘V, kopyalanan görseli geçerli klasöre PNG olarak kaydeder.",
-        previewLabel: "Önizleme"
+        previewLabel: "Önizleme",
+        edit: "Düzenle",
+        cancel: "İptal",
+        save: "Kaydet"
     )
 
     static let ru = ClipboardFeatureStrings(
@@ -577,7 +592,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "Файлов: %d",
         pasteImageAsFile: "Вставлять скопированные изображения как файлы",
         pasteImageAsFileCaption: "Когда Finder активен, ⌘V сохраняет скопированное изображение как PNG в текущей папке.",
-        previewLabel: "Просмотр"
+        previewLabel: "Просмотр",
+        edit: "Редактировать",
+        cancel: "Отмена",
+        save: "Сохранить"
     )
 
     static let es = ClipboardFeatureStrings(
@@ -623,7 +641,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d archivos",
         pasteImageAsFile: "Pegar imágenes copiadas como archivos",
         pasteImageAsFileCaption: "Con Finder activo, ⌘V guarda una imagen copiada como PNG en la carpeta actual.",
-        previewLabel: "Vista previa"
+        previewLabel: "Vista previa",
+        edit: "Editar",
+        cancel: "Cancelar",
+        save: "Guardar"
     )
 
     static let de = ClipboardFeatureStrings(
@@ -669,7 +690,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d Dateien",
         pasteImageAsFile: "Kopierte Bilder als Dateien einsetzen",
         pasteImageAsFileCaption: "Wenn Finder aktiv ist, speichert ⌘V ein kopiertes Bild als PNG im aktuellen Ordner.",
-        previewLabel: "Vorschau"
+        previewLabel: "Vorschau",
+        edit: "Bearbeiten",
+        cancel: "Abbrechen",
+        save: "Sichern"
     )
 
     static let fr = ClipboardFeatureStrings(
@@ -715,7 +739,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d fichiers",
         pasteImageAsFile: "Coller les images copiées comme fichiers",
         pasteImageAsFileCaption: "Lorsque Finder est actif, ⌘V enregistre l’image copiée au format PNG dans le dossier actuel.",
-        previewLabel: "Aperçu"
+        previewLabel: "Aperçu",
+        edit: "Modifier",
+        cancel: "Annuler",
+        save: "Enregistrer"
     )
 
     static let it = ClipboardFeatureStrings(
@@ -761,7 +788,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d file",
         pasteImageAsFile: "Incolla le immagini copiate come file",
         pasteImageAsFileCaption: "Quando Finder è attivo, ⌘V salva un’immagine copiata come PNG nella cartella attuale.",
-        previewLabel: "Anteprima"
+        previewLabel: "Anteprima",
+        edit: "Modifica",
+        cancel: "Annulla",
+        save: "Salva"
     )
 
     static let ja = ClipboardFeatureStrings(
@@ -807,7 +837,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d個のファイル",
         pasteImageAsFile: "コピーした画像をファイルとしてペースト",
         pasteImageAsFileCaption: "Finder がアクティブなとき、⌘V でコピーした画像を現在のフォルダに PNG として保存します。",
-        previewLabel: "プレビュー"
+        previewLabel: "プレビュー",
+        edit: "編集",
+        cancel: "キャンセル",
+        save: "保存"
     )
 
     static let zhHans = ClipboardFeatureStrings(
@@ -853,7 +886,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d 个文件",
         pasteImageAsFile: "将复制的图片粘贴为文件",
         pasteImageAsFileCaption: "Finder 处于活动状态时，按 ⌘V 会将复制的图片以 PNG 格式保存到当前文件夹。",
-        previewLabel: "预览"
+        previewLabel: "预览",
+        edit: "编辑",
+        cancel: "取消",
+        save: "保存"
     )
 
     static let zhTW = ClipboardFeatureStrings(
@@ -899,7 +935,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d 個檔案",
         pasteImageAsFile: "將複製的圖片貼上為檔案",
         pasteImageAsFileCaption: "Finder 啟用時，按下 ⌘V 會將複製的圖片以 PNG 格式儲存到目前的資料夾。",
-        previewLabel: "預覽"
+        previewLabel: "預覽",
+        edit: "編輯",
+        cancel: "取消",
+        save: "儲存"
     )
 
     static let zhHK = ClipboardFeatureStrings(
@@ -945,7 +984,10 @@ struct ClipboardFeatureStrings {
         fileCountFormat: "%d 個檔案",
         pasteImageAsFile: "將複製的圖片貼上為檔案",
         pasteImageAsFileCaption: "Finder 啟用時，按下 ⌘V 會將複製的圖片以 PNG 格式儲存到目前的資料夾。",
-        previewLabel: "預覽"
+        previewLabel: "預覽",
+        edit: "編輯",
+        cancel: "取消",
+        save: "儲存"
     )
 }
 

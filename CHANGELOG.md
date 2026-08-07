@@ -9,7 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
 Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots, Cleaning
-Mode and app removal are more reliable, while copied images open directly in the editor.
+Mode and app removal are more reliable, while copied images open directly in the editor
+and Clipboard text can be selected or edited.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -36,8 +37,8 @@ Mode and app removal are more reliable, while copied images open directly in the
 - The radial menu can run Quick toggle actions such as appearance, screen lock
   and hidden files.
 - The Command Bar opens a web address typed directly into it. Thanks to @tingke.
-- Clipboard history keeps the full selected text, image or file paths visible beside
-  the list. Thanks to @notdanna.
+- Clipboard history shows each item in full beside the list. Text is selectable and
+  editable there. Thanks to @notdanna and @ghostman-git.
 - Memory readouts can focus on memory held by apps instead of total memory in use.
   Under Monitor. Thanks to @WazZro.
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.

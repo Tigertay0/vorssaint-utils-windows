@@ -264,6 +264,17 @@ struct MetricsTests {
                "clipboard quick window starts keyboard navigation on the first item")
         expect(ClipboardHistorySelection.initialIndex(totalCount: 0) == 0,
                "clipboard quick window keeps an empty selection index safe")
+        expect(ClipboardHistoryEditing.canSave(original: "First draft", draft: "Second draft"),
+               "clipboard text can save a real edit")
+        expect(!ClipboardHistoryEditing.canSave(original: "Same", draft: "Same"),
+               "clipboard text does not save an unchanged draft")
+        expect(ClipboardHistoryEditing.storableText("  keep spacing  ") == "  keep spacing  ",
+               "clipboard editing preserves intentional outer spacing")
+        expect(ClipboardHistoryEditing.storableText(" \n\t ") == nil,
+               "clipboard editing rejects an empty text item")
+        expect(ClipboardHistoryEditing.storableText(
+            String(repeating: "a", count: ClipboardHistoryEditing.maxCharacters + 1)) == nil,
+               "clipboard editing keeps the history text size bound")
         let previewID = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
         let nextPreviewID = UUID(uuidString: "00000000-0000-0000-0000-000000000102")!
         let updatedPreview = ClipboardHistoryEntry(id: previewID, text: "updated")
@@ -323,6 +334,17 @@ struct MetricsTests {
                    "clipboard histories saved before images and files decode as text")
         } else {
             expect(false, "clipboard legacy history decodes")
+        }
+        var editedTextEntry = ClipboardHistoryEntry(text: "before", pinnedAt: Date(timeIntervalSince1970: 42))
+        editedTextEntry.text = ClipboardHistoryEditing.storableText("after") ?? editedTextEntry.text
+        if let encoded = try? JSONEncoder().encode([editedTextEntry]),
+           let decoded = try? JSONDecoder().decode([ClipboardHistoryEntry].self, from: encoded) {
+            expect(decoded.first?.id == editedTextEntry.id
+                   && decoded.first?.text == "after"
+                   && decoded.first?.pinnedAt == editedTextEntry.pinnedAt,
+                   "clipboard text edits persist without losing item identity or pinning")
+        } else {
+            expect(false, "clipboard text edit round-trips")
         }
         let imageEntry = ClipboardHistoryEntry(text: "",
                                                kind: .image,
@@ -7688,7 +7710,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let values = Mirror(reflecting: FeatureStrings.clipboard(language)).children
                 .compactMap { $0.value as? String }
-            expect(values.count == 43 && values.allSatisfy { !$0.isEmpty },
+            expect(values.count == 46 && values.allSatisfy { !$0.isEmpty },
                    "every clipboard string is set for \(language.rawValue)")
             expect(values.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible clipboard strings (\(language.rawValue))")
