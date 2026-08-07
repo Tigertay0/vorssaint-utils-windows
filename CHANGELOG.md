@@ -67,8 +67,8 @@ wording are clearer.
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
-- Scrolling screenshots accept a window with one click, wait for pages to settle
-  and keep capturing long pages without stopping early.
+- Scrolling screenshots now let you scroll the chosen area yourself, then finish
+  with Enter or Done.
 - Copy text from screen retries with a different recognition path when the first
   pass finds nothing.
 - Screen recording now freezes the display while an area is chosen. Escape cancels

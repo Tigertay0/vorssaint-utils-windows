@@ -7359,9 +7359,9 @@ struct MetricsTests {
         expect(Set(FeaturePreset.windows.features.flatMap(\.onboardingPermissions))
                 == [.accessibility, .screenRecording],
                "the windows first-run choice explains exactly its two broad permissions")
-        expect(AppFeature.screenshot.permissions == [.screenRecording, .accessibility]
+        expect(AppFeature.screenshot.permissions == [.screenRecording]
                 && AppFeature.screenshot.onboardingPermissions == [.screenRecording],
-               "screenshots explain the general capture grant first and keep scrolling access contextual")
+               "screenshots only need the screen recording grant")
         expect(AppFeature.screenRecorder.onboardingPermissions
                 == [.screenRecording, .accessibility],
                "the recorder choice explains both permissions it needs")
@@ -7581,7 +7581,7 @@ struct MetricsTests {
         }
 
         expect(activeSet(.accessibility)
-                == [.windowLayout, .cleaningMode, .screenshot, .commandBar, .screenRecorder],
+                == [.windowLayout, .cleaningMode, .commandBar, .screenRecorder],
                "with nothing enabled only on-demand features use accessibility")
         expect(activeSet(.accessibility, on: [DefaultsKey.scrollInverterEnabled]).contains(.scrollInverter),
                "an enabled feature counts as using its permission")
@@ -8752,20 +8752,11 @@ struct MetricsTests {
                 && ScreenshotSupport.sanitizedDelay(7) == 0
                 && ScreenshotSupport.sanitizedDelay(-3) == 0,
                "capture delay only accepts the offered steps")
-        expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 30
-                && ScreenshotSupport.scrollingCaptureMaximumFrames == 64
+        expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 120
+                && ScreenshotSupport.scrollingCaptureMaximumFrames == 512
                 && ScreenshotSupport.scrollingCaptureMaximumRetainedPixels == 60_000_000
                 && ScreenshotSupport.scrollingCaptureMaximumPixels == 60_000_000,
-               "scrolling screenshots have explicit loop and memory safeguards")
-        expect(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 900) == 558
-                && ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 1200) == 720,
-               "scrolling screenshots cap large scroll steps")
-        expectClose(Double(ScreenshotSupport.scrollingCaptureStepPoints(regionHeight: 120)), 74.4,
-                    "scrolling screenshots keep small scroll steps proportional")
-        let scrollDeltas = ScreenshotSupport.scrollingCaptureScrollDeltas(points: 74.4)
-        expect(scrollDeltas.reduce(0, +) == -7
-                && scrollDeltas.allSatisfy { abs($0) <= 4 },
-               "scrolling screenshots emit only ordinary-sized wheel deltas")
+               "manual scrolling screenshots have explicit loop and memory safeguards")
 
         func scrollingSample(width: Int = 16,
                              height: Int = 120,
@@ -8786,12 +8777,12 @@ struct MetricsTests {
         let nextScrollSample = scrollingSample(offset: 76)
         expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
                                                      current: nextScrollSample)
-                == .advanced(overlap: 44),
+                == .advanced(overlap: 44, direction: .forward),
                "scrolling screenshots find the exact shared rows deterministically")
         expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
                                                      current: firstScrollSample)
-                == .advanced(overlap: 44),
-               "scrolling screenshots match either Core Graphics row orientation")
+                == .advanced(overlap: 44, direction: .backward),
+               "scrolling screenshots identify backward movement without duplicating it")
         expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
                                                      current: nextScrollSample) == .end,
                "an unchanged capture marks the real end of scrolling")
@@ -8801,7 +8792,7 @@ struct MetricsTests {
         let shortFinalScrollSample = scrollingSample(offset: 8)
         expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
                                                      current: shortFinalScrollSample)
-                == .advanced(overlap: 112),
+                == .advanced(overlap: 112, direction: .forward),
                "a short final scroll is kept instead of failing the whole capture")
         func sampleWithFixedEdges(offset: Int) -> ScreenshotSupport.ScrollingSample {
             let sample = scrollingSample(offset: offset)
@@ -8819,7 +8810,8 @@ struct MetricsTests {
         }
         expect(ScreenshotSupport.scrollingTransition(
             previous: sampleWithFixedEdges(offset: 0),
-            current: sampleWithFixedEdges(offset: 50)) == .advanced(overlap: 70),
+            current: sampleWithFixedEdges(offset: 50))
+                == .advanced(overlap: 70, direction: .forward),
                "fixed page edges do not hide the shared scrolling content")
         var scrollingStressPassed = true
         for iteration in 0..<250 {
@@ -8828,7 +8820,7 @@ struct MetricsTests {
                 previous: firstScrollSample,
                 current: scrollingSample(offset: offset))
             scrollingStressPassed = scrollingStressPassed
-                && transition == .advanced(overlap: 120 - offset)
+                && transition == .advanced(overlap: 120 - offset, direction: .forward)
         }
         expect(scrollingStressPassed,
                "scroll matching stays deterministic through repeated short and long advances")
@@ -8836,7 +8828,7 @@ struct MetricsTests {
         let retinaScrollNext = scrollingSample(width: 32, height: 900, offset: 558)
         expect(ScreenshotSupport.scrollingTransition(previous: retinaScrollStart,
                                                      current: retinaScrollNext)
-                == .advanced(overlap: 342),
+                == .advanced(overlap: 342, direction: .forward),
                "scroll matching handles a full-width sample at a realistic Retina selection height")
         var unmatchedScrollPixels = [UInt8](repeating: 0, count: 16 * 120)
         for index in unmatchedScrollPixels.indices {
