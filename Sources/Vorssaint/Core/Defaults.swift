@@ -460,6 +460,7 @@ enum DefaultsKey {
     static let windowLayoutShortcutBottomLeft = "windowLayoutShortcutBottomLeft"
     static let windowLayoutShortcutBottomRight = "windowLayoutShortcutBottomRight"
     static let windowLayoutShortcutMaximize = "windowLayoutShortcutMaximize"
+    static let windowLayoutShortcutMarginMaximize = "windowLayoutShortcutMarginMaximize"
     static let windowLayoutShortcutCenter = "windowLayoutShortcutCenter"
     static let windowLayoutShortcutRestore = "windowLayoutShortcutRestore"
     static let windowLayoutShortcutLeftThird = "windowLayoutShortcutLeftThird"
@@ -1036,6 +1037,7 @@ enum Defaults {
         DefaultsKey.windowLayoutShortcutBottomLeft: GlobalShortcut.windowLayoutBottomLeftDefault.storageValue,
         DefaultsKey.windowLayoutShortcutBottomRight: GlobalShortcut.windowLayoutBottomRightDefault.storageValue,
         DefaultsKey.windowLayoutShortcutMaximize: GlobalShortcut.windowLayoutMaximizeDefault.storageValue,
+        DefaultsKey.windowLayoutShortcutMarginMaximize: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutShortcutCenter: GlobalShortcut.windowLayoutCenterDefault.storageValue,
         DefaultsKey.windowLayoutShortcutRestore: GlobalShortcut.windowLayoutRestoreDefault.storageValue,
         DefaultsKey.windowLayoutShortcutLeftThird: GlobalShortcut.windowLayoutLeftThirdDefault.storageValue,

@@ -2234,6 +2234,7 @@ struct MetricsTests {
             DefaultsKey.windowLayoutShortcutBottomCenterSixth,
             DefaultsKey.windowLayoutShortcutBottomRightSixth,
             DefaultsKey.windowLayoutShortcutPreviousDisplay,
+            DefaultsKey.windowLayoutShortcutMarginMaximize,
         ]
         expect(unassignedLayoutShortcutKeys.allSatisfy {
                    registeredDefaults[$0] as? String == WindowLayoutAction.clearedShortcutStorageValue
@@ -2272,12 +2273,21 @@ struct MetricsTests {
                "previous display exists and answers to its own shortcut id")
         expect(WindowLayoutAction.previousDisplay.defaultShortcut == nil,
                "previous display does not claim a new system-wide combination")
+        expect(WindowLayoutAction.allCases.contains(.marginMaximize)
+                && WindowLayoutAction.marginMaximize.shortcutID == 55
+                && WindowLayoutAction(shortcutID: 55) == .marginMaximize,
+               "margin maximize exists and answers to its own shortcut id")
+        expect(WindowLayoutAction.marginMaximize.defaultShortcut == nil
+                && Defaults.registeredDefaults[DefaultsKey.windowLayoutShortcutMarginMaximize] as? String
+                    == WindowLayoutAction.clearedShortcutStorageValue,
+               "margin maximize starts with no combination of its own")
         expect(Set(WindowLayoutAction.allCases.map(\.shortcutID)).count
                 == WindowLayoutAction.allCases.count,
                "every layout action keeps a distinct shortcut id")
         for language in AppLanguage.allCases {
             let layoutStrings = FeatureStrings.windowLayout(language)
-            expect(!layoutStrings.fullScreen.isEmpty && !layoutStrings.previousDisplay.isEmpty,
+            expect(!layoutStrings.fullScreen.isEmpty && !layoutStrings.previousDisplay.isEmpty
+                    && !layoutStrings.marginMaximize.isEmpty,
                    "\(language.rawValue) names the latest window layout actions")
         }
         expect(WindowLayoutGeometry.accepts(actualRect: .zero, targetRect: .zero,
@@ -3349,6 +3359,11 @@ struct MetricsTests {
         expect(WindowLayoutGeometry.rect(for: .maximize, current: currentWindow, visibleFrame: visibleFrame)
                == visibleFrame,
                "window layout maximize uses the full visible frame")
+        let marginMaximizeTarget = WindowLayoutGeometry.rect(for: .marginMaximize,
+                                                              current: currentWindow,
+                                                              visibleFrame: visibleFrame)
+        expect(marginMaximizeTarget == CGRect(x: 72, y: 83, width: 1296, height: 774),
+               "window layout margin maximize keeps five percent on every usable edge")
         expect(WindowLayoutGeometry.rect(for: .center, current: currentWindow, visibleFrame: visibleFrame)
                == CGRect(x: 320, y: 220, width: 800, height: 500),
                "window layout center preserves current size and centers inside the visible frame")
@@ -3463,6 +3478,17 @@ struct MetricsTests {
                                                  visibleFrame: visibleFrame)
                == CGRect(x: 540, y: 40, width: 900, height: 620),
                "window layout bottom right anchors the accepted app size to both requested edges")
+        expect(WindowLayoutGeometry.anchoredRect(for: .marginMaximize,
+                                                 targetRect: marginMaximizeTarget,
+                                                 actualSize: CGSize(width: 1400, height: 820),
+                                                 visibleFrame: visibleFrame)
+               == CGRect(x: 20, y: 60, width: 1400, height: 820),
+               "window layout margin maximize keeps a constrained app centered")
+        expect(WindowLayoutGeometry.accepts(actualRect: CGRect(x: 320, y: 220, width: 800, height: 500),
+                                            targetRect: marginMaximizeTarget,
+                                            action: .marginMaximize,
+                                            anchorTolerance: 36) == false,
+               "window layout margin maximize rejects a merely centered small window")
 
         // MARK: Window move and resize gestures
 
@@ -10140,7 +10166,8 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.windowEdgeSnapEnabled)
                 && backupKeys.contains(DefaultsKey.windowGestureModifiers)
                 && backupKeys.contains(DefaultsKey.windowGestureRaiseWindow)
-                && backupKeys.contains(DefaultsKey.windowLayoutShortcutPreviousDisplay),
+                && backupKeys.contains(DefaultsKey.windowLayoutShortcutPreviousDisplay)
+                && backupKeys.contains(DefaultsKey.windowLayoutShortcutMarginMaximize),
                "window layout choices travel with the settings backup")
         expect(backupKeys.contains(DefaultsKey.screenshotFreeze)
                 && backupKeys.contains(DefaultsKey.screenshotSaveFolder)

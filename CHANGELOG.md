@@ -8,9 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
-Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots, Cleaning
-Mode, app removal and the App Switcher are more reliable, with a panel that follows your
-section order.
+Switcher rules, edge snapping, Maximize with Margin and tabbed Scratchpads. Scrolling
+screenshots, Cleaning Mode, app removal and the App Switcher are more reliable, with a
+panel that follows your section order.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -53,6 +53,8 @@ section order.
   It can cool at maximum for 15 minutes, then returns to automatic control.
 - Window Layout can move the active window to the previous display, with an optional
   shortcut. Thanks to @owen-vromans.
+- Window Layout can maximize with a 5% margin around the usable screen, with an optional
+  shortcut. Thanks to @UnbrokenMango21.
 - The screenshot preview can stay near the capture or appear in any screen corner.
   Under Screenshot. Thanks to @lmilojevicc.
 - Keep Awake can optionally toggle with a right click on the menu bar icon.
