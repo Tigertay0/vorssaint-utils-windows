@@ -8,8 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
-Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots and Cleaning
-Mode are more reliable, while copied images can open directly in the editor.
+Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots, Cleaning
+Mode and app removal are more reliable, while copied images open directly in the editor.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -88,6 +88,8 @@ Mode are more reliable, while copied images can open directly in the editor.
   actions running together. Thanks to @PathGao.
 - In-app updates now stop downloads that exceed the release's expected size.
   Thanks to @PathGao.
+- The Uninstaller now stops an app's background parts before moving it to the Trash.
+  Thanks to @SeoliteQ.
 
 ## [3.3.0] - 2026-08-04
 

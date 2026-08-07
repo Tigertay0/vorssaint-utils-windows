@@ -2682,6 +2682,16 @@ struct MetricsTests {
                && UninstallerSupport.verifiedBundleID("com.vorssaint.utils") == nil
                && UninstallerSupport.verifiedBundleID("com.apple.system") == nil,
                "malformed, protected and current app identifiers never enter uninstall paths")
+        let uninstallAppURL = URL(fileURLWithPath: "/Applications/Editor.app")
+        expect(UninstallerSupport.isNestedBundle(
+                   URL(fileURLWithPath: "/Applications/Editor.app/Contents/Library/LoginItems/Background.app"),
+                   in: uninstallAppURL)
+               && !UninstallerSupport.isNestedBundle(uninstallAppURL, in: uninstallAppURL)
+               && !UninstallerSupport.isNestedBundle(
+                   URL(fileURLWithPath: "/Applications/Editor.app-copy/Contents/Background.app"),
+                   in: uninstallAppURL)
+               && !UninstallerSupport.isNestedBundle(nil, in: uninstallAppURL),
+               "the uninstaller stops only background apps nested inside the selected bundle")
         let uninstallIDs: Set<String> = ["com.vendor.editor", "com.vendor.editor.helper"]
         let deepUninstall = UninstallerSupport.exactDeepCandidates(
             home: URL(fileURLWithPath: "/Users/tester"),
