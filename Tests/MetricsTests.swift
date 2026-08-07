@@ -8180,6 +8180,11 @@ struct MetricsTests {
                "other media keys never decode as brightness")
         expect(BrightnessSupport.brightnessKeyEvent(subtype: 1, data1: 0) == nil,
                "other system-defined subtypes never decode as brightness")
+        expect(BrightnessSupport.keyboardLightOnLevel(lastNonzero: nil) == 0.5
+                && BrightnessSupport.keyboardLightOnLevel(lastNonzero: 0) == 0.5
+                && BrightnessSupport.keyboardLightOnLevel(lastNonzero: 0.7) == 0.7
+                && BrightnessSupport.keyboardLightOnLevel(lastNonzero: 2) == 1,
+               "keyboard light restores its last level or starts halfway")
         expect(BrightnessSupport.steppedBrightness(0.97, delta: BrightnessSupport.brightnessKeyStep) == 1.0
                 && BrightnessSupport.steppedBrightness(0.03, delta: -BrightnessSupport.brightnessKeyStep) == 0.0,
                "key steps clamp at both ends of the range")
