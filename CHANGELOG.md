@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
 Switcher rules, edge snapping and tabbed Scratchpads. Scrolling screenshots, Cleaning
-Mode, app removal and the App Switcher are more reliable, while Dock Preview titles and
-Simplified Chinese wording are clearer.
+Mode, app removal and the App Switcher are more reliable, with a panel that follows your
+section order.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -85,6 +85,8 @@ Simplified Chinese wording are clearer.
   while their selection remains active.
 - The menu bar panel no longer leaves a focus outline on a different section than
   the one being shown.
+- The menu bar panel now opens on the first visible section in your chosen order
+  after Vorssaint starts.
 - The System panel no longer shows battery readings on Macs without a battery.
 - The package manager page and Settings sidebar now keep their tops visible and
   scroll normally.
