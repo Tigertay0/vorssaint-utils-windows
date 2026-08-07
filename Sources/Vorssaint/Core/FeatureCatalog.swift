@@ -41,7 +41,7 @@ enum FeatureGroup: String, CaseIterable {
 /// System permissions surfaced by the hub's transparency portal.
 enum AppPermission: String, CaseIterable {
     case accessibility, screenRecording, fullDiskAccess, filesAndFolders, notifications,
-         automationFinder, automationTerminal, audioCapture, camera, appManagement
+         automationFinder, automationTerminal, audioCapture, microphone, camera, appManagement
 }
 
 extension AppFeature {
@@ -198,9 +198,9 @@ extension AppFeature {
         case .dockPreview: return [.accessibility, .screenRecording]
         case .screenOCR: return [.screenRecording]
         case .screenshot: return [.screenRecording, .accessibility]
-        // The sound of the Mac rides the same grant the pixels do. Accessibility
-        // keeps only typing timing while a recording is active.
-        case .screenRecorder: return [.screenRecording, .accessibility]
+        // The sound of the Mac rides the same grant the pixels do. Microphone
+        // access stays contextual, and Accessibility only keeps typing timing.
+        case .screenRecorder: return [.screenRecording, .accessibility, .microphone]
         case .cameraPreview: return [.camera]
         case .keepAwake: return [.accessibility]
         case .brightness: return [.accessibility]
@@ -292,6 +292,8 @@ extension AppFeature {
                         || boolFor(DefaultsKey.whatsAppOrganizerEnabled))
                     && boolFor(DefaultsKey.whatsAppDownloadsNotify)
                 return cleanerNotifies || whatsAppNotifies
+            case (.screenRecorder, .microphone):
+                return boolFor(DefaultsKey.recorderMicrophone)
             default:
                 return true
             }
@@ -334,6 +336,7 @@ extension AppPermission {
         case .notifications: return "bell.badge"
         case .automationFinder, .automationTerminal: return "gearshape.2"
         case .audioCapture: return "waveform"
+        case .microphone: return "mic"
         case .camera: return "camera"
         case .appManagement: return "app.badge"
         }

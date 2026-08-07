@@ -141,6 +141,7 @@ enum SettingsDirectory {
                                       icon: "record.circle",
                                       keywords: [FeatureStrings.recorder(language).startButton,
                                                  FeatureStrings.recorder(language).systemAudioToggle,
+                                                 FeatureStrings.recorder(language).microphoneToggle,
                                                  FeatureStrings.recorder(language).qualityLabel,
                                                  FeatureStrings.recorder(language).frameRateLabel]),
                 SettingsDirectoryItem(page: .urlCleaner, title: s.urlCleanerName, icon: "link"),

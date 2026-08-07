@@ -437,6 +437,7 @@ enum DefaultsKey {
     static let recorderQuality = "recorderQuality"
     static let recorderFrameRate = "recorderFrameRate"
     static let recorderSystemAudio = "recorderSystemAudio"
+    static let recorderMicrophone = "recorderMicrophone"
     static let recorderSaveFolder = "recorderSaveFolder"
     static let recorderOpenEditor = "recorderOpenEditor"
     static let recorderGIFSize = "recorderGIFSize"
@@ -980,6 +981,7 @@ enum Defaults {
         DefaultsKey.recorderQuality: RecorderSupport.Quality.balanced.rawValue,
         DefaultsKey.recorderFrameRate: 60,
         DefaultsKey.recorderSystemAudio: true,
+        DefaultsKey.recorderMicrophone: false,
         DefaultsKey.recorderSaveFolder: "",
         DefaultsKey.recorderOpenEditor: true,
         DefaultsKey.recorderGIFSize: RecorderSupport.GIFSize.medium.rawValue,

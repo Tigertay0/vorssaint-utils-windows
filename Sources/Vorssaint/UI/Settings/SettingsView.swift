@@ -1278,6 +1278,7 @@ private struct SettingsToggleWithCaption: View {
 enum PermissionKind {
     case accessibility
     case screenRecording
+    case microphone
 }
 
 /// Status + actions for one TCC permission; shared by Settings and onboarding.
@@ -1287,11 +1288,20 @@ struct PermissionRow: View {
     let kind: PermissionKind
 
     private var granted: Bool {
-        kind == .accessibility ? permissions.accessibility : permissions.screenRecording
+        switch kind {
+        case .accessibility: return permissions.accessibility
+        case .screenRecording: return permissions.screenRecording
+        case .microphone: return permissions.microphone == .granted
+        }
     }
 
     private var name: String {
-        kind == .accessibility ? l10n.s.permissionAccessibility : l10n.s.permissionScreenRecording
+        switch kind {
+        case .accessibility: return l10n.s.permissionAccessibility
+        case .screenRecording: return l10n.s.permissionScreenRecording
+        case .microphone:
+            return FeatureStrings.recorder(l10n.language).microphonePermissionName
+        }
     }
 
     var body: some View {
@@ -1308,17 +1318,23 @@ struct PermissionRow: View {
             if !granted {
                 HStack(spacing: 8) {
                     Button(l10n.s.permissionRequest) {
-                        if kind == .accessibility {
+                        switch kind {
+                        case .accessibility:
                             permissions.requestAccessibility()
-                        } else {
+                        case .screenRecording:
                             permissions.requestScreenRecording()
+                        case .microphone:
+                            permissions.requestMicrophone()
                         }
                     }
                     Button(l10n.s.permissionOpenSettings) {
-                        if kind == .accessibility {
+                        switch kind {
+                        case .accessibility:
                             permissions.openAccessibilitySettings()
-                        } else {
+                        case .screenRecording:
                             permissions.openScreenRecordingSettings()
+                        case .microphone:
+                            permissions.openMicrophoneSettings()
                         }
                     }
                 }

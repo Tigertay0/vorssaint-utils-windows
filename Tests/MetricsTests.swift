@@ -7315,7 +7315,8 @@ struct MetricsTests {
                "no hub group is empty")
         expect(AppPermission.allCases.map(\.rawValue) == [
             "accessibility", "screenRecording", "fullDiskAccess", "filesAndFolders", "notifications",
-            "automationFinder", "automationTerminal", "audioCapture", "camera", "appManagement",
+            "automationFinder", "automationTerminal", "audioCapture", "microphone", "camera",
+            "appManagement",
         ], "permission portal contains every supported permission")
         expect(FeaturePreset.essential.features.flatMap(\.onboardingPermissions).isEmpty,
                "the essential first-run choice asks for no broad permission")
@@ -7567,6 +7568,9 @@ struct MetricsTests {
         expect(activeSet(.audioCapture) == [.mixer], "the mixer is the only audio capture user")
         expect(activeSet(.audioCapture, available: Set(AppFeature.allCases).subtracting([.mixer])) == [],
                "audio capture reads as unused once the mixer is off in the hub")
+        expect(activeSet(.microphone).isEmpty
+                && activeSet(.microphone, on: [DefaultsKey.recorderMicrophone]) == [.screenRecorder],
+               "the recorder uses microphone access only when that optional source is on")
         expect(activeSet(.camera) == [.cameraPreview],
                "the camera preview is the only on-demand camera user")
         expect(activeSet(.camera, available: Set(AppFeature.allCases).subtracting([.cameraPreview])) == [],
@@ -7763,7 +7767,7 @@ struct MetricsTests {
                    "no em-dash in WhatsApp organizer strings (\(language.rawValue))")
             let recorderValues = Mirror(reflecting: FeatureStrings.recorder(language)).children
                 .compactMap { $0.value as? String }
-            expect(recorderValues.count == 105 && recorderValues.allSatisfy { !$0.isEmpty },
+            expect(recorderValues.count == 115 && recorderValues.allSatisfy { !$0.isEmpty },
                    "every screen recorder string is set for \(language.rawValue)")
             expect(recorderValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible screen recorder strings (\(language.rawValue))")
@@ -10791,6 +10795,8 @@ struct MetricsTests {
                "the screen recorder panel tile ships visible like its siblings")
         expect(Defaults.registeredDefaults[DefaultsKey.recorderSystemAudio] as? Bool == true,
                "a recording carries the sound of the Mac unless the person turns it off")
+        expect(Defaults.registeredDefaults[DefaultsKey.recorderMicrophone] as? Bool == false,
+               "microphone recording is optional and ships off")
         expect(Defaults.registeredDefaults[DefaultsKey.recorderQuality] as? String == "balanced"
                 && Defaults.registeredDefaults[DefaultsKey.recorderFrameRate] as? Int == 60
                 && Defaults.registeredDefaults[DefaultsKey.recorderCountdown] as? Int == 3
@@ -10802,8 +10808,9 @@ struct MetricsTests {
                "the recording shortcut role gates on its toggle and feature")
         expect(AppFeature.screenRecorder.group == .tools
                 && AppFeature.screenRecorder.enabledKeys.isEmpty
-                && AppFeature.screenRecorder.permissions == [.screenRecording, .accessibility],
-               "the recorder is on demand and keeps typing timing only while recording")
+                && AppFeature.screenRecorder.permissions
+                    == [.screenRecording, .accessibility, .microphone],
+               "the recorder keeps its optional capture permissions contextual")
         expect(AppFeature.screenRecorder.energyProfile == .idle,
                "the recorder costs nothing between recordings")
         expect(pageVisible(.screenRecorder, available: [.screenRecorder])
@@ -10812,6 +10819,7 @@ struct MetricsTests {
         expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderShortcutEnabled)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderQuality)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderGIFSize)
+                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderMicrophone)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderSaveFolder),
                "the screen recorder settings travel in backups")
 
@@ -10995,6 +11003,10 @@ struct MetricsTests {
         expect(RecorderSupport.sanitizedGIFFrameRate(99) == 12
                 && RecorderSupport.sanitizedGIFSize("nonsense") == .medium,
                "unknown GIF settings fall back to the middle choice")
+        expect(RecorderSupport.sanitizedAudioGain(-1) == 0
+                && RecorderSupport.sanitizedAudioGain(3) == 1
+                && RecorderSupport.sanitizedAudioGain(.nan) == 1,
+               "audio gain stays inside the editor's safe range")
 
         var document = RecorderEditDocument()
         expect(!document.isEdited(duration: 12) && !document.zoomsOnTyping,
@@ -11010,9 +11022,13 @@ struct MetricsTests {
                "a damaged edit is repaired instead of wedging the editor")
         let documentRoundTrip = RecorderEditDocument.decoded(
             RecorderEditDocument(trimStart: 1, trimEnd: 4, keepsSystemAudio: false,
-                                 zoomsOnTyping: true).encoded())
+                                 zoomsOnTyping: true, keepsMicrophone: false,
+                                 systemAudioGain: 0.6, microphoneGain: 1.5).encoded())
         expect(documentRoundTrip.trimStart == 1 && documentRoundTrip.trimEnd == 4
-                && !documentRoundTrip.keepsSystemAudio && documentRoundTrip.zoomsOnTyping,
+                && !documentRoundTrip.keepsSystemAudio && !documentRoundTrip.keepsMicrophone
+                && documentRoundTrip.systemAudioGain == 0.6
+                && documentRoundTrip.microphoneGain == 1.5
+                && documentRoundTrip.zoomsOnTyping,
                "an edit written next to the recording comes back exactly as it was")
         expect(RecorderEditDocument.decoded(Data("not json".utf8)).trimStart == 0,
                "an unreadable edit opens the recording untouched instead of failing")

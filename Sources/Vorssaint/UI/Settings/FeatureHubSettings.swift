@@ -384,6 +384,12 @@ struct PermissionsPortalSections: View {
                 return .missing
             }
             return .unknown
+        case .microphone:
+            switch permissions.microphone {
+            case .granted: return .granted
+            case .denied, .undetermined: return .missing
+            case .unknown: return .unknown
+            }
         case .camera:
             switch permissions.camera {
             case .granted: return .granted
@@ -505,6 +511,7 @@ private struct PermissionPortalRow: View {
         case .accessibility, .screenRecording, .fullDiskAccess: return true
         case .notifications: return Permissions.shared.notifications == .undetermined
         case .camera: return Permissions.shared.camera == .undetermined
+        case .microphone: return Permissions.shared.microphone == .undetermined
         case .filesAndFolders, .automationFinder, .automationTerminal, .audioCapture,
              .appManagement: return false
         }
@@ -521,6 +528,7 @@ private struct PermissionPortalRow: View {
                 Permissions.shared.refresh()
             }
         case .camera: Permissions.shared.requestCamera()
+        case .microphone: Permissions.shared.requestMicrophone()
         case .filesAndFolders, .automationFinder, .automationTerminal, .audioCapture,
              .appManagement:
             break
@@ -536,6 +544,7 @@ private struct PermissionPortalRow: View {
         case .notifications: Permissions.shared.openNotificationSettings()
         case .automationFinder, .automationTerminal: Permissions.shared.openAutomationSettings()
         case .audioCapture: Permissions.shared.openAudioCaptureSettings()
+        case .microphone: Permissions.shared.openMicrophoneSettings()
         case .camera: Permissions.shared.openCameraSettings()
         case .appManagement: Permissions.shared.openAppManagementSettings()
         }
@@ -671,6 +680,7 @@ extension AppPermission {
         case .automationFinder: return hub.permAutomationFinder
         case .automationTerminal: return hub.permAutomationTerminal
         case .audioCapture: return hub.permAudioCapture
+        case .microphone: return FeatureStrings.recorder(L10n.shared.language).microphonePermissionName
         case .camera: return FeatureStrings.cameraPreview(L10n.shared.language).permName
         case .appManagement: return FeatureStrings.settingsCategories(L10n.shared.language).appManagement
         }
@@ -686,6 +696,8 @@ extension AppPermission {
         case .automationFinder: return hub.explainAutomationFinder
         case .automationTerminal: return hub.explainAutomationTerminal
         case .audioCapture: return hub.explainAudioCapture
+        case .microphone:
+            return FeatureStrings.recorder(L10n.shared.language).microphonePermissionExplain
         case .camera: return FeatureStrings.cameraPreview(L10n.shared.language).permExplain
         case .appManagement: return hub.explainAppManagement
         }
