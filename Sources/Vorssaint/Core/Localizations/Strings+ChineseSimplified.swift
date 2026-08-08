@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "为安全地锁定键盘，Vorssaint 需要辅助功能权限。请在“系统设置”中授予后重试。",
 
         tabSupport: "支持",
-        shortcutsPageCaption: "应用当前启用的所有全局快捷键。每个快捷键在其功能页面中设置。",
+        shortcutsPageCaption: "在这里编辑此 Mac 已安装功能的所有全局快捷键。未启用的快捷键仍会保存，但不会执行。",
         shortcutsPageTitle: "键盘快捷键",
         settingsSearchPlaceholder: "搜索设置",
         donateHeading: "支持 Vorssaint",

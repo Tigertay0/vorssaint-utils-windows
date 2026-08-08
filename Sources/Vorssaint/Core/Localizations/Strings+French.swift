@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "Pour verrouiller le clavier en toute sécurité, Vorssaint a besoin de l’autorisation Accessibilité. Accordez-la dans les Réglages Système et réessayez.",
 
         tabSupport: "Soutenir",
-        shortcutsPageCaption: "Tous les raccourcis globaux actifs dans l'app. Chacun se configure sur la page de sa fonction.",
+        shortcutsPageCaption: "Modifiez ici tous les raccourcis globaux des fonctions installées sur ce Mac. Les raccourcis inactifs restent enregistrés sans se déclencher.",
         shortcutsPageTitle: "Raccourcis clavier",
         settingsSearchPlaceholder: "Rechercher dans les réglages",
         donateHeading: "Soutenir Vorssaint",

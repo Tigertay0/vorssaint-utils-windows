@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "Um die Tastatur sicher zu sperren, benötigt Vorssaint die Berechtigung für Bedienungshilfen. Erteile sie in den Systemeinstellungen und versuche es erneut.",
 
         tabSupport: "Unterstützen",
-        shortcutsPageCaption: "Alle derzeit aktiven globalen Kurzbefehle der App. Jeder wird auf der Seite seiner Funktion eingestellt.",
+        shortcutsPageCaption: "Bearbeite hier alle globalen Kurzbefehle der auf diesem Mac installierten Funktionen. Inaktive Kurzbefehle bleiben gespeichert, werden aber nicht ausgeführt.",
         shortcutsPageTitle: "Tastaturkurzbefehle",
         settingsSearchPlaceholder: "Einstellungen durchsuchen",
         donateHeading: "Vorssaint unterstützen",

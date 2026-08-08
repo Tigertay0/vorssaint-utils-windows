@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "Klavyeyi güvenle kilitlemek için Vorssaint'in Erişilebilirlik iznine ihtiyacı var. Sistem Ayarları'ndan izin ver ve tekrar dene.",
 
         tabSupport: "Destek",
-        shortcutsPageCaption: "Uygulamada şu anda etkin olan tüm genel kısayollar. Her biri kendi özelliğinin sayfasında ayarlanır.",
+        shortcutsPageCaption: "Bu Mac'te yüklü özelliklerin tüm genel kısayollarını burada düzenleyin. Etkin olmayan kısayollar kayıtlı kalır ancak çalışmaz.",
         shortcutsPageTitle: "Klavye kısayolları",
         settingsSearchPlaceholder: "Ayarlarda ara",
         donateHeading: "Vorssaint'i destekle",

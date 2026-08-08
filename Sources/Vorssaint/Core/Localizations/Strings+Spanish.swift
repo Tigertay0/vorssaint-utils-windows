@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "Para bloquear el teclado de forma segura, Vorssaint necesita el permiso de Accesibilidad. Concédelo en Ajustes del Sistema e inténtalo de nuevo.",
 
         tabSupport: "Apoyar",
-        shortcutsPageCaption: "Todos los atajos globales activos en la app ahora mismo. Cada uno se configura en la página de su función.",
+        shortcutsPageCaption: "Edita aquí todos los atajos globales de las funciones instaladas en este Mac. Los inactivos se guardan, pero no se ejecutan.",
         shortcutsPageTitle: "Atajos de teclado",
         settingsSearchPlaceholder: "Buscar en ajustes",
         donateHeading: "Apoya a Vorssaint",

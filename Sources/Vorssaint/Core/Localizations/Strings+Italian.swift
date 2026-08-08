@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "Per bloccare la tastiera in sicurezza, Vorssaint ha bisogno dell'autorizzazione di Accessibilità. Concedila in Impostazioni di Sistema e riprova.",
 
         tabSupport: "Sostieni",
-        shortcutsPageCaption: "Tutte le abbreviazioni globali attive nell'app. Ognuna si configura nella pagina della sua funzione.",
+        shortcutsPageCaption: "Modifica qui tutte le scorciatoie globali delle funzioni installate su questo Mac. Quelle inattive restano salvate ma non si attivano.",
         shortcutsPageTitle: "Abbreviazioni da tastiera",
         settingsSearchPlaceholder: "Cerca nelle impostazioni",
         donateHeading: "Sostieni Vorssaint",

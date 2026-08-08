@@ -769,7 +769,7 @@ extension Strings {
         cleaningNeedsAxBody: "키보드를 안전하게 잠그려면 Vorssaint에 손쉬운 사용 권한이 필요합니다. 시스템 설정에서 허용한 뒤 다시 시도하세요.",
 
         tabSupport: "지원",
-        shortcutsPageCaption: "앱에서 현재 활성화된 전역 단축키 목록입니다. 각 단축키는 해당 기능 페이지에서 설정합니다.",
+        shortcutsPageCaption: "이 Mac에 설치된 기능의 모든 전역 단축키를 여기에서 편집할 수 있습니다. 비활성 단축키도 저장되지만 실행되지는 않습니다.",
         shortcutsPageTitle: "키보드 단축키",
         settingsSearchPlaceholder: "설정 검색",
         donateHeading: "Vorssaint 후원하기",

@@ -769,7 +769,7 @@ extension Strings {
         cleaningNeedsAxBody: "為了安全鎖定鍵盤，Vorssaint 需要輔助使用權限。請在「系統設定」中允許後重試。",
 
         tabSupport: "支援",
-        shortcutsPageCaption: "App 目前啟用的所有全域快速鍵。每個快速鍵在其功能頁面中設定。",
+        shortcutsPageCaption: "在這裡編輯此 Mac 已安裝功能的所有全域快速鍵。未啟用的快速鍵仍會保留，但不會執行。",
         shortcutsPageTitle: "鍵盤快速鍵",
         settingsSearchPlaceholder: "搜尋設定",
         donateHeading: "支援 Vorssaint",

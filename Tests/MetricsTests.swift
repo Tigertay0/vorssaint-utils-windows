@@ -7766,6 +7766,14 @@ struct MetricsTests {
                                               isAvailable: { $0 != .switcher })
                 .allSatisfy { $0 != .switcher && $0 != .switcherWindow },
                "both switcher roles follow the switcher feature")
+        expect(GlobalShortcutRole.availableRoles(isAvailable: { $0 != .switcher })
+                .allSatisfy { $0 != .switcher && $0 != .switcherWindow },
+               "the shortcut editor lists installed roles even without reading enable keys")
+
+        let superSpace = GlobalShortcut(keyCode: Int64(kVK_Space), modifiers: .validMask)
+        expect(superSpace.superKeyAlternative(capsLockLabel: "Caps Lock") == "Caps Lock + Space"
+                && GlobalShortcut.commandBarDefault.superKeyAlternative(capsLockLabel: "Caps Lock") == nil,
+               "the shortcut editor only shows a Super key alternative for all four modifiers")
 
         // MARK: Features hub strings
 
@@ -7879,6 +7887,13 @@ struct MetricsTests {
                    "every super key string is set for \(language.rawValue)")
             expect(superKeyValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible super key strings (\(language.rawValue))")
+            let shortcutValues = Mirror(reflecting: FeatureStrings.shortcuts(language)).children
+                .compactMap { $0.value as? String }
+            expect(shortcutValues.count == 3 && shortcutValues.allSatisfy { !$0.isEmpty },
+                   "every shortcut editor string is set for \(language.rawValue)")
+            expect(shortcutValues.allSatisfy { !$0.contains("—") }
+                    && FeatureStrings.shortcuts(language).superKeyAlternativeFormat.contains("%@"),
+                   "shortcut editor strings keep their format and avoid em-dashes (\(language.rawValue))")
             let appearanceValues = Mirror(reflecting: FeatureStrings.appearance(language)).children
                 .compactMap { $0.value as? String }
             expect(appearanceValues.count == 4 && appearanceValues.allSatisfy { !$0.isEmpty },

@@ -768,7 +768,7 @@ extension Strings {
         cleaningNeedsAxBody: "キーボードを安全にロックするには、Vorssaint にアクセシビリティのアクセス権が必要です。システム設定で許可して、もう一度お試しください。",
 
         tabSupport: "支援",
-        shortcutsPageCaption: "アプリで現在有効なグローバルショートカットの一覧。各ショートカットは各機能のページで設定します。",
+        shortcutsPageCaption: "このMacにインストールされている機能のグローバルショートカットをすべてここで編集できます。無効なものも保存されますが、動作はしません。",
         shortcutsPageTitle: "キーボードショートカット",
         settingsSearchPlaceholder: "設定を検索",
         donateHeading: "Vorssaint を支援する",
