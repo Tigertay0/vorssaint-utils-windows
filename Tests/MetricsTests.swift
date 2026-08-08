@@ -2912,6 +2912,18 @@ struct MetricsTests {
                                            bundleURL: nestedApp,
                                            exceptions: ["com.example.unrelated"]),
                "AutoQuit does not extend unrelated exceptions to a bundled window host")
+        let dependentApp = outerApp.appendingPathComponent("Contents/Hosted.app")
+        try? FileManager.default.createDirectory(at: dependentApp.appendingPathComponent("Contents"),
+                                                 withIntermediateDirectories: true)
+        NSDictionary(dictionary: ["CFBundleIdentifier": "com.example.dependent",
+                                  "CrBundleIdentifier": "com.example.host"])
+            .write(to: dependentApp.appendingPathComponent("Contents/Info.plist"), atomically: true)
+        expect(AutoQuitSupport.hasDependentApplication(hostBundleIdentifier: "com.example.host",
+                                                       applicationBundleURLs: [dependentApp]),
+               "AutoQuit keeps a host running while a declared dependent app is open")
+        expect(!AutoQuitSupport.hasDependentApplication(hostBundleIdentifier: "com.example.unrelated",
+                                                        applicationBundleURLs: [dependentApp]),
+               "AutoQuit does not protect an unrelated host")
         try? FileManager.default.removeItem(at: outerApp.deletingLastPathComponent())
         expect(!AutoQuitSupport.shouldScheduleWindowCheck(for: .appDeactivated,
                                                           hasRecentCloseRequest: false),
