@@ -7,10 +7,8 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control,
-Switcher rules, edge snapping, Maximize with Margin and tabbed Scratchpads. Scrolling
-screenshots, Cleaning Mode, app removal and the App Switcher are more reliable, with a
-panel that follows your section order.
+Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control and
+smarter window tools. Captures, cleaning, app removal and the menu bar panel are more reliable.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -82,7 +80,8 @@ panel that follows your section order.
 - Windowless apps now keep their labels aligned in the App Switcher's Small size.
   Thanks to @Yahddyyp.
 - Small app icons now keep the correct artwork in Finder. Thanks to @slrgt.
-- Adobe app windows now appear in App Switcher, Command Tab and Dock Preview.
+- Main windows from supported professional media apps now appear in App Switcher,
+  Command Tab and Dock Preview.
 - Newly placed screenshot annotations can be moved, resized or edited immediately
   while their selection remains active.
 - The menu bar panel no longer leaves a focus outline on a different section than

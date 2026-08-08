@@ -517,8 +517,8 @@ enum WindowEnumerator {
         }
         if let subrole = stringAttribute(window, kAXSubroleAttribute as String) {
             if subrole == "AXStandardWindow" || subrole == "AXFullScreenWindow" { return true }
-            if SwitcherSupport.isAdobeFloatingWindow(bundleIdentifier: bundleIdentifier,
-                                                     subrole: subrole) { return true }
+            if SwitcherSupport.isSupportedMediaFloatingWindow(bundleIdentifier: bundleIdentifier,
+                                                              subrole: subrole) { return true }
             // Compatibility-layer processes draw their own window chrome on
             // borderless surfaces, which Accessibility reports as AXUnknown;
             // for them the window role is the real signal.
