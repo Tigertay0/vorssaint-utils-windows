@@ -107,11 +107,11 @@ struct SwitcherView: View {
 
     @ViewBuilder
     private var searchChip: some View {
-        if !switcher.searchQuery.isEmpty {
+        if !switcher.searchQuery.isEmpty || switcher.isSearchPinned {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 10, weight: .bold))
-                Text(switcher.searchQuery)
+                Text(switcher.searchQuery.isEmpty ? l10n.s.switcherSearchPin : switcher.searchQuery)
                     .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)

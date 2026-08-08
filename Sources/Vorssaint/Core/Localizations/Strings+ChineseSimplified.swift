@@ -893,6 +893,8 @@ extension Strings {
         keepAwakeRightClickToggleCaption: "将取代右键点按菜单。",
         urlCleanerCustomTitle: "添加要移除的名称",
         urlCleanerCustomPlaceholder: "ref, source",
-        urlCleanerCustomCaption: "请用逗号分隔参数名称。它们会从所有链接中移除。"
+        urlCleanerCustomCaption: "请用逗号分隔参数名称。它们会从所有链接中移除。",
+        switcherSearchPin: "按 S 固定搜索",
+        switcherSearchPinCaption: "浏览时按 S 启动搜索，固定切换器；避免自定义快捷键为 ⌥ 时打出特殊字符，以及 Q/W 开头误触发关闭/退出。"
     )
 }

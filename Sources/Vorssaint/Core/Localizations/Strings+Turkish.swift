@@ -893,6 +893,8 @@ extension Strings {
         keepAwakeRightClickToggleCaption: "Sağ tık bağlam menüsünün yerini alır.",
         urlCleanerCustomTitle: "Kaldırılacak diğer adlar",
         urlCleanerCustomPlaceholder: "ref, kaynak",
-        urlCleanerCustomCaption: "Parametre adlarını virgülle ayırın. Her bağlantıdan kaldırılırlar."
+        urlCleanerCustomCaption: "Parametre adlarını virgülle ayırın. Her bağlantıdan kaldırılırlar.",
+        switcherSearchPin: "S ile aramayı sabitle",
+        switcherSearchPinCaption: "S, aramayı başlatır ve değiştiriciyi sabitler; kısayolun ⌥ kullanması durumunda özel karakter yazılmasını, Q veya W ile başlayan aramaların pencereyi kapatmasını veya uygulamadan çıkmasını önler."
     )
 }

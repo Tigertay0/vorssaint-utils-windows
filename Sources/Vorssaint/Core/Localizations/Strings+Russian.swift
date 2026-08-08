@@ -894,6 +894,8 @@ extension Strings {
         keepAwakeRightClickToggleCaption: "Заменяет контекстное меню правой кнопки мыши.",
         urlCleanerCustomTitle: "Другие названия для удаления",
         urlCleanerCustomPlaceholder: "ref, source",
-        urlCleanerCustomCaption: "Разделяйте названия параметров запятыми. Они будут удаляться из всех ссылок."
+        urlCleanerCustomCaption: "Разделяйте названия параметров запятыми. Они будут удаляться из всех ссылок.",
+        switcherSearchPin: "Закрепить поиск по S",
+        switcherSearchPinCaption: "S запускает поиск и закрепляет переключатель открытым. Печать больше не даёт специальные символы, если сочетание использует ⌥, а поиск, начинающийся с Q или W, больше не закрывает окно и не завершает приложение по ошибке."
     )
 }

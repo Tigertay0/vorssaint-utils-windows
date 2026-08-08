@@ -893,6 +893,8 @@ extension Strings {
         keepAwakeRightClickToggleCaption: "Ersetzt das Kontextmenü beim Rechtsklick.",
         urlCleanerCustomTitle: "Weitere Namen zum Entfernen",
         urlCleanerCustomPlaceholder: "ref, quelle",
-        urlCleanerCustomCaption: "Trenne Parameternamen durch Kommas. Sie werden aus jedem Link entfernt."
+        urlCleanerCustomCaption: "Trenne Parameternamen durch Kommas. Sie werden aus jedem Link entfernt.",
+        switcherSearchPin: "Suche mit S anpinnen",
+        switcherSearchPinCaption: "S startet die Suche und pinnt den Umschalter an – so tippst du keine Sonderzeichen mehr, wenn dein Kurzbefehl ⌥ nutzt, und eine Suche, die mit Q oder W beginnt, schließt das Fenster oder die App nicht mehr versehentlich."
     )
 }

@@ -893,6 +893,8 @@ extension Strings {
         keepAwakeRightClickToggleCaption: "Remplace le menu contextuel du clic droit.",
         urlCleanerCustomTitle: "Autres noms à retirer",
         urlCleanerCustomPlaceholder: "ref, source",
-        urlCleanerCustomCaption: "Séparez les noms des paramètres par des virgules. Ils seront retirés de chaque lien."
+        urlCleanerCustomCaption: "Séparez les noms des paramètres par des virgules. Ils seront retirés de chaque lien.",
+        switcherSearchPin: "Épingler la recherche avec S",
+        switcherSearchPinCaption: "S lance une recherche et épingle le sélecteur ouvert : plus de caractères spéciaux tapés quand le raccourci utilise ⌥, et une recherche commençant par Q ou W ne ferme plus la fenêtre ni ne quitte l'app par erreur."
     )
 }
