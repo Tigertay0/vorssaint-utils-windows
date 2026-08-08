@@ -8,7 +8,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control
-and smarter window tools. It also expands Keep Awake and improves keyboard, mouse,
+and more configurable window tools. It also expands Keep Awake and improves keyboard, mouse,
 menu bar, display, update, capture, cleaning and app removal workflows.
 
 ### Added
@@ -29,6 +29,8 @@ menu bar, display, update, capture, cleaning and app removal workflows.
   Thanks to @PathGao.
 
 ### Changed
+- The App Switcher can hide the shortcut hints below its large icon row.
+  Under Switcher.
 - Screenshot previews can be dragged directly into folders or other apps as
   full-resolution PNG files.
 - Mouse wheel direction can now be inverted separately for vertical and horizontal

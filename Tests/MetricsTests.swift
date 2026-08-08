@@ -1401,6 +1401,9 @@ struct MetricsTests {
                "App Switcher icon-row mode is optional")
         expect(registeredDefaults[DefaultsKey.switcherSimpleMode] as? Bool == false,
                "App Switcher simple mode preserves previews until requested")
+        expect(registeredDefaults[DefaultsKey.switcherShowShortcutHints] as? Bool == true
+               && SettingsBackupSupport.exportKeys().contains(DefaultsKey.switcherShowShortcutHints),
+               "App Switcher keeps shortcut hints visible by default and carries the choice in backups")
         expect(SwitcherSupport.usesIconRowLayout(iconRowMode: false, simpleMode: true),
                "App Switcher simple mode always uses the app icon row")
         expect(!SwitcherSupport.capturesPreviews(simpleMode: true),
@@ -5300,6 +5303,20 @@ struct MetricsTests {
                == max(iconRowLayout.appRowSurfaceWidth, SwitcherIconRowLayout.hintBarWidth)
                + SwitcherIconRowLayout.padding * 2,
                "App Switcher simple mode fits the app row and shortcut hints")
+        let compactIconRowLayout = SwitcherIconRowLayout.compute(
+            appCount: 1,
+            selectedWindowCount: 1,
+            screenVisibleFrame: screen,
+            showsShortcutHints: false
+        )
+        expect(compactIconRowLayout.panelSize.height
+               == iconRowLayout.panelSize.height
+               - SwitcherIconRowLayout.hintGap
+               - SwitcherIconRowLayout.hintHeight,
+               "App Switcher removes the shortcut hint bar and its vertical space")
+        expect(compactIconRowLayout.simplePanelSize.width
+               == compactIconRowLayout.appRowSurfaceWidth + SwitcherIconRowLayout.padding * 2,
+               "App Switcher without shortcut hints sizes the simple panel to its icon row")
         expect(SwitcherSupport.gridSelectionIndex(after: 1,
                                                    itemCount: 8,
                                                    columns: 5,
@@ -7011,6 +7028,11 @@ struct MetricsTests {
                    && !strings.switcherSearchPin.contains("—")
                    && !strings.switcherSearchPinCaption.contains("—"),
                    "\(prefix) App Switcher pinned-search labels are present without em dash")
+            expect(!strings.switcherShowShortcutHints.isEmpty
+                   && !strings.switcherShowShortcutHintsCaption.isEmpty
+                   && !strings.switcherShowShortcutHints.contains("—")
+                   && !strings.switcherShowShortcutHintsCaption.contains("—"),
+                   "\(prefix) App Switcher shortcut-hint labels are present without em dash")
             expect(!strings.switcherWindowlessApps.isEmpty
                    && !strings.switcherWindowlessApps.contains("—"),
                    "\(prefix) App Switcher windowless apps title is present without em dash")

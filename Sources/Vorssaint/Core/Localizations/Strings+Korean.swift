@@ -898,6 +898,8 @@ extension Strings {
         switcherSearchPin: "S로 검색창 고정",
         switcherSearchPinCaption: "S를 누르면 검색을 시작하고 전환기를 고정합니다. 단축키가 ⌥를 사용할 때 특수 문자가 입력되는 문제와, Q나 W로 시작하는 검색이 창을 닫거나 앱을 종료시키는 문제를 모두 막아줍니다.",
         invertVerticalScroll: "세로 스크롤 반전",
-        invertHorizontalScroll: "가로 스크롤 반전"
+        invertHorizontalScroll: "가로 스크롤 반전",
+        switcherShowShortcutHints: "단축키 힌트 보기",
+        switcherShowShortcutHintsCaption: "아이콘 아래에 앱 및 윈도우 단축키를 표시합니다."
     )
 }

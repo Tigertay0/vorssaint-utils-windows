@@ -778,6 +778,7 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.switcherWindowlessApps) private var switcherWindowlessApps = SwitcherWindowlessApps.fallback.rawValue
     @AppStorage(DefaultsKey.switcherCurrentSpaceOnly) private var switcherCurrentSpaceOnly = false
     @AppStorage(DefaultsKey.switcherSearchPinEnabled) private var switcherSearchPinEnabled = false
+    @AppStorage(DefaultsKey.switcherShowShortcutHints) private var switcherShowShortcutHints = true
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
     @AppStorage(DefaultsKey.dockPreviewBackgroundOpacity) private var dockPreviewBackgroundOpacity = 1.0
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickMinimize = false
@@ -840,6 +841,15 @@ struct SwitcherSettings: View {
                     Text(l10n.s.switcherIconRowModeCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    if switcherSimpleMode || switcherIconRowMode {
+                        Toggle(l10n.s.switcherShowShortcutHints,
+                               isOn: $switcherShowShortcutHints)
+                            .disabled(!switcherEnabled)
+                        Text(l10n.s.switcherShowShortcutHintsCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
                     Toggle(l10n.s.switcherMergeTabs, isOn: $switcherMergeTabs)
                         .disabled(!switcherEnabled)

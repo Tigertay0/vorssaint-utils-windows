@@ -1042,6 +1042,8 @@ struct Strings {
     let switcherSearchPinCaption: String
     let invertVerticalScroll: String
     let invertHorizontalScroll: String
+    let switcherShowShortcutHints: String
+    let switcherShowShortcutHintsCaption: String
 }
 
 // MARK: - Português (Brasil)
@@ -1940,7 +1942,9 @@ extension Strings {
         switcherSearchPin: "Fixar busca com S",
         switcherSearchPinCaption: "S inicia uma busca e fixa o alternador aberto, assim digitar não produz mais caracteres especiais quando o atalho usa ⌥, e uma busca que comece com Q ou W não fecha a janela nem encerra o app por engano.",
         invertVerticalScroll: "Inverter rolagem vertical",
-        invertHorizontalScroll: "Inverter rolagem horizontal"
+        invertHorizontalScroll: "Inverter rolagem horizontal",
+        switcherShowShortcutHints: "Mostrar dicas de atalhos",
+        switcherShowShortcutHintsCaption: "Exibe os atalhos de apps e janelas abaixo dos ícones."
     )
 }
 
@@ -2840,6 +2844,8 @@ extension Strings {
         switcherSearchPin: "Pin search with S",
         switcherSearchPinCaption: "S starts a search and pins the switcher open, so typing no longer produces special characters when your shortcut uses ⌥, and a search starting with Q or W no longer closes the window or quits the app by mistake.",
         invertVerticalScroll: "Invert vertical scrolling",
-        invertHorizontalScroll: "Invert horizontal scrolling"
+        invertHorizontalScroll: "Invert horizontal scrolling",
+        switcherShowShortcutHints: "Show shortcut hints",
+        switcherShowShortcutHintsCaption: "Shows the app and window shortcuts below the icons."
     )
 }

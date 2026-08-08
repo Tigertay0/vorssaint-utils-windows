@@ -1007,6 +1007,10 @@ final class AppSwitcher: ObservableObject {
         UserDefaults.standard.bool(forKey: DefaultsKey.switcherSearchPinEnabled)
     }
 
+    private var showsShortcutHints: Bool {
+        UserDefaults.standard.bool(forKey: DefaultsKey.switcherShowShortcutHints)
+    }
+
     private var usesIconRowLayout: Bool {
         SwitcherSupport.usesIconRowLayout(iconRowMode: iconRowModeEnabled,
                                           simpleMode: simpleModeEnabled)
@@ -1023,7 +1027,8 @@ final class AppSwitcher: ObservableObject {
         iconRowLayout = SwitcherIconRowLayout.compute(
             appCount: appGroups.count,
             selectedWindowCount: selectedAppWindowCount(in: items),
-            screenVisibleFrame: screen.visibleFrame
+            screenVisibleFrame: screen.visibleFrame,
+            showsShortcutHints: showsShortcutHints
         )
     }
 
@@ -1033,7 +1038,8 @@ final class AppSwitcher: ObservableObject {
         iconRowLayout = SwitcherIconRowLayout.compute(
             appCount: appGroups.count,
             selectedWindowCount: selectedAppWindowCount(in: windows),
-            screenVisibleFrame: NSScreen.pointerVisibleFrame
+            screenVisibleFrame: NSScreen.pointerVisibleFrame,
+            showsShortcutHints: showsShortcutHints
         )
     }
 

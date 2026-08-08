@@ -897,6 +897,8 @@ extension Strings {
         switcherSearchPin: "按 S 固定搜索",
         switcherSearchPinCaption: "浏览时按 S 启动搜索，固定切换器；避免自定义快捷键为 ⌥ 时打出特殊字符，以及 Q/W 开头误触发关闭/退出。",
         invertVerticalScroll: "反转垂直滚动",
-        invertHorizontalScroll: "反转水平滚动"
+        invertHorizontalScroll: "反转水平滚动",
+        switcherShowShortcutHints: "显示快捷键提示",
+        switcherShowShortcutHintsCaption: "在图标下方显示 App 和窗口快捷键。"
     )
 }

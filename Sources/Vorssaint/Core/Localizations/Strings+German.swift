@@ -897,6 +897,8 @@ extension Strings {
         switcherSearchPin: "Suche mit S anpinnen",
         switcherSearchPinCaption: "S startet die Suche und pinnt den Umschalter an – so tippst du keine Sonderzeichen mehr, wenn dein Kurzbefehl ⌥ nutzt, und eine Suche, die mit Q oder W beginnt, schließt das Fenster oder die App nicht mehr versehentlich.",
         invertVerticalScroll: "Vertikales Scrollen umkehren",
-        invertHorizontalScroll: "Horizontales Scrollen umkehren"
+        invertHorizontalScroll: "Horizontales Scrollen umkehren",
+        switcherShowShortcutHints: "Kurzbefehlhinweise anzeigen",
+        switcherShowShortcutHintsCaption: "Zeigt die Kurzbefehle für Apps und Fenster unter den Symbolen."
     )
 }

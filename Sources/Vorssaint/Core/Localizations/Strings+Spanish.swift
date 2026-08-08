@@ -897,6 +897,8 @@ extension Strings {
         switcherSearchPin: "Fijar búsqueda con S",
         switcherSearchPinCaption: "S inicia una búsqueda y fija el selector abierto: al escribir ya no aparecen caracteres especiales cuando el atajo usa ⌥, y una búsqueda que empieza por Q o W ya no cierra la ventana ni cierra la app por error.",
         invertVerticalScroll: "Invertir el desplazamiento vertical",
-        invertHorizontalScroll: "Invertir el desplazamiento horizontal"
+        invertHorizontalScroll: "Invertir el desplazamiento horizontal",
+        switcherShowShortcutHints: "Mostrar indicaciones de atajos",
+        switcherShowShortcutHintsCaption: "Muestra los atajos de apps y ventanas debajo de los iconos."
     )
 }
