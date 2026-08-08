@@ -9230,6 +9230,19 @@ struct MetricsTests {
         expect(ScreenshotSupport.uniqueFileName("a.png",
                                                 exists: { $0 == "a.png" || $0 == "a 2.png" }) == "a 3.png",
                "numbering keeps walking until a free name")
+        let dragRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ScreenshotDragTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dragRoot) }
+        let dragData = Data([0x89, 0x50, 0x4E, 0x47])
+        let firstDrag = try? ScreenshotSupport.temporaryDragFile(
+            data: dragData, name: "Capture.png", directory: dragRoot)
+        let secondDrag = try? ScreenshotSupport.temporaryDragFile(
+            data: dragData, name: "Capture.png", directory: dragRoot)
+        expect(firstDrag?.lastPathComponent == "Capture.png"
+                && firstDrag.flatMap { try? Data(contentsOf: $0) } == dragData,
+               "a screenshot drag writes the complete payload with its file name")
+        expect(firstDrag != nil && secondDrag != nil && firstDrag != secondDrag,
+               "simultaneous screenshot drags receive separate temporary files")
 
         var counterList = [
             ScreenshotSupport.Annotation(tool: .counter, number: 1),
