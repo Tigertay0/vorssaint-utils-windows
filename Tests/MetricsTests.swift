@@ -2132,7 +2132,8 @@ struct MetricsTests {
                "Quick Controls panel section is shown by default")
         expect(registeredDefaults[DefaultsKey.panelShowToggles] as? Bool == true,
                "Quick toggles panel section is shown by default")
-        expect([DefaultsKey.panelToggleDarkMode, DefaultsKey.panelToggleMicMute,
+        expect([DefaultsKey.panelToggleDarkMode, DefaultsKey.panelToggleKeyboardLight,
+                DefaultsKey.panelToggleMicMute,
                 DefaultsKey.panelToggleEmptyTrash,
                 DefaultsKey.panelToggleEjectDisks, DefaultsKey.panelToggleHiddenFiles,
                 DefaultsKey.panelToggleDesktopIcons, DefaultsKey.panelToggleLockScreen,
@@ -8151,6 +8152,19 @@ struct MetricsTests {
                "accepted writes without replies keep a blind slider")
         expect(BrightnessSupport.channelOutcome(writeAccepted: false, replyParsed: false) == .dead,
                "rejected writes mean no DDC reaches the display (HDMI conversion)")
+        let oneDisplay = BrightnessSupport.DisplayTopology(online: [1], active: [1])
+        let twoDisplays = BrightnessSupport.DisplayTopology(online: [1, 2], active: [1, 2])
+        expect(!BrightnessSupport.shouldQueueRebuild(topology: oneDisplay, pending: oneDisplay),
+               "opening Displays does not queue the same monitor scan twice")
+        expect(BrightnessSupport.shouldQueueRebuild(topology: twoDisplays, pending: oneDisplay),
+               "a connected monitor always queues a fresh display scan")
+        expect(BrightnessSupport.shouldQueueRebuild(topology: oneDisplay, pending: oneDisplay,
+                                                    force: true),
+               "wake recovery can rebuild unchanged display ids")
+        expect(BrightnessSupport.brightnessAfterRebuild(probed: 0.3, pending: 0.8) == 0.8,
+               "a brightness change made during discovery survives the final probe")
+        expect(BrightnessSupport.brightnessAfterRebuild(probed: 0.3, pending: nil) == 0.3,
+               "a rebuild keeps the monitor reading when no change is waiting")
         expect(BrightnessSupport.canDisableDisplay(activeDisplayIDs: [1, 3], target: 3),
                "one display can be disabled while another remains active")
         expect(!BrightnessSupport.canDisableDisplay(activeDisplayIDs: [1], target: 1),
@@ -10255,6 +10269,7 @@ struct MetricsTests {
         expect(backupKeys.contains(DefaultsKey.panelShowToggles)
                 && backupKeys.contains(DefaultsKey.panelToggleOrder)
                 && backupKeys.contains(DefaultsKey.panelToggleDarkMode)
+                && backupKeys.contains(DefaultsKey.panelToggleKeyboardLight)
                 && backupKeys.contains(DefaultsKey.panelToggleMicMute),
                "the quick toggles layout travels with the settings backup")
         expect(backupKeys.contains(DefaultsKey.panelShowFanControl)

@@ -199,6 +199,7 @@ enum DefaultsKey {
     static let panelShowToggles = "panelShowToggles"
     // Quick toggles tab: per-action visibility (the order lives in panelToggleOrder).
     static let panelToggleDarkMode = "panelToggleDarkMode"
+    static let panelToggleKeyboardLight = "panelToggleKeyboardLight"
     // Keep the existing storage key so moving the row preserves its visibility choice.
     static let panelToggleMicMute = "panelUtilityMicMute"
     static let panelToggleEmptyTrash = "panelToggleEmptyTrash"
@@ -823,6 +824,7 @@ enum Defaults {
         DefaultsKey.panelShowControls: true,
         DefaultsKey.panelShowToggles: true,
         DefaultsKey.panelToggleDarkMode: true,
+        DefaultsKey.panelToggleKeyboardLight: true,
         DefaultsKey.panelToggleMicMute: true,
         DefaultsKey.panelToggleEmptyTrash: true,
         DefaultsKey.panelToggleEjectDisks: true,
