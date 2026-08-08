@@ -2210,6 +2210,7 @@ struct KeepAwakeCard: View {
     @ObservedObject private var permissions = Permissions.shared
     @AppStorage(DefaultsKey.defaultDuration) private var defaultDuration: Int = 0
     @AppStorage(DefaultsKey.keepAwakeAutoStart) private var keepAwakeAutoStart = false
+    @AppStorage(DefaultsKey.keepAwakeAllowDisplaySleep) private var keepAwakeAllowDisplaySleep = false
     @AppStorage(DefaultsKey.keepAwakeExternalDisplay) private var keepAwakeExternalDisplay = false
     @AppStorage(DefaultsKey.keepAwakeConnectedToPower) private var keepAwakeConnectedToPower = false
     @AppStorage(DefaultsKey.keepAwakeIconTint) private var keepAwakeIconTint = KeepAwakeIconTint.orange.rawValue
@@ -2296,6 +2297,11 @@ struct KeepAwakeCard: View {
                     KeepAwakeIconPicker(iconValue: $keepAwakeActiveIcon,
                                         tintValue: $keepAwakeIconTint,
                                         compact: true)
+                    compactOptionToggle(
+                        icon: "display",
+                        title: displaySleepStrings.allowDisplaySleep,
+                        isOn: $keepAwakeAllowDisplaySleep
+                    )
                     compactOptionToggle(
                         icon: "play.circle",
                         title: l10n.s.keepAwakeAutoStart,
@@ -2395,6 +2401,7 @@ struct KeepAwakeCard: View {
                 Text(title)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Toggle("", isOn: isOn)
                     .toggleStyle(.switch)
@@ -2453,6 +2460,10 @@ struct KeepAwakeCard: View {
 
     private var automationStrings: KeepAwakeAutomationStrings {
         FeatureStrings.keepAwakeAutomation(l10n.language)
+    }
+
+    private var displaySleepStrings: KeepAwakeDisplaySleepStrings {
+        FeatureStrings.keepAwakeDisplaySleep(l10n.language)
     }
 
     private var clamshellCaption: String {

@@ -387,6 +387,7 @@ struct EnergySettings: View {
     @AppStorage(DefaultsKey.batteryLimit) private var batteryLimit = 10
     @AppStorage(DefaultsKey.keepAwakeAutoStart) private var keepAwakeAutoStart = false
     @AppStorage(DefaultsKey.keepAwakeRightClickToggle) private var keepAwakeRightClickToggle = false
+    @AppStorage(DefaultsKey.keepAwakeAllowDisplaySleep) private var keepAwakeAllowDisplaySleep = false
     @AppStorage(DefaultsKey.showCountdown) private var showCountdown = false
     @AppStorage(DefaultsKey.keepAwakeIconTint) private var keepAwakeIconTint = KeepAwakeIconTint.orange.rawValue
     @AppStorage(DefaultsKey.keepAwakeActiveIcon) private var keepAwakeActiveIcon = KeepAwakeActiveIcon.vorssaint.rawValue
@@ -416,6 +417,9 @@ struct EnergySettings: View {
                     // with the session options. Under the General page's menu
                     // bar section the label gave no clue which time it meant.
                     Toggle(l10n.s.showCountdown, isOn: $showCountdown)
+                    SettingsToggleWithCaption(title: displaySleepStrings.allowDisplaySleep,
+                                              caption: displaySleepStrings.allowDisplaySleepCaption,
+                                              isOn: $keepAwakeAllowDisplaySleep)
                 }
                 Section(automationStrings.automationSection) {
                     SettingsCaptionText(automationStrings.automationCaption)
@@ -591,6 +595,10 @@ struct EnergySettings: View {
 
     private var automationStrings: KeepAwakeAutomationStrings {
         FeatureStrings.keepAwakeAutomation(l10n.language)
+    }
+
+    private var displaySleepStrings: KeepAwakeDisplaySleepStrings {
+        FeatureStrings.keepAwakeDisplaySleep(l10n.language)
     }
 }
 

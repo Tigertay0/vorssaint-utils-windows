@@ -46,7 +46,9 @@ enum SettingsDirectory {
                                                  FeatureStrings.brightness(language).osdToggle,
                                                  FeatureStrings.keepAwakeAutomation(language)
                                                      .externalDisplayToggle,
-                                                 FeatureStrings.keepAwakeAutomation(language).powerToggle]),
+                                                 FeatureStrings.keepAwakeAutomation(language).powerToggle,
+                                                 FeatureStrings.keepAwakeDisplaySleep(language)
+                                                     .allowDisplaySleep]),
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "chart.line.uptrend.xyaxis",
                                       keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle,
                                                  s.monitorMemoryPressureDot,

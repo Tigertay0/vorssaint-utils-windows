@@ -1169,8 +1169,12 @@ struct MetricsTests {
                "Keep Awake launch restore is opt-in")
         expect(registeredDefaults[DefaultsKey.keepAwakeRightClickToggle] as? Bool == false,
                "right-click Keep Awake toggle is opt-in")
+        expect(registeredDefaults[DefaultsKey.keepAwakeAllowDisplaySleep] as? Bool == false,
+               "Keep Awake keeps the display on by default")
         expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.keepAwakeRightClickToggle),
                "right-click Keep Awake preference follows settings backups")
+        expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.keepAwakeAllowDisplaySleep),
+               "display sleep preference follows settings backups")
         expect(registeredDefaults[DefaultsKey.keepAwakeExternalDisplay] as? Bool == false,
                "external-display Keep Awake is opt-in")
         expect(registeredDefaults[DefaultsKey.keepAwakeConnectedToPower] as? Bool == false,
@@ -7833,6 +7837,13 @@ struct MetricsTests {
                    "every Keep Awake automation string is set for \(language.rawValue)")
             expect(keepAwakeAutomationValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in Keep Awake automation strings (\(language.rawValue))")
+            let displaySleepValues = Mirror(
+                reflecting: FeatureStrings.keepAwakeDisplaySleep(language)
+            ).children.compactMap { $0.value as? String }
+            expect(displaySleepValues.count == 2 && displaySleepValues.allSatisfy { !$0.isEmpty },
+                   "every Keep Awake display sleep string is set for \(language.rawValue)")
+            expect(displaySleepValues.allSatisfy { !$0.contains("—") },
+                   "no em-dash in Keep Awake display sleep strings (\(language.rawValue))")
             let batteryTimeValues = Mirror(reflecting: FeatureStrings.batteryTime(language)).children
                 .compactMap { $0.value as? String }
             expect(!batteryTimeValues.isEmpty && batteryTimeValues.allSatisfy { !$0.isEmpty },
