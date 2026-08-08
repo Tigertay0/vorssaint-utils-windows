@@ -1772,16 +1772,16 @@ struct MetricsTests {
                "bumping the app version requires re-deciding the support prompt pin above")
         expect(SupportUpdateIntroInfo.releaseVersion == "3.3.0",
                "3.3.0 shows the deliberately curated community and support intro")
-        // 3.3.0 is a feature release, so the tour is re-curated around only
-        // the features that are genuinely new in this version.
-        expect(UpdateHighlightsInfo.releaseVersion == "3.3.0",
+        // 3.3.1 adds several headline features, so the tour is re-curated
+        // around only what this update genuinely introduces.
+        expect(UpdateHighlightsInfo.releaseVersion == "3.3.1",
                "re-decide the highlights tour on a feature release: re-curate its rows and move the pin to the shipping version")
-        expect(UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: "3.2.0")
-               && UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: nil),
+        expect(UpdateHighlightsInfo.shouldShow(appVersion: "3.3.1", lastSeenVersion: "3.3.0")
+               && UpdateHighlightsInfo.shouldShow(appVersion: "3.3.1", lastSeenVersion: nil),
                "highlights tour shows once after updating to its pinned release")
-        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: "3.3.0"),
+        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.3.1", lastSeenVersion: "3.3.1"),
                "highlights tour stays hidden after it is seen")
-        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.2.0", lastSeenVersion: nil),
+        expect(!UpdateHighlightsInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: nil),
                "highlights tour never leaks into another release")
         expect(registeredDefaults[DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect] as? Bool == false,
                "headphone disconnect volume lowering is opt-in")
