@@ -9,7 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control
 and smarter window tools. It also expands Keep Awake and improves shortcuts and
-reliability across search, displays, updates, captures, cleaning and app removal.
+mouse controls, plus reliability across search, displays, updates, captures,
+cleaning and app removal.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -29,6 +30,8 @@ reliability across search, displays, updates, captures, cleaning and app removal
   Thanks to @PathGao.
 
 ### Changed
+- Mouse wheel direction can now be inverted separately for vertical and horizontal
+  scrolling, including horizontal scrolling with Shift. Thanks to @Jadens-arc.
 - Keyboard Shortcuts now groups installed features, shows which shortcuts are active
   and edits them in place, including Super key alternatives.
 - App Switcher search can stay open after pressing S, letting you release the shortcut
