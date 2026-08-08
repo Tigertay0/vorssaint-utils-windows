@@ -8,8 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control
-and smarter window tools. Displays, app updates, captures, cleaning, app removal and
-the menu bar panel are more reliable, and Quit on close better protects open apps.
+and smarter window tools. It also improves reliability across displays, updates,
+captures, cleaning, app removal, Quit on close and the menu bar panel.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -68,6 +68,7 @@ the menu bar panel are more reliable, and Quit on close better protects open app
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
+- Quick panel is now named consistently in Settings. Thanks to @lgfmartins.
 - Newly connected monitors now appear promptly in Displays while their brightness
   controls finish getting ready.
 - Quit on close now keeps browser-hosted apps open while their window remains.
