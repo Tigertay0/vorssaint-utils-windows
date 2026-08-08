@@ -10407,8 +10407,8 @@ struct MetricsTests {
                "an app that already updated itself is not offered again")
         expect(packageRows.contains { $0.token == "chat" && $0.installedVersion == "0.0.401" },
                "the version the app reports wins over the package receipt")
-        expect(packageRows.contains { $0.token == "installer" && $0.installedVersion == "26.078" },
-               "without an app bundle to read, the package receipt is used")
+        expect(!packageRows.contains { $0.token == "installer" },
+               "a package record without an app bundle is not presented as an installed app")
         // Packages that install through an installer declare no app, so the
         // catalog name is tried as a bundle name before giving up.
         let namedRows = AppUpdatesSupport.packageUpdates(
@@ -10558,12 +10558,12 @@ struct MetricsTests {
         expect(HomebrewCommandBuilder.outdatedCasksIncludingSelfUpdating(brewPath: "/opt/x/brew").arguments
                 == ["outdated", "--cask", "--greedy", "--json=v2"],
                "the update check asks for the apps that carry their own updater too")
-        let caskJSON = #"{"formulae":[],"casks":[{"token":"editor","name":["Editor"],"installed":"1.129.0","artifacts":[{"app":["Editor.app"]},{"zap":[]}]}]}"#
+        let caskJSON = #"{"formulae":[],"casks":[{"token":"editor","name":["Editor"],"installed":"1.129.0","artifacts":[{"app":["Source.app",{"target":"Editor.app"}],"target":"/Applications/Editor.app"},{"zap":[]}]}]}"#
         let parsedRecords = HomebrewParser.parseInstalledCaskRecords(caskJSON)
         expect(parsedRecords.count == 1 && parsedRecords[0].appFileNames == ["Editor.app"]
                 && parsedRecords[0].displayName == "Editor"
                 && parsedRecords[0].installedVersion == "1.129.0",
-               "an installed package is traced back to the app it puts in place")
+               "an installed package is traced to the final app name after a rename")
         expect(HomebrewParser.parseInstalledCaskRecords("garbage").isEmpty,
                "unreadable package output yields no records")
 

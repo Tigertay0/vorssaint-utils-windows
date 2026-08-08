@@ -7,8 +7,9 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control and
-smarter window tools. Captures, cleaning, app removal and the menu bar panel are more reliable.
+Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control
+and smarter window tools. App updates, captures, cleaning, app removal and the menu
+bar panel are more reliable.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -67,6 +68,8 @@ smarter window tools. Captures, cleaning, app removal and the menu bar panel are
   searchable, reusable and clearable when new capture is off. Thanks to @PathGao.
 
 ### Fixed
+- App updates no longer lists command-line packages or records left behind after
+  their apps have been removed.
 - The App Switcher opens quickly when apps run many helper processes. Clicking another
   app now cancels the switch cleanly.
 - Scrolling screenshots now let you scroll the chosen area yourself, then finish
