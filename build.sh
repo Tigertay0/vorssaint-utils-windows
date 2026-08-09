@@ -118,6 +118,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/QuickToggleStrings.swift \
         Sources/Vorssaint/Core/ScreenshotStrings.swift \
         Sources/Vorssaint/Core/RecorderStrings.swift \
+        Sources/Vorssaint/Core/RecorderShareStrings.swift \
         Sources/Vorssaint/Core/CameraPreviewStrings.swift \
         Sources/Vorssaint/Core/ScratchpadStrings.swift \
         Sources/Vorssaint/Core/FinderRenameStrings.swift \
@@ -136,6 +137,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/RadialMenu/RadialMenuSupport.swift \
         Sources/Vorssaint/Services/QuickTools/ScratchpadSupport.swift \
         Sources/Vorssaint/Services/Recorder/RecorderSupport.swift \
+        Sources/Vorssaint/Services/Recorder/RecordingSharingSupport.swift \
         Sources/Vorssaint/Services/Recorder/RecorderTakeStore.swift \
         Sources/Vorssaint/Services/Recorder/RecorderMotion.swift \
         Sources/Vorssaint/Services/Recorder/RecorderPointerTrack.swift \

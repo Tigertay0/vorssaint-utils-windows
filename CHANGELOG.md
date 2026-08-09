@@ -7,13 +7,15 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.1]
 
 ### Summary
-Vorssaint 3.3.1 adds editable recording audio, one-click app installs, Fan Control
-and more configurable window tools. It also expands Keep Awake and improves keyboard, mouse,
-menu bar, display, update, capture, cleaning and app removal workflows.
+Vorssaint 3.3.1 adds editable recording audio, temporary recording links, one-click app installs,
+Fan Control and more configurable window tools. It also expands Keep Awake and improves keyboard,
+mouse, menu bar, display, update, capture, cleaning and app removal workflows.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
   selecting, then adjust or remove each track in the editor.
+- Finished recordings can create 1-hour or 6-hour links after local compression to under
+  100 MB. Disable under Screen recording.
 - A mounted disk image with one app can install it into Applications, eject itself and
   move its download to the Trash. Off by default in Features.
 - A configurable shortcut opens a copied image directly in the screenshot editor.
