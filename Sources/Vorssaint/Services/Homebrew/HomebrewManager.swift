@@ -707,7 +707,11 @@ final class HomebrewManager: ObservableObject {
                 completion(-1, error.localizedDescription)
                 return
             }
-            DispatchQueue.main.async { self?.activeProcess = process }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.activeProcess = process
+                if self.cancelRequested { Self.stop(process) }
+            }
             process.waitUntilExit()
             _ = drained.wait(timeout: .now() + 1)
             pipe.fileHandleForReading.readabilityHandler = nil

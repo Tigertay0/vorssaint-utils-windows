@@ -5128,6 +5128,11 @@ struct MetricsTests {
                "installer script relaunches as the user when running as root")
         expect(installerScript.contains("$RESULT.progress") && installerScript.contains("finalize"),
                "installer markers stay in a progress file until the run finishes")
+        expect(installerScript.contains("/usr/bin/sudo -n -u \"#$ASUSER\" /bin/sh -c")
+                && installerScript.contains("'/bin/echo \"$1\" > \"$2.progress\"' marker \"$1\" \"$RESULT\"")
+                && installerScript.contains("/usr/bin/sudo -n -u \"#$ASUSER\" /bin/mv -f")
+                && !installerScript.contains("note() { /bin/echo \"$1\" > \"$RESULT.progress\""),
+               "elevated marker writes drop to the original user's credentials")
         let elevated = UpdateInstallerSupport.elevatedInstallCommand(
             appPath: "/Applications/Vorssaint.app",
             dmgPath: "/tmp/Vorssaint-update.dmg",
@@ -7589,6 +7594,12 @@ struct MetricsTests {
         expect(FanControlPolicy.coolingDuration == 15 * 60
                 && FanControlPolicy.heartbeatLimit < 10,
                "maximum cooling is time-bounded and loses control quickly with its client")
+        expect(FanControlPolicy.isAutomaticMode(0)
+                && FanControlPolicy.isAutomaticMode(3)
+                && !FanControlPolicy.isAutomaticMode(1)
+                && !FanControlPolicy.isAutomaticMode(2)
+                && !FanControlPolicy.isAutomaticMode(.max),
+               "fan ownership accepts firmware automatic modes and rejects manual or unknown modes")
         expect(FanControlPolicy.fanCount(from: 1) == 1
                 && FanControlPolicy.fanCount(from: 8) == 8
                 && FanControlPolicy.fanCount(from: 0) == nil
@@ -7898,6 +7909,9 @@ struct MetricsTests {
                    "every backup string is set for \(language.rawValue)")
             expect(backupValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible backup strings (\(language.rawValue))")
+            expect(FeatureStrings.backup(language).description.contains(
+                FeatureStrings.scratchpad(language).pageTitle),
+                   "every backup description discloses its Scratchpad note content (\(language.rawValue))")
             let guideValues = Mirror(reflecting: FeatureStrings.permissionGuide(language)).children
                 .compactMap { $0.value as? String }
             expect(!guideValues.isEmpty && guideValues.allSatisfy { !$0.isEmpty },
@@ -9262,7 +9276,6 @@ struct MetricsTests {
                "numbering keeps walking until a free name")
         let dragRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("ScreenshotDragTests-\(UUID().uuidString)", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: dragRoot) }
         let dragData = Data([0x89, 0x50, 0x4E, 0x47])
         let firstDrag = try? ScreenshotSupport.temporaryDragFile(
             data: dragData, name: "Capture.png", directory: dragRoot)
@@ -9273,6 +9286,16 @@ struct MetricsTests {
                "a screenshot drag writes the complete payload with its file name")
         expect(firstDrag != nil && secondDrag != nil && firstDrag != secondDrag,
                "simultaneous screenshot drags receive separate temporary files")
+        let unrelatedDrag = dragRoot.appendingPathComponent("ScreenshotDrag-not-owned",
+                                                            isDirectory: true)
+        try? FileManager.default.createDirectory(at: unrelatedDrag,
+                                                 withIntermediateDirectories: true)
+        ScreenshotSupport.removeTemporaryDragDirectories(directory: dragRoot)
+        expect(firstDrag.map { !FileManager.default.fileExists(atPath: $0.path) } == true
+                && secondDrag.map { !FileManager.default.fileExists(atPath: $0.path) } == true
+                && FileManager.default.fileExists(atPath: unrelatedDrag.path),
+               "temporary screenshot cleanup removes only app-owned drag directories")
+        try? FileManager.default.removeItem(at: dragRoot)
 
         var counterList = [
             ScreenshotSupport.Annotation(tool: .counter, number: 1),
@@ -11164,6 +11187,9 @@ struct MetricsTests {
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderSharingEnabled)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderSaveFolder),
                "the screen recorder settings travel in backups")
+        expect(RecorderSupport.exceptedOwnWindowIDs(
+            ownWindowIDs: [1, 2, 3], protectedWindowIDs: [2, 4]) == [1, 3],
+               "recording keeps existing ordinary app windows but never its protected chrome")
 
         expect(RecordingShareDuration.allCases.map(\.rawValue) == [3_600, 21_600],
                "recording links allow only one or six hours")

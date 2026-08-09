@@ -94,7 +94,7 @@ input controls, the menu bar, Switcher, displays, app management, capture, the f
   controls finish getting ready.
 - Quit on close now keeps browser-hosted apps open while their window remains.
   Thanks to @ChaotikTiger.
-- App updates no longer lists command-line packages or records left behind after
+- App update checks no longer list command-line packages or records left behind after
   their apps have been removed.
 - The App Switcher opens quickly when apps run many helper processes. Clicking another
   app now cancels the switch cleanly.
