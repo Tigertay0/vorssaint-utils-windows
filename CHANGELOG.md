@@ -8,8 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, temporary recording links, one-click app installs,
-Fan Control and more configurable window tools. It also expands Keep Awake and improves keyboard,
-mouse, menu bar, Switcher, display, update, capture, cleaning and app removal workflows.
+Fan Control and more configurable window tools. It also expands Keep Awake, makes mouse controls
+more flexible and improves keyboard, menu bar, Switcher, display, update, capture, cleaning and app removal workflows.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -60,6 +60,8 @@ mouse, menu bar, Switcher, display, update, capture, cleaning and app removal wo
   Under Monitor. Thanks to @WazZro.
 - Mouse feature exceptions can now choose apps from anywhere on the Mac.
   Thanks to @kyteidev.
+- The radial menu can now open from any extra mouse button, not only Back and Forward.
+  Thanks to @MineraleYT.
 - The optional Fan Control beta shows live fan speed in the panel and menu bar.
   It can cool at maximum for 15 minutes, then returns to automatic control.
 - Window Layout can move the active window to the previous display, with an optional

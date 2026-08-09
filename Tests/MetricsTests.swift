@@ -9888,10 +9888,16 @@ struct MetricsTests {
         expect(RadialMenuMouseTrigger.sanitized("back") == .back
                 && RadialMenuMouseTrigger.sanitized("forward").buttonNumber == 4
                 && RadialMenuMouseTrigger.back.buttonNumber == 3
+                && MouseButtonShortcutSupport.buttonRange.allSatisfy {
+                    RadialMenuMouseTrigger.sanitized(
+                        RadialMenuMouseTrigger.button($0).rawValue).buttonNumber == $0
+                }
                 && RadialMenuMouseTrigger.sanitized(nil) == .off
                 && RadialMenuMouseTrigger.sanitized("teleport") == .off
+                && RadialMenuMouseTrigger.sanitized("button:2") == .off
+                && RadialMenuMouseTrigger.sanitized("button:32") == .off
                 && RadialMenuMouseTrigger.off.buttonNumber == nil,
-               "the side button trigger maps to the HID numbers and falls back to off")
+               "the mouse trigger round-trips every extra button and falls back to off")
         expect(RadialMenuMouseTrigger.back.buttonNumber == MouseNavigationSupport.backButtonNumber
                 && RadialMenuMouseTrigger.forward.buttonNumber == MouseNavigationSupport.forwardButtonNumber,
                "the wheel and mouse navigation agree on which button is which")
