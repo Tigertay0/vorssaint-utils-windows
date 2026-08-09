@@ -10514,6 +10514,44 @@ struct MetricsTests {
                "text where a per-app rule dictionary belongs is dropped on import")
         expect(shapeChecked?[DefaultsKey.smoothScrollStep] as? Int == 60,
                "a value of the right shape still restores")
+        let bridgedInput: [String: Any] = [
+            SettingsBackupSupport.formatVersionKey: 1,
+            SettingsBackupSupport.settingsKey: [
+                DefaultsKey.switcherEnabled: 1,
+                DefaultsKey.monitorInterval: true,
+                DefaultsKey.dockPreviewBackgroundOpacity: true,
+                DefaultsKey.smoothScrollStep: 60,
+                DefaultsKey.scratchpadBackgroundOpacity: 0.5,
+                DefaultsKey.smoothScrollExceptions: [1],
+                DefaultsKey.autoQuitExceptions: ["com.example.editor"],
+                DefaultsKey.switcherAppRules: ["com.example.editor": 1],
+                DefaultsKey.mouseButtonShortcuts: ["4": "command:0"],
+            ] as [String: Any],
+        ]
+        var bridgedSettings: [String: Any]?
+        if let data = try? PropertyListSerialization.data(fromPropertyList: bridgedInput,
+                                                          format: .binary,
+                                                          options: 0),
+           let parsed = try? PropertyListSerialization.propertyList(from: data,
+                                                                     options: [],
+                                                                     format: nil),
+           let payload = parsed as? [String: Any] {
+            bridgedSettings = SettingsBackupSupport.sanitizedSettings(from: payload)
+        }
+        expect(bridgedSettings?[DefaultsKey.switcherEnabled] == nil
+                && bridgedSettings?[DefaultsKey.monitorInterval] == nil
+                && bridgedSettings?[DefaultsKey.dockPreviewBackgroundOpacity] == nil,
+               "property-list numbers and booleans do not cross scalar setting types")
+        expect(bridgedSettings?[DefaultsKey.smoothScrollExceptions] == nil
+                && bridgedSettings?[DefaultsKey.switcherAppRules] == nil,
+               "wrong collection element types are dropped on import")
+        expect(bridgedSettings?[DefaultsKey.smoothScrollStep] as? Int == 60
+                && bridgedSettings?[DefaultsKey.scratchpadBackgroundOpacity] as? Double == 0.5
+                && bridgedSettings?[DefaultsKey.autoQuitExceptions] as? [String]
+                    == ["com.example.editor"]
+                && bridgedSettings?[DefaultsKey.mouseButtonShortcuts] as? [String: String]
+                    == ["4": "command:0"],
+               "property-list values of the declared scalar and collection types still restore")
         let switcherRulesBackup: [String: Any] = [
             SettingsBackupSupport.formatVersionKey: 1,
             SettingsBackupSupport.settingsKey: [
