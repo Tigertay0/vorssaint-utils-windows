@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.1 adds editable recording audio, temporary recording links, one-click app installs,
 Fan Control and more configurable window tools. It also expands Keep Awake and improves keyboard,
-mouse, menu bar, display, update, capture, cleaning and app removal workflows.
+mouse, menu bar, Switcher, display, update, capture, cleaning and app removal workflows.
 
 ### Added
 - Screen recordings can capture Mac sound and microphone separately. Choose them while
@@ -83,6 +83,7 @@ mouse, menu bar, display, update, capture, cleaning and app removal workflows.
 
 ### Fixed
 - The menu bar panel now closes when you press Escape.
+- The App Switcher can change windows while the screenshot or screen recording editor is open.
 - Keyboard input stays responsive in demanding apps when file shortcuts, text
   snippets or Super key are enabled.
 - Quick panel is now named consistently in Settings. Thanks to @lgfmartins.

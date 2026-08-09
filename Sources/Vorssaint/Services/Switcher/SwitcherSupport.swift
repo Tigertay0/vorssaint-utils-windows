@@ -737,9 +737,11 @@ enum SwitcherSupport {
 
     static func shouldStageSourceBehindTarget(targetPID: pid_t,
                                               sourcePID: pid_t?,
-                                              sourceWindowID: UInt32?) -> Bool {
+                                              sourceWindowID: UInt32?,
+                                              ownPID: pid_t = ProcessInfo.processInfo.processIdentifier) -> Bool {
         guard let sourcePID,
               sourcePID != targetPID,
+              sourcePID != ownPID,
               sourceWindowID != nil else { return false }
         return true
     }

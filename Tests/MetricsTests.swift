@@ -6398,15 +6398,23 @@ struct MetricsTests {
                "App Switcher does not restore source after minimize intent within the same app")
         expect(SwitcherSupport.shouldStageSourceBehindTarget(targetPID: 10,
                                                              sourcePID: 20,
-                                                             sourceWindowID: 44),
+                                                             sourceWindowID: 44,
+                                                             ownPID: 99),
                "App Switcher can keep the source window directly behind a selected target window")
         expect(!SwitcherSupport.shouldStageSourceBehindTarget(targetPID: 10,
                                                               sourcePID: 10,
-                                                              sourceWindowID: 44),
+                                                              sourceWindowID: 44,
+                                                              ownPID: 99),
                "App Switcher does not stage a source window from the same app")
         expect(!SwitcherSupport.shouldStageSourceBehindTarget(targetPID: 10,
+                                                              sourcePID: 99,
+                                                              sourceWindowID: 44,
+                                                              ownPID: 99),
+               "App Switcher does not raise its own editor back over the selected window")
+        expect(!SwitcherSupport.shouldStageSourceBehindTarget(targetPID: 10,
                                                               sourcePID: 20,
-                                                              sourceWindowID: nil),
+                                                              sourceWindowID: nil,
+                                                              ownPID: 99),
                "App Switcher does not stage without a concrete source window")
         expect(SwitcherSupport.shouldContinueFocusRetry(targetPID: 10,
                                                         sourcePID: 20,
