@@ -79,6 +79,7 @@ extension Strings {
         usageSection: "Hardware-Auslastung",
         memorySection: "Speicher",
         memoryPressure: "Speicherdruck",
+        memorySwapUsed: "Swap-Nutzung",
         pressureNormal: "Normal",
         pressureWarning: "Erhöht",
         pressureCritical: "Kritisch",

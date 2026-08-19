@@ -79,6 +79,7 @@ extension Strings {
         usageSection: "Donanım kullanımı",
         memorySection: "Bellek",
         memoryPressure: "Basınç",
+        memorySwapUsed: "Kullanılan takas",
         pressureNormal: "Normal",
         pressureWarning: "Dikkat",
         pressureCritical: "Kritik",

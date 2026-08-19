@@ -79,6 +79,7 @@ extension Strings {
         usageSection: "硬件占用",
         memorySection: "内存",
         memoryPressure: "压力",
+        memorySwapUsed: "已用交换空间",
         pressureNormal: "正常",
         pressureWarning: "注意",
         pressureCritical: "严重",

@@ -79,6 +79,7 @@ extension Strings {
         usageSection: "Utilisation du matériel",
         memorySection: "Mémoire",
         memoryPressure: "Pression",
+        memorySwapUsed: "Swap utilisé",
         pressureNormal: "Normale",
         pressureWarning: "Attention",
         pressureCritical: "Critique",

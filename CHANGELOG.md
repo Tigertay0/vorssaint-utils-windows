@@ -8,10 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.2 brings one place for screen capture, batch image conversion,
-local Command Bar scripts, recent captures, imported-video editing and formatted
-Scratchpad previews. It also cuts background energy use and improves scrolling
-screenshots, Clipboard, Shelf, Switcher, window controls, audio, displays, Fan Control,
-Settings and app maintenance.
+local Command Bar scripts, recent captures, imported-video editing, formatted
+Scratchpad previews and swap use. It also cuts background energy use and improves
+scrolling screenshots, Clipboard, Shelf, Switcher, window controls, audio, displays,
+Fan Control, Settings and app maintenance.
 
 ### Added
 - One screen-capture shortcut now opens a floating palette for screenshots,
@@ -34,6 +34,8 @@ Settings and app maintenance.
   display sleeps or the screen locks.
 - The quick panel and Radial Menu can now control recording, and the Radial Menu
   can open maintenance tools directly.
+- The System panel now shows swap memory in use below the memory reading.
+  Thanks to @veniaminMedanov.
 
 ### Changed
 - Monitor settings no longer leave system sensors sampling after the window closes;

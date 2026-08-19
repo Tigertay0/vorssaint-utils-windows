@@ -79,6 +79,7 @@ extension Strings {
         usageSection: "Нагрузка",
         memorySection: "Память",
         memoryPressure: "Давление",
+        memorySwapUsed: "Подкачка",
         pressureNormal: "Норма",
         pressureWarning: "Предупреждение",
         pressureCritical: "Критично",
