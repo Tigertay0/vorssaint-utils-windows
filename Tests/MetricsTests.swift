@@ -2435,6 +2435,20 @@ struct MetricsTests {
                                                                metricItemsShown: 2, renderedTitleLength: 0,
                                                                mustShowForSignal: true),
                "a signal brings the main item back even in the separate-items mode")
+        expect(MenuBarSpacingSupport.needsTitleRefreshTimer(keepAwakeActive: true,
+                                                            showsCountdown: true,
+                                                            hasEndDate: true),
+               "a visible finite Keep Awake countdown owns the title timer")
+        expect(!MenuBarSpacingSupport.needsTitleRefreshTimer(keepAwakeActive: false,
+                                                             showsCountdown: true,
+                                                             hasEndDate: true)
+                && !MenuBarSpacingSupport.needsTitleRefreshTimer(keepAwakeActive: true,
+                                                                  showsCountdown: false,
+                                                                  hasEndDate: true)
+                && !MenuBarSpacingSupport.needsTitleRefreshTimer(keepAwakeActive: true,
+                                                                  showsCountdown: true,
+                                                                  hasEndDate: false),
+               "idle, hidden and indefinite Keep Awake titles need no timer")
         expect(registeredDefaults[DefaultsKey.panelControlAutoQuit] as? Bool == true,
                "panel auto quit control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlShelf] as? Bool == true,
@@ -8743,6 +8757,10 @@ struct MetricsTests {
         history.push(4)
         expect(history.values == [2, 3, 4], "history drops oldest at capacity")
         expect(history.values.count == 3, "history never exceeds capacity")
+        expect(history.publishedValues(whileVisible: false).isEmpty
+                && history.values == [2, 3, 4]
+                && history.publishedValues(whileVisible: true) == [2, 3, 4],
+               "hidden graphs publish no arrays without discarding their ring")
 
         var single = MetricHistory(capacity: 1)
         single.push(5)

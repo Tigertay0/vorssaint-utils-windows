@@ -9,8 +9,9 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.2 brings one place for screen capture, batch image conversion,
 local Command Bar scripts, recent captures, imported-video editing and formatted
-Scratchpad previews. It also improves scrolling screenshots, Clipboard, Shelf,
-Switcher, window controls, audio, displays, Settings and app maintenance.
+Scratchpad previews. It also cuts background energy use and improves scrolling
+screenshots, Clipboard, Shelf, Switcher, window controls, audio, displays, Settings
+and app maintenance.
 
 ### Added
 - One screen-capture shortcut now opens a floating palette for screenshots,
@@ -35,6 +36,9 @@ Switcher, window controls, audio, displays, Settings and app maintenance.
   can open maintenance tools directly.
 
 ### Changed
+- Monitor settings no longer leave system sensors sampling after the window closes;
+  hidden metric histories and temporary overlays now release work and memory when
+  they are no longer visible.
 - Clipboard history now opens as a compact palette with uncluttered rows and an
   on-demand preview for reading or editing the full item.
 - Command Bar now learns result choices for the current session, finds alternate

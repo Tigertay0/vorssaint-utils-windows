@@ -348,4 +348,11 @@ struct MetricHistory {
             values.removeFirst(values.count - capacity)
         }
     }
+
+    /// Graph data is useful only while a graph surface is visible. Returning an
+    /// empty publication at rest leaves this ring intact for the next opening
+    /// without making every background sample copy its retained array.
+    func publishedValues(whileVisible visible: Bool) -> [Double] {
+        visible ? values : []
+    }
 }
