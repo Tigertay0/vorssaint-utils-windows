@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.2 brings one place for screen capture, batch image conversion,
 local Command Bar scripts, recent captures, imported-video editing and formatted
-Scratchpad previews. It also improves Clipboard, Shelf, Switcher, window controls,
-audio, displays, Settings and app maintenance.
+Scratchpad previews. It also improves scrolling screenshots, Clipboard, Shelf,
+Switcher, window controls, audio, displays, Settings and app maintenance.
 
 ### Added
 - One screen-capture shortcut now opens a floating palette for screenshots,
@@ -60,6 +60,8 @@ audio, displays, Settings and app maintenance.
   @KSI-cell and @Bald-M.
 
 ### Fixed
+- Scrolling screenshots now keep moving content aligned without repeating fixed
+  page areas.
 - Display controls now keep extra brightness steady, restore the built-in screen
   after the last external one disconnects and stop retrying unsupported brightness
   checks after wake. Thanks to @stevenyang406, @mayaanhafeez and @danilo-alm.

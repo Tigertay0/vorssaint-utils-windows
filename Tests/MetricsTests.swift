@@ -10564,14 +10564,22 @@ struct MetricsTests {
         }
         let firstScrollSample = scrollingSample(offset: 0)
         let nextScrollSample = scrollingSample(offset: 76)
-        expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
-                                                     current: nextScrollSample)
-                == .advanced(overlap: 44, direction: .forward),
-               "scrolling screenshots find the exact shared rows deterministically")
-        expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
-                                                     current: firstScrollSample)
-                == .advanced(overlap: 44, direction: .backward),
-               "scrolling screenshots identify backward movement without duplicating it")
+        let forwardScrollTransition = ScreenshotSupport.scrollingTransition(
+            previous: firstScrollSample,
+            current: nextScrollSample)
+        expect(forwardScrollTransition
+                == .advanced(overlap: 44,
+                             direction: .forward,
+                             contentColumns: 0..<16),
+               "scrolling screenshots find the exact shared rows deterministically: \(forwardScrollTransition)")
+        let backwardScrollTransition = ScreenshotSupport.scrollingTransition(
+            previous: nextScrollSample,
+            current: firstScrollSample)
+        expect(backwardScrollTransition
+                == .advanced(overlap: 44,
+                             direction: .backward,
+                             contentColumns: 0..<16),
+               "scrolling screenshots identify backward movement without duplicating it: \(backwardScrollTransition)")
         expect(ScreenshotSupport.scrollingTransition(previous: nextScrollSample,
                                                      current: nextScrollSample) == .end,
                "an unchanged capture marks the real end of scrolling")
@@ -10581,7 +10589,9 @@ struct MetricsTests {
         let shortFinalScrollSample = scrollingSample(offset: 8)
         expect(ScreenshotSupport.scrollingTransition(previous: firstScrollSample,
                                                      current: shortFinalScrollSample)
-                == .advanced(overlap: 112, direction: .forward),
+                == .advanced(overlap: 112,
+                             direction: .forward,
+                             contentColumns: 0..<16),
                "a short final scroll is kept instead of failing the whole capture")
         func sampleWithFixedEdges(offset: Int) -> ScreenshotSupport.ScrollingSample {
             let sample = scrollingSample(offset: offset)
@@ -10600,25 +10610,81 @@ struct MetricsTests {
         expect(ScreenshotSupport.scrollingTransition(
             previous: sampleWithFixedEdges(offset: 0),
             current: sampleWithFixedEdges(offset: 50))
-                == .advanced(overlap: 70, direction: .forward),
+                == .advanced(overlap: 70,
+                             direction: .forward,
+                             contentColumns: 0..<16),
                "fixed page edges do not hide the shared scrolling content")
         var scrollingStressPassed = true
+        var scrollingStressFailure: ScreenshotSupport.ScrollingTransition?
         for iteration in 0..<250 {
             let offset = [8, 76][iteration % 2]
             let transition = ScreenshotSupport.scrollingTransition(
                 previous: firstScrollSample,
                 current: scrollingSample(offset: offset))
-            scrollingStressPassed = scrollingStressPassed
-                && transition == .advanced(overlap: 120 - offset, direction: .forward)
+            let passed = transition == .advanced(overlap: 120 - offset,
+                                                 direction: .forward,
+                                                 contentColumns: 0..<16)
+            if !passed, scrollingStressFailure == nil { scrollingStressFailure = transition }
+            scrollingStressPassed = scrollingStressPassed && passed
         }
         expect(scrollingStressPassed,
-               "scroll matching stays deterministic through repeated short and long advances")
+               "scroll matching stays deterministic through repeated short and long advances: \(String(describing: scrollingStressFailure))")
         let retinaScrollStart = scrollingSample(width: 32, height: 900, offset: 0)
         let retinaScrollNext = scrollingSample(width: 32, height: 900, offset: 558)
         expect(ScreenshotSupport.scrollingTransition(previous: retinaScrollStart,
                                                      current: retinaScrollNext)
-                == .advanced(overlap: 342, direction: .forward),
+                == .advanced(overlap: 342,
+                             direction: .forward,
+                             contentColumns: 0..<32),
                "scroll matching handles a full-width sample at a realistic Retina selection height")
+        func scrollingSampleWithFixedColumns(offset: Int,
+                                             changesAfterScroll: Bool = false)
+            -> ScreenshotSupport.ScrollingSample {
+            let width = 24
+            let height = 120
+            var pixels = [UInt8](repeating: 0, count: width * height)
+            for row in 0..<height {
+                for column in 0..<width {
+                    if column < 6 || column >= 18 {
+                        pixels[row * width + column] = UInt8(
+                            (row * 19 + column * 23 + (row / 5) * 11) % 251)
+                    } else if changesAfterScroll && (30..<46).contains(row) {
+                        pixels[row * width + column] = UInt8(
+                            (row * 61 + column * 7 + 37) % 251)
+                    } else {
+                        let contentRow = row + offset
+                        pixels[row * width + column] = UInt8(
+                            (contentRow * 17 + column * 31 + (contentRow / 7) * 13) % 251)
+                    }
+                }
+            }
+            return ScreenshotSupport.ScrollingSample(width: width,
+                                                     height: height,
+                                                     pixels: pixels)
+        }
+        let fixedColumnsStart = scrollingSampleWithFixedColumns(offset: 0)
+        let fixedColumnsNext = scrollingSampleWithFixedColumns(offset: 42)
+        expect(ScreenshotSupport.scrollingTransition(previous: fixedColumnsStart,
+                                                     current: fixedColumnsNext)
+                == .advanced(overlap: 78,
+                             direction: .forward,
+                             contentColumns: 6..<18),
+               "scroll matching isolates moving content from fixed side columns")
+        let changedColumnsNext = scrollingSampleWithFixedColumns(
+            offset: 42,
+            changesAfterScroll: true)
+        let changedColumnsTransition = ScreenshotSupport.scrollingTransition(
+            previous: fixedColumnsStart,
+            current: changedColumnsNext)
+        expect(changedColumnsTransition
+                == .advanced(overlap: 78,
+                             direction: .forward,
+                             contentColumns: 6..<18),
+               "scroll matching survives a changed block inside moving content: \(changedColumnsTransition)")
+        expect(ScreenshotSupport.scrollingPixelRange(sampleColumns: 6..<18,
+                                                     sampleWidth: 24,
+                                                     imageWidth: 1_920) == 480..<1_440,
+               "the moving sample columns map back to the exact captured pixels")
         var unmatchedScrollPixels = [UInt8](repeating: 0, count: 16 * 120)
         for index in unmatchedScrollPixels.indices {
             unmatchedScrollPixels[index] = UInt8((index * 47 + index / 11) % 253)
