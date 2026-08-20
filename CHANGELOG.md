@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.3.3]
+
+### Summary
+Vorssaint 3.3.3 keeps the grouped App Switcher clear when moving between windows.
+
+### Fixed
+- The grouped simple App Switcher now keeps every window title fully visible when
+  using the window shortcut.
+
 ## [3.3.2] - 2026-08-20
 
 ### Summary

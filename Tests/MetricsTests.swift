@@ -2115,7 +2115,8 @@ struct MetricsTests {
         expect(!SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.2", lastSeenVersion: "3.3.2"),
                "support prompt stays hidden after it is seen")
         expect(!SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.0", lastSeenVersion: nil)
-               && !SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.1", lastSeenVersion: nil),
+               && !SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.1", lastSeenVersion: nil)
+               && !SupportUpdateIntroInfo.shouldShow(appVersion: "3.3.3", lastSeenVersion: nil),
                "support prompt never leaks into another release")
         expect(SupportUpdateIntroStep.discord.next == .social
                && SupportUpdateIntroStep.social.next == .support
@@ -2139,13 +2140,13 @@ struct MetricsTests {
         // decision above is made consciously, never by omission.
         let releasePlist = NSDictionary(contentsOfFile: "Resources/Info.plist")
         let plistVersion = (releasePlist?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.3.2",
+        expect(plistVersion == "3.3.3",
                "bumping the app version requires re-deciding the support prompt pin above")
         let plistBuild = (releasePlist?["CFBundleVersion"] as? String) ?? ""
-        expect(plistBuild == "78",
+        expect(plistBuild == "79",
                "every app version needs its own incremented bundle build")
         expect(SupportUpdateIntroInfo.releaseVersion == "3.3.2",
-               "3.3.2 shows the deliberately curated community and support intro")
+               "the support prompt remains deliberately pinned to 3.3.2")
         // 3.3.2 adds several headline features, so the tour is re-curated
         // around only what this update genuinely introduces.
         expect(UpdateHighlightsInfo.releaseVersion == "3.3.2",
@@ -6529,9 +6530,11 @@ struct MetricsTests {
                + SwitcherIconRowLayout.padding * 2,
                "App Switcher simple mode replaces previews with a compact title rail")
         expect(iconRowLayout.simplePanelSize.width
-               == max(iconRowLayout.appRowSurfaceWidth, SwitcherIconRowLayout.hintBarWidth)
+               == max(iconRowLayout.appRowSurfaceWidth,
+                      iconRowLayout.simpleTitleSurfaceWidth,
+                      SwitcherIconRowLayout.hintBarWidth)
                + SwitcherIconRowLayout.padding * 2,
-               "App Switcher simple mode fits the app row and shortcut hints")
+               "App Switcher simple mode fits its app row, title rail and shortcut hints")
         let compactIconRowLayout = SwitcherIconRowLayout.compute(
             appCount: 1,
             selectedWindowCount: 1,
@@ -6544,8 +6547,10 @@ struct MetricsTests {
                - SwitcherIconRowLayout.hintHeight,
                "App Switcher removes the shortcut hint bar and its vertical space")
         expect(compactIconRowLayout.simplePanelSize.width
-               == compactIconRowLayout.appRowSurfaceWidth + SwitcherIconRowLayout.padding * 2,
-               "App Switcher without shortcut hints sizes the simple panel to its icon row")
+               == max(compactIconRowLayout.appRowSurfaceWidth,
+                      compactIconRowLayout.simpleTitleSurfaceWidth)
+                    + SwitcherIconRowLayout.padding * 2,
+               "App Switcher without shortcut hints still fits its title rail")
         expect(SwitcherSupport.gridSelectionIndex(after: 1,
                                                    itemCount: 8,
                                                    columns: 5,
@@ -7367,6 +7372,20 @@ struct MetricsTests {
                     Double(SwitcherIconRowLayout.simpleTitleHeight
                            + SwitcherIconRowLayout.simpleTitleGap),
                     "App Switcher simple window row removes the redundant grouped title strip")
+        let groupedWindowShortcutLayout = SwitcherIconRowLayout.compute(
+            appCount: 1,
+            selectedWindowCount: 2,
+            screenVisibleFrame: screen,
+            showsShortcutHints: false
+        )
+        expect(groupedWindowShortcutLayout.simpleTitleSurfaceWidth
+               >= SwitcherIconRowLayout.simpleTitleChipMaxWidth * 2
+                    + SwitcherIconRowLayout.simpleTitleSpacing,
+               "App Switcher grouped window shortcut leaves both window titles visible")
+        expectClose(Double(groupedWindowShortcutLayout.simplePanelSize.width),
+                    Double(groupedWindowShortcutLayout.simpleTitleSurfaceWidth
+                           + SwitcherIconRowLayout.padding * 2),
+                    "App Switcher grouped simple panel follows its window title width")
         let issue128Layout = SwitcherIconRowLayout.compute(appCount: 7,
                                                            selectedWindowCount: 2,
                                                            screenVisibleFrame: screen)
