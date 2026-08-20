@@ -7,9 +7,17 @@ All notable changes to this project are documented here. The format follows
 ## [3.3.3]
 
 ### Summary
-Vorssaint 3.3.3 keeps the grouped App Switcher clear when moving between windows.
+Vorssaint 3.3.3 adds full manual and temperature-based Fan Control and keeps the
+grouped App Switcher clear when moving between windows.
+
+### Changed
+- Fan Control now offers System, continuous Manual control from 0% to 100% and
+  editable temperature curves with multiple SoC, CPU and GPU rules. It also shows
+  current and target RPM for every fan.
 
 ### Fixed
+- Fan Control now prepares stopped fans before taking manual control and keeps a
+  failed attempt visible instead of silently returning to Automatic.
 - The grouped simple App Switcher now keeps every window title fully visible when
   using the window shortcut.
 
