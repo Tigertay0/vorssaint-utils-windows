@@ -8,7 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, an opt-in Kill Process tool and keeps the
-grouped App Switcher clear when moving between windows.
+grouped App Switcher clear when moving between windows. It also restores reliable
+trimming from the start of a recording.
 
 ### Added
 - An opt-in Kill Process feature searches running processes to force quit, restart or terminate
@@ -24,6 +25,8 @@ grouped App Switcher clear when moving between windows.
   failed attempt visible instead of silently returning to Automatic.
 - The grouped simple App Switcher now keeps every window title fully visible when
   using the window shortcut.
+- The recording editor now trims reliably from the beginning of a video when
+  dragging the left handle. Thanks to @lmilojevicc.
 - Screen recorder, Copy text from screen and Color picker can each take a shortcut
   of their own again, opening screen capture already on that mode. Their Settings
   rows no longer record a combination that does nothing. Thanks to @wiidede and
