@@ -275,7 +275,7 @@ struct SwitcherView: View {
                                 .foregroundStyle(SwitcherIconStyle.text)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
-                            Text(selected.isAppEntry ? l10n.s.switcherNoOpenWindow : selected.displayTitle)
+                            Text(selected.windowLabel(noOpenWindow: l10n.s.switcherNoOpenWindow))
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(SwitcherIconStyle.secondaryText)
                                 .lineLimit(1)
@@ -365,7 +365,7 @@ struct SwitcherView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Capsule(style: .continuous).fill(SwitcherIconStyle.tile))
-                    Text(selected.isAppEntry ? l10n.s.switcherNoOpenWindow : selected.displayTitle)
+                    Text(selected.windowLabel(noOpenWindow: l10n.s.switcherNoOpenWindow))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(SwitcherIconStyle.secondaryText)
                         .lineLimit(1)
@@ -577,7 +577,7 @@ private struct SwitcherWindowTitleChip: View {
                 Image(systemName: "rectangle.stack")
                     .font(.system(size: 9, weight: .semibold))
             }
-            Text(window.isAppEntry ? l10n.s.switcherNoOpenWindow : window.displayTitle)
+            Text(window.windowLabel(noOpenWindow: l10n.s.switcherNoOpenWindow))
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
@@ -730,21 +730,13 @@ private struct SwitcherWindowPreviewTile: View {
                         .aspectRatio(contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .padding(5)
-                } else if window.isAppEntry {
-                    VStack(spacing: SwitcherIconRowLayout.appEntrySpacing) {
-                        if let icon = window.appIcon {
-                            Image(nsImage: icon)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: SwitcherIconRowLayout.appEntryIconSize,
-                                       height: SwitcherIconRowLayout.appEntryIconSize)
-                                .switcherHiddenAppBadge(window.isAppHidden, size: 18)
-                        }
-                        Text(l10n.s.switcherNoOpenWindow)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(SwitcherIconStyle.secondaryText)
-                            .lineLimit(1)
-                    }
+                } else if window.isAppEntry, let icon = window.appIcon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: SwitcherIconRowLayout.appEntryIconSize,
+                               height: SwitcherIconRowLayout.appEntryIconSize)
+                        .switcherHiddenAppBadge(window.isAppHidden, size: 18)
                 } else if let icon = window.appIcon {
                     Image(nsImage: icon)
                         .resizable()
@@ -776,7 +768,7 @@ private struct SwitcherWindowPreviewTile: View {
             .frame(width: SwitcherIconRowLayout.previewCardWidth - 16,
                    height: SwitcherIconRowLayout.previewCardHeight - 38)
 
-            Text(window.displayTitle)
+            Text(window.windowLabel(noOpenWindow: l10n.s.switcherNoOpenWindow))
                 .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
                 .foregroundStyle(isSelected ? SwitcherIconStyle.text : SwitcherIconStyle.secondaryText)
                 .lineLimit(1)

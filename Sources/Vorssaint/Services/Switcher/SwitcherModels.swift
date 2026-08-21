@@ -35,6 +35,10 @@ struct SwitcherItem: Identifiable, Equatable {
         title.isEmpty ? appName : title
     }
 
+    func windowLabel(noOpenWindow: String) -> String {
+        isAppEntry ? noOpenWindow : displayTitle
+    }
+
     /// Secondary label used when the window title does not already identify the
     /// app. This keeps crowded switcher grids readable without repeating text.
     var displaySubtitle: String? {

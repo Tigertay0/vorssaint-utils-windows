@@ -8,8 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Summary
 Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and
- native input-source switching for the Super key and drag-to-place Dock previews. It keeps the grouped
- App Switcher clear, makes Scratchpad controls easier to click and restores reliable trimming from the
+ native input-source switching for the Super key and drag-to-place Dock previews. It keeps grouped and
+ windowless App Switcher labels clear, makes Scratchpad controls easier to click and restores reliable trimming from the
  start of a recording and makes administrator approval for updates originate from Vorssaint.
 
 ### Added
@@ -50,6 +50,8 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional 
   typed. Thanks to @PathGao.
 - The grouped simple App Switcher now keeps every window title fully visible and lets
   the window shortcut reach each window, even when showing one entry per app.
+- Windowless apps no longer repeat or misplace their name in the App Switcher's Small
+  size. Thanks to @Yahddyyp.
 - Clicking the Dock icon of a background app to restore its minimized windows now
   brings that app forward, instead of leaving its windows behind whichever app was
   already in front. Thanks to @PathGao.

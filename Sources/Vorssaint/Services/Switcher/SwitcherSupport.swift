@@ -152,7 +152,6 @@ struct SwitcherIconRowLayout: Equatable {
     static var previewCardWidth: CGFloat { 220 * scale }
     static var previewCardHeight: CGFloat { 164 * scale }
     static var appEntryIconSize: CGFloat { 66 * scale }
-    static var appEntrySpacing: CGFloat { 7 * scale }
     static var previewHeight: CGFloat { previewCardHeight + 76 * scale }
     static var hintHeight: CGFloat { 28 * scale }
     static var hintGap: CGFloat { 8 * scale }

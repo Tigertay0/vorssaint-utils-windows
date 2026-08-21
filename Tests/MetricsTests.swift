@@ -1795,6 +1795,10 @@ struct MetricsTests {
                && embeddedWindow.windowOwnerPID == 202
                && embeddedWindow.previewWindowID == 77,
                "App Switcher keeps regular app identity separate from the window owner")
+        let windowlessEntry = SwitcherItem.appOnly(appName: "Primary", pid: 101)
+        expect(embeddedWindow.windowLabel(noOpenWindow: "No open window") == "Project"
+               && windowlessEntry.windowLabel(noOpenWindow: "No open window") == "No open window",
+               "App Switcher preview labels name a window or explain that there is none")
         let hiddenSpaceWindow = embeddedWindow.withHiddenSpaceState(true)
         let minimizedHiddenSpaceWindow = hiddenSpaceWindow.withMinimized(true)
         expect(hiddenSpaceWindow.isOnHiddenSpace
@@ -6710,8 +6714,6 @@ struct MetricsTests {
                     "App Switcher icon-row mode honors the Small option")
         expectClose(Double(SwitcherIconRowLayout.appEntryIconSize), 49.5,
                     "App Switcher Small keeps a windowless app icon inside its preview")
-        expectClose(Double(SwitcherIconRowLayout.appEntrySpacing), 5.25,
-                    "App Switcher Small keeps windowless app content proportionally spaced")
         let selectedIconTileHeight = SwitcherIconRowLayout.selectedIconSize
             + SwitcherIconRowLayout.iconTileSpacing
             + SwitcherIconRowLayout.iconTitleHeight
