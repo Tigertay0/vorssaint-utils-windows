@@ -6392,6 +6392,22 @@ struct MetricsTests {
         expect(!UpdateInstallerSupport.shouldForceAdminInstall(afterFailureCode: nil),
                "no remembered failure means the normal path")
 
+        let adminSource = AdminShell.appleScriptSource(
+            command: #"printf "quoted" \ path"#,
+            prompt: #"Approve "update" \ now"#)
+        expect(adminSource == #"do shell script "printf \"quoted\" \\ path" with administrator privileges with prompt "Approve \"update\" \\ now""#,
+               "administrator source keeps commands and prompts inside AppleScript strings")
+        var adminCompileError: NSDictionary?
+        expect(NSAppleScript(source: adminSource)?.compileAndReturnError(&adminCompileError) == true,
+               "administrator source compiles in process")
+        let inProcessScript = AppleScriptRunner.run(
+            #"do shell script "/usr/bin/printf admin-probe""#)
+        expect(inProcessScript.ok && inProcessScript.output == "admin-probe",
+               "in-process AppleScript executes a shell command and returns its output")
+        let cancelledScript = AppleScriptRunner.runDetailed("error number -128")
+        expect(!cancelledScript.ok && cancelledScript.errorNumber == -128,
+               "in-process AppleScript preserves cancellation as a failed request")
+
         let hiddenLayout = WindowLayoutAction.hiddenActions(from: "leftHalf, restore,bogus")
         expect(hiddenLayout == [.leftHalf, .restore],
                "hidden layout actions parse names and drop unknown ones")

@@ -275,6 +275,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/SudoersSupport.swift \
         Sources/Vorssaint/Services/Metrics/BatteryTimeSupport.swift \
         Sources/Vorssaint/Services/BoundedProcessRunner.swift \
+        Sources/Vorssaint/Services/ShellSupport.swift \
         Sources/Vorssaint/Services/Metrics/NetworkProcessSupport.swift \
         Sources/Vorssaint/Services/Metrics/NetworkSampler.swift \
         Sources/Vorssaint/Services/Metrics/PeripheralBatterySupport.swift \

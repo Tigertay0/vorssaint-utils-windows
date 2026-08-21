@@ -10,7 +10,7 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and
  native input-source switching for the Super key and drag-to-place Dock previews. It keeps the grouped
  App Switcher clear, makes Scratchpad controls easier to click and restores reliable trimming from the
- start of a recording.
+ start of a recording and makes administrator approval for updates originate from Vorssaint.
 
 ### Added
 - Window Layout now offers an opt-in Shortcut + pointer layout mode that places the active window toward
@@ -65,6 +65,8 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional 
   records are now stored so only your own account can read them. Folders an earlier
   version left readable by other accounts on the Mac are corrected on the next
   write. Thanks to @ThomasWaldmann.
+- Administrator approval for updates now originates from Vorssaint instead of a
+  system script. Thanks to @dbhorst.
 - The recording editor now reads composition duration directly without background
   queries. Thanks to @Bald-M.
 

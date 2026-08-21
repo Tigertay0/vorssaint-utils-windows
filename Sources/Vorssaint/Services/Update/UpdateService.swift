@@ -333,7 +333,7 @@ final class UpdateService: ObservableObject {
                                                                     pid: pid,
                                                                     resultPath: resultPath,
                                                                     uid: getuid())
-        AdminShell.run(command, prompt: L10n.shared.s.adminPromptUpdate) { [weak self] granted in
+        AdminShell.runInProcess(command, prompt: L10n.shared.s.adminPromptUpdate) { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }
                 if granted {
