@@ -4251,16 +4251,22 @@ struct MetricsTests {
         let dirOrigin = CGPoint(x: 200, y: 200)
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: dirOrigin) == nil,
                "stationary pointer does not trigger directional layout")
-        expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 230, y: 200)) == nil,
+        expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 220, y: 200)) == nil,
                "pointer movement below activation distance produces no action")
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 240, y: 200)) == .rightHalf,
                "moving right triggers right half")
+        expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 350, y: 200)) == .rightHalf,
+               "fast long flick right triggers right half reliably")
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 160, y: 200)) == .leftHalf,
                "moving left triggers left half")
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 200, y: 240)) == .topHalf,
                "moving up triggers top half")
+        expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 200, y: 350)) == .topHalf,
+               "fast long flick up triggers top half reliably")
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 200, y: 160)) == .bottomHalf,
                "moving down triggers bottom half")
+        expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 200, y: 50)) == .bottomHalf,
+               "fast long flick down triggers bottom half without accidental minimize")
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 240, y: 240)) == .topRight,
                "moving up-right triggers top right")
         expect(WindowDirectionalGestureSupport.action(from: dirOrigin, to: CGPoint(x: 160, y: 240)) == .topLeft,

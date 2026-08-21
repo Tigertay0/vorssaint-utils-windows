@@ -45,6 +45,8 @@ final class WindowLayoutService: ObservableObject {
     private var directionalSession: WindowDirectionalSession?
     private var directionalTimer: Timer?
     private var directionalIndicatorPanel: NSPanel?
+    private var directionalTap: CFMachPort?
+    private var directionalTapSource: CFRunLoopSource?
     private var gestureTap: CFMachPort?
     private var gestureRunLoopSource: CFRunLoopSource?
     private var edgeSnapTap: CFMachPort?
@@ -753,40 +755,164 @@ final class WindowLayoutService: ObservableObject {
         directionalSession = WindowDirectionalSession(target: target,
                                                       visibleFrame: screen.visibleFrame,
                                                       pointerOrigin: NSEvent.mouseLocation,
-                                                      action: nil)
+                                                      action: nil,
+                                                      manualOverride: nil)
         showDirectionalIndicator(at: NSEvent.mouseLocation, action: nil)
         directionalTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) {
             [weak self] _ in self?.updateDirectionalGesture()
         }
+        startDirectionalTap()
+    }
+
+    private func startDirectionalTap() {
+        guard directionalTap == nil else { return }
+        let mask = CGEventMask(1 << CGEventType.scrollWheel.rawValue)
+            | CGEventMask(1 << CGEventType.leftMouseDown.rawValue)
+            | CGEventMask(1 << CGEventType.rightMouseDown.rawValue)
+            | CGEventMask(1 << CGEventType.keyDown.rawValue)
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: mask,
+            callback: { _, type, event, userInfo in
+                guard let userInfo else { return Unmanaged.passUnretained(event) }
+                let service = Unmanaged<WindowLayoutService>.fromOpaque(userInfo).takeUnretainedValue()
+                return service.observeDirectionalEvent(type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else { return }
+
+        directionalTap = tap
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        directionalTapSource = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private func observeDirectionalEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        guard var session = directionalSession else { return Unmanaged.passUnretained(event) }
+
+        if type == .scrollWheel {
+            let deltaY = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+            let fixedDeltaY = event.getIntegerValueField(.scrollWheelEventDeltaAxis1)
+            let scrollY = deltaY != 0 ? deltaY : Double(fixedDeltaY)
+
+            if scrollY > 0.5 {
+                session.manualOverride = .maximize
+                directionalSession = session
+                updateDirectionalIndicator(action: .maximize)
+                let preview = placement(for: .maximize, current: session.target.frame,
+                                        visibleFrame: session.visibleFrame).rect
+                showEdgeSnapPreview(frame: preview)
+            } else if scrollY < -0.5 {
+                session.manualOverride = .minimize
+                directionalSession = session
+                updateDirectionalIndicator(action: .minimize)
+                hideEdgeSnapPreview(immediately: true)
+            }
+            return nil
+        }
+
+        if type == .leftMouseDown {
+            session.manualOverride = .maximize
+            directionalSession = session
+            updateDirectionalIndicator(action: .maximize)
+            let preview = placement(for: .maximize, current: session.target.frame,
+                                    visibleFrame: session.visibleFrame).rect
+            showEdgeSnapPreview(frame: preview)
+            return nil
+        }
+
+        if type == .rightMouseDown {
+            session.manualOverride = .minimize
+            directionalSession = session
+            updateDirectionalIndicator(action: .minimize)
+            hideEdgeSnapPreview(immediately: true)
+            return nil
+        }
+
+        if type == .keyDown {
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if keyCode == 49 || keyCode == 36 || keyCode == 126 { // Space, Return, Up
+                session.manualOverride = .maximize
+                directionalSession = session
+                updateDirectionalIndicator(action: .maximize)
+                let preview = placement(for: .maximize, current: session.target.frame,
+                                        visibleFrame: session.visibleFrame).rect
+                showEdgeSnapPreview(frame: preview)
+                return nil
+            } else if keyCode == 46 || keyCode == 125 { // M, Down
+                session.manualOverride = .minimize
+                directionalSession = session
+                updateDirectionalIndicator(action: .minimize)
+                hideEdgeSnapPreview(immediately: true)
+                return nil
+            } else if keyCode == 53 { // Escape
+                cancelDirectionalGesture()
+                return nil
+            }
+        }
+
+        return Unmanaged.passUnretained(event)
     }
 
     private func updateDirectionalGesture() {
         guard var session = directionalSession else { return }
-        let action = WindowDirectionalGestureSupport.action(from: session.pointerOrigin,
-                                                            to: NSEvent.mouseLocation)
+        let currentMouse = NSEvent.mouseLocation
+        let distance = hypot(currentMouse.x - session.pointerOrigin.x,
+                             currentMouse.y - session.pointerOrigin.y)
+
+        let directionalAction = WindowDirectionalGestureSupport.action(
+            from: session.pointerOrigin,
+            to: currentMouse
+        )
+
+        if distance >= WindowDirectionalGestureSupport.activationDistance {
+            session.manualOverride = nil
+        }
+
+        let action = session.manualOverride ?? directionalAction
         guard action != session.action else { return }
+
         session.action = action
         directionalSession = session
         updateDirectionalIndicator(action: action)
-        guard let action else { hideEdgeSnapPreview(immediately: false); return }
-        let preview = placement(for: action, current: session.target.frame,
-                                visibleFrame: session.visibleFrame).rect
-        showEdgeSnapPreview(frame: preview)
+
+        guard let action else {
+            hideEdgeSnapPreview(immediately: false)
+            return
+        }
+
+        if let layoutAction = action.layoutAction {
+            let preview = placement(for: layoutAction, current: session.target.frame,
+                                    visibleFrame: session.visibleFrame).rect
+            showEdgeSnapPreview(frame: preview)
+        } else {
+            hideEdgeSnapPreview(immediately: true)
+        }
     }
 
     private func finishDirectionalGesture() {
+        stopDirectionalTap()
         guard let session = directionalSession else { return }
         directionalTimer?.invalidate()
         directionalTimer = nil
         directionalSession = nil
         hideEdgeSnapPreview(immediately: true)
         hideDirectionalIndicator()
+
         guard let action = session.action else { return }
-        _ = applyPlacement(action, to: session.target, visibleFrame: session.visibleFrame,
-                           cyclesRepeatedAction: false)
+        if let layoutAction = action.layoutAction {
+            _ = applyPlacement(layoutAction, to: session.target, visibleFrame: session.visibleFrame,
+                               cyclesRepeatedAction: false)
+        } else if action == .minimize {
+            _ = minimize(target: session.target)
+        }
     }
 
     private func cancelDirectionalGesture() {
+        stopDirectionalTap()
         directionalTimer?.invalidate()
         directionalTimer = nil
         directionalSession = nil
@@ -794,8 +920,29 @@ final class WindowLayoutService: ObservableObject {
         hideDirectionalIndicator()
     }
 
-    private func showDirectionalIndicator(at pointer: CGPoint, action: WindowLayoutAction?) {
-        let size = CGSize(width: 196, height: 196)
+    private func stopDirectionalTap() {
+        if let directionalTapSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), directionalTapSource, .commonModes)
+        }
+        directionalTapSource = nil
+        if let directionalTap {
+            CGEvent.tapEnable(tap: directionalTap, enable: false)
+            CFMachPortInvalidate(directionalTap)
+        }
+        directionalTap = nil
+    }
+
+    @discardableResult
+    private func minimize(target: WindowLayoutTarget) -> Bool {
+        guard AXIsProcessTrusted() else { return false }
+        let status = AXUIElementSetAttributeValue(target.window,
+                                                  kAXMinimizedAttribute as CFString,
+                                                  kCFBooleanTrue)
+        return status == .success
+    }
+
+    private func showDirectionalIndicator(at pointer: CGPoint, action: WindowDirectionalAction?) {
+        let size = CGSize(width: 180, height: 180)
         let screenFrame = NSScreen.screens.first(where: { $0.frame.contains(pointer) })?.visibleFrame
             ?? NSScreen.main?.visibleFrame ?? .zero
         var origin = CGPoint(x: pointer.x - size.width / 2, y: pointer.y - size.height / 2)
@@ -827,13 +974,13 @@ final class WindowLayoutService: ObservableObject {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.1
+            context.duration = 0.08
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
         }
     }
 
-    private func updateDirectionalIndicator(action: WindowLayoutAction?) {
+    private func updateDirectionalIndicator(action: WindowDirectionalAction?) {
         guard let view = directionalIndicatorPanel?.contentView as? WindowDirectionalIndicatorView else { return }
         view.action = action
     }
@@ -1800,14 +1947,15 @@ private struct WindowDirectionalSession {
     let target: WindowLayoutTarget
     let visibleFrame: NSRect
     let pointerOrigin: CGPoint
-    var action: WindowLayoutAction?
+    var action: WindowDirectionalAction?
+    var manualOverride: WindowDirectionalAction?
 }
 
 /// Native glass-ring container; no upstream artwork or media is bundled.
 private final class WindowDirectionalIndicatorView: NSView {
     private let canvas: WindowDirectionalIndicatorCanvasView
 
-    var action: WindowLayoutAction? {
+    var action: WindowDirectionalAction? {
         didSet { canvas.action = action }
     }
 
@@ -1828,7 +1976,7 @@ private final class WindowDirectionalIndicatorView: NSView {
         layer?.cornerCurve = .continuous
         layer?.masksToBounds = true
         layer?.borderWidth = 0.5
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
         addSubview(effect)
         addSubview(canvas, positioned: .above, relativeTo: effect)
     }
@@ -1841,72 +1989,71 @@ private final class WindowDirectionalIndicatorView: NSView {
 /// The canvas stays separate from `NSVisualEffectView`: AppKit may composite
 /// the material after a visual-effect subclass draws, hiding custom artwork.
 private final class WindowDirectionalIndicatorCanvasView: NSView {
-    var action: WindowLayoutAction? { didSet { needsDisplay = true } }
+    var action: WindowDirectionalAction? { didSet { needsDisplay = true } }
 
     override var isOpaque: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         guard let context = NSGraphicsContext.current?.cgContext else { return }
+
         let center = CGPoint(x: self.bounds.midX, y: self.bounds.midY)
-        let outerRadius: CGFloat = 96
-        let innerRadius: CGFloat = 62
+        let outerRadius: CGFloat = 84
+        let innerRadius: CGFloat = 46
         let track = annulus(center: center, outer: outerRadius, inner: innerRadius)
 
-        // A continuous low-contrast glass track; directions are ticks, not
-        // eight separate buttons.
+        // 1. Subtle frosted track background
         context.saveGState()
-        context.setShadow(offset: CGSize(width: 0, height: -10), blur: 26,
-                          color: NSColor.black.withAlphaComponent(0.38).cgColor)
         context.addPath(track)
-        context.setFillColor(NSColor(calibratedRed: 15 / 255,
-                                    green: 20 / 255,
-                                    blue: 33 / 255,
-                                    alpha: 0.74).cgColor)
+        context.setFillColor(NSColor(white: 0.10, alpha: 0.35).cgColor)
         context.fillPath(using: .evenOdd)
         context.restoreGState()
 
+        // 2. Soft borders for track
+        context.saveGState()
         context.addPath(track)
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.22).cgColor)
-        context.setLineWidth(1)
+        context.setStrokeColor(NSColor.white.withAlphaComponent(0.12).cgColor)
+        context.setLineWidth(0.75)
         context.strokePath()
+        context.restoreGState()
 
+        // 3. Highlight active sector if one of the 8 directions is active
         if let direction = Direction(action: action) {
             let highlight = sector(center: center,
-                                   outer: outerRadius - 1,
-                                   inner: innerRadius + 1,
+                                   outer: outerRadius - 1.5,
+                                   inner: innerRadius + 1.5,
                                    centerAngle: direction.angle)
             context.saveGState()
             context.addPath(highlight)
             context.clip()
-            context.setShadow(offset: .zero, blur: 12,
-                              color: NSColor.controlAccentColor.withAlphaComponent(0.55).cgColor)
+
             let accent = NSColor.controlAccentColor
-            let lighterAccent = accent.blended(withFraction: 0.42, of: .white) ?? accent
-            let purpleAccent = accent.blended(withFraction: 0.25, of: .systemPurple) ?? accent
+            let lighterAccent = accent.blended(withFraction: 0.30, of: .white) ?? accent
             let colors = [
-                lighterAccent.withAlphaComponent(0.98).cgColor,
-                accent.withAlphaComponent(0.98).cgColor,
-                purpleAccent.withAlphaComponent(0.9).cgColor
+                lighterAccent.withAlphaComponent(0.85).cgColor,
+                accent.withAlphaComponent(0.75).cgColor,
             ] as CFArray
             if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
                                          colors: colors,
-                                         locations: [0, 0.5, 1]) {
-                context.drawLinearGradient(gradient,
-                                           start: CGPoint(x: center.x - outerRadius, y: center.y + outerRadius),
-                                           end: CGPoint(x: center.x + outerRadius, y: center.y - outerRadius),
-                                           options: [])
+                                         locations: [0, 1]) {
+                let rad = direction.angle * .pi / 180
+                let startPoint = CGPoint(x: center.x + cos(rad) * innerRadius,
+                                         y: center.y + sin(rad) * innerRadius)
+                let endPoint = CGPoint(x: center.x + cos(rad) * outerRadius,
+                                       y: center.y + sin(rad) * outerRadius)
+                context.drawLinearGradient(gradient, start: startPoint, end: endPoint, options: [])
             }
             context.restoreGState()
-            drawOrbitMarker(direction: direction, center: center,
-                            radius: outerRadius - 1, context: context)
         }
 
-        drawSeparators(center: center, inner: innerRadius + 3,
-                       outer: outerRadius - 3, context: context)
-        drawSpecular(center: center, inner: innerRadius + 7,
-                     outer: outerRadius - 5, context: context)
-        drawCenterControl(center: center, context: context)
+        // 4. Subtle dividers between the 8 sectors
+        drawDividers(center: center, inner: innerRadius + 4, outer: outerRadius - 4, context: context)
+
+        // 5. Directional pips on the outer ring
+        drawDirectionPips(center: center, radius: (innerRadius + outerRadius) / 2, activeDirection: Direction(action: action), context: context)
+
+        // 6. Center Hub & Glyph
+        drawCenterHub(center: center, action: action, context: context)
     }
 
     private func annulus(center: CGPoint, outer: CGFloat, inner: CGFloat) -> CGPath {
@@ -1931,11 +2078,11 @@ private final class WindowDirectionalIndicatorCanvasView: NSView {
         return path
     }
 
-    private func drawSeparators(center: CGPoint, inner: CGFloat, outer: CGFloat,
-                                context: CGContext) {
+    private func drawDividers(center: CGPoint, inner: CGFloat, outer: CGFloat,
+                              context: CGContext) {
         context.saveGState()
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.16).cgColor)
-        context.setLineWidth(0.7)
+        context.setStrokeColor(NSColor.white.withAlphaComponent(0.12).cgColor)
+        context.setLineWidth(0.6)
         for angle in stride(from: CGFloat(22.5), to: 360, by: 45) {
             let radians = angle * .pi / 180
             context.move(to: CGPoint(x: center.x + cos(radians) * inner,
@@ -1947,81 +2094,122 @@ private final class WindowDirectionalIndicatorCanvasView: NSView {
         context.restoreGState()
     }
 
-    private func drawSpecular(center: CGPoint, inner: CGFloat, outer: CGFloat,
-                              context: CGContext) {
-        context.saveGState()
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.23).cgColor)
-        context.setLineWidth(3)
-        context.setLineCap(.round)
-        let radius = (inner + outer) / 2
-        context.addArc(center: center, radius: radius,
-                       startAngle: 115 * .pi / 180,
-                       endAngle: 160 * .pi / 180,
-                       clockwise: false)
-        context.strokePath()
-        context.restoreGState()
+    private func drawDirectionPips(center: CGPoint, radius: CGFloat,
+                                   activeDirection: Direction?, context: CGContext) {
+        for direction in Direction.allCases {
+            let isActive = direction == activeDirection
+            let rad = direction.angle * .pi / 180
+            let pipCenter = CGPoint(x: center.x + cos(rad) * radius,
+                                    y: center.y + sin(rad) * radius)
+            let pipRadius: CGFloat = isActive ? 3.5 : 2.0
+            let pipRect = CGRect(x: pipCenter.x - pipRadius,
+                                 y: pipCenter.y - pipRadius,
+                                 width: pipRadius * 2,
+                                 height: pipRadius * 2)
+            context.saveGState()
+            if isActive {
+                context.setShadow(offset: .zero, blur: 8,
+                                  color: NSColor.white.withAlphaComponent(0.8).cgColor)
+                context.setFillColor(NSColor.white.cgColor)
+            } else {
+                context.setFillColor(NSColor.white.withAlphaComponent(0.35).cgColor)
+            }
+            context.fillEllipse(in: pipRect)
+            context.restoreGState()
+        }
     }
 
-    private func drawOrbitMarker(direction: Direction, center: CGPoint,
-                                 radius: CGFloat, context: CGContext) {
-        let radians = direction.angle * .pi / 180
-        let markerCenter = CGPoint(x: center.x + cos(radians) * radius,
-                                   y: center.y + sin(radians) * radius)
-        let marker = CGRect(x: markerCenter.x - 6, y: markerCenter.y - 6,
-                            width: 12, height: 12)
-        context.saveGState()
-        context.setShadow(offset: .zero, blur: 18,
-                          color: NSColor.controlAccentColor.withAlphaComponent(0.8).cgColor)
-        let markerColor = NSColor.controlAccentColor.blended(withFraction: 0.45, of: .white) ?? .controlAccentColor
-        context.setFillColor(markerColor.cgColor)
-        context.fillEllipse(in: marker)
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.82).cgColor)
-        context.setLineWidth(0.8)
-        context.strokeEllipse(in: marker)
-        context.restoreGState()
-    }
-
-    private func drawCenterControl(center: CGPoint, context: CGContext) {
-        let radius: CGFloat = 56
+    private func drawCenterHub(center: CGPoint, action: WindowDirectionalAction?, context: CGContext) {
+        let radius: CGFloat = 38
         let hub = CGRect(x: center.x - radius, y: center.y - radius,
                          width: radius * 2, height: radius * 2)
+
         context.saveGState()
-        context.setShadow(offset: CGSize(width: 0, height: -4), blur: 15,
-                          color: NSColor.black.withAlphaComponent(0.2).cgColor)
-        context.setFillColor(NSColor(calibratedRed: 18 / 255,
-                                    green: 24 / 255,
-                                    blue: 39 / 255,
-                                    alpha: 0.9).cgColor)
-        context.fillEllipse(in: hub)
-        context.restoreGState()
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.15).cgColor)
-        context.setLineWidth(1)
-        context.strokeEllipse(in: hub.insetBy(dx: 0.35, dy: 0.35))
+        context.setShadow(offset: CGSize(width: 0, height: -2), blur: 10,
+                          color: NSColor.black.withAlphaComponent(0.25).cgColor)
 
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.09).cgColor)
-        context.setLineWidth(1)
-        context.strokeEllipse(in: hub.insetBy(dx: 8, dy: 8))
-        context.strokeEllipse(in: hub.insetBy(dx: 16, dy: 16))
+        if action == .maximize {
+            let accent = NSColor.controlAccentColor
+            context.setFillColor(accent.withAlphaComponent(0.30).cgColor)
+            context.fillEllipse(in: hub)
+            context.restoreGState()
 
-        let window = CGRect(x: center.x - 18.5, y: center.y - 14.5,
-                            width: 37, height: 29)
-        let outline = CGPath(roundedRect: window, cornerWidth: 7, cornerHeight: 7,
-                             transform: nil)
+            context.setStrokeColor(accent.withAlphaComponent(0.80).cgColor)
+            context.setLineWidth(1.5)
+            context.strokeEllipse(in: hub.insetBy(dx: 0.5, dy: 0.5))
+        } else if action == .minimize {
+            context.setFillColor(NSColor.systemYellow.withAlphaComponent(0.22).cgColor)
+            context.fillEllipse(in: hub)
+            context.restoreGState()
+
+            context.setStrokeColor(NSColor.systemYellow.withAlphaComponent(0.85).cgColor)
+            context.setLineWidth(1.5)
+            context.strokeEllipse(in: hub.insetBy(dx: 0.5, dy: 0.5))
+        } else {
+            context.setFillColor(NSColor(white: 0.14, alpha: 0.80).cgColor)
+            context.fillEllipse(in: hub)
+            context.restoreGState()
+
+            context.setStrokeColor(NSColor.white.withAlphaComponent(0.18).cgColor)
+            context.setLineWidth(1)
+            context.strokeEllipse(in: hub.insetBy(dx: 0.5, dy: 0.5))
+        }
+
+        // Miniature macOS window frame
+        let window = CGRect(x: center.x - 16, y: center.y - 12, width: 32, height: 24)
+        let outline = CGPath(roundedRect: window, cornerWidth: 4.5, cornerHeight: 4.5, transform: nil)
+
+        context.saveGState()
         context.addPath(outline)
-        let windowBorder = NSColor.controlAccentColor
-            .blended(withFraction: 0.36, of: .white) ?? .controlAccentColor
-        context.setStrokeColor(windowBorder.withAlphaComponent(0.9).cgColor)
-        context.setLineWidth(2)
+        if action == .maximize {
+            context.setStrokeColor(NSColor.white.withAlphaComponent(0.95).cgColor)
+        } else if action == .minimize {
+            context.setStrokeColor(NSColor.systemYellow.withAlphaComponent(0.90).cgColor)
+        } else if action != nil {
+            context.setStrokeColor(NSColor.white.withAlphaComponent(0.85).cgColor)
+        } else {
+            context.setStrokeColor(NSColor.white.withAlphaComponent(0.50).cgColor)
+        }
+        context.setLineWidth(1.4)
         context.strokePath()
+        context.restoreGState()
 
-        guard let action, let region = glyphRegion(for: action, in: window.insetBy(dx: 3.5, dy: 3.5)) else { return }
-        context.addPath(CGPath(roundedRect: region, cornerWidth: 2.2,
-                               cornerHeight: 2.2, transform: nil))
-        context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.9).cgColor)
-        context.fillPath()
+        // Content area inside window
+        if action == .minimize {
+            let arrowPath = CGMutablePath()
+            arrowPath.move(to: CGPoint(x: center.x, y: center.y + 4.5))
+            arrowPath.addLine(to: CGPoint(x: center.x, y: center.y - 3.5))
+            arrowPath.move(to: CGPoint(x: center.x - 4, y: center.y - 0.5))
+            arrowPath.addLine(to: CGPoint(x: center.x, y: center.y - 4.5))
+            arrowPath.addLine(to: CGPoint(x: center.x + 4, y: center.y - 0.5))
+
+            context.saveGState()
+            context.addPath(arrowPath)
+            context.setStrokeColor(NSColor.systemYellow.withAlphaComponent(0.95).cgColor)
+            context.setLineWidth(1.8)
+            context.setLineCap(.round)
+            context.setLineJoin(.round)
+            context.strokePath()
+            context.restoreGState()
+        } else if action == .maximize {
+            let inner = window.insetBy(dx: 2.5, dy: 2.5)
+            context.saveGState()
+            let fillPath = CGPath(roundedRect: inner, cornerWidth: 2.5, cornerHeight: 2.5, transform: nil)
+            context.addPath(fillPath)
+            context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.95).cgColor)
+            context.fillPath()
+            context.restoreGState()
+        } else if let action, let region = glyphRegion(for: action, in: window.insetBy(dx: 2.5, dy: 2.5)) {
+            context.saveGState()
+            let fillPath = CGPath(roundedRect: region, cornerWidth: 2, cornerHeight: 2, transform: nil)
+            context.addPath(fillPath)
+            context.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.95).cgColor)
+            context.fillPath()
+            context.restoreGState()
+        }
     }
 
-    private func glyphRegion(for action: WindowLayoutAction, in rect: CGRect) -> CGRect? {
+    private func glyphRegion(for action: WindowDirectionalAction, in rect: CGRect) -> CGRect? {
         switch action {
         case .leftHalf: return CGRect(x: rect.minX, y: rect.minY, width: rect.width / 2, height: rect.height)
         case .rightHalf: return CGRect(x: rect.midX, y: rect.minY, width: rect.width / 2, height: rect.height)
@@ -2030,8 +2218,9 @@ private final class WindowDirectionalIndicatorCanvasView: NSView {
         case .topLeft: return CGRect(x: rect.minX, y: rect.midY, width: rect.width / 2, height: rect.height / 2)
         case .topRight: return CGRect(x: rect.midX, y: rect.midY, width: rect.width / 2, height: rect.height / 2)
         case .bottomLeft: return CGRect(x: rect.minX, y: rect.minY, width: rect.width / 2, height: rect.height / 2)
-        case .bottomRight: return CGRect(x: rect.midX, y: rect.minY, width: rect.width / 2, height: rect.height / 2)
-        default: return nil
+        case .bottomRight: return CGRect(x: rect.midX, y: rect.midY, width: rect.width / 2, height: rect.height / 2)
+        case .maximize: return rect
+        case .minimize: return nil
         }
     }
 
@@ -2051,7 +2240,7 @@ private final class WindowDirectionalIndicatorCanvasView: NSView {
             }
         }
 
-        var action: WindowLayoutAction {
+        var action: WindowDirectionalAction {
             switch self {
             case .right: return .rightHalf
             case .topRight: return .topRight
@@ -2064,7 +2253,7 @@ private final class WindowDirectionalIndicatorCanvasView: NSView {
             }
         }
 
-        init?(action: WindowLayoutAction?) {
+        init?(action: WindowDirectionalAction?) {
             guard let action, let value = Self.allCases.first(where: { $0.action == action }) else {
                 return nil
             }

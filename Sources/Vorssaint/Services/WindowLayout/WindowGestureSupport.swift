@@ -277,23 +277,58 @@ enum WindowGestureSupport {
     }
 }
 
-/// Pure direction selection for the hold-shortcut pointer layout mode.
+/// Actions triggered by the hold-shortcut pointer wheel.
+enum WindowDirectionalAction: Equatable {
+    case leftHalf
+    case rightHalf
+    case topHalf
+    case bottomHalf
+    case topLeft
+    case topRight
+    case bottomLeft
+    case bottomRight
+    case maximize
+    case minimize
+
+    var layoutAction: WindowLayoutAction? {
+        switch self {
+        case .leftHalf: return .leftHalf
+        case .rightHalf: return .rightHalf
+        case .topHalf: return .topHalf
+        case .bottomHalf: return .bottomHalf
+        case .topLeft: return .topLeft
+        case .topRight: return .topRight
+        case .bottomLeft: return .bottomLeft
+        case .bottomRight: return .bottomRight
+        case .maximize: return .maximize
+        case .minimize: return nil
+        }
+    }
+}
+
+/// Pure direction and special-action selection for the hold-shortcut pointer layout mode.
 enum WindowDirectionalGestureSupport {
-    static let activationDistance: CGFloat = 36
+    static let activationDistance: CGFloat = 28
 
     static func action(from origin: CGPoint,
                        to point: CGPoint,
-                       activationDistance: CGFloat = activationDistance) -> WindowLayoutAction? {
+                       activationDistance: CGFloat = activationDistance) -> WindowDirectionalAction? {
         let dx = point.x - origin.x
         let dy = point.y - origin.y
         guard hypot(dx, dy) >= activationDistance else { return nil }
-        let diagonal = min(abs(dx), abs(dy)) >= max(abs(dx), abs(dy)) * 0.45
-        if diagonal {
-            if dx < 0 { return dy < 0 ? .bottomLeft : .topLeft }
-            return dy < 0 ? .bottomRight : .topRight
-        }
-        if abs(dx) >= abs(dy) { return dx < 0 ? .leftHalf : .rightHalf }
-        return dy < 0 ? .bottomHalf : .topHalf
+
+        // Standard 8-way angular division (45° per slice):
+        var degrees = atan2(dy, dx) * 180.0 / .pi
+        if degrees < 0 { degrees += 360.0 }
+
+        if degrees >= 337.5 || degrees < 22.5 { return .rightHalf }
+        if degrees >= 22.5 && degrees < 67.5 { return .topRight }
+        if degrees >= 67.5 && degrees < 112.5 { return .topHalf }
+        if degrees >= 112.5 && degrees < 157.5 { return .topLeft }
+        if degrees >= 157.5 && degrees < 202.5 { return .leftHalf }
+        if degrees >= 202.5 && degrees < 247.5 { return .bottomLeft }
+        if degrees >= 247.5 && degrees < 292.5 { return .bottomHalf }
+        return .bottomRight
     }
 }
 
