@@ -12,7 +12,8 @@ drag-to-place Dock previews. It keeps the grouped App Switcher clear, makes Scra
 to click and restores reliable trimming from the start of a recording.
 
 ### Added
-- Dock Preview thumbnails can now be dragged to move windows freely. Thanks to @PathGao.
+- Dock Preview thumbnails can now be dragged to move windows freely or snap them
+  to screen regions. Thanks to @PathGao.
 - An opt-in Kill Process feature searches running processes to force quit, restart or terminate
   process trees from Settings and the Command Bar. It ships uninstalled. Thanks to @naveenkrdy.
 
