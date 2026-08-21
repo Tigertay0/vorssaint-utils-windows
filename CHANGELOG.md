@@ -25,6 +25,8 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, an opt-in Ki
   editable temperature curves with multiple SoC, CPU and GPU rules. It also shows
   current and target RPM for every fan.
 
+- Clicking a Dock icon now only restores the windows that Click Dock icon to minimize
+  put away. Windows minimized any other way keep the Dock's own restore. Thanks to @PathGao.
 ### Fixed
 - Settings now lists Dock Preview and Dock click as separate named sections, and
   opening Dock click from the Features hub lands on its own controls rather than on
