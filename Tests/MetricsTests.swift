@@ -1668,6 +1668,19 @@ struct MetricsTests {
                && SwitcherSupport.usesAppGroupsForMainShortcut(iconRowLayout: true,
                                                                 windowRow: false),
                "App Switcher main shortcut steps through simple window rows without app grouping")
+        expect(SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: true,
+                                                                        mergeWindowsByApp: true,
+                                                                        simpleMode: true)
+               && !SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: true,
+                                                                             mergeWindowsByApp: true,
+                                                                             simpleMode: false)
+               && !SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: false,
+                                                                             mergeWindowsByApp: true,
+                                                                             simpleMode: true)
+               && !SwitcherSupport.preservesGroupedWindowsDuringEnumeration(allApps: true,
+                                                                             mergeWindowsByApp: false,
+                                                                             simpleMode: true),
+               "App Switcher preserves backing windows only for the grouped simple row")
         expect(!SwitcherSupport.capturesPreviews(simpleMode: true),
                "App Switcher simple mode never captures window previews")
         expect(!SwitcherSupport.needsScreenRecording(switcherEnabled: true,
@@ -7364,6 +7377,37 @@ struct MetricsTests {
                && appGroups[0].windowCount == 2
                && appGroups[1].representativeIndex == 2,
                "App Switcher icon-row mode keeps one row entry per app")
+        var cappedAppWindows: [SwitcherItem] = []
+        var cappedAppRepresentatives: [SwitcherItem] = []
+        for appIndex in 1...25 {
+            let pid = pid_t(appIndex)
+            let primary = SwitcherItem.window(id: CGWindowID(appIndex * 10),
+                                              title: "Primary \(appIndex)",
+                                              appName: "App \(appIndex)",
+                                              pid: pid,
+                                              isOnScreen: true,
+                                              frame: .zero)
+            cappedAppWindows.append(primary)
+            if appIndex == 1 {
+                cappedAppWindows.append(
+                    SwitcherItem.window(id: 11, title: "Secondary 1", appName: "App 1",
+                                        pid: pid, isOnScreen: true, frame: .zero))
+                cappedAppWindows.append(
+                    SwitcherItem.window(id: 12, title: "Tertiary 1", appName: "App 1",
+                                        pid: pid, isOnScreen: true, frame: .zero))
+            }
+            if appIndex <= 24 {
+                cappedAppRepresentatives.append(primary)
+            }
+        }
+        let expandedCappedApps = SwitcherSupport.expandGroupedWindows(
+            orderedWindows: cappedAppWindows,
+            representatives: cappedAppRepresentatives)
+        expect(expandedCappedApps.count == 26
+               && expandedCappedApps.prefix(3).map(\.windowID) == [10, 11, 12]
+               && Set(expandedCappedApps.map(\.pid)) == Set((1...24).map { pid_t($0) })
+               && !expandedCappedApps.contains { $0.pid == 25 },
+               "App Switcher expands every backing window without displacing a capped app")
         expect(SwitcherSupport.nextAppSelectionIndex(items: groupedSwitcherItems,
                                                      selectedIndex: 0,
                                                      delta: 1) == 2,

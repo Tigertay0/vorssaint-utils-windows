@@ -698,9 +698,15 @@ final class AppSwitcher: ObservableObject {
             ) else { return nil }
             return routePendingSessionStart
         }) else { return }
+        let allApps = requested.scope == .allApps
+        let mergeWindowsByApp = UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs)
         let allWindows = WindowEnumerator.listWindows(
-            groupByApp: requested.scope == .allApps
-                && UserDefaults.standard.bool(forKey: DefaultsKey.switcherMergeTabs)
+            groupByApp: allApps && mergeWindowsByApp,
+            preservingGroupedWindows: SwitcherSupport.preservesGroupedWindowsDuringEnumeration(
+                allApps: allApps,
+                mergeWindowsByApp: mergeWindowsByApp,
+                simpleMode: simpleModeEnabled
+            )
         )
         let windows: [SwitcherItem]
         switch requested.scope {

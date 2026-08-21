@@ -282,6 +282,27 @@ enum SwitcherSupport {
         iconRowLayout && !windowRow
     }
 
+    /// The grouped simple row still needs every backing window for its title
+    /// chips and window shortcut, while its visible app cap remains grouped.
+    static func preservesGroupedWindowsDuringEnumeration(allApps: Bool,
+                                                         mergeWindowsByApp: Bool,
+                                                         simpleMode: Bool) -> Bool {
+        allApps && mergeWindowsByApp && simpleMode
+    }
+
+    /// Expands only the app representatives that survived the grouped cap.
+    /// Keeping each representative first preserves the legacy app order and
+    /// activation target; its remaining windows follow in MRU order.
+    static func expandGroupedWindows(orderedWindows: [SwitcherItem],
+                                     representatives: [SwitcherItem]) -> [SwitcherItem] {
+        let windowsByPID = Dictionary(grouping: orderedWindows, by: \.pid)
+        return representatives.flatMap { representative in
+            [representative] + (windowsByPID[representative.pid] ?? []).filter {
+                $0.id != representative.id
+            }
+        }
+    }
+
     static func shouldPausePreviewCapture(frontmostBundleIdentifier: String?,
                                           excludedBundleIdentifiers: [String]) -> Bool {
         guard let frontmostBundleIdentifier else { return false }
