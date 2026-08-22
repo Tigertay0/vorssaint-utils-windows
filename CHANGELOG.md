@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and
  native input-source switching for the Super key and drag-to-place Dock previews. It keeps grouped and
- windowless App Switcher labels clear, makes Scratchpad controls easier to click, keeps fixed page footers from repeating
+ windowless App Switcher labels clear, splits App Switcher rows evenly when they wrap, makes Scratchpad controls easier to click, keeps fixed page footers from repeating
  in scrolling screenshots, restores reliable trimming from the start of a recording, makes administrator approval for updates originate from Vorssaint, keeps messaging app cleanup in Cleaner hidden until you turn it on, keeps Separate metrics in Settings instead of the menu bar panel, lets you open Music yourself while the media-key blocker is on, and shows compressed memory and cached files in the System panel.
 
 ### Added
@@ -27,6 +27,8 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional 
 - The System panel now shows compressed memory and cached files next to swap.
 
 ### Changed
+- The App Switcher now splits windows evenly across rows when they wrap, so a
+  leftover pair no longer stretches the panel to a full first row. Thanks to @kzenmatthias.
 - Separate metrics into their own items now lives only in Settings › Monitor,
   not in the menu bar panel.
 - Fan Control now offers System, continuous Manual control from 0% to 100% and

@@ -719,6 +719,16 @@ enum SwitcherSupport {
         return pids.count > 1 ? 1 : 0
     }
 
+    /// Column count for a wrapping card grid: keep the same number of rows
+    /// the screen already requires, but do not stretch to a full first row
+    /// when the leftover items would sit almost empty on the next one.
+    static func gridColumnCount(itemCount: Int, maxColumns: Int) -> Int {
+        let count = max(itemCount, 1)
+        let packed = min(count, max(maxColumns, 1))
+        let rows = (count + packed - 1) / packed
+        return min(packed, (count + rows - 1) / rows)
+    }
+
     /// Moves between rows without wrapping. When the row below is shorter,
     /// Down lands on that row's last item instead of leaving the selection in
     /// place because the same column is missing.

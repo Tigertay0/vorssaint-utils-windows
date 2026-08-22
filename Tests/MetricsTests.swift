@@ -6731,6 +6731,18 @@ struct MetricsTests {
                       compactIconRowLayout.simpleTitleSurfaceWidth)
                     + SwitcherIconRowLayout.padding * 2,
                "App Switcher without shortcut hints still fits its title rail")
+        expect(SwitcherSupport.gridColumnCount(itemCount: 10, maxColumns: 8) == 5,
+               "App Switcher wrapping splits ten windows across two even rows")
+        expect(SwitcherSupport.gridColumnCount(itemCount: 9, maxColumns: 8) == 5,
+               "App Switcher wrapping keeps nine windows on five plus four")
+        expect(SwitcherSupport.gridColumnCount(itemCount: 17, maxColumns: 8) == 6,
+               "App Switcher wrapping balances three rows instead of leaving one leftover")
+        expect(SwitcherSupport.gridColumnCount(itemCount: 8, maxColumns: 8) == 8,
+               "App Switcher keeps a single full row when everything fits")
+        expect(SwitcherSupport.gridColumnCount(itemCount: 3, maxColumns: 8) == 3,
+               "App Switcher width still follows the window count on one row")
+        expect(SwitcherSupport.gridColumnCount(itemCount: 16, maxColumns: 8) == 8,
+               "App Switcher keeps the packed width when two rows are already even")
         expect(SwitcherSupport.gridSelectionIndex(after: 1,
                                                    itemCount: 8,
                                                    columns: 5,
