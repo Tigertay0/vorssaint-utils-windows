@@ -27,18 +27,7 @@ struct SystemSection: View {
     @AppStorage(DefaultsKey.monitorGraphMemory) private var graphMemory = true
     @AppStorage(DefaultsKey.monitorGraphBattery) private var graphBattery = true
     @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit = TemperatureUnit.celsius.rawValue
-    @AppStorage(DefaultsKey.menuBarCPU) private var menuBarCPU = false
-    @AppStorage(DefaultsKey.menuBarGPU) private var menuBarGPU = false
-    @AppStorage(DefaultsKey.menuBarMemory) private var menuBarMemory = false
-    @AppStorage(DefaultsKey.menuBarCPUTemperature) private var menuBarCPUTemperature = false
-    @AppStorage(DefaultsKey.menuBarGPUTemperature) private var menuBarGPUTemperature = false
-    @AppStorage(DefaultsKey.menuBarBatteryTemperature) private var menuBarBatteryTemperature = false
-    @AppStorage(DefaultsKey.menuBarNetwork) private var menuBarNetwork = false
-    @AppStorage(DefaultsKey.menuBarBattery) private var menuBarBattery = false
-    @AppStorage(DefaultsKey.menuBarBatteryTime) private var menuBarBatteryTime = false
     @AppStorage(DefaultsKey.menuBarPeripheralBattery) private var menuBarPeripheralBattery = false
-    @AppStorage(DefaultsKey.menuBarPower) private var menuBarPower = false
-    @AppStorage(DefaultsKey.menuBarSeparateMetrics) private var separateMenuBarMetrics = false
     @AppStorage(DefaultsKey.monitorSysTemps) private var sysTemps = true
     @AppStorage(DefaultsKey.monitorSysCPU) private var sysCPU = true
     @AppStorage(DefaultsKey.monitorSysGPU) private var sysGPU = true
@@ -55,12 +44,6 @@ struct SystemSection: View {
                      resetAction: resetPanelDefaults) { editing in
             VStack(alignment: .leading, spacing: 10) {
                 let currentBlocks = blocks(editing: editing)
-                if hasMenuBarMetric {
-                    menuBarMetricModeControl
-                    if !currentBlocks.isEmpty {
-                        Divider()
-                    }
-                }
                 ForEach(Array(currentBlocks.enumerated()), id: \.element) { index, block in
                     if index > 0 { Divider() }
                     PanelReorderableItem(item: block,
@@ -90,32 +73,6 @@ struct SystemSection: View {
             breakdownRows = []
             breakdownIsLoading = false
         }
-    }
-
-    private var menuBarMetricModeControl: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Toggle(l10n.s.monitorSeparateMenuBarMetrics, isOn: $separateMenuBarMetrics)
-                .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
-            Text(l10n.s.monitorSeparateMenuBarMetricsCaption)
-                .font(.system(size: 9.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var hasMenuBarMetric: Bool {
-        menuBarCPU ||
-        menuBarGPU ||
-        menuBarMemory ||
-        menuBarCPUTemperature ||
-        menuBarGPUTemperature ||
-        (batteryAvailable && menuBarBatteryTemperature) ||
-        menuBarNetwork ||
-        (batteryAvailable && menuBarBattery) ||
-        (batteryAvailable && menuBarBatteryTime) ||
-        menuBarPeripheralBattery ||
-        menuBarPower
     }
 
     /// Card subsections, in order, filtered by the per-item toggles (and whether a
