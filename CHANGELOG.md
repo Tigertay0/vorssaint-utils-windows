@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [3.3.3-beta.2] - 2026-08-22
 
+### Added
+- The radial menu editor now includes a broader built-in SF Symbol catalog with runtime availability filtering. Thanks to @ruvelro.
+- Sound Mixer now includes an option to hide inactive applications while keeping custom volume and output selections visible. Thanks to @ruvelro.
+
+### Changed
+- Embedded utilities in the Quick Launcher now provide distinct Back and Close buttons. Thanks to @ruvelro.
+
 ### Fixed
 - Beta releases now automatically turn on the beta update channel on first launch, ensuring seamless delivery of subsequent beta updates.
 
