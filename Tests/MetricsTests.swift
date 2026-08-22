@@ -2244,10 +2244,10 @@ struct MetricsTests {
         // decision above is made consciously, never by omission.
         let releasePlist = NSDictionary(contentsOfFile: "Resources/Info.plist")
         let plistVersion = (releasePlist?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.3.3-beta.1",
+        expect(plistVersion == "3.3.3-beta.2",
                "bumping the app version requires re-deciding the support prompt pin above")
         let plistBuild = (releasePlist?["CFBundleVersion"] as? String) ?? ""
-        expect(plistBuild == "80",
+        expect(plistBuild == "81",
                "every app version needs its own incremented bundle build")
         expect(SupportUpdateIntroInfo.releaseVersion == "3.3.2",
                "the support prompt remains deliberately pinned to 3.3.2")
@@ -6605,6 +6605,25 @@ struct MetricsTests {
         // Defaults registered
         expect(Defaults.registeredDefaults[DefaultsKey.includeBetaUpdates] as? Bool == false,
                "includeBetaUpdates defaults to false in registeredDefaults")
+
+        let testDefaults = UserDefaults(suiteName: "VorssaintTests.BetaActivation")!
+        testDefaults.removePersistentDomain(forName: "VorssaintTests.BetaActivation")
+        Defaults.activateBetaChannelIfRunningBeta(in: testDefaults, version: "3.3.3-beta.1")
+        expect(testDefaults.bool(forKey: DefaultsKey.includeBetaUpdates) == true,
+               "beta channel is activated automatically on a beta build")
+        testDefaults.set(false, forKey: DefaultsKey.includeBetaUpdates)
+        Defaults.activateBetaChannelIfRunningBeta(in: testDefaults, version: "3.3.3-beta.1")
+        expect(testDefaults.bool(forKey: DefaultsKey.includeBetaUpdates) == false,
+               "manual opt-out on a beta build is preserved across launches")
+
+        // Stable version does not activate beta channel
+        let stableDefaults = UserDefaults(suiteName: "VorssaintTests.StableActivation")!
+        stableDefaults.removePersistentDomain(forName: "VorssaintTests.StableActivation")
+        Defaults.activateBetaChannelIfRunningBeta(in: stableDefaults, version: "3.3.3")
+        expect(stableDefaults.object(forKey: DefaultsKey.includeBetaUpdates) == nil,
+               "stable release does not touch beta channel default")
+        stableDefaults.removePersistentDomain(forName: "VorssaintTests.StableActivation")
+        testDefaults.removePersistentDomain(forName: "VorssaintTests.BetaActivation")
 
         // Localization completeness & formatting
         for language in AppLanguage.allCases {
