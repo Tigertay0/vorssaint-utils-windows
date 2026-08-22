@@ -833,7 +833,7 @@ extension Strings {
         switcherUsageHintFormat: "Gezinmek için %@ tuşunu basılı tut; pencereyi etkinleştirmek için bırak. Shift veya ← geri gider; W pencereyi kapatır; Q uygulamadan çıkar; Esc iptal eder.",
         musicBlockSection: "Medya tuşları",
         musicBlockTitle: "Müzik uygulamasının kendiliğinden açılmasını engelle",
-        musicBlockCaption: "Medya tuşlarına basınca Müzik uygulaması artık açılmaz. Müzik kullanmak için bunu kapat.",
+        musicBlockCaption: "Medya tuşlarına basınca Müzik uygulaması artık açılmaz. Yine de kendin açabilirsin.",
         musicBlockReplacementLabel: "Yerine aç",
         musicBlockReplacementNone: "Hiçbiri",
         musicBlockChooseApp: "Uygulama seç…",

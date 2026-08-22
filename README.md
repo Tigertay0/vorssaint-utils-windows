@@ -76,7 +76,7 @@ The rest bends the same way: panel sections reorder and hide, the compact layout
 - **Per app output.** Send your music to the speakers and a call to your headset at the same time.
 - **Output switcher.** Cycle between chosen outputs with one shortcut, and drop the volume automatically when headphones disconnect.
 - **Microphone tools.** Pin your favorite input so the Mac stops guessing, and mute every microphone at once with a click or shortcut, whichever one an app is using.
-- **Music app blocker.** Stops the Music app from bursting in when headphones connect.
+- **Music app blocker.** Stops the Music app from bursting in when headphones connect. You can still open it yourself.
 
 ### Know what your Mac is doing
 

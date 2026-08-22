@@ -833,7 +833,7 @@ extension Strings {
         switcherUsageHintFormat: "%@ を押したまま移動し、放すとウインドウがアクティブになります。Shift または ← で戻る、W でウインドウを閉じ、Q でアプリを終了、Esc でキャンセルします。",
         musicBlockSection: "メディアキー",
         musicBlockTitle: "ミュージックが勝手に開かないようにする",
-        musicBlockCaption: "メディアキーを押してもミュージックアプリは開かなくなります。ミュージックを使うときはオフにしてください。",
+        musicBlockCaption: "メディアキーを押してもミュージックアプリは開かなくなります。自分で開くことはできます。",
         musicBlockReplacementLabel: "代わりに開く",
         musicBlockReplacementNone: "なし",
         musicBlockChooseApp: "アプリを選択…",

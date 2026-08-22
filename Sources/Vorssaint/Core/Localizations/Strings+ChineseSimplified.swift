@@ -833,7 +833,7 @@ extension Strings {
         switcherUsageHintFormat: "按住 %@ 进行浏览；松开即可激活窗口。Shift 或 ← 返回；W 关闭窗口；Q 退出 App；Esc 取消。",
         musicBlockSection: "媒体键",
         musicBlockTitle: "阻止音乐 App 自行打开",
-        musicBlockCaption: "按下媒体键时音乐 App 不再打开。要使用音乐 App 请关闭此选项。",
+        musicBlockCaption: "按下媒体键时音乐 App 不再打开。你仍可以自己打开它。",
         musicBlockReplacementLabel: "改为打开",
         musicBlockReplacementNone: "无",
         musicBlockChooseApp: "选择 App…",

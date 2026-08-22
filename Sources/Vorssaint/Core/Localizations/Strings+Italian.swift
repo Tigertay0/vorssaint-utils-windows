@@ -833,7 +833,7 @@ extension Strings {
         switcherUsageHintFormat: "Tieni premuto %@ per spostarti; rilascia per attivare la finestra. Maiuscole o ← torna indietro; W chiude la finestra; Q chiude l'app; Esc annulla.",
         musicBlockSection: "Tasti multimediali",
         musicBlockTitle: "Impedisci a Musica di aprirsi da sola",
-        musicBlockCaption: "L'app Musica non si apre più premendo i tasti multimediali. Disattiva per usare di nuovo Musica.",
+        musicBlockCaption: "L'app Musica non si apre più premendo i tasti multimediali. Puoi comunque aprirla tu.",
         musicBlockReplacementLabel: "Apri al suo posto",
         musicBlockReplacementNone: "Nessuna",
         musicBlockChooseApp: "Scegli app…",

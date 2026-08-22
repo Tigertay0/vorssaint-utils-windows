@@ -834,7 +834,7 @@ extension Strings {
         switcherUsageHintFormat: "按住 %@ 瀏覽；放開即可切換到視窗。Shift 或 ← 返回；W 關閉視窗；Q 結束 App；Esc 取消。",
         musicBlockSection: "媒體鍵",
         musicBlockTitle: "阻止音樂 App 自行開啟",
-        musicBlockCaption: "按媒體鍵時音樂 App 不再開啟。要使用音樂 App 請關閉此選項。",
+        musicBlockCaption: "按媒體鍵時音樂 App 不再開啟。你仍可以自己打開它。",
         musicBlockReplacementLabel: "改為開啟",
         musicBlockReplacementNone: "無",
         musicBlockChooseApp: "選擇 App…",

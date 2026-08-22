@@ -833,7 +833,7 @@ extension Strings {
         switcherUsageHintFormat: "Halte %@ zum Navigieren; loslassen, um das Fenster zu aktivieren. Umschalt oder ← geht zurück; W schließt das Fenster; Q beendet die App; Esc bricht ab.",
         musicBlockSection: "Medientasten",
         musicBlockTitle: "Musik nicht von selbst öffnen lassen",
-        musicBlockCaption: "Die Musik-App öffnet sich beim Drücken der Medientasten nicht mehr. Zum Verwenden von Musik wieder ausschalten.",
+        musicBlockCaption: "Die Musik-App öffnet sich beim Drücken der Medientasten nicht mehr. Du kannst sie weiterhin selbst öffnen.",
         musicBlockReplacementLabel: "Stattdessen öffnen",
         musicBlockReplacementNone: "Keine",
         musicBlockChooseApp: "App wählen…",

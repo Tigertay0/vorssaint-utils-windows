@@ -833,7 +833,7 @@ extension Strings {
         switcherUsageHintFormat: "Maintenez %@ pour naviguer ; relâchez pour activer la fenêtre. Maj ou ← revient en arrière ; W ferme la fenêtre ; Q quitte l’app ; Échap annule.",
         musicBlockSection: "Touches multimédias",
         musicBlockTitle: "Empêcher Musique de s’ouvrir toute seule",
-        musicBlockCaption: "L’app Musique ne s’ouvre plus quand vous appuyez sur les touches multimédias. Désactivez pour réutiliser Musique.",
+        musicBlockCaption: "L’app Musique ne s’ouvre plus quand vous appuyez sur les touches multimédias. Vous pouvez toujours l’ouvrir vous-même.",
         musicBlockReplacementLabel: "Ouvrir à la place",
         musicBlockReplacementNone: "Aucune",
         musicBlockChooseApp: "Choisir une app…",
