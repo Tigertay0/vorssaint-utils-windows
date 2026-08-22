@@ -80,6 +80,8 @@ extension Strings {
         memorySection: "Mémoire",
         memoryPressure: "Pression",
         memorySwapUsed: "Swap utilisé",
+        memoryCompressed: "Compressée",
+        memoryCachedFiles: "Fichiers en cache",
         pressureNormal: "Normale",
         pressureWarning: "Attention",
         pressureCritical: "Critique",

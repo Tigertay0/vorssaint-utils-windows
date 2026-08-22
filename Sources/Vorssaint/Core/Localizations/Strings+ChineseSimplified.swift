@@ -80,6 +80,8 @@ extension Strings {
         memorySection: "内存",
         memoryPressure: "压力",
         memorySwapUsed: "已用交换空间",
+        memoryCompressed: "已压缩",
+        memoryCachedFiles: "已缓存的文件",
         pressureNormal: "正常",
         pressureWarning: "注意",
         pressureCritical: "严重",

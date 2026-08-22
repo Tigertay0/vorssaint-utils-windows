@@ -80,6 +80,8 @@ extension Strings {
         memorySection: "メモリ",
         memoryPressure: "プレッシャー",
         memorySwapUsed: "使用中のスワップ",
+        memoryCompressed: "圧縮",
+        memoryCachedFiles: "キャッシュ済み",
         pressureNormal: "標準",
         pressureWarning: "注意",
         pressureCritical: "危険",

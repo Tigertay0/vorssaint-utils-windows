@@ -80,6 +80,8 @@ extension Strings {
         memorySection: "메모리",
         memoryPressure: "압력",
         memorySwapUsed: "사용 중인 스왑",
+        memoryCompressed: "압축됨",
+        memoryCachedFiles: "캐시된 파일",
         pressureNormal: "정상",
         pressureWarning: "주의",
         pressureCritical: "위험",

@@ -1402,6 +1402,21 @@ struct MetricsTests {
         expect(MetricFormat.selectedMemory(used: 12, app: 7, metric: "unknown") == 12,
                "an unknown shared memory selector falls back to used memory")
 
+        expect(MetricFormat.compressedMemory(totalBytes: 16 * 1024, pageSize: 1024, compressorPages: 5)
+               == 5 * 1024,
+               "compressed memory is compressor pages in bytes")
+        expect(MetricFormat.compressedMemory(totalBytes: 16, pageSize: 1, compressorPages: 100) == 16,
+               "compressed memory clamps to total physical memory")
+        expect(MetricFormat.compressedMemory(totalBytes: 0, pageSize: 1024, compressorPages: 5) == 0,
+               "compressed memory is zero when total is zero")
+        expect(MetricFormat.cachedFiles(totalBytes: 16 * 1024, pageSize: 1024, fileBackedPages: 3)
+               == 3 * 1024,
+               "cached files are file-backed pages in bytes")
+        expect(MetricFormat.cachedFiles(totalBytes: 16, pageSize: 1, fileBackedPages: 100) == 16,
+               "cached files clamp to total physical memory")
+        expect(MetricFormat.cachedFiles(totalBytes: 16 * 1024, pageSize: 0, fileBackedPages: 3) == 0,
+               "cached files are zero when page size is zero")
+
         // MARK: Registered defaults
 
         let registeredDefaults = Defaults.registeredDefaults
@@ -8709,6 +8724,11 @@ struct MetricsTests {
             expect(!strings.monitorOpenActivityMonitor.isEmpty
                    && !strings.monitorOpenActivityMonitor.contains("—"),
                    "\(prefix) Activity Monitor action is present without em dash")
+            expect(!strings.memoryCompressed.isEmpty
+                   && !strings.memoryCompressed.contains("—")
+                   && !strings.memoryCachedFiles.isEmpty
+                   && !strings.memoryCachedFiles.contains("—"),
+                   "\(prefix) memory compressed and cached labels are present without em dash")
             expect(!strings.launchAtLoginNeedsApplications.isEmpty
                    && !strings.launchAtLoginNeedsApplications.contains("—"),
                    "\(prefix) launch at login location note is present without em dash")

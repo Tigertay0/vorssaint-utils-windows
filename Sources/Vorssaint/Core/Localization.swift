@@ -185,6 +185,8 @@ struct Strings {
     let memorySection: String
     let memoryPressure: String
     let memorySwapUsed: String
+    let memoryCompressed: String
+    let memoryCachedFiles: String
     let pressureNormal: String
     let pressureWarning: String
     let pressureCritical: String
@@ -1153,6 +1155,8 @@ extension Strings {
         memorySection: "Memória",
         memoryPressure: "Pressão",
         memorySwapUsed: "Swap em uso",
+        memoryCompressed: "Comprimida",
+        memoryCachedFiles: "Arquivos em cache",
         pressureNormal: "Normal",
         pressureWarning: "Atenção",
         pressureCritical: "Crítico",
@@ -2084,6 +2088,8 @@ extension Strings {
         memorySection: "Memory",
         memoryPressure: "Pressure",
         memorySwapUsed: "Swap used",
+        memoryCompressed: "Compressed",
+        memoryCachedFiles: "Cached files",
         pressureNormal: "Normal",
         pressureWarning: "Caution",
         pressureCritical: "Critical",

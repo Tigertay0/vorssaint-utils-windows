@@ -80,6 +80,8 @@ extension Strings {
         memorySection: "Bellek",
         memoryPressure: "Basınç",
         memorySwapUsed: "Kullanılan takas",
+        memoryCompressed: "Sıkıştırılmış",
+        memoryCachedFiles: "Önbellekteki dosyalar",
         pressureNormal: "Normal",
         pressureWarning: "Dikkat",
         pressureCritical: "Kritik",

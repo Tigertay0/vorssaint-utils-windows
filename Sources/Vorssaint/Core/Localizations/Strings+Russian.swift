@@ -80,6 +80,8 @@ extension Strings {
         memorySection: "Память",
         memoryPressure: "Давление",
         memorySwapUsed: "Подкачка",
+        memoryCompressed: "Сжатая",
+        memoryCachedFiles: "Кэшированные файлы",
         pressureNormal: "Норма",
         pressureWarning: "Предупреждение",
         pressureCritical: "Критично",
