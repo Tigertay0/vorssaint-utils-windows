@@ -2877,6 +2877,8 @@ struct MetricsTests {
                "the schedule defaults to nine in the morning on Mondays")
         expect(registeredDefaults[DefaultsKey.cleanerScheduleNotify] as? Bool == true,
                "the schedule reports its outcome unless the user opts out")
+        expect(registeredDefaults[DefaultsKey.whatsAppDownloadsEnabled] as? Bool == false,
+               "WhatsApp downloads stay hidden until the user turns them on")
         expect(registeredDefaults[DefaultsKey.whatsAppDownloadsAutomaticEnabled] as? Bool == false,
                "WhatsApp automatic cleanup is opt-in")
         expect(registeredDefaults[DefaultsKey.whatsAppDownloadsCategories] as? String
@@ -2947,6 +2949,34 @@ struct MetricsTests {
 
         // MARK: WhatsApp downloads
 
+        let whatsAppEnabledSuite = "vorss.tests.whatsapp.enabled"
+        if let migrationDefaults = UserDefaults(suiteName: whatsAppEnabledSuite) {
+            migrationDefaults.removePersistentDomain(forName: whatsAppEnabledSuite)
+            Defaults.migrateWhatsAppDownloadsEnabled(in: migrationDefaults)
+            expect(migrationDefaults.object(forKey: DefaultsKey.whatsAppDownloadsEnabled) == nil,
+                   "an untouched setup keeps WhatsApp downloads off by leaving the new switch unset")
+            migrationDefaults.set(true, forKey: DefaultsKey.whatsAppDownloadsAutomaticEnabled)
+            Defaults.migrateWhatsAppDownloadsEnabled(in: migrationDefaults)
+            expect(migrationDefaults.bool(forKey: DefaultsKey.whatsAppDownloadsEnabled),
+                   "an existing automatic WhatsApp cleanup keeps its Cleaner surface")
+            migrationDefaults.removePersistentDomain(forName: whatsAppEnabledSuite)
+            migrationDefaults.set(true, forKey: DefaultsKey.whatsAppOrganizerEnabled)
+            Defaults.migrateWhatsAppDownloadsEnabled(in: migrationDefaults)
+            expect(migrationDefaults.bool(forKey: DefaultsKey.whatsAppDownloadsEnabled),
+                   "an existing WhatsApp organizer keeps its Cleaner surface")
+            migrationDefaults.removePersistentDomain(forName: whatsAppEnabledSuite)
+            migrationDefaults.set(true, forKey: DefaultsKey.whatsAppDownloadsAccessConfirmed)
+            Defaults.migrateWhatsAppDownloadsEnabled(in: migrationDefaults)
+            expect(migrationDefaults.object(forKey: DefaultsKey.whatsAppDownloadsEnabled) == nil,
+                   "only opening Downloads does not keep the WhatsApp Cleaner surface")
+            migrationDefaults.set(false, forKey: DefaultsKey.whatsAppDownloadsEnabled)
+            Defaults.migrateWhatsAppDownloadsEnabled(in: migrationDefaults)
+            expect(!migrationDefaults.bool(forKey: DefaultsKey.whatsAppDownloadsEnabled),
+                   "the WhatsApp downloads migration preserves a newer off choice")
+            migrationDefaults.removePersistentDomain(forName: whatsAppEnabledSuite)
+        } else {
+            expect(false, "WhatsApp downloads migration suite can be created")
+        }
         expect(WhatsAppDownloadSupport.isWhatsAppAgent("WhatsApp")
                 && WhatsAppDownloadSupport.isWhatsAppAgent(" whatsapp ")
                 && !WhatsAppDownloadSupport.isWhatsAppAgent("SomeBrowser")
@@ -9721,13 +9751,25 @@ struct MetricsTests {
                "an unscheduled cleaner does not use notifications")
         expect(activeSet(.notifications,
                          on: [DefaultsKey.whatsAppDownloadsAutomaticEnabled,
+                              DefaultsKey.whatsAppDownloadsNotify]) == [],
+               "WhatsApp cleanup notifications stay unused until that cleaner is turned on")
+        expect(activeSet(.notifications,
+                         on: [DefaultsKey.whatsAppDownloadsEnabled,
+                              DefaultsKey.whatsAppDownloadsAutomaticEnabled,
                               DefaultsKey.whatsAppDownloadsNotify]) == [.cleaner],
                "WhatsApp cleanup only uses notifications for an opted-in automatic summary")
         expect(activeSet(.notifications,
                          on: [DefaultsKey.whatsAppOrganizerEnabled,
+                              DefaultsKey.whatsAppDownloadsNotify]) == [],
+               "the experimental WhatsApp organizer stays silent until that cleaner is turned on")
+        expect(activeSet(.notifications,
+                         on: [DefaultsKey.whatsAppDownloadsEnabled,
+                              DefaultsKey.whatsAppOrganizerEnabled,
                               DefaultsKey.whatsAppDownloadsNotify]) == [.cleaner],
                "the experimental WhatsApp organizer can offer an undo notification")
-        expect(activeSet(.filesAndFolders) == [.cleaner],
+        expect(activeSet(.filesAndFolders) == [],
+               "WhatsApp Downloads folder access stays unused until that cleaner is turned on")
+        expect(activeSet(.filesAndFolders, on: [DefaultsKey.whatsAppDownloadsEnabled]) == [.cleaner],
                "the cleaner owns WhatsApp Downloads folder access")
 
         expect(activeSet(.fullDiskAccess) == [.cleaner, .uninstaller],
@@ -13097,7 +13139,8 @@ struct MetricsTests {
                 && backupKeys.contains(DefaultsKey.screenshotPreviewPosition)
                 && backupKeys.contains(DefaultsKey.panelUtilityScreenshot),
                "screenshot preferences travel with the settings backup")
-        expect(backupKeys.contains(DefaultsKey.whatsAppDownloadsAutomaticEnabled)
+        expect(backupKeys.contains(DefaultsKey.whatsAppDownloadsEnabled)
+                && backupKeys.contains(DefaultsKey.whatsAppDownloadsAutomaticEnabled)
                 && backupKeys.contains(DefaultsKey.whatsAppDownloadsCategories)
                 && backupKeys.contains(DefaultsKey.whatsAppDownloadsRetentionDays)
                 && backupKeys.contains(DefaultsKey.whatsAppDownloadsNotify),

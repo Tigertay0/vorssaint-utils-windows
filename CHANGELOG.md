@@ -10,7 +10,7 @@ All notable changes to this project are documented here. The format follows
 Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and
  native input-source switching for the Super key and drag-to-place Dock previews. It keeps grouped and
  windowless App Switcher labels clear, makes Scratchpad controls easier to click, keeps fixed page footers from repeating
- in scrolling screenshots, restores reliable trimming from the start of a recording and makes administrator approval for updates originate from Vorssaint.
+ in scrolling screenshots, restores reliable trimming from the start of a recording, makes administrator approval for updates originate from Vorssaint, and keeps messaging app cleanup in Cleaner hidden until you turn it on.
 
 ### Added
 - Window Layout now offers an opt-in Shortcut + pointer layout mode that places the active window toward
@@ -29,6 +29,8 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional 
 - Fan Control now offers System, continuous Manual control from 0% to 100% and
   editable temperature curves with multiple SoC, CPU and GPU rules. It also shows
   current and target RPM for every fan.
+- The Cleaner's messaging app downloads tools stay hidden until you turn them on
+  in Cleaner. Setups that already use that cleanup keep it.
 
 - Clicking a Dock icon now only restores the windows that Click Dock icon to minimize
   put away. Windows minimized any other way keep the Dock's own restore. Thanks to @PathGao.

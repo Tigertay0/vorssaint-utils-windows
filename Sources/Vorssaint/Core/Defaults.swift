@@ -129,6 +129,7 @@ enum DefaultsKey {
     static let cleanerLastAutoRun = "cleanerLastAutoRun"                // Double, epoch seconds
     static let cleanerLastAutoFreed = "cleanerLastAutoFreed"            // Int bytes
     // Confirmed WhatsApp downloads in the top level of ~/Downloads.
+    static let whatsAppDownloadsEnabled = "whatsAppDownloadsEnabled"
     static let whatsAppDownloadsAutomaticEnabled = "whatsAppDownloadsAutomaticEnabled"
     static let whatsAppDownloadsCategories = "whatsAppDownloadsCategories" // comma-joined category ids
     static let whatsAppDownloadsRetentionDays = "whatsAppDownloadsRetentionDays"
@@ -825,6 +826,7 @@ enum Defaults {
         DefaultsKey.cleanerScheduleNotify: true,
         DefaultsKey.cleanerLastAutoRun: 0.0,
         DefaultsKey.cleanerLastAutoFreed: 0,
+        DefaultsKey.whatsAppDownloadsEnabled: false,
         DefaultsKey.whatsAppDownloadsAutomaticEnabled: false,
         DefaultsKey.whatsAppDownloadsCategories: "image,video,audio",
         DefaultsKey.whatsAppDownloadsRetentionDays: 7,
@@ -1185,6 +1187,7 @@ enum Defaults {
         let defaults = UserDefaults.standard
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
+        migrateWhatsAppDownloadsEnabled(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         migrateLegacyMenuBarTemperatureMetric(in: defaults)
@@ -1197,6 +1200,21 @@ enum Defaults {
         migrateRestoredScreenCaptureShortcuts(in: defaults)
         migrateSilentHeadphonesDisconnectVolume(in: defaults)
         migrateSwitcherWindowlessFinder(in: defaults)
+    }
+
+    /// The downloads cleanup for a messaging app used to sit in Cleaner for
+    /// everyone. Keep it visible only when someone already turned automatic
+    /// cleanup or the organizer on; everyone else gets the new off-by-default
+    /// choice.
+    static func migrateWhatsAppDownloadsEnabled(in defaults: UserDefaults) {
+        guard defaults.object(forKey: DefaultsKey.whatsAppDownloadsEnabled) == nil else {
+            return
+        }
+        let alreadyUsing = defaults.bool(forKey: DefaultsKey.whatsAppDownloadsAutomaticEnabled)
+            || defaults.bool(forKey: DefaultsKey.whatsAppOrganizerEnabled)
+        if alreadyUsing {
+            defaults.set(true, forKey: DefaultsKey.whatsAppDownloadsEnabled)
+        }
     }
 
     /// The former single switch also reversed vertical wheel events redirected
