@@ -9,8 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Summary
 Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and
  native input-source switching for the Super key and drag-to-place Dock previews. It keeps grouped and
- windowless App Switcher labels clear, makes Scratchpad controls easier to click and restores reliable trimming from the
- start of a recording and makes administrator approval for updates originate from Vorssaint.
+ windowless App Switcher labels clear, makes Scratchpad controls easier to click, keeps fixed page footers from repeating
+ in scrolling screenshots, restores reliable trimming from the start of a recording and makes administrator approval for updates originate from Vorssaint.
 
 ### Added
 - Window Layout now offers an opt-in Shortcut + pointer layout mode that places the active window toward
@@ -33,6 +33,8 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional 
 - Clicking a Dock icon now only restores the windows that Click Dock icon to minimize
   put away. Windows minimized any other way keep the Dock's own restore. Thanks to @PathGao.
 ### Fixed
+- Scrolling screenshots now keep fixed page footers once at the end instead of
+  repeating them after every scroll.
 - Settings now lists Dock Preview and Dock click as separate named sections, and
   opening Dock click from the Features hub lands on its own controls rather than on
   the Dock Preview block. Thanks to @PathGao.

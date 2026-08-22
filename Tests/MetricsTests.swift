@@ -11135,6 +11135,51 @@ struct MetricsTests {
                              direction: .forward,
                              contentColumns: 0..<16),
                "fixed page edges do not hide the shared scrolling content")
+        func sampleWithFixedBottom(offset: Int,
+                                   fixedBottomRows: Int = 18)
+            -> ScreenshotSupport.ScrollingSample {
+            let sample = scrollingSample(offset: offset)
+            var pixels = sample.pixels
+            for row in (sample.height - fixedBottomRows)..<sample.height {
+                for column in 0..<sample.width {
+                    pixels[row * sample.width + column] = UInt8(
+                        (row * 29 + column * 11 + 41) % 251)
+                }
+            }
+            return ScreenshotSupport.ScrollingSample(width: sample.width,
+                                                     height: sample.height,
+                                                     pixels: pixels)
+        }
+        let fixedBottomStart = sampleWithFixedBottom(offset: 0)
+        let fixedBottomNext = sampleWithFixedBottom(offset: 42)
+        expect(ScreenshotSupport.scrollingTransition(previous: fixedBottomStart,
+                                                     current: fixedBottomNext)
+                == .advanced(overlap: 78,
+                             direction: .forward,
+                             contentColumns: 0..<16),
+               "a fixed footer does not hide the moving page overlap")
+        expect(ScreenshotSupport.scrollingFixedBottomRows(
+            previous: fixedBottomStart,
+            current: fixedBottomNext,
+            overlap: 78,
+            contentColumns: 0..<16) == 18,
+               "scrolling capture identifies a fixed footer at the bottom edge")
+        expect(ScreenshotSupport.scrollingFixedBottomRows(
+            previous: firstScrollSample,
+            current: scrollingSample(offset: 42),
+            overlap: 78,
+            contentColumns: 0..<16) == 0,
+               "ordinary moving content is never mistaken for a fixed footer")
+        expect(ScreenshotSupport.scrollingNewContentRows(
+            imageHeight: 120,
+            overlap: 78,
+            fixedBottomRows: 18) == 60..<102,
+               "new scrolling pixels move above the fixed footer instead of copying it")
+        expect(ScreenshotSupport.scrollingNewContentRows(
+            imageHeight: 120,
+            overlap: 78,
+            fixedBottomRows: 0) == 78..<120,
+               "captures without a fixed footer keep the original crop geometry")
         var scrollingStressPassed = true
         var scrollingStressFailure: ScreenshotSupport.ScrollingTransition?
         for iteration in 0..<250 {

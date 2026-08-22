@@ -330,6 +330,52 @@ enum ScreenshotSupport {
                          contentColumns: best.contentColumns)
     }
 
+    /// A fixed footer stays at the same viewport rows while the page behind it
+    /// advances. Keeping that suffix in every new strip repeats it throughout
+    /// the final image, so identify it separately from the moving overlap.
+    static func scrollingFixedBottomRows(previous: ScrollingSample,
+                                         current: ScrollingSample,
+                                         overlap: Int,
+                                         contentColumns: Range<Int>) -> Int {
+        guard previous.isValid, current.isValid,
+              previous.width == current.width,
+              previous.height == current.height,
+              overlap > 0, overlap < previous.height,
+              contentColumns.lowerBound >= 0,
+              contentColumns.upperBound <= previous.width,
+              !contentColumns.isEmpty
+        else { return 0 }
+
+        var rows = 0
+        for row in stride(from: previous.height - 1, through: 0, by: -1) {
+            let start = row * previous.width
+            var difference = 0
+            for column in contentColumns {
+                difference += abs(Int(previous.pixels[start + column])
+                    - Int(current.pixels[start + column]))
+            }
+            let average = Double(difference) / Double(contentColumns.count)
+            guard average <= 2 else { break }
+            rows += 1
+        }
+
+        let minimumRows = max(4, min(12, previous.height / 100))
+        guard rows >= minimumRows, rows < overlap else { return 0 }
+        return rows
+    }
+
+    /// Rows newly revealed by a forward scroll. A fixed footer shifts this
+    /// range upward by its own height; its pixels are appended once at the end.
+    static func scrollingNewContentRows(imageHeight: Int,
+                                        overlap: Int,
+                                        fixedBottomRows: Int) -> Range<Int>? {
+        guard imageHeight > 0,
+              overlap > 0, overlap < imageHeight,
+              fixedBottomRows >= 0, fixedBottomRows < overlap
+        else { return nil }
+        return (overlap - fixedBottomRows)..<(imageHeight - fixedBottomRows)
+    }
+
     private static func scrollingDifference(_ lhs: ScrollingSample,
                                             _ rhs: ScrollingSample,
                                             columns: Range<Int>) -> Double {
