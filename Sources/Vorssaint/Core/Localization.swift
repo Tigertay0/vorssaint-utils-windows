@@ -678,6 +678,9 @@ struct Strings {
     // MARK: Settings — updates
     let updatesSection: String
     let autoCheckToggle: String
+    let includeBetaUpdatesToggle: String
+    let includeBetaUpdatesCaption: String
+    let betaBadgeLabel: String
     let checkNowButton: String
     let updateChecking: String
     let updateUpToDate: String
@@ -1628,6 +1631,9 @@ extension Strings {
 
         updatesSection: "Atualizações",
         autoCheckToggle: "Procurar atualizações automaticamente",
+        includeBetaUpdatesToggle: "Receber atualizações beta",
+        includeBetaUpdatesCaption: "Versões beta incluem novidades em desenvolvimento e podem apresentar instabilidades ou comportamentos incompletos.",
+        betaBadgeLabel: "Beta",
         checkNowButton: "Procurar agora",
         updateChecking: "Procurando…",
         updateUpToDate: "Você está na versão mais recente.",
@@ -2561,6 +2567,9 @@ extension Strings {
 
         updatesSection: "Updates",
         autoCheckToggle: "Check for updates automatically",
+        includeBetaUpdatesToggle: "Receive beta updates",
+        includeBetaUpdatesCaption: "Beta versions include features in development and may contain bugs or incomplete behavior.",
+        betaBadgeLabel: "Beta",
         checkNowButton: "Check now",
         updateChecking: "Checking…",
         updateUpToDate: "You're on the latest version.",

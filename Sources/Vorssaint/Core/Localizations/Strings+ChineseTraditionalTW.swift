@@ -553,6 +553,9 @@ extension Strings {
 
         updatesSection: "更新",
         autoCheckToggle: "自動檢查更新",
+        includeBetaUpdatesToggle: "接收 Beta 測試版更新",
+        includeBetaUpdatesCaption: "Beta 版本包含開發中的新功能，可能存在不穩定或未完善的情況。",
+        betaBadgeLabel: "Beta",
         checkNowButton: "立即檢查",
         updateChecking: "檢查中…",
         updateUpToDate: "你已是最新版本。",

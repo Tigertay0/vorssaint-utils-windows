@@ -4,13 +4,10 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [3.3.3]
+## [3.3.3-beta.1] - 2026-08-22
 
 ### Summary
-Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and
- native input-source switching for the Super key and drag-to-place Dock previews. It keeps grouped and
- windowless App Switcher labels clear, splits App Switcher rows evenly when they wrap, makes Scratchpad controls easier to click, keeps fixed page footers from repeating
- in scrolling screenshots, restores reliable trimming from the start of a recording, makes administrator approval for updates originate from Vorssaint, keeps messaging app cleanup in Cleaner hidden until you turn it on, keeps Separate metrics in Settings instead of the menu bar panel, lets you open Music yourself while the media-key blocker is on, and shows compressed memory and cached files in the System panel.
+Vorssaint 3.3.3-beta.1 introduces the opt-in beta release channel and in-app feedback diagnostics alongside full manual and temperature-based Fan Control, directional pointer window layout, an opt-in Kill Process tool and native input-source switching for the Super key and drag-to-place Dock previews. It keeps grouped and windowless App Switcher labels clear, splits App Switcher rows evenly when they wrap, makes Scratchpad controls easier to click, keeps fixed page footers from repeating in scrolling screenshots, restores reliable trimming from the start of a recording, makes administrator approval for updates originate from Vorssaint, keeps messaging app cleanup in Cleaner hidden until you turn it on, keeps Separate metrics in Settings instead of the menu bar panel, lets you open Music yourself while the media-key blocker is on, and shows compressed memory and cached files in the System panel.
 
 ### Added
 - Window Layout now offers an opt-in Shortcut + pointer layout mode that places the active window toward
@@ -26,6 +23,7 @@ Vorssaint 3.3.3 adds full manual and temperature-based Fan Control, directional 
   process trees from Settings and the Command Bar. It ships uninstalled. Thanks to @naveenkrdy.
 - The System panel now shows compressed memory and cached files next to swap.
 - Middle-clicking a window card in the App Switcher now closes that window directly.
+- Settings now lets you opt in to receive beta and pre-release updates alongside stable versions.
 
 ### Changed
 - The App Switcher now splits windows evenly across rows when they wrap, so a

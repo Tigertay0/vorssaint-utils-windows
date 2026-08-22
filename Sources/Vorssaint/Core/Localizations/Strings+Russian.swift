@@ -553,6 +553,9 @@ extension Strings {
 
         updatesSection: "Обновления",
         autoCheckToggle: "Проверять обновления автоматически",
+        includeBetaUpdatesToggle: "Получать бета-версии",
+        includeBetaUpdatesCaption: "Бета-версии содержат функции в разработке и могут работать нестабильно.",
+        betaBadgeLabel: "Бета",
         checkNowButton: "Проверить сейчас",
         updateChecking: "Проверка…",
         updateUpToDate: "У вас последняя версия.",

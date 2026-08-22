@@ -2244,10 +2244,10 @@ struct MetricsTests {
         // decision above is made consciously, never by omission.
         let releasePlist = NSDictionary(contentsOfFile: "Resources/Info.plist")
         let plistVersion = (releasePlist?["CFBundleShortVersionString"] as? String) ?? ""
-        expect(plistVersion == "3.3.3",
+        expect(plistVersion == "3.3.3-beta.1",
                "bumping the app version requires re-deciding the support prompt pin above")
         let plistBuild = (releasePlist?["CFBundleVersion"] as? String) ?? ""
-        expect(plistBuild == "79",
+        expect(plistBuild == "80",
                "every app version needs its own incremented bundle build")
         expect(SupportUpdateIntroInfo.releaseVersion == "3.3.2",
                "the support prompt remains deliberately pinned to 3.3.2")
@@ -6548,6 +6548,74 @@ struct MetricsTests {
                "elevated installer detaches so the app can quit")
         expect(elevated.contains("'/Applications/Vorssaint.app'"),
                "elevated installer passes the app path quoted for the shell")
+
+        // MARK: - UpdateServiceSupport & SemVer channel reconciliation
+
+        let vStable = UpdateServiceSupport.SemanticVersion(raw: "3.3.3")
+        expect(vStable?.major == 3 && vStable?.minor == 3 && vStable?.patch == 3 && !vStable!.isPrerelease,
+               "parses standard stable version")
+
+        let vBeta = UpdateServiceSupport.SemanticVersion(raw: "v3.3.4-beta.1")
+        expect(vBeta?.major == 3 && vBeta?.minor == 3 && vBeta?.patch == 4 && vBeta!.isPrerelease,
+               "parses beta version with leading v")
+
+        let vBuild = UpdateServiceSupport.SemanticVersion(raw: "3.3.4-rc.2+20260822")
+        expect(vBuild?.major == 3 && vBuild?.minor == 3 && vBuild?.patch == 4 && vBuild!.isPrerelease,
+               "parses version with build metadata")
+
+        // SemVer 2.0.0 ordering rules
+        expect(UpdateServiceSupport.isNewer("3.3.4", than: "3.3.3"),
+               "newer major/minor/patch stable is newer")
+        expect(!UpdateServiceSupport.isNewer("3.3.3", than: "3.3.4"),
+               "older stable is not newer")
+        expect(UpdateServiceSupport.isNewer("3.3.4-beta.1", than: "3.3.3"),
+               "beta of higher version is newer than older stable")
+        expect(UpdateServiceSupport.isNewer("3.3.4-beta.2", than: "3.3.4-beta.1"),
+               "beta.2 is newer than beta.1 of the same cycle")
+        expect(UpdateServiceSupport.isNewer("3.3.4-rc.1", than: "3.3.4-beta.2"),
+               "rc.1 is newer than beta.2")
+        expect(UpdateServiceSupport.isNewer("3.3.4", than: "3.3.4-beta.2"),
+               "final stable release is newer than beta of same version")
+        expect(UpdateServiceSupport.isNewer("3.3.4", than: "3.3.4-rc.1"),
+               "final stable release is newer than rc of same version")
+        expect(!UpdateServiceSupport.isNewer("3.3.3", than: "3.3.4-beta.1"),
+               "older stable is never newer than a beta of higher version (no downgrade)")
+        expect(!UpdateServiceSupport.isNewer("3.3.4-beta.1", than: "3.3.4"),
+               "beta is not newer than the released final version")
+
+        // Release candidate selection
+        let dummyDMG = URL(string: "https://github.com/vorssaint/vorssaint-utils/releases/download/v3.3.4/Vorssaint.dmg")!
+        let dummyBetaDMG = URL(string: "https://github.com/vorssaint/vorssaint-utils/releases/download/v3.3.4-beta.1/Vorssaint.dmg")!
+
+        let candidateList = [
+            UpdateServiceSupport.ReleaseCandidate(tagName: "v3.3.4-beta.1", isPrerelease: true, isDraft: false, dmgURL: dummyBetaDMG, dmgExpectedBytes: 1000, body: "Beta notes"),
+            UpdateServiceSupport.ReleaseCandidate(tagName: "v3.3.3", isPrerelease: false, isDraft: false, dmgURL: dummyDMG, dmgExpectedBytes: 1000, body: "Stable notes"),
+            UpdateServiceSupport.ReleaseCandidate(tagName: "v3.3.5-beta.1", isPrerelease: true, isDraft: true, dmgURL: dummyBetaDMG, dmgExpectedBytes: 1000, body: "Draft notes")
+        ]
+
+        let selectedStable = UpdateServiceSupport.selectUpdate(from: candidateList, currentVersion: "3.3.2", includeBetas: false)
+        expect(selectedStable?.tagName == "v3.3.3", "stable channel only picks stable releases")
+
+        let selectedBeta = UpdateServiceSupport.selectUpdate(from: candidateList, currentVersion: "3.3.2", includeBetas: true)
+        expect(selectedBeta?.tagName == "v3.3.4-beta.1", "beta channel picks highest non-draft release")
+
+        let selectedFromHigherBeta = UpdateServiceSupport.selectUpdate(from: candidateList, currentVersion: "3.3.4-beta.1", includeBetas: false)
+        expect(selectedFromHigherBeta == nil, "user on beta turning off betas does not downgrade to older stable")
+
+        // Defaults registered
+        expect(Defaults.registeredDefaults[DefaultsKey.includeBetaUpdates] as? Bool == false,
+               "includeBetaUpdates defaults to false in registeredDefaults")
+
+        // Localization completeness & formatting
+        for language in AppLanguage.allCases {
+            L10n.shared.language = language
+            let s = L10n.shared.s
+            expect(!s.includeBetaUpdatesToggle.isEmpty, "\(language.rawValue) includeBetaUpdatesToggle non-empty")
+            expect(!s.includeBetaUpdatesCaption.isEmpty, "\(language.rawValue) includeBetaUpdatesCaption non-empty")
+            expect(!s.betaBadgeLabel.isEmpty, "\(language.rawValue) betaBadgeLabel non-empty")
+            expect(!s.includeBetaUpdatesCaption.contains("—"), "\(language.rawValue) has no em dash")
+        }
+        L10n.shared.language = .enUS
 
         // MARK: Launch at login reconciliation
 

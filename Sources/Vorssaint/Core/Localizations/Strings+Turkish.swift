@@ -552,6 +552,9 @@ extension Strings {
 
         updatesSection: "Güncellemeler",
         autoCheckToggle: "Güncellemeleri otomatik denetle",
+        includeBetaUpdatesToggle: "Beta güncellemelerini al",
+        includeBetaUpdatesCaption: "Beta sürümleri geliştirme aşamasındaki özellikleri içerir ve kararsızlık gösterebilir.",
+        betaBadgeLabel: "Beta",
         checkNowButton: "Şimdi denetle",
         updateChecking: "Denetleniyor…",
         updateUpToDate: "En son sürümdesin.",

@@ -553,6 +553,9 @@ extension Strings {
 
         updatesSection: "업데이트",
         autoCheckToggle: "업데이트 자동 확인",
+        includeBetaUpdatesToggle: "베타 업데이트 받기",
+        includeBetaUpdatesCaption: "베타 버전에는 개발 중인 기능이 포함되어 있으며 불안정하거나 오류가 발생할 수 있습니다.",
+        betaBadgeLabel: "베타",
         checkNowButton: "지금 확인",
         updateChecking: "확인하는 중…",
         updateUpToDate: "최신 버전을 사용하고 있습니다.",

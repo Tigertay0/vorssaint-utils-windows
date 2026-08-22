@@ -552,6 +552,9 @@ extension Strings {
 
         updatesSection: "アップデート",
         autoCheckToggle: "アップデートを自動的に確認",
+        includeBetaUpdatesToggle: "ベータ版のアップデートを受け取る",
+        includeBetaUpdatesCaption: "ベータ版には開発中の機能が含まれており、動作が不安定な場合があります。",
+        betaBadgeLabel: "ベータ",
         checkNowButton: "今すぐ確認",
         updateChecking: "確認中…",
         updateUpToDate: "最新バージョンを使用しています。",

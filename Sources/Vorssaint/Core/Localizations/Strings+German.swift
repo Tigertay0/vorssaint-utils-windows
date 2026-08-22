@@ -552,6 +552,9 @@ extension Strings {
 
         updatesSection: "Updates",
         autoCheckToggle: "Automatisch nach Updates suchen",
+        includeBetaUpdatesToggle: "Beta-Updates erhalten",
+        includeBetaUpdatesCaption: "Beta-Versionen enthalten neue Funktionen in Entwicklung und können instabil oder unvollständig sein.",
+        betaBadgeLabel: "Beta",
         checkNowButton: "Jetzt suchen",
         updateChecking: "Wird gesucht…",
         updateUpToDate: "Du verwendest die neueste Version.",
