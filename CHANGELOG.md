@@ -17,6 +17,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 - Beta releases now automatically turn on the beta update channel on first launch, ensuring seamless delivery of subsequent beta updates.
+- Keep Awake now preserves the order of asynchronous closed-lid sleep requests when rapidly toggled. Thanks to @Tr1meputiNe.
 
 ## [3.3.3-beta.1] - 2026-08-22
 
