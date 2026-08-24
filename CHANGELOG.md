@@ -4,14 +4,10 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
-
-### Added
-- The app icon has been redesigned and now supports adaptive system appearance modes for light, dark, tinted, or clear icon styles on macOS 26 and later, while macOS 14 and 15 keep the classic icon. Thanks to @divisionseven.
-
 ## [3.3.3-beta.2] - 2026-08-22
 
 ### Added
+- The app icon has been redesigned and now supports adaptive system appearance modes for light, dark, tinted, or clear icon styles on macOS 26 and later, while macOS 14 and 15 keep the classic icon. Thanks to @divisionseven.
 - A new Bluetooth on sleep feature switches Bluetooth off while the Mac sleeps, so a closed laptop stops connecting to headphones it should leave alone. Bluetooth that was already off before sleep stays off, and only what Vorssaint switched off is put back on wake. Thanks to @marcfusch.
 - App Switcher now lets you place minimized windows at the end of the list or hide them, and toggle fullscreen window visibility. Thanks to @itsofirk.
 - The radial menu now includes a Now Playing media action with a floating track card and direct app access. Thanks to @ruvelro.
