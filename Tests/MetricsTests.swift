@@ -12960,6 +12960,41 @@ struct MetricsTests {
         ]
         expect(scratchpadHitTargetContracts.allSatisfy { scratchpadViewSource.contains($0) },
                "the scratchpad tab bar and header controls keep their full padded hit targets")
+        // An unpinned borderless Menu claims the free width of its row on
+        // macOS 15 and starves whatever shares that row (issue #569), so the
+        // rule is checked for every borderless menu in the app rather than for
+        // the one this fix touches. Kill Process is the one
+        // deliberate exception: its row controls take a shared minimum width
+        // so the Kill button and the menu beside it line up down the list.
+        let borderlessMenuException = "KillProcess/KillProcessView"
+        var unpinnedBorderlessMenus: [String] = []
+        let uiFiles = FileManager.default
+            .enumerator(atPath: "Sources/Vorssaint/UI")?
+            .compactMap { $0 as? String }
+            .filter { $0.hasSuffix(".swift") && !$0.contains(" 2") } ?? []
+        for file in uiFiles.sorted() {
+            let path = "Sources/Vorssaint/UI/\(file)"
+            guard !file.contains(borderlessMenuException),
+                  let source = try? String(contentsOfFile: path, encoding: .utf8) else { continue }
+            let lines = source.components(separatedBy: "\n")
+            for (index, line) in lines.enumerated()
+            where line.contains(".menuStyle(.borderlessButton)") {
+                // Read to the end of the menu's own modifier chain: the next
+                // line that is neither a modifier nor a comment belongs to
+                // something else.
+                var pinned = false
+                var cursor = index + 1
+                while cursor < lines.count {
+                    let text = lines[cursor].trimmingCharacters(in: .whitespaces)
+                    guard text.hasPrefix(".") || text.hasPrefix("//") else { break }
+                    if text.hasPrefix(".fixedSize()") { pinned = true; break }
+                    cursor += 1
+                }
+                if !pinned { unpinnedBorderlessMenus.append("\(file):\(index + 1)") }
+            }
+        }
+        expect(unpinnedBorderlessMenus.isEmpty,
+               "every borderless menu keeps its own size: \(unpinnedBorderlessMenus)")
         expect(ScratchpadRetention.sanitized("day") == .day
                 && ScratchpadRetention.sanitized("week") == .week
                 && ScratchpadRetention.sanitized("month") == .month

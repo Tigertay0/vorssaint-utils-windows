@@ -90,6 +90,9 @@ Vorssaint 3.3.3-beta.1 introduces the opt-in beta release channel and in-app fee
   the Dock Preview block. Thanks to @PathGao.
 - Scratchpad tabs and the pin, close, new pad and pad actions buttons now respond
   across their whole area. Thanks to @AB-boi and @PathGao.
+- The Scratchpad tab strip now takes the width its row has free, so widening the
+  pad shows more of each tab name instead of leaving the space beside the pad
+  actions button empty. Thanks to @AB-boi.
 - Dock Preview cards now carry the App Switcher's look: the app's icon and the window's
   state along the bottom of a 16:10 picture, the name and its subtitle underneath, and the
   close and minimize buttons in that band rather than over the picture. Thanks to @PathGao.
