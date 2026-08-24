@@ -11267,6 +11267,12 @@ struct MetricsTests {
                 && BrightnessSupport.reconnectedDimLevel(1.4) == 1.0,
                "visible dim levels return from a gap untouched, clamped to the range")
 
+        expect(BrightnessSupport.softwareDimToRestore(remembered: 0.7, appliedByApp: false) == 1.0
+                && BrightnessSupport.softwareDimToRestore(remembered: nil, appliedByApp: true) == 1.0,
+               "a level read from the monitor is never replayed as a gamma dim")
+        expect(BrightnessSupport.softwareDimToRestore(remembered: 0.4, appliedByApp: true) == 0.4,
+               "a dim this app applied is restored when the routes are rebuilt")
+
         expect(BrightnessSupport.softwareDimFactor(for: 1.0) == 1.0
                 && BrightnessSupport.softwareDimFactor(for: 0.0) == 0.0,
                "software dimming spans the whole range and zero really is black")
