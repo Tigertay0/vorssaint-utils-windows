@@ -7145,6 +7145,18 @@ struct MetricsTests {
                       compactIconRowLayout.simpleTitleSurfaceWidth)
                     + SwitcherIconRowLayout.padding * 2,
                "App Switcher without shortcut hints still fits its title rail")
+        // Two apps leave the icon row narrower than the hint bar, the case that
+        // used to lay rows out against a width the panel was never sized for.
+        let twoAppLayout = SwitcherIconRowLayout.compute(appCount: 2,
+                                                         selectedWindowCount: 1,
+                                                         screenVisibleFrame: screen,
+                                                         showsShortcutHints: false)
+        expect(twoAppLayout.appRowSurfaceWidth < SwitcherIconRowLayout.hintBarWidth
+               && twoAppLayout.contentWidth(simpleMode: true, windowRow: false)
+                    == twoAppLayout.simplePanelSize.width - SwitcherIconRowLayout.padding * 2
+               && twoAppLayout.contentWidth(simpleMode: true, windowRow: true)
+                    == twoAppLayout.simpleWindowPanelSize.width - SwitcherIconRowLayout.padding * 2,
+               "App Switcher rows fit the panel with fewer apps than the hint bar is wide")
         expect(SwitcherSupport.gridColumnCount(itemCount: 10, maxColumns: 8) == 5,
                "App Switcher wrapping splits ten windows across two even rows")
         expect(SwitcherSupport.gridColumnCount(itemCount: 9, maxColumns: 8) == 5,
