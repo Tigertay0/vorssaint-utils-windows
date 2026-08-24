@@ -11030,6 +11030,25 @@ struct MetricsTests {
 
         // MARK: Display brightness (DDC/CI helpers)
 
+        // Every section of the service below its "Rebuild (work queue)" MARK
+        // runs on the private work queue, so a display's user-facing name is
+        // read from NSScreen on the main thread and handed to the rebuild.
+        // AppKit reached from below the line would be a main thread violation
+        // on every hotplug, wake and panel open.
+        let brightnessSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/Services/Display/BrightnessService.swift",
+            encoding: .utf8)) ?? ""
+        let brightnessWorkQueueHalf = brightnessSource
+            .components(separatedBy: "// MARK: - Rebuild (work queue)").last ?? ""
+        // Comments are stripped first: a note naming the symbol it bans is not
+        // a call, and a check that cannot tell them apart goes red for prose.
+        let brightnessWorkQueueCode = brightnessWorkQueueHalf
+            .components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        expect(!brightnessWorkQueueHalf.isEmpty && !brightnessWorkQueueCode.contains("NSScreen"),
+               "the brightness work queue resolves display names without touching NSScreen")
+
         let ddcWrite = BrightnessSupport.writePacket(code: 0x10, value: 0x1234)
         let expectedDDCWrite: [UInt8] = [0x84, 0x03, 0x10, 0x12, 0x34, 0x8E]
         expect(ddcWrite == expectedDDCWrite,
@@ -11190,9 +11209,6 @@ struct MetricsTests {
         // transaction belongs to the main thread. Getting it wrong hangs the
         // app rather than returning a wrong answer, and no pure helper can
         // carry that, so it is pinned against the CoreGraphics symbols.
-        let brightnessSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Display/BrightnessService.swift",
-            encoding: .utf8)) ?? ""
         expect(brightnessSource.components(separatedBy: "CGBeginDisplayConfiguration(").count == 2
                && brightnessSource.components(separatedBy: "CGCompleteDisplayConfiguration(").count == 2,
                "every display power change goes through the one reconfiguration transaction")
