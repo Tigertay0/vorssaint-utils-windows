@@ -40,8 +40,9 @@ Vorssaint 3.3.3-beta.1 introduces the opt-in beta release channel and in-app fee
   any of eight directions with a native glass-ring HUD. Thanks to @Bald-M.
 - The Super key can now use a quick press to switch between enabled input sources
   while a press-and-hold toggles Caps Lock. Thanks to @BenjaminD2023.
-- Dock Preview thumbnails can now be dragged to move windows freely or snap them
-  to screen regions. Thanks to @PathGao.
+- Dock Preview thumbnails can now be dragged to move any window to where they are
+  dropped, keeping the size it already had. A minimized window is restored there
+  and a window from another desktop is carried across. Thanks to @PathGao.
 - Clean URL now removes the tracking parameters that YouTube, X, Instagram, Spotify,
   Reddit, TikTok, Bilibili and Xiaohongshu add to their own share links, while leaving
   the same parameter names alone on every other site. Thanks to @PathGao.
@@ -87,9 +88,20 @@ Vorssaint 3.3.3-beta.1 introduces the opt-in beta release channel and in-app fee
   the Dock Preview block. Thanks to @PathGao.
 - Scratchpad tabs and the pin, close, new pad and pad actions buttons now respond
   across their whole area. Thanks to @AB-boi and @PathGao.
-- Dock Preview cards no longer draw the app icon on every thumbnail or repeat the
-  window title over it, leaving the thumbnail more of the card, and a card now
-  badges a window that lives on another desktop. Thanks to @PathGao.
+- Dock Preview cards now carry the App Switcher's look: the app's icon and the window's
+  state along the bottom of a 16:10 picture, the name and its subtitle underneath, and the
+  close and minimize buttons in that band rather than over the picture. Thanks to @PathGao.
+
+- Dock Preview cards keep a full title band at every preview size rather than scaling it
+  with the card, and the app icon standing in for a thumbnail that has not arrived follows
+  the preview size as a watermark. Thanks to @PathGao.
+
+- A Dock Preview beside a Dock on the left or right now runs its cards down the screen
+  instead of across it, a hovered panel draws no header, and pinning one is a named item
+  in a card's menu. Thanks to @PathGao.
+
+- A window name too long for its band now scrolls while the pointer is on that card, in
+  the App Switcher as well as a Dock Preview. Thanks to @PathGao.
 - Fan Control now prepares stopped fans before taking manual control and keeps a
   failed attempt visible instead of silently returning to Automatic.
 - The Clean URL settings fields now take a click anywhere across their row. Their
