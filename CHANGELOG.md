@@ -30,6 +30,7 @@ All notable changes to this project are documented here. The format follows
 - App Switcher and Dock previews no longer show stale previews for windows that were closed or apps that quit. Thanks to @atomsbaza.
 - Beta releases now automatically turn on the beta update channel on first launch, ensuring seamless delivery of subsequent beta updates.
 - Keep Awake now preserves the order of asynchronous closed-lid sleep requests when rapidly toggled. Thanks to @Tr1meputiNe.
+- The Uninstaller now names the items a removal could not move, and offers Full Disk Access on the spot when that permission is what stopped it. Sandboxed app data used to be left behind under a success tick. Thanks to @PathGao.
 
 ## [3.3.3-beta.1] - 2026-08-22
 
