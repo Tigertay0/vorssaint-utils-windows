@@ -514,6 +514,17 @@ struct MetricsTests {
                     "clipboard files preview lists the file names")
         expect(filesEntry.searchableText(imageLabel: "Image").contains("Report.pdf"),
                "clipboard files entries are searchable by file name")
+        expect(filesEntry.searchableText(imageLabel: "Image").contains("Image"),
+               "clipboard files with images include the localized image label in search")
+        expect(ClipboardHistoryImageSupport.isImageFileName("screenshot.PNG"),
+               "clipboard image file support recognizes png case-insensitively")
+        expect(ClipboardHistoryImageSupport.isImageFileName("photo.jpeg")
+               && ClipboardHistoryImageSupport.isImageFileName("picture.heic")
+               && ClipboardHistoryImageSupport.isImageFileName("art.webp"),
+               "clipboard image file support recognizes standard image extensions")
+        expect(!ClipboardHistoryImageSupport.isImageFileName("document.pdf")
+               && !ClipboardHistoryImageSupport.isImageFileName("archive.zip"),
+               "clipboard image file support rejects non-image extensions")
         expect(filesEntry.matchesContent(of: ClipboardHistoryEntry(text: "",
                                                                    kind: .files,
                                                                    filePaths: filesEntry.filePaths)),

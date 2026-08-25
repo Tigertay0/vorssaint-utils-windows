@@ -1332,6 +1332,61 @@ enum ClipboardImageStore {
         return image
     }
 
+    static func isImageFile(atPath path: String) -> Bool {
+        ClipboardHistoryImageSupport.isImageFilePath(path)
+    }
+
+    /// Downsampled preview for a copied image file on disk, cached.
+    static func fileThumbnail(atPath path: String, maxPixelSize: CGFloat = 480) -> NSImage? {
+        let key = "file:\(path):\(Int(maxPixelSize))" as NSString
+        if let cached = thumbnails.object(forKey: key) {
+            return cached
+        }
+        guard isImageFile(atPath: path) else { return nil }
+        let url = URL(fileURLWithPath: path)
+        let options = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options)
+        else { return nil }
+        let image = NSImage(cgImage: cgImage, size: .zero)
+        thumbnails.setObject(image, forKey: key,
+                             cost: cgImage.bytesPerRow * cgImage.height)
+        return image
+    }
+
+    static func imageDimensions(atPath path: String) -> (width: Int, height: Int)? {
+        guard isImageFile(atPath: path) else { return nil }
+        let url = URL(fileURLWithPath: path)
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        else { return nil }
+        guard let rawWidth = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+              let rawHeight = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue,
+              rawWidth > 0, rawHeight > 0
+        else { return nil }
+        let orientation = (properties[kCGImagePropertyOrientation] as? NSNumber)?.uint32Value ?? 1
+        if (5...8).contains(orientation) {
+            return (rawHeight, rawWidth)
+        }
+        return (rawWidth, rawHeight)
+    }
+
+    static func imageDimensionsLabel(atPath path: String) -> String? {
+        guard let dim = imageDimensions(atPath: path) else { return nil }
+        return "\(dim.width)×\(dim.height)"
+    }
+
+    static func fileSizeString(atPath path: String) -> String? {
+        guard let values = try? URL(fileURLWithPath: path).resourceValues(forKeys: [.fileSizeKey]),
+              let bytes = values.fileSize, bytes >= 0 else { return nil }
+        return ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+
     static func cleanup(keeping names: Set<String>) {
         guard let directory,
               let files = try? FileManager.default.contentsOfDirectory(at: directory,
