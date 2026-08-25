@@ -798,6 +798,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             guard let button else {
                 self.popoverIsSwitchingAnchor = false
                 MenuPanelFocus.shared.setSwitchingMetricAnchor(false)
+                if !self.popover.isShown {
+                    self.statusController.setMicBadgeHeld(false)
+                }
                 return
             }
             self.popoverClosedAt = .distantPast
@@ -823,6 +826,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         // The panel measures itself against this while the popover lays out, so
         // it has to be known before the content is asked for its size.
         PanelInteractionState.shared.anchorScreen = statusScreen(for: button)
+        statusController.setMicBadgeHeld(true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         if let window = popover.contentViewController?.view.window {
             configurePopoverWindow(window)
@@ -834,6 +838,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 popoverIsClosing = false
                 window.alphaValue = 1
             }
+        } else {
+            statusController.setMicBadgeHeld(false)
         }
         if activate {
             NSApp.activate(ignoringOtherApps: true)
@@ -842,6 +848,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         // — otherwise popoverDidClose never fires and both would leak, holding a
         // display object and a window observer for the rest of the session.
         guard popover.isShown else {
+            statusController.setMicBadgeHeld(false)
             endPopoverDriftCorrection()
             return
         }
@@ -1059,6 +1066,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     func popoverDidClose(_ notification: Notification) {
+        if !popoverIsSwitchingAnchor && !popover.isShown {
+            statusController.setMicBadgeHeld(false)
+        }
         if !popoverIsSwitchingAnchor {
             SystemMonitor.shared.setMenuPanelNeeds(.none)
         }
