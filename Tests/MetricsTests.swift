@@ -2863,6 +2863,33 @@ struct MetricsTests {
                                                                   showsCountdown: true,
                                                                   hasEndDate: false),
                "idle, hidden and indefinite Keep Awake titles need no timer")
+        let statusPlacementSuite = "com.vorssaint.tests.statusItemPlacement"
+        if let statusDefaults = UserDefaults(suiteName: statusPlacementSuite) {
+            statusDefaults.removePersistentDomain(forName: statusPlacementSuite)
+            expect(StatusItemPlacementSupport.placementGeneration(in: statusDefaults) == 0,
+                   "initial placement generation is 0")
+            expect(StatusItemPlacementSupport.mainAutosaveName(in: statusDefaults) == "VorssaintMenuBarItem",
+                   "generation 0 uses base autosave name")
+
+            let legacyKey = "NSStatusItem Preferred Position VorssaintMenuBarItem"
+            statusDefaults.set(64.0, forKey: legacyKey)
+            StatusItemPlacementSupport.sanitizeStalePlacement(in: statusDefaults)
+            expect(statusDefaults.object(forKey: legacyKey) == nil,
+                   "sanitizeStalePlacement removes the buggy 64.0 system-colliding offset")
+
+            statusDefaults.set(320.5, forKey: legacyKey)
+            StatusItemPlacementSupport.sanitizeStalePlacement(in: statusDefaults)
+            expect(statusDefaults.double(forKey: legacyKey) == 320.5,
+                   "sanitizeStalePlacement preserves legitimate user-arranged coordinates")
+
+            StatusItemPlacementSupport.bumpPlacementGeneration(in: statusDefaults)
+            let gen1Name = StatusItemPlacementSupport.mainAutosaveName(in: statusDefaults)
+            expect(gen1Name == "VorssaintMenuBarItem.1",
+                   "bumped generation produces numbered autosave name")
+            expect(statusDefaults.object(forKey: "NSStatusItem Preferred Position VorssaintMenuBarItem.1") == nil,
+                   "bumpPlacementGeneration does not seed any hardcoded preferred position")
+            statusDefaults.removePersistentDomain(forName: statusPlacementSuite)
+        }
         expect(registeredDefaults[DefaultsKey.panelControlAutoQuit] as? Bool == true,
                "panel auto quit control is visible by default")
         expect(registeredDefaults[DefaultsKey.panelControlShelf] as? Bool == true,

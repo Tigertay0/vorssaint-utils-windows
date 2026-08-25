@@ -31,6 +31,7 @@ All notable changes to this project are documented here. The format follows
 - Screenshot editor crop now snaps selection and resize edges to pixel boundaries, keeping the loupe cross and the final cut aligned to the exact source pixel. Thanks to @PathGao.
 - Media settings now keep the title and tool picker in place when More options expands, and matching disclosure rows across Settings toggle from the full label. Thanks to @ruvelro.
 - Saved image profiles now restore max-side values up to 20,000 pixels without silently shrinking them. Thanks to @ruvelro.
+- Menu bar icon recovery no longer overlaps or hides the item under macOS system items like the battery icon.
 
 ## [3.3.3-beta.2] - 2026-08-22
 
