@@ -1612,6 +1612,17 @@ struct MetricsTests {
                "a pmset report with SleepDisabled 0 reads as lid sleep enabled")
         expect(!SudoersSupport.sleepDisabled(inPmsetOutput: ""),
                "an empty pmset report reads as lid sleep enabled")
+        // The rule is granted by uid so every short name works, including the
+        // email-style ones SSO enrollment produces (#915). The uid renders as
+        // bare digits and the rest is a fixed literal, so the whole line must
+        // stay inside a character set that neither sudoers nor a single-quoted
+        // shell string can read as anything but itself.
+        expect(SudoersSupport.clamshellRule(uid: 501)
+               == "#501 ALL=(root) NOPASSWD: /usr/bin/pmset disablesleep 1, /usr/bin/pmset disablesleep 0",
+               "the closed-lid sudoers rule grants pmset disablesleep to the uid")
+        expect(SudoersSupport.clamshellRule(uid: uid_t.max)
+               .range(of: #"^#[0-9]+ [A-Za-z0-9()=:,./ ]+$"#, options: .regularExpression) != nil,
+               "the closed-lid sudoers rule never contains shell or sudoers metacharacters")
         expect(registeredDefaults[DefaultsKey.switcherEnabled] as? Bool == true,
                "window switcher is on for clean installs")
         expect(registeredDefaults[DefaultsKey.switcherShortcut] as? String == "command:48",
