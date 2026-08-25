@@ -3897,6 +3897,27 @@ struct MetricsTests {
                                                             visibleSpaces: nil,
                                                             hasTitle: true),
                "without Spaces to compare, the old cautious rule stands")
+
+        // Attaching to a watched app must never ask its application element for
+        // a role. A Chromium app (Electron, and the browsers) answers that by
+        // switching its renderers into full accessibility mode, and then pays
+        // to rebuild and ship an accessibility tree on every DOM change for the
+        // rest of its life — measured on an idle app that this feature only
+        // ever needed a window count from (issue #953). Windows are the same
+        // liveness signal and leave that mode alone. Comments are stripped
+        // first: the note above the probe names the attribute it avoids, and a
+        // check that cannot tell prose from a call would go red for it.
+        let autoQuitServiceCode = ((try? String(
+            contentsOfFile: "Sources/Vorssaint/Services/AutoQuit/AutoQuitService.swift",
+            encoding: .utf8)) ?? "")
+            .components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        expect(autoQuitServiceCode.contains(
+                   "AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windows) == .cannotComplete"),
+               "AutoQuit probes a watched app for liveness by asking for its windows")
+        expect(!autoQuitServiceCode.contains("appElement, kAXRoleAttribute"),
+               "AutoQuit never asks a watched app's application element for its role")
         expect(Defaults.sanitizedPanelItemOrder("uninstaller,homebrew,homebrew,bad",
                                                 defaultOrder: ["homebrew", "media", "uninstaller", "cleanURL", "cleaning"])
                == ["uninstaller", "homebrew", "media", "cleanURL", "cleaning"],
