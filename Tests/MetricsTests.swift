@@ -4695,6 +4695,14 @@ struct MetricsTests {
         let decodedProfile = encodedProfile.flatMap { try? JSONDecoder().decode([MediaImageProfile].self, from: $0) }
         expect(decodedProfile?.first?.options == profileOptions,
                "Image profiles round-trip converter options")
+        let largeSideOptions = MediaImageOptions(quality: 0.8,
+                                                 maxDimension: 12_000,
+                                                 format: .jpeg,
+                                                 stripMetadata: true,
+                                                 resizeMode: nil)
+        expect(largeSideOptions.maxDimension == 12_000
+                && largeSideOptions.resizeMode.maxDimension == 12_000,
+               "Image profile fields share the same max-side sanitizer")
         let legacyResizeJSON = #"{"kind":"exact","maxDimension":1600,"width":320,"height":180}"#
         let legacyResize = legacyResizeJSON.data(using: .utf8).flatMap { try? JSONDecoder().decode(MediaImageResizeMode.self, from: $0) }
         expect(legacyResize?.exactMode == .stretch,
