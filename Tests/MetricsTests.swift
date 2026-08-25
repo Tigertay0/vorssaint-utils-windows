@@ -12953,25 +12953,121 @@ struct MetricsTests {
         expect(ScreenshotSupport.cropLoupeSampleRect(
             around: CGPoint(x: 50, y: 40),
             imageSize: CGSize(width: 100, height: 80))
-            == CGRect(x: 43, y: 33, width: 14, height: 14),
+            == CGRect(x: 44, y: 34, width: 13, height: 13),
                "the crop loupe centers its source pixels around an inner grip")
         expect(ScreenshotSupport.cropLoupeSampleRect(
             around: CGPoint(x: 100, y: 80),
             imageSize: CGSize(width: 100, height: 80))
-            == CGRect(x: 86, y: 66, width: 14, height: 14),
+            == CGRect(x: 87, y: 67, width: 13, height: 13),
                "the crop loupe keeps a full sample at the bottom right edge")
+        // An even sample side has no middle cell. The sampled pixel then sat
+        // half a cell right of and below the frame's centre, and the ring drawn
+        // around it followed, which is what read as an off-centre reticle.
+        for loupeZoom in [ScreenshotSupport.captureLoupeMinZoom, 1, 2,
+                          ScreenshotSupport.captureLoupeMaxZoom] {
+            let side = ScreenshotSupport.captureLoupeSampleSide(zoom: loupeZoom)
+            let pointer = CGPoint(x: 80.4, y: 50.7)
+            let image = CGSize(width: 160, height: 100)
+            let sample = ScreenshotSupport.cropLoupeSampleRect(around: pointer,
+                                                               imageSize: image,
+                                                               sideLength: side)
+            let loupeFrame = CGRect(x: 0, y: 0, width: 70, height: 70)
+            let marked = ScreenshotSupport.captureLoupeTargetPixelRect(around: pointer,
+                                                                       source: sample,
+                                                                       frame: loupeFrame)
+            expectClose(Double(marked.midX), Double(loupeFrame.midX),
+                        "the loupe marks the pixel in the middle of its frame across the zoom range")
+            expectClose(Double(marked.midY), Double(loupeFrame.midY),
+                        "the marked pixel is as centred vertically as it is horizontally")
+        }
+        // The editor's crop loupe marks an edge between pixels, so it needs the
+        // opposite parity: an even side puts that edge in the middle of the
+        // frame, where an odd one leaves it half a cell short of centre.
+        let cropEdgeSample = ScreenshotSupport.cropLoupeSampleRect(
+            around: CGPoint(x: 100, y: 60),
+            imageSize: CGSize(width: 400, height: 300),
+            sideLength: 14,
+            centredOnPixel: false)
+        expect(cropEdgeSample == CGRect(x: 93, y: 53, width: 14, height: 14)
+                && cropEdgeSample.midX == 100 && cropEdgeSample.midY == 60,
+               "the crop loupe centres its sample on the handle's edge, not on a pixel cell")
+        expect(ScreenshotSupport.cropLoupeSampleRect(
+            around: CGPoint(x: 100, y: 60),
+            imageSize: CGSize(width: 400, height: 300),
+            sideLength: 13,
+            centredOnPixel: false).width == 14,
+               "an odd side grows to the next even one when the loupe centres on an edge")
+
         expect(ScreenshotSupport.cropLoupeSampleRect(
             around: .zero,
             imageSize: CGSize(width: 8, height: 5))
             == CGRect(x: 0, y: 0, width: 8, height: 5),
                "the crop loupe safely shrinks only for images smaller than its sample")
+        expect(ScreenshotSupport.captureLoupeTargetPixelRect(
+            around: CGPoint(x: 50.5, y: 40.2),
+            source: CGRect(x: 43, y: 33, width: 14, height: 14),
+            frame: CGRect(x: 0, y: 0, width: 70, height: 70))
+            == CGRect(x: 35, y: 35, width: 5, height: 5),
+               "the loupe highlights one whole source pixel, not the pointer's sub-pixel position")
+        expect(ScreenshotSupport.captureLoupeTargetPixelRect(
+            around: CGPoint(x: 100, y: 80),
+            source: CGRect(x: 86, y: 66, width: 14, height: 14),
+            frame: CGRect(x: 0, y: 0, width: 70, height: 70))
+            == CGRect(x: 65, y: 65, width: 5, height: 5),
+               "a pointer on the far display edge highlights the last pixel the picker can read")
+        // The pixel the loupe marks and the pixel `confirmColor` copies come
+        // from two independent expressions. Sweeping the whole overlay at
+        // every zoom is what keeps them from drifting apart by one pixel.
+        let sampledImageSize = CGSize(width: 160, height: 100)
+        let sampledViewSize = CGSize(width: 320, height: 200)
+        let sampledFrame = CGRect(x: 20, y: 30, width: 70, height: 70)
+        var loupeAimFailure: String?
+        for zoom in [ScreenshotSupport.captureLoupeMinZoom, 1, ScreenshotSupport.captureLoupeMaxZoom] {
+            for stepX in 0...128 {
+                for stepY in 0...80 {
+                    let pixelPoint = ScreenshotSupport.imagePixelPoint(
+                        fromView: CGPoint(x: CGFloat(stepX) * 2.5, y: CGFloat(stepY) * 2.5),
+                        viewSize: sampledViewSize,
+                        imageSize: sampledImageSize)
+                    let source = ScreenshotSupport.cropLoupeSampleRect(
+                        around: pixelPoint,
+                        imageSize: sampledImageSize,
+                        sideLength: ScreenshotSupport.captureLoupeSampleSide(zoom: zoom))
+                    let highlight = ScreenshotSupport.captureLoupeTargetPixelRect(
+                        around: pixelPoint, source: source, frame: sampledFrame)
+                    let cellWidth = sampledFrame.width / source.width
+                    let cellHeight = sampledFrame.height / source.height
+                    let markedX = source.minX + ((highlight.minX - sampledFrame.minX) / cellWidth).rounded()
+                    let markedY = source.minY + ((highlight.minY - sampledFrame.minY) / cellHeight).rounded()
+                    // Copied verbatim from `confirmColor`.
+                    let copiedX = CGFloat(min(max(Int(pixelPoint.x.rounded(.down)), 0),
+                                              Int(sampledImageSize.width) - 1))
+                    let copiedY = CGFloat(min(max(Int(pixelPoint.y.rounded(.down)), 0),
+                                              Int(sampledImageSize.height) - 1))
+                    if markedX != copiedX || markedY != copiedY {
+                        loupeAimFailure = "at \(pixelPoint) zoom \(zoom) the loupe marks "
+                            + "(\(markedX), \(markedY)) but the picker copies (\(copiedX), \(copiedY))"
+                    }
+                    if !sampledFrame.insetBy(dx: -0.001, dy: -0.001).contains(highlight) {
+                        loupeAimFailure = "at \(pixelPoint) zoom \(zoom) the highlight leaves the loupe"
+                    }
+                }
+            }
+        }
+        expect(loupeAimFailure == nil,
+               loupeAimFailure ?? "the loupe highlight marks the pixel the color picker copies")
+        expect(ScreenshotSupport.captureLoupeTargetPixelRect(
+            around: .zero, source: .zero, frame: CGRect(x: 0, y: 0, width: 70, height: 70))
+            == CGRect(x: 0, y: 0, width: 70, height: 70),
+               "an empty sample leaves the loupe highlight harmless instead of dividing by zero")
         expectClose(ScreenshotSupport.captureLoupeZoom(1, adjustedBy: 1), 1.15,
                     "scrolling up zooms the capture loupe in")
         expectClose(ScreenshotSupport.captureLoupeZoom(0.5, adjustedBy: -1), 0.5,
                     "capture loupe zoom stays above its minimum")
         expectClose(ScreenshotSupport.captureLoupeZoom(4, adjustedBy: 1), 4,
                     "capture loupe zoom stays below its maximum")
-        expectClose(ScreenshotSupport.captureLoupeSampleSide(zoom: 2), 6,
+        expectClose(ScreenshotSupport.captureLoupeSampleSide(zoom: 2),
+                    Double(ScreenshotSupport.captureLoupeBaseSampleSide) / 2,
                     "higher capture loupe zoom samples fewer source pixels")
 
         expect(Defaults.registeredDefaults[DefaultsKey.screenshotFreeze] as? Bool == true,
