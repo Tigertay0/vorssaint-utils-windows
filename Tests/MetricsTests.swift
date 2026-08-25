@@ -194,6 +194,8 @@ struct MetricsTests {
                "clear on screen lock is off until asked for")
         expect(Defaults.registeredDefaults[DefaultsKey.clipboardAutoClearDelay] as? Int == 20,
                "auto clear starts at twenty seconds")
+        expect(Defaults.registeredDefaults[DefaultsKey.clipboardHistoryQuickPreview] as? Bool == false,
+               "clipboard history quick preview is closed by default")
 
         // MARK: Clipboard auto clear timing
 

@@ -14,6 +14,7 @@ All notable changes to this project are documented here. The format follows
 - Monitor alerts can now warn you when the battery stays above a temperature you choose. Under Monitor alerts, off by default. Thanks to @ywu73.
 
 ### Changed
+- Clipboard history now remembers whether you left the preview inspector open or closed across launches.
 - New Scratchpad tabs now start at 1 instead of leaving the first tab unnumbered, while existing names stay unchanged. Thanks to @AB-boi and @JashRashne.
 - Every screen capture tool — screenshot, recording, copy text and color picker — now carries its own keyboard shortcut that opens the shared chooser on that tool, replacing the single general capture shortcut; an existing capture shortcut keeps working unchanged as the screenshot's own, and the selected tool's shortcut is edited at the top of the Screen capture settings page. Thanks to @RecoilGaming.
 - The Keyboard Shortcuts page now lists every capture shortcut under one Screen capture group, and expandable shortcut groups are toggled by their whole row, with the chevron moved to the trailing edge. Thanks to @RecoilGaming.
