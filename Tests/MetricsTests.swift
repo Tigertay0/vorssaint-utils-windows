@@ -17370,6 +17370,21 @@ struct MetricsTests {
                    "defaults suite \(argument) is named inside a namespace build.sh sweeps")
         }
 
+        // MARK: Uninstallation paths stay aligned across SelfUninstall and Tools/uninstall.sh
+        let selfUninstallSource = (try? String(contentsOfFile: "Sources/Vorssaint/Services/SelfUninstall.swift",
+                                              encoding: .utf8)) ?? ""
+        let uninstallScriptSource = (try? String(contentsOfFile: "Tools/uninstall.sh",
+                                                encoding: .utf8)) ?? ""
+        expect(!selfUninstallSource.isEmpty && !uninstallScriptSource.isEmpty,
+               "uninstall sources read back for uninstallation alignment check")
+        let requiredSubpaths = ["Library/Application Support", "Library/Caches", "Library/HTTPStorages"]
+        for subpath in requiredSubpaths {
+            expect(selfUninstallSource.contains(subpath) && uninstallScriptSource.contains(subpath),
+                   "both in-app and script uninstall sweep \(subpath)")
+        }
+        expect(uninstallScriptSource.contains("Library/Preferences/ByHost"),
+               "script uninstall sweeps ByHost preferences")
+
         if failures.isEmpty {
             print("TESTS OK (\(checks) checks)")
             exit(0)
