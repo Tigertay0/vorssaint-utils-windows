@@ -11513,6 +11513,27 @@ struct MetricsTests {
                && lockedRegions.allSatisfy { !$0.contains("SwitchedOff(") },
                "the list of displays switched off is never written while stateLock is held")
 
+        // The same transaction relays its screen change to AppKit inline, and
+        // switching off the display the panel is on makes AppKit lay that panel
+        // out again right there: the power button's body is evaluated while
+        // this app holds the display server busy, so anything it asks the
+        // display server is a question the same thread is still answering, and
+        // the app freezes with nothing left that can end it (issue #969). The
+        // body decides from the published snapshot instead, and the live
+        // reading stays where it guards the switch itself. Comments are
+        // stripped first: a note naming what it bans is not a call.
+        let canToggleCode = ((brightnessSource
+            .components(separatedBy: "func canToggleDisplay(").last ?? "")
+            .components(separatedBy: "\n    }").first ?? "")
+            .components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        expect(!canToggleCode.isEmpty
+               && canToggleCode.contains("drawableDisplays")
+               && !canToggleCode.contains("Self.drawableDisplayIDs(")
+               && !canToggleCode.contains("stateLock"),
+               "the panel reads whether a display can be switched off without asking the display server")
+
         expect(BrightnessSupport.ddcCommandDelay(nowMicroseconds: 1_000_000,
                                                  lastCommandEndMicroseconds: nil) == 0,
                "the first DDC command to a display waits nothing")
