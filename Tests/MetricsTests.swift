@@ -16397,7 +16397,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let commandBarValues = Mirror(reflecting: FeatureStrings.commandBar(language)).children
                 .compactMap { $0.value as? String }
-            expect(commandBarValues.count == 149 && commandBarValues.allSatisfy { !$0.isEmpty },
+            expect(commandBarValues.count == 151 && commandBarValues.allSatisfy { !$0.isEmpty },
                    "every command bar string is set for \(language.rawValue)")
             expect(commandBarValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible command bar strings (\(language.rawValue))")
@@ -16791,6 +16791,34 @@ struct MetricsTests {
                "a script link matches once something follows its name")
         expect(CommandBarLinks.matchingScriptLink(in: scriptLinks, query: "cur") == nil,
                "the bare name alone has nothing to run yet")
+        let bareRunnable = [
+            CommandBarLink(name: "clean", kind: .script, destination: "/tmp/clean",
+                           runsWithoutArgument: true),
+        ]
+        expect(CommandBarLinks.matchingScriptLink(in: bareRunnable, query: "clean")?.argument == "",
+               "a script marked as needing nothing runs on its bare name")
+        expect(CommandBarLinks.matchingScriptLink(in: bareRunnable, query: "  Clean  ")?.argument
+                == "",
+               "the bare name is matched the same way every other name is")
+        expect(CommandBarLinks.matchingScriptLink(in: bareRunnable, query: "clean code")?.argument
+                == "code",
+               "that same script still receives an argument when one is typed")
+        expect(CommandBarLinks.matchingScriptLink(in: bareRunnable, query: "cle") == nil
+                && CommandBarLinks.matchingScriptLink(in: bareRunnable, query: "cleaner") == nil,
+               "a script never runs off a prefix of its name, or a longer word starting with it")
+        // The list drops a script's own row once the answer row stands in for
+        // it. That has to use the same rule that decided the script would run,
+        // or a bare name shows the script twice: once as an answer and once as
+        // the plain row nothing removed.
+        expect(CommandBarLinks.matchingScriptLinks(in: bareRunnable, query: "clean")
+                .map(\.name) == ["clean"],
+               "a bare-name match is dropped from the list, like any other script match")
+        expect(CommandBarLinks.matchingScriptLinks(in: scriptLinks, query: "cur 100 usd eur")
+                .map(\.name) == ["cur"],
+               "a script named with an argument is dropped from the list")
+        expect(CommandBarLinks.matchingScriptLinks(in: scriptLinks, query: "cur").isEmpty
+                && CommandBarLinks.matchingScriptLinks(in: scriptLinks, query: "a 1").isEmpty,
+               "nothing is dropped for a script that did not match, or for a non-script link")
         expect(CommandBarLinks.matchingScriptLink(in: scriptLinks, query: "a 100 usd eur") == nil,
                "a non-script link never matches, even with an argument")
         let overlappingScripts = [
@@ -16801,10 +16829,26 @@ struct MetricsTests {
                                                    query: "run report today")?.link.name
                 == "run report",
                "the most specific script name wins over a shorter prefix")
+        expect(CommandBarLinks.matchingScriptLinks(in: overlappingScripts, query: "run report x")
+                .map(\.name).sorted() == ["run", "run report"],
+               "both overlapping names are dropped, so only the answer row is left")
         expect(CommandBarLinks.resultText("  100 USD = 86.70 EUR\n") == "100 USD = 86.70 EUR",
                "a script's output loses its wrapping whitespace")
         expect(CommandBarLinks.resultText("   \n") == nil,
                "empty output means nothing is ready yet")
+
+        let savedBeforeTheField = #"[{"id":"E621E1F8-C36C-495A-93FC-0C247A3E6E5F","name":"gh","#
+            + #""kind":"link","destination":"https://x"}]"#
+        let loadedOldShortcuts = CommandBarLinks.decode(Data(savedBeforeTheField.utf8))
+        expect(loadedOldShortcuts.count == 1 && loadedOldShortcuts.first?.name == "gh"
+                && loadedOldShortcuts.first?.runsWithoutArgument == false,
+               "a shortcut saved before runsWithoutArgument existed still loads, defaulting to off")
+        let roundTripped = CommandBarLinks.decode(
+            CommandBarLinks.encode([CommandBarLink(name: "clean", kind: .script,
+                                                   destination: "/tmp/clean",
+                                                   runsWithoutArgument: true)]))
+        expect(roundTripped.first?.runsWithoutArgument == true,
+               "the flag survives being saved and loaded again")
 
         // MARK: Open what was typed as a URL
         for address in ["example.com", "example.com/x", "https://example.com",
