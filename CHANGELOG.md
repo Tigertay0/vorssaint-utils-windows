@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- General settings now include a Liquid Glass toggle on macOS 26 and later to control translucent glass visual effects across panels and controls.
 - The video and GIF tools now include an option to compress directly to a target file size in megabytes, automatically deriving the resolution and frame rate to stay under the limit. Thanks to @FlowSync0.
 - Shelf now shows real video frame thumbnails for dropped video files, and decodes saved image thumbnails asynchronously on launch. Thanks to @tenbux.
 - The Command Bar now offers a compact mode: the bar opens as a field alone and shows results only once you type. Press Down to see the usual list anyway. Under Command Bar, off by default. Thanks to @kobebrylant.

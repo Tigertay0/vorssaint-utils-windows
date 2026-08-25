@@ -1485,6 +1485,10 @@ struct MetricsTests {
                "monitor memory metric is included in settings backups")
         expect(registeredDefaults[DefaultsKey.appearance] as? String == AppAppearance.system.rawValue,
                "the app follows the system appearance until the user picks a side")
+        expect(registeredDefaults[DefaultsKey.liquidGlassEnabled] as? Bool == false,
+               "liquid glass appearance is opt-in")
+        expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.liquidGlassEnabled),
+               "liquid glass appearance follows settings backups")
         expect(AppAppearance.sanitized(nil) == .system
                 && AppAppearance.sanitized("nonsense") == .system,
                "an unknown stored appearance falls back to the system one")
@@ -10949,7 +10953,7 @@ struct MetricsTests {
                    "shortcut editor strings keep their format and avoid em-dashes (\(language.rawValue))")
             let appearanceValues = Mirror(reflecting: FeatureStrings.appearance(language)).children
                 .compactMap { $0.value as? String }
-            expect(appearanceValues.count == 4 && appearanceValues.allSatisfy { !$0.isEmpty },
+            expect(appearanceValues.count == 5 && appearanceValues.allSatisfy { !$0.isEmpty },
                    "every appearance string is set for \(language.rawValue)")
             expect(appearanceValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible appearance strings (\(language.rawValue))")
