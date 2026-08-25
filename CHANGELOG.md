@@ -22,6 +22,7 @@ All notable changes to this project are documented here. The format follows
 - The Keyboard Shortcuts page now lists every capture shortcut under one Screen capture group, and expandable shortcut groups are toggled by their whole row, with the chevron moved to the trailing edge. Thanks to @RecoilGaming.
 
 ### Fixed
+- Quit on close no longer causes elevated background CPU usage in watched applications. Thanks to @iltonandrew.
 - The Displays section no longer freezes when switching off the built-in display while an external monitor is connected. Thanks to @iltonandrew.
 - Subprocess sampling and window enumeration no longer exhaust background dispatch threads or deadlock the main thread. Thanks to @PathGao, @iltonandrew and @SudhanshuBhogal.
 - Quick tool confirmation panels and scrolling capture banners now keep long copied text or parameter lists bounded on screen instead of overflowing the display. Thanks to @rhukster.
