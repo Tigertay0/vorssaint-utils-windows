@@ -33,6 +33,7 @@ All notable changes to this project are documented here. The format follows
 - Saved image profiles now restore max-side values up to 20,000 pixels without silently shrinking them. Thanks to @ruvelro.
 - Menu bar icon recovery no longer overlaps or hides the item under macOS system items like the battery icon.
 - Command Bar and quick tools no longer freeze when copying, opening links, or expanding snippets while the clipboard holds stalled content. Thanks to @PathGao and @atomsbaza.
+- Keep going with lid closed no longer fails to set up on accounts whose username contains @ or other non-alphanumeric characters, granting the rule by user ID instead. Thanks to @iltonandrew and @dhruvsaxena1998.
 
 ## [3.3.3-beta.2] - 2026-08-22
 
