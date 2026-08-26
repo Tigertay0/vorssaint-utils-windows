@@ -11443,7 +11443,7 @@ struct MetricsTests {
                    "no em-dash in visible menu bar appearance strings (\(language.rawValue))")
             let appUpdateValues = Mirror(reflecting: FeatureStrings.appUpdates(language)).children
                 .compactMap { $0.value as? String }
-            expect(appUpdateValues.count == 32 && appUpdateValues.allSatisfy { !$0.isEmpty },
+            expect(appUpdateValues.count == 39 && appUpdateValues.allSatisfy { !$0.isEmpty },
                    "every app update string is set for \(language.rawValue)")
             expect(appUpdateValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible app update strings (\(language.rawValue))")
@@ -15976,6 +15976,89 @@ struct MetricsTests {
                "another platform's listing is not the installed Mac app's version")
         expect(AppUpdatesSupport.parseStoreLookup(Data("not json".utf8)).isEmpty,
                "a broken store answer yields nothing instead of throwing")
+
+        let onlineCatalogBody = Data(#"""
+        [
+          {"token":"notes-stable","version":"2.0,revision","artifacts":[{"uninstall":[{"quit":"com.example.notes"}]},{"app":["Notes.app"],"target":"/Applications/Notes.app"}],"depends_on":{"macos":{">=":["14"]}}},
+          {"token":"notes-preview","version":"3.0","artifacts":[{"uninstall":[{"quit":["com.example.notes.preview"]}]},{"app":["Notes.app"]}],"depends_on":{"macos":{">=":["14"]}}},
+          {"token":"writer","version":"2.0","artifacts":[{"app":["Writer Source.app",{"target":"Writer.app"}],"target":"/Applications/Writer.app"}]},
+          {"token":"duplicate-one","version":"2.0","artifacts":[{"uninstall":[{"quit":"com.example.one"}]},{"app":["Duplicate.app"]}]},
+          {"token":"duplicate-two","version":"2.0","artifacts":[{"uninstall":[{"quit":"com.example.two"}]},{"app":["Duplicate.app"]}]},
+          {"token":"future","version":"4.0","artifacts":[{"app":["Future.app"]}],"depends_on":{"macos":{">=":["26"]}}},
+          {"token":"exact","version":"5.0","artifacts":[{"app":["Exact.app"]}],"depends_on":{"macos":{"==":["15"]}}},
+          {"token":"rolling","version":"latest","artifacts":[{"app":["Rolling.app"]}]},
+          {"token":"case-sensitive","version":"2.0","artifacts":[{"app":["Case.app"]}]},
+          {"token":"older","version":"1.0","artifacts":[{"app":["Older.app"]}]},
+          {"token":"own-tool","version":"9.0","artifacts":[{"app":["Own.app"]}]}
+        ]
+        """#.utf8)
+        let onlineCatalog = AppUpdatesSupport.parseOnlineCatalog(onlineCatalogBody) ?? []
+        expect(onlineCatalog.count == 11
+                && onlineCatalog.first?.bundleIDs == ["com.example.notes"]
+                && onlineCatalog.first?.minimumOSVersions == ["14"]
+                && onlineCatalog.first { $0.token == "writer" }?.appNames == ["Writer.app"],
+               "the online catalog keeps final app names, explicit bundle identifiers and OS rules")
+        expect(AppUpdatesSupport.parseOnlineCatalogResponse(onlineCatalogBody, statusCode: 200)?.count == 11
+                && AppUpdatesSupport.parseOnlineCatalogResponse(nil, statusCode: 200) == nil
+                && AppUpdatesSupport.parseOnlineCatalogResponse(onlineCatalogBody, statusCode: 500) == nil
+                && AppUpdatesSupport.parseOnlineCatalogResponse(Data("broken".utf8), statusCode: 200) == nil,
+               "missing, failed and malformed network responses never become successful empty coverage")
+
+        let onlineApps = [
+            AppUpdatesSupport.InstalledApp(name: "Notes", bundleID: "com.example.notes",
+                                           path: "/Applications/Notes.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Writer", bundleID: "com.example.writer",
+                                           path: "/Applications/Writer.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Duplicate", bundleID: "com.example.other",
+                                           path: "/Applications/Duplicate.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Future", bundleID: "com.example.future",
+                                           path: "/Applications/Future.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Exact", bundleID: "com.example.exact",
+                                           path: "/Applications/Exact.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Rolling", bundleID: "com.example.rolling",
+                                           path: "/Applications/Rolling.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Case", bundleID: "com.example.case",
+                                           path: "/Applications/case.app", version: "1.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Older", bundleID: "com.example.older",
+                                           path: "/Applications/Older.app", version: "2.0",
+                                           isFromAppStore: false),
+            AppUpdatesSupport.InstalledApp(name: "Own", bundleID: "com.example.own",
+                                           path: "/Applications/Own.app", version: "1.0",
+                                           isFromAppStore: false),
+        ]
+        let onlineRows = AppUpdatesSupport.onlineCatalogUpdates(
+            apps: onlineApps, catalog: onlineCatalog, operatingSystemVersion: "15.7",
+            ignoredTokens: ["own-tool"])
+        expect(Set(onlineRows.map(\.name)) == ["Notes", "Writer", "Exact"]
+                && onlineRows.allSatisfy { $0.source == .onlineCatalog && !$0.isSelectable },
+               "online matching requires an exact unique bundle name, uses an explicit ID to resolve ambiguity and keeps rows action-only")
+        expect(!onlineRows.contains { $0.name == "Duplicate" || $0.name == "Future"
+                || $0.name == "Rolling" || $0.name == "Case" || $0.name == "Older"
+                || $0.name == "Own" },
+               "ambiguous, incompatible, uncomparable, differently cased, current and ignored catalog entries stay out")
+        let externalCandidates = AppUpdatesSupport.onlineCatalogCandidates(
+            apps: [onlineApps[0],
+                   AppUpdatesSupport.InstalledApp(name: "Store", bundleID: "com.example.store",
+                                                  path: "/Applications/Store.app", version: "1.0",
+                                                  isFromAppStore: true),
+                   onlineApps[1]],
+            coveredPaths: [onlineApps[1].path])
+        expect(externalCandidates == [onlineApps[0]],
+               "store receipts and package-managed paths never reach the online catalog source")
+
+        let listWithOnline = AppUpdatesSupport.merged(mergedRows, onlineRows)
+        let selectionWithOnline = AppUpdatesSupport.reconciledSelection(
+            previous: Set(onlineRows.map(\.id)), knownIDs: [], items: listWithOnline)
+        expect(selectionWithOnline == Set(mergedRows.map(\.id))
+                && listWithOnline.suffix(onlineRows.count).allSatisfy { $0.source == .onlineCatalog },
+               "online rows remain outside bulk selection and follow the managed sources in the list")
         let discoveredPaths = InstalledApps.applicationScanPaths(
             folderPaths: ["/Applications/Editor.app",
                           "/System/Applications/System Utility.app",
@@ -16084,11 +16167,13 @@ struct MetricsTests {
                "the background check starts off")
         expect(Defaults.registeredDefaults[DefaultsKey.appUpdatesIncludeHomebrewApps] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.appUpdatesIncludeAppStore] as? Bool == true
+                && Defaults.registeredDefaults[DefaultsKey.appUpdatesIncludeOnlineCatalog] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.appUpdatesNotify] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.panelUtilityAppUpdates] as? Bool == true,
                "the app update defaults are registered")
         expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesCheckFrequency)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesIncludeHomebrewApps)
+                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesIncludeOnlineCatalog)
                 && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesLastCheck),
                "app update preferences travel in a backup, the last check does not")
         expect(AppFeature.appUpdates.enabledKeys.isEmpty
