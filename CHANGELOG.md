@@ -33,6 +33,7 @@ All notable changes to this project are documented here. The format follows
 - Subprocess sampling and window enumeration no longer exhaust background dispatch threads or deadlock the main thread. Thanks to @PathGao, @iltonandrew and @SudhanshuBhogal.
 - Quick tool confirmation panels and scrolling capture banners now keep long copied text or parameter lists bounded on screen instead of overflowing the display. Thanks to @rhukster.
 - App Switcher now keeps walking backwards when you hold Shift and tap Tab again. Thanks to @iltonandrew and @justin-chiam.
+- The window-scoped App Switcher (⌘`) no longer collapses into a single tile when one entry per app is enabled. Thanks to @iltonandrew, @AB-boi and @PathGao.
 - The screen capture loupe now rings the pixel under the pointer instead of drawing a crosshair across it, and that pixel sits in the middle of the loupe, so the Color picker shows the color it is about to copy. Thanks to @I-Have-No-Idea-What-Im-Doing-Right-Now and @PathGao.
 - Screenshot editor crop now snaps selection and resize edges to pixel boundaries, keeping the loupe cross and the final cut aligned to the exact source pixel. Thanks to @PathGao.
 - Media settings now keep the title and tool picker in place when More options expands, and matching disclosure rows across Settings toggle from the full label. Thanks to @ruvelro.
