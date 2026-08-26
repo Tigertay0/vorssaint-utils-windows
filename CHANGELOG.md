@@ -16,6 +16,7 @@ All notable changes to this project are documented here. The format follows
 - Cleaner leftover scans now cover more preference panes, plugin folders and nested identifier-based leftovers without following links or treating a plain folder name as proof that data is abandoned.
 
 ### Fixed
+- Screen recording settings in Traditional Chinese (Taiwan) now use the standard microphone term 麥克風 instead of the Hong Kong Cantonese term 咪高風. Thanks to @watain666.
 - Uninstalling a feature now removes it from Command Bar pins in Settings.
 - Screen capture settings now display each capture mode in its own section, keeping shortcuts directly within their settings and preventing sidebar layout shifting on narrower windows or translations. Thanks to @PathGao.
 - Pressing Escape in the clipboard history quick panel now clears batch selection or closes the panel directly instead of closing the preview pane first. Thanks to @naveenkrdy.
