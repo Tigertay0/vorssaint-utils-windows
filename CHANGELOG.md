@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [3.3.3-beta.3]
+## [3.3.3-beta.3] - 2026-08-26
 
 ### Added
 - General settings now include a Liquid Glass toggle on macOS 26 and later to control translucent glass visual effects across panels and controls.
