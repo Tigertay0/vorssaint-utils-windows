@@ -4058,8 +4058,10 @@ struct MetricsTests {
         expect(autoQuitServiceCode.contains(
                    "AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windows) == .cannotComplete"),
                "AutoQuit probes a watched app for liveness by asking for its windows")
-        expect(!autoQuitServiceCode.contains("appElement, kAXRoleAttribute"),
-               "AutoQuit never asks a watched app's application element for its role")
+        // The same read reached the application element a second way, up the
+        // parent chain of an element that never yields a window. Two files
+        // carried that walk, so both the rule and its guard are repo wide
+        // further down rather than a grep per copy here.
         expect(Defaults.sanitizedPanelItemOrder("uninstaller,homebrew,homebrew,bad",
                                                 defaultOrder: ["homebrew", "media", "uninstaller", "cleanURL", "cleaning"])
                == ["uninstaller", "homebrew", "media", "cleanURL", "cleaning"],
@@ -13922,6 +13924,63 @@ struct MetricsTests {
         }
         expect(!appSources.isEmpty && unboundedOperationWaits.isEmpty,
                "no operation queue is waited on without a deadline: \(unboundedOperationWaits)")
+
+        // Asking an application element for its role switches a Chromium app's
+        // renderers into full accessibility mode for the rest of the process's
+        // life (issue #953). It was fixed at the liveness probe, then found
+        // again in the walk up an element's parents, where the chain above a
+        // window is the application element — so the rule is the absence of
+        // that read anywhere, rather than one grep per door somebody noticed.
+        // This is a text scan, not dataflow: it knows an element is an
+        // application element only when the same file names it in a `let x =
+        // AXUIElementCreateApplication(...)`, and it reads the role attribute
+        // and its element off one line. An application element handed to a
+        // helper, stored in a property, or passed inline is still on review to
+        // catch; both reads found so far were written the direct way.
+        var applicationRoleReads: [String] = []
+        for file in appSources.sorted() {
+            guard let source = try? String(contentsOfFile: "Sources/Vorssaint/\(file)",
+                                           encoding: .utf8) else { continue }
+            let lines = source.components(separatedBy: "\n")
+            var applicationElements: Set<String> = []
+            for line in lines where line.contains("AXUIElementCreateApplication(") {
+                let assigned = (line.components(separatedBy: "=").first ?? "")
+                    .trimmingCharacters(in: .whitespaces)
+                    .components(separatedBy: " ")
+                guard assigned.count == 2, assigned[0] == "let" || assigned[0] == "var" else { continue }
+                applicationElements.insert(assigned[1])
+            }
+            for (index, line) in lines.enumerated()
+            where line.contains("kAXRoleAttribute")
+                && !line.trimmingCharacters(in: .whitespaces).hasPrefix("//")
+                && applicationElements.contains(where: { line.contains("(\($0), ") }) {
+                applicationRoleReads.append("\(file):\(index + 1)")
+            }
+        }
+        expect(!appSources.isEmpty && applicationRoleReads.isEmpty,
+               "no application element is ever asked for its role: \(applicationRoleReads)")
+        // The scan above cannot see the other way in: a walk up kAXParent asks
+        // `parent` for its role, and the application element is what sits above
+        // the last window, so the element it reads is never named after one.
+        // Two files carried the same walk, so the rule is that anywhere doing
+        // it stops at the application element first, rather than a pin per copy.
+        var unguardedParentWalks: [String] = []
+        for file in appSources.sorted() {
+            guard let source = try? String(contentsOfFile: "Sources/Vorssaint/\(file)",
+                                           encoding: .utf8) else { continue }
+            let lines = source.components(separatedBy: "\n")
+                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            // Per occurrence and in order: a guard sitting anywhere in the file
+            // would let a second walk go unguarded, and one written after the
+            // read would let the read happen first, which is the whole failure.
+            for (index, line) in lines.enumerated() where line.contains("role(of: parent)") {
+                let guarded = lines[max(0, index - 3)..<index]
+                    .contains { $0.contains("isApplicationElement(parent)") }
+                if !guarded { unguardedParentWalks.append("\(file):\(index + 1)") }
+            }
+        }
+        expect(!appSources.isEmpty && unguardedParentWalks.isEmpty,
+               "a walk up the parent chain stops at the application element: \(unguardedParentWalks)")
         expect(ScratchpadRetention.sanitized("day") == .day
                 && ScratchpadRetention.sanitized("week") == .week
                 && ScratchpadRetention.sanitized("month") == .month
