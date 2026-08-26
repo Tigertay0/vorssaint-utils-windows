@@ -10723,6 +10723,24 @@ struct MetricsTests {
                     FanControlConfiguration.encodeCurves([defaultCurve]) ?? "") == [defaultCurve]
                 && FanControlConfiguration.decodeCurves("not json") == nil,
                "stored curves reject duplicate sensors, unsafe slopes and malformed data")
+        let addedPoints = FanControlPolicy.addingCurvePoint(to: defaultCurve.points)
+        expect(FanControlPolicy.nextCurvePoint(for: defaultCurve.points) == FanControlCurvePoint(temperature: 60, coolingLevel: 50)
+                && addedPoints == [
+                    FanControlCurvePoint(temperature: 50, coolingLevel: 0),
+                    FanControlCurvePoint(temperature: 60, coolingLevel: 50),
+                    FanControlCurvePoint(temperature: 70, coolingLevel: 100),
+                ]
+                && FanControlPolicy.validCurve(FanControlCurve(sensor: .hottestSoC, points: addedPoints ?? [])),
+               "adding a fan curve point calculates the intermediate point and produces a valid sorted curve")
+        var iterativePoints = defaultCurve.points
+        while let next = FanControlPolicy.addingCurvePoint(to: iterativePoints) {
+            iterativePoints = next
+        }
+        expect(iterativePoints.count == FanControlPolicy.maximumCurvePointCount
+                && FanControlPolicy.validCurve(FanControlCurve(sensor: .hottestSoC, points: iterativePoints))
+                && FanControlPolicy.nextCurvePoint(for: iterativePoints) == nil
+                && FanControlPolicy.addingCurvePoint(to: iterativePoints) == nil,
+               "adding fan curve points fills up to the maximum point limit with strictly valid curves")
         let m3FanTemperatures = FanControlPolicy.aggregatedTemperatures(
             cpuReadings: [("Te05", 44), ("Tf4E", 53), ("Tf4F", 76)],
             gpuReadings: [48],

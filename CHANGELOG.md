@@ -26,6 +26,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 - The battery icon in the menu bar now preserves its rectangular aspect ratio when split into its own item instead of rendering as a square. Thanks to @Yahddyyp.
+- Adding points to a custom fan curve now updates and saves the curve instead of discarding the new point.
 - Fan Control now updates manual and curve cooling speeds during an active session without verification timeouts.
 - The Homebrew panel now closes when you click outside it while browsing or searching, and stays open for a confirmation or a running job. Thanks to @pergioa.
 - Settings opened from the menu panel no longer stay covered when the two windows cannot fit side by side. Thanks to @FloatingPegasus.
