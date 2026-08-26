@@ -1625,7 +1625,13 @@ enum Defaults {
         var seen = Set<String>()
         var result: [String] = []
         for raw in bundleIDs {
-            let bundleID = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            // A mouse exception list also carries the path of a program that
+            // has no bundle identifier (issue #1009), and a file name may
+            // legally end in a space. Trimming one would store a spelling the
+            // running program never reports, so only an identifier is trimmed.
+            let bundleID = MouseAppExceptionSupport.isExecutablePathIdentity(raw)
+                ? raw
+                : raw.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !bundleID.isEmpty, !seen.contains(bundleID) else { continue }
             seen.insert(bundleID)
             result.append(bundleID)

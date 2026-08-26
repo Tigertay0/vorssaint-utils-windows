@@ -15314,6 +15314,214 @@ struct MetricsTests {
                 && !MouseAppExceptionSupport.isExcepted(["com.example.other"],
                                                          exceptions: exceptionSet),
                "a source app or one of its bundled helpers can carry an exception")
+        // A program started from a launcher — the Java process behind a game
+        // is the reported one — has no bundle identifier at all, so the file
+        // being run stands in as its identity (issue #1009). An app that has
+        // an identifier keeps answering only to that, so nothing already
+        // listed changes meaning.
+        expect(MouseAppExceptionSupport.identity(bundleID: "com.example.modeler",
+                                                 executablePath: "/Applications/Modeler.app/Contents/MacOS/Modeler")
+                == "com.example.modeler",
+               "an app with a bundle identifier answers to it and not to its executable")
+        expect(MouseAppExceptionSupport.identity(bundleID: nil,
+                                                 executablePath: "/opt/game/runtime/bin/java")
+                == "/opt/game/runtime/bin/java",
+               "a program with no bundle identifier answers to the file being run")
+        expect(MouseAppExceptionSupport.identity(bundleID: nil, executablePath: nil) == nil
+                && MouseAppExceptionSupport.identity(bundleID: nil, executablePath: "java") == nil,
+               "a program with nothing to be named by is never excepted by accident")
+        expect(MouseAppExceptionSupport.isExecutablePathIdentity("/opt/game/runtime/bin/java")
+                && !MouseAppExceptionSupport.isExecutablePathIdentity("com.example.modeler"),
+               "a stored path is told from a bundle identifier by its leading slash")
+        expect(MouseAppExceptionSupport.isExcepted(
+                   MouseAppExceptionSupport.identity(bundleID: nil,
+                                                     executablePath: "/opt/game/runtime/bin/java"),
+                   exceptions: ["/opt/game/runtime/bin/java"])
+                && !MouseAppExceptionSupport.isExcepted(
+                    MouseAppExceptionSupport.identity(bundleID: nil,
+                                                      executablePath: "/opt/other/bin/java"),
+                    exceptions: ["/opt/game/runtime/bin/java"]),
+               "a listed program path excepts that program and no other")
+        expect(InstalledApps.name(for: "/opt/game/runtime/bin/java") == "java",
+               "a listed program path is shown by its file name, not the whole path")
+
+        // The stored path is the one the file sheet handed back and the
+        // matched one is the file the running program reports, and the same
+        // file arrives at the two ends under different names as soon as
+        // anything on the way is a link — measured on this Mac, the sheet
+        // answers /private/tmp/… for a file the running program answers
+        // /tmp/… for. Both ends resolve, so they meet.
+        let identityRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vorssaint-identity-\(getpid())", isDirectory: true)
+        let runtimeBinary = identityRoot.appendingPathComponent("runtime/bin/launcher")
+        try? FileManager.default.createDirectory(at: runtimeBinary.deletingLastPathComponent(),
+                                                 withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: runtimeBinary.path, contents: Data())
+        let linkedBinary = identityRoot.appendingPathComponent("launcher")
+        try? FileManager.default.createSymbolicLink(at: linkedBinary, withDestinationURL: runtimeBinary)
+        let pickedThroughLink = MouseAppExceptionSupport.executablePathIdentity(linkedBinary.path)
+        let reportedByTheSystem = MouseAppExceptionSupport.identity(bundleID: nil,
+                                                                    executablePath: runtimeBinary.path)
+        expect(pickedThroughLink != nil
+                && pickedThroughLink != linkedBinary.path
+                && pickedThroughLink == reportedByTheSystem,
+               "a program picked through a link stores the file it links to")
+        expect(MouseAppExceptionSupport.isExcepted(reportedByTheSystem,
+                                                   exceptions: Set([pickedThroughLink].compactMap { $0 })),
+               "the program the system reports matches the entry the picker stored")
+
+        // A file sheet that takes programs can be walked into a bundle, and
+        // what is stored has to be what the system will report once the file
+        // runs. Measured on this Mac: a bundle's own executable run straight
+        // from disk is reported as com.example.withid, while a runtime shipped
+        // deeper in that same bundle — the shape issue #1009 is about — is
+        // reported with no identifier and stays a path. Filing that runtime
+        // under the app above it would break the case this all exists for.
+        func makeTestBundle(_ name: String, identifier: String?) -> URL {
+            let bundle = identityRoot.appendingPathComponent("\(name).app")
+            for file in ["Contents/MacOS/\(name)", "Contents/runtime/bin/java"] {
+                let url = bundle.appendingPathComponent(file)
+                try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                         withIntermediateDirectories: true)
+                FileManager.default.createFile(atPath: url.path, contents: Data())
+            }
+            var info: [String: Any] = ["CFBundleExecutable": name, "CFBundlePackageType": "APPL"]
+            if let identifier { info["CFBundleIdentifier"] = identifier }
+            if let plist = try? PropertyListSerialization.data(fromPropertyList: info,
+                                                               format: .xml,
+                                                               options: 0) {
+                try? plist.write(to: bundle.appendingPathComponent("Contents/Info.plist"))
+            }
+            return bundle
+        }
+        let namedBundle = makeTestBundle("Modeler", identifier: "com.example.modeler")
+        let namelessBundle = makeTestBundle("Bare", identifier: nil)
+        expect(MouseAppExceptionSupport.pickedIdentity(for: namedBundle) == "com.example.modeler"
+                && MouseAppExceptionSupport.pickedIdentity(
+                    for: namedBundle.appendingPathComponent("Contents/MacOS/Modeler"))
+                    == "com.example.modeler",
+               "an app is stored by its identifier whether its bundle or the binary inside it was picked")
+        let bundledRuntime = namedBundle.appendingPathComponent("Contents/runtime/bin/java")
+        expect(MouseAppExceptionSupport.pickedIdentity(for: bundledRuntime)
+                == MouseAppExceptionSupport.executablePathIdentity(bundledRuntime.path),
+               "a runtime shipped inside an app keeps its own path, never the identifier of the app above it")
+        expect(MouseAppExceptionSupport.pickedIdentity(for: namelessBundle)
+                == MouseAppExceptionSupport.executablePathIdentity(
+                    namelessBundle.appendingPathComponent("Contents/MacOS/Bare").path),
+               "an app whose Info.plist names no identifier is stored by the binary it runs")
+        expect(MouseAppExceptionSupport.pickedIdentity(for: runtimeBinary)
+                == MouseAppExceptionSupport.executablePathIdentity(runtimeBinary.path),
+               "a program that is not packaged as an app is stored by its own file")
+        try? FileManager.default.removeItem(at: identityRoot)
+
+        // The list sanitizer runs over stored entries, and a file name may
+        // legally end in a space: trimming a path would look for a spelling
+        // the running program never reports, so only an identifier is trimmed.
+        expect(Defaults.sanitizedBundleIdentifierList(["/opt/game/bin/java ", " com.example.a "])
+                == ["/opt/game/bin/java ", "com.example.a"],
+               "a stored path keeps its exact file name while an identifier is trimmed")
+
+        expect(InstalledApps.location(for: "com.example.modeler") == nil,
+               "a bundle identifier names its app on its own and carries no location")
+        expect(InstalledApps.location(for: NSHomeDirectory() + "/runtimes/zulu-8.jre/bin/java")
+                == "~/runtimes/zulu-8.jre/bin",
+               "a path identity is located by its directory, spelled from home")
+        expect(InstalledApps.location(for: "/opt/game/bin/java") == "/opt/game/bin",
+               "a path outside home keeps its absolute directory")
+
+        // Both ends of that agreement live outside this binary: the picker
+        // stores from AppBundleList and the taps match from MouseAppExceptions.
+        // An identity resolved at one end and taken raw at the other silently
+        // matches nothing (issue #1009), so what each side may hand on is
+        // pinned rather than the spelling it happens to use today — a second
+        // way into the list, dropping a file onto it among them, has to go
+        // through the same resolver as the sheet does.
+        let pickerLines = ((try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/AppBundleList.swift",
+            encoding: .utf8)) ?? "").components(separatedBy: "\n")
+        var resolvedNames: Set<String> = []
+        for line in pickerLines where line.contains("= MouseAppExceptionSupport.") {
+            guard let bound = line.components(separatedBy: "let ").last?
+                    .components(separatedBy: " =").first else { continue }
+            resolvedNames.insert(bound.trimmingCharacters(in: .whitespaces))
+        }
+        var resolvedAddSites: [String] = []
+        var rawAddSites: [String] = []
+        for (index, line) in pickerLines.enumerated()
+        where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") && line.contains("onAdd(") {
+            let added = (line.components(separatedBy: "onAdd(").last?
+                .components(separatedBy: ")").first ?? "").trimmingCharacters(in: .whitespaces)
+            if resolvedNames.contains(added) {
+                resolvedAddSites.append("AppBundleList.swift:\(index + 1)")
+            } else {
+                rawAddSites.append("AppBundleList.swift:\(index + 1) adds \(added)")
+            }
+        }
+        expect(!resolvedAddSites.isEmpty && rawAddSites.isEmpty,
+               "every value the picker adds is one the support enum resolved: \(rawAddSites)")
+
+        // A list row's location caption is what tells path identities apart —
+        // every bundled runtime displays as "java" (issue #1009) — and sibling
+        // runtimes differ only after a long shared directory prefix, so the
+        // caption must truncate from the HEAD: cutting the middle or tail
+        // would hide the one component that differs. AppBundleList is not
+        // compiled into this binary, so the shape is pinned here.
+        var locationSites: [Int] = []
+        var headTruncationSites: [Int] = []
+        for (index, line) in pickerLines.enumerated()
+        where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
+            if line.contains("InstalledApps.location(for:") { locationSites.append(index + 1) }
+            if line.contains(".truncationMode(.head)") { headTruncationSites.append(index + 1) }
+        }
+        expect(!locationSites.isEmpty && !headTruncationSites.isEmpty,
+               "a path identity row shows where its file sits and truncates from the head: "
+                   + "\(locationSites) \(headTruncationSites)")
+
+        var resolvedMatchSites: [String] = []
+        var rawMatchSites: [String] = []
+        let matcherLines = ((try? String(
+            contentsOfFile: "Sources/Vorssaint/Services/MouseExceptions/MouseAppExceptions.swift",
+            encoding: .utf8)) ?? "").components(separatedBy: "\n")
+        for (index, line) in matcherLines.enumerated()
+        where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//")
+                && line.contains("executableURL") && line.contains(".path") {
+            if line.contains("MouseAppExceptionSupport.identity(")
+                || (index > 0 && matcherLines[index - 1].contains("MouseAppExceptionSupport.identity(")) {
+                resolvedMatchSites.append("MouseAppExceptions.swift:\(index + 1)")
+            } else {
+                rawMatchSites.append("MouseAppExceptions.swift:\(index + 1)")
+            }
+        }
+        expect(resolvedMatchSites.count == 1 && rawMatchSites.isEmpty,
+               "the taps read an executable path only through the support enum: "
+                   + "\(resolvedMatchSites) \(rawMatchSites)")
+        let matcherBody = matcherLines
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        expect(!matcherBody.isEmpty && !matcherBody.contains("trimmingCharacters"),
+               "the exception list is sanitized through the one sanitizer, never beside it")
+
+        // The leading-slash test IS the rule that tells a stored path from a
+        // bundle identifier. A second spelling of it drifts the day the rule
+        // learns a new shape — a ~ path, a file URL — so every file that
+        // handles an identity asks isExecutablePathIdentity instead of
+        // re-testing the prefix.
+        var slashRuleSites: [String] = []
+        for file in ["Services/MouseExceptions/MouseAppExceptionSupport.swift",
+                     "Services/InstalledApps.swift",
+                     "Core/Defaults.swift"] {
+            let ruleLines = ((try? String(contentsOfFile: "Sources/Vorssaint/\(file)",
+                                          encoding: .utf8)) ?? "").components(separatedBy: "\n")
+            if ruleLines.count <= 1 { slashRuleSites.append("\(file) unreadable") }
+            for (index, line) in ruleLines.enumerated()
+            where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//")
+                    && line.contains("hasPrefix(\"/\")") {
+                slashRuleSites.append("\(file):\(index + 1)")
+            }
+        }
+        expect(slashRuleSites.count == 1
+                && slashRuleSites[0].hasPrefix("Services/MouseExceptions/MouseAppExceptionSupport.swift:"),
+               "the leading-slash rule is spelled once, inside isExecutablePathIdentity: \(slashRuleSites)")
         expect(MouseAppExceptionSupport.sourceProcessID(42) == 42
                 && MouseAppExceptionSupport.sourceProcessID(0) == nil
                 && MouseAppExceptionSupport.sourceProcessID(-1) == nil
