@@ -14520,6 +14520,50 @@ struct MetricsTests {
         expect(soloState.decide(.triggerUp(timestamp: 4_000_000_000)) == .swallow,
                "holding it together with another modifier is not a tap either")
 
+        // Drag chords read their modifiers off the mouse-down, not off any
+        // keyboard event (#888), so the service must classify mouse presses
+        // like other keys and stamp them from a tap at the HID stage — the
+        // one place guaranteed to run before every session tap that reads
+        // the flags. The service file is not in this binary; pin the shape.
+        let superKeyServiceSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/Services/SuperKey/SuperKeyService.swift",
+            encoding: .utf8)) ?? ""
+        let superKeyServiceCode = superKeyServiceSource
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        expect(superKeyServiceCode.contains(".leftMouseDown, .rightMouseDown, .otherMouseDown")
+               && superKeyServiceCode.contains("mouseDownTypes.reduce(CGEventMask(0))")
+               && superKeyServiceCode.contains("mouseDownTypes.contains(type) { return .otherKey }")
+               && superKeyServiceCode.range(of: "tap: .cghidEventTap") != nil,
+               "every mouse press while the super key is held carries the modifiers, stamped at the HID stage")
+        // A mouse event carries no keycode of its own: the field reads back as
+        // 0 on one, which is the keycode for A. The read lives inside classify,
+        // below the line that answers the mouse types, so no caller holds a
+        // phantom key it could hand to something that looks keys up.
+        let keycodeReads = superKeyServiceCode
+            .components(separatedBy: ".keyboardEventKeycode").count - 1
+        let mouseAnswer = superKeyServiceCode.range(of: "mouseDownTypes.contains(type)")?.lowerBound
+        let keycodeRead = superKeyServiceCode.range(of: ".keyboardEventKeycode")?.lowerBound
+        expect(keycodeReads == 1
+               && mouseAnswer.flatMap({ answer in keycodeRead.map { answer < $0 } }) == true,
+               "a mouse press is answered before the super key ever reads a keycode")
+        // A refused mouse tap counts as dead so the health check rebuilds it,
+        // but exactly once: the rebuild takes the healthy keyboard tap down
+        // with it, and a system that refuses refuses the retry too, so an
+        // unbounded flag would hiccup super-key input at whatever rate
+        // syncWithPreferences fires. The count has to outlive the teardown its
+        // own value asked for, so the only place it is put back to zero is its
+        // own declaration — never the tap thread's reset block, which the
+        // rebuild runs and which would start the loop over.
+        let refusalResets = superKeyServiceCode
+            .components(separatedBy: "mouseTapRefusals = 0").count - 1
+        expect(superKeyServiceCode.contains("?? (mouseTapRefusals == 1)")
+               && superKeyServiceCode.contains(
+                   "mouseTapRefusals = mouseTap == nil ? self.mouseTapRefusals + 1 : 0")
+               && refusalResets == 1,
+               "a refused mouse tap is worth one rebuild, and the count survives it")
+
         var noRepeatHoldState = SuperKeySupport.State()
         _ = noRepeatHoldState.decide(.triggerDown(
             isRepeat: false, hasPrimaryModifiers: false, timestamp: 6_000_000_000
