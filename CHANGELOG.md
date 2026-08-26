@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Text snippets now include a visual date and time variable builder to configure formatting and timezones with live previews. Thanks to @tenbux.
+
+### Fixed
+- Screen capture settings now display each capture mode in its own section, keeping shortcuts directly within their settings and preventing sidebar layout shifting on narrower windows or translations. Thanks to @PathGao.
+- Pressing Escape in the clipboard history quick panel now clears batch selection or closes the panel directly instead of closing the preview pane first. Thanks to @naveenkrdy.
+- Adding points to a custom fan curve now updates and saves the curve instead of discarding the new point.
+- The battery icon in the menu bar now preserves its rectangular aspect ratio when split into its own item instead of rendering as a square. Thanks to @Yahddyyp.
+
 ## [3.3.3-beta.3] - 2026-08-26
 
 ### Added
@@ -13,7 +24,6 @@ All notable changes to this project are documented here. The format follows
 - The Command Bar now offers a compact mode where the bar opens as a field alone and shows results once you type, with Down arrow revealing the full list. Under Command Bar, off by default. Thanks to @kobebrylant.
 - Command Bar script links can now be marked to run on their bare name without an argument, so scripts that work on the clipboard, selection, or files don't need a placeholder word typed after the name. Under Command Bar, off by default. Thanks to @rhukster.
 - Monitor alerts can now warn you when the battery stays above a temperature you choose. Under Monitor alerts, off by default. Thanks to @ywu73.
-- Text snippets now include a visual date and time variable builder to configure formatting and timezones with live previews. Thanks to @tenbux.
 - Radial Menu now supports custom profiles with distinct wheel layouts, color themes, shortcuts, mouse triggers and starter presets, and website links can fetch their actual website icons on demand.
 
 ### Changed
@@ -25,10 +35,6 @@ All notable changes to this project are documented here. The format follows
 - The Keyboard Shortcuts page now lists every capture shortcut under one Screen capture group, and expandable shortcut groups are toggled by their whole row, with the chevron moved to the trailing edge. Thanks to @RecoilGaming.
 
 ### Fixed
-- Screen capture settings now display each capture mode in its own section, keeping shortcuts directly within their settings and preventing sidebar layout shifting on narrower windows or translations. Thanks to @PathGao.
-- Pressing Escape in the clipboard history quick panel now clears batch selection or closes the panel directly instead of closing the preview pane first. Thanks to @naveenkrdy.
-- The battery icon in the menu bar now preserves its rectangular aspect ratio when split into its own item instead of rendering as a square. Thanks to @Yahddyyp.
-- Adding points to a custom fan curve now updates and saves the curve instead of discarding the new point.
 - Fan Control now updates manual and curve cooling speeds during an active session without verification timeouts.
 - The Homebrew panel now closes when you click outside it while browsing or searching, and stays open for a confirmation or a running job. Thanks to @pergioa.
 - Settings opened from the menu panel no longer stay covered when the two windows cannot fit side by side. Thanks to @FloatingPegasus.

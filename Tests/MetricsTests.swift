@@ -9230,6 +9230,25 @@ struct MetricsTests {
                                                     changelog: "## [2.17.4]\n\n" + inAppUpdateBody)
         expect(githubPreviewNotes.sections.first?.bulletItems == ["Update preview stays focused on changes."],
                "in-app update notes keep release changes after removing the footer")
+        let unreleasedChangelog = """
+        ## [Unreleased]
+
+        ### Added
+        - Feature pending release.
+
+        ## [2.17.4] - 2026-06-18
+
+        ### Fixed
+        - Shipped fix.
+        """
+        let unreleasedNotes = ReleaseNotes.notes(for: "Unreleased", changelog: unreleasedChangelog)
+        expect(unreleasedNotes.version == "Unreleased" && unreleasedNotes.date == nil
+               && unreleasedNotes.sections.first?.bulletItems == ["Feature pending release."],
+               "release notes parse unreleased blocks without dates")
+        expect(ReleaseNotes.allVersions(changelog: unreleasedChangelog) == ["2.17.4"],
+               "allVersions excludes the unreleased header")
+        expect(ReleaseNotes.rawNotes(for: "dev", changelog: unreleasedChangelog).contains("Feature pending release."),
+               "rawNotes for dev falls back to the unreleased block")
 
         // MARK: URL cleaning
 
