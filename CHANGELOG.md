@@ -44,6 +44,7 @@ All notable changes to this project are documented here. The format follows
 - The menu bar panel keeps its arrow under the icon when the bar hides itself and the panel content changes height. Thanks to @pergioa.
 - Homebrew formulas installed from another tap now show their update on the row. Thanks to @pergioa.
 - Super key now shows why it could not remap Caps Lock, instead of staying on with a key that still only toggles capitals. Thanks to @PathGao.
+- Holding Super key now also moves and resizes windows by dragging. Thanks to @iltonandrew and @felixblaschke.
 
 ## [3.3.3-beta.2] - 2026-08-22
 
