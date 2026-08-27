@@ -256,6 +256,10 @@ enum DockPreviewSupport {
         max(160, tileSize * 1.5 + 60)
     }
 
+    /// Bounds expensive Accessibility hit testing independently of mouse
+    /// polling rate while remaining much faster than the hover delay.
+    static let mouseMoveSampleInterval: TimeInterval = 1.0 / 60
+
     static func availability(enabled: Bool,
                              hasAccessibility: Bool,
                              hasScreenRecording: Bool,

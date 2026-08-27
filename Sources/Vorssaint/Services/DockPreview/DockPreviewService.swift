@@ -30,6 +30,9 @@ final class DockPreviewService: ObservableObject {
     private var settingsTimer: Timer?
     private var pendingHover: PendingHover?
     private var pendingHide: DispatchWorkItem?
+    private var lastMoveSampledAt: TimeInterval = 0
+    private var pendingMove: DispatchWorkItem?
+    private var pendingMovePoint: CGPoint?
     private var lastAXMousePoint: CGPoint?
     private var lastAppKitMousePoint: CGPoint?
     private var panel: NSPanel?
@@ -321,6 +324,7 @@ final class DockPreviewService: ObservableObject {
         tap = nil
         runLoopSource = nil
         cancelPendingHover()
+        cancelPendingMove()
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -336,8 +340,16 @@ final class DockPreviewService: ObservableObject {
         // day. The tap's run-loop source lives on the main run loop, so this
         // callback already runs on the main thread and may read panel state
         // and settle those moves synchronously for free.
-        if type == .mouseMoved, discardFarMouseMove(axPoint: point) {
-            return Unmanaged.passUnretained(event)
+        if type == .mouseMoved {
+            if discardFarMouseMove(axPoint: point) {
+                cancelPendingMove()
+                return Unmanaged.passUnretained(event)
+            }
+            guard admitMouseMove(axPoint: point) else {
+                return Unmanaged.passUnretained(event)
+            }
+        } else {
+            cancelPendingMove()
         }
         DispatchQueue.main.async { [weak self] in
             self?.handleOnMain(type: type, axPoint: point)
@@ -357,6 +369,38 @@ final class DockPreviewService: ObservableObject {
         lastAXMousePoint = axPoint
         lastAppKitMousePoint = point
         return true
+    }
+
+    /// Lets one move per display frame reach the AX path and retains the
+    /// newest dropped point, so a cursor that comes to rest still opens the
+    /// intended preview.
+    private func admitMouseMove(axPoint: CGPoint) -> Bool {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastMoveSampledAt < DockPreviewSupport.mouseMoveSampleInterval else {
+            lastMoveSampledAt = now
+            cancelPendingMove()
+            return true
+        }
+        pendingMovePoint = axPoint
+        guard pendingMove == nil else { return false }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.pendingMove = nil
+            self.lastMoveSampledAt = ProcessInfo.processInfo.systemUptime
+            guard let point = self.pendingMovePoint else { return }
+            self.pendingMovePoint = nil
+            self.handleOnMain(type: .mouseMoved, axPoint: point)
+        }
+        pendingMove = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + DockPreviewSupport.mouseMoveSampleInterval,
+                                      execute: work)
+        return false
+    }
+
+    private func cancelPendingMove() {
+        pendingMove?.cancel()
+        pendingMove = nil
+        pendingMovePoint = nil
     }
 
     private func handleOnMain(type: CGEventType, axPoint: CGPoint) {
@@ -945,6 +989,13 @@ final class DockPreviewService: ObservableObject {
         guard let preferences = cachedPreferences ?? readDockPreferences(),
               let dockPID = dockProcessID()
         else { return nil }
+        guard DockClickSupport.dockOwnsPoint(
+            axPoint,
+            windows: Self.onScreenWindows(),
+            dockProcessID: dockPID,
+            dockLayer: Int(CGWindowLevelForKey(.dockWindow)),
+            ownProcessID: getpid()
+        ) else { return nil }
 
         let system = AXUIElementCreateSystemWide()
         var rawElement: AXUIElement?
@@ -960,6 +1011,14 @@ final class DockPreviewService: ObservableObject {
             return DockHit(app: app, iconFrame: frame, preferences: preferences)
         }
         return nil
+    }
+
+    private static func onScreenWindows() -> [MouseAppExceptionSupport.Window] {
+        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
+                                                    kCGNullWindowID) as? [[String: Any]] else {
+            return []
+        }
+        return MouseAppExceptionSupport.windows(from: list)
     }
 
     private func runningApplication(forDockElement element: AXUIElement) -> NSRunningApplication? {

@@ -8420,6 +8420,40 @@ struct MetricsTests {
                                                   screenFrame: dockScreen,
                                                   visibleFrame: CGRect(x: 0, y: 24, width: 1512, height: 958)),
                "dock strip falls back to an edge band when auto-hide reserves nothing")
+        let dockStripWindow = MouseAppExceptionSupport.Window(frame: dockScreen, layer: 20,
+                                                              processID: 1267)
+        let coveringWindow = MouseAppExceptionSupport.Window(frame: dockScreen, layer: 24,
+                                                             processID: 4242)
+        let dockPoint = CGPoint(x: 90, y: 930)
+        expect(DockClickSupport.dockOwnsPoint(dockPoint,
+                                              windows: [dockStripWindow],
+                                              dockProcessID: 1267,
+                                              dockLayer: 20,
+                                              ownProcessID: 501),
+               "Dock click accepts a visible unobstructed Dock strip")
+        expect(!DockClickSupport.dockOwnsPoint(dockPoint,
+                                               windows: [coveringWindow, dockStripWindow],
+                                               dockProcessID: 1267,
+                                               dockLayer: 20,
+                                               ownProcessID: 501),
+               "Dock click leaves a point covered by fullscreen content untouched")
+        expect(DockClickSupport.dockOwnsPoint(
+            dockPoint,
+            windows: [MouseAppExceptionSupport.Window(frame: dockScreen, layer: 24,
+                                                       processID: 501), dockStripWindow],
+            dockProcessID: 1267,
+            dockLayer: 20,
+            ownProcessID: 501),
+               "this app's own panel never hides the Dock below it from the ownership check")
+        expect(DockPreviewSupport.mouseMoveSampleInterval > 0
+               && DockPreviewSupport.mouseMoveSampleInterval <= 1.0 / 60
+               && DockPreviewSupport.mouseMoveSampleInterval < DockPreviewSupport.switchDelay,
+               "Dock Preview samples high-rate mouse movement faster than hover intent")
+        let dockPreviewSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/Services/DockPreview/DockPreviewService.swift",
+            encoding: .utf8)) ?? ""
+        expect(dockPreviewSource.contains("DockClickSupport.dockOwnsPoint("),
+               "Dock Preview does not open through fullscreen content covering the Dock")
 
         expect(MiddleClickSupport.actionForClick(fingerCount: 3, frameAge: 0.05, settledFor: 0.2,
                                                  sinceLastTransformEnd: nil,
