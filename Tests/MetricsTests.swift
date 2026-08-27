@@ -7365,6 +7365,12 @@ struct MetricsTests {
                                                                   availableHeight: 1200)
         expect(bogusSaved.width == 772 && bogusSaved.height == 838,
                "a saved size below the minimum falls back to the default")
+        expect(!SettingsWindowSupport.isValidContentSize(width: 300, height: 200),
+               "sub-minimum sizes are rejected by isValidContentSize")
+        expect(SettingsWindowSupport.isValidContentSize(width: 772, height: 528),
+               "exact minimum size is valid")
+        expect(SettingsWindowSupport.isValidContentSize(width: 1000, height: 800),
+               "larger size is valid")
         let preferredSettingsFrame = CGRect(x: -50, y: 100, width: 1000, height: 700)
         let overlappingPlacement = SettingsWindowSupport.panelPlacement(
             preferredFrame: preferredSettingsFrame,
