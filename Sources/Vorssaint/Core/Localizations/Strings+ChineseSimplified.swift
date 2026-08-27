@@ -966,6 +966,6 @@ extension Strings {
         switcherMinimizedPlacementNormal: "正常顺序",
         switcherMinimizedPlacementEnd: "放到末尾",
         switcherMinimizedPlacementHidden: "隐藏",
-        switcherShowFullscreenWindows: "显示全屏窗口" 
+        switcherShowFullscreenWindows: "显示全屏窗口"
     )
 }

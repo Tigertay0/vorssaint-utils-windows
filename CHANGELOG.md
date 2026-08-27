@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and improves Settings, Scratchpad, floating panels and several menu bar behaviors. App Switcher separates stale hidden-Space surfaces from real fullscreen windows, multi-line snippets preserve their full contents and clipboard, and Dock interactions stay behind fullscreen content.
+Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens process termination, window handling, pasteboard restoration, sensor selection and favicon downloads. It also improves Settings, Scratchpad, floating panels and several menu bar behaviors.
 
 ### Added
 - Clipboard history now offers retention limit options for 10,000 items and unlimited storage.
@@ -22,8 +22,15 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 
 ### Fixed
 - App Switcher now rejects stale hidden-Space surfaces without hiding real fullscreen windows on another Space. Thanks to @naveenkrdy.
+- App Switcher middle-click now closes only the card under the pointer and leaves panel chrome untouched.
 - Multi-line text snippets now paste every line in order while preserving rich clipboard content and keeping transient text out of history. Thanks to @fermincasagrande.
 - Dock click actions and previews now stay behind fullscreen content and sample high-rate pointer movement without overloading the hover tap. Thanks to @iltonandrew.
+- Clipboard history now trims against the encoded file size before saving, preventing its store from becoming unreadable.
+- Kill Process now sorts consistently and revalidates the exact process before terminating it, preventing a recycled process identifier from targeting a different process.
+- Music launch blocking now fails open when its media-key listener is unavailable.
+- Radial Menu favicon downloads now stay on the link origin and reject cross-origin redirects, oversized payloads and unsafe image dimensions.
+- Feedback reports now show human-readable beta and update-channel diagnostics.
+- CPU temperature and Fan Control curves now use only mapped processor sensors, recognize M3 core readings and distinguish an unavailable helper from unsupported hardware.
 - Settings now enforces its design minimum size across window resizing, layout updates and window restore, preventing the sidebar and preferences from compressing or clipping.
 - Scratchpad windows now drag reliably from anywhere in the top bar, keep generous resize borders and minimum dimensions, and include a close button on each tab.
 - Text-heavy floating panels now keep their content readable over bright windows when Liquid Glass is enabled.
