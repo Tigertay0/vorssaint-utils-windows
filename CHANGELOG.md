@@ -13,7 +13,7 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 - App Updates now finds newer versions for other installed apps through a privacy-preserving public online catalog and opens those apps so their own updater remains in control.
 - The Uninstaller now finds more support files, containers, preference panes and plugins through verified app identifiers and signed ownership, searches nested vendor folders and opens every result in Finder. Name-related finds start unchecked.
-- Cleaner leftover scans now cover more preference panes, plugin folders and nested identifier-based leftovers without following links or treating a plain folder name as proof that data is abandoned.
+- Cleaner leftover scans now cover more preference panes and plugin folders while refusing nested app data, version folders, links and other ambiguous paths.
 
 ### Fixed
 - Auto-quit now retries watching windows when accessibility initially lists no open window, ensuring apps quit properly when their last window is closed. Thanks to @iltonandrew.

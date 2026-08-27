@@ -3948,6 +3948,18 @@ struct MetricsTests {
         expect(CleanerSupport.bundleIDCandidate(fromEntryName: "com.vendor.editor.prefPane")
                 == "com.vendor.editor",
                "preference panes map to their owning bundle identifier")
+        expect(CleanerSupport.bundleIDCandidate(fromEntryName: "app-0.0.409") == nil
+               && CleanerSupport.bundleIDCandidate(fromEntryName: "0.0.409") == nil
+               && CleanerSupport.bundleIDCandidate(fromEntryName: "1.57.0") == nil
+               && CleanerSupport.bundleIDCandidate(fromEntryName: "com.v2.editor")
+                == "com.v2.editor",
+               "version directories never become deletion ownership evidence")
+        let supportRoot = URL(fileURLWithPath: "/Users/tester/Library/Application Support")
+        expect(CleanerSupport.isDirectChild(
+                   supportRoot.appendingPathComponent("com.vendor.editor"), of: supportRoot)
+               && !CleanerSupport.isDirectChild(
+                   supportRoot.appendingPathComponent("vendor/app-0.0.409"), of: supportRoot),
+               "the general Cleaner accepts only direct children of each leftover root")
         expect(CleanerSupport.bundleIDCandidate(fromEntryName:
                "com.vendor.editor.Helper.B787EFF9-B8E2-5296-96AF-DF9D3CD3AC4F.plist")
                 == "com.vendor.editor.Helper"
