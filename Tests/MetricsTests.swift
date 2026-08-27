@@ -407,6 +407,25 @@ struct MetricsTests {
         expect(largeClipboardPreview.hasSuffix("…")
                 && largeClipboardPreview.count <= ClipboardHistoryEditing.previewCharacters + 1,
                "clipboard rows keep very large text previews bounded")
+        expect(Defaults.allowedClipboardHistoryLimits == [20, 50, 100, 250, 500, 1_000, 10_000, 0],
+               "clipboard history limits include 10k and unlimited options")
+        expect(Defaults.sanitizedClipboardHistoryLimit(10_000) == 10_000
+                && Defaults.sanitizedClipboardHistoryLimit(0) == 0
+                && Defaults.sanitizedClipboardHistoryLimit(50) == 50
+                && Defaults.sanitizedClipboardHistoryLimit(-99) == 50,
+               "sanitized clipboard history limits accept 10k and 0 (unlimited)")
+        let unlimitedHistory = ClipboardHistoryEditing.retainedEntries(
+            [budgetRecentA, budgetRecentB],
+            recentLimit: 0,
+            textByteLimit: 1_000)
+        expect(unlimitedHistory.count == 2,
+               "clipboard history retainedEntries preserves all entries when recentLimit is 0 (unlimited)")
+        let tenThousandHistory = ClipboardHistoryEditing.retainedEntries(
+            [budgetRecentA, budgetRecentB],
+            recentLimit: 10_000,
+            textByteLimit: 1_000)
+        expect(tenThousandHistory.count == 2,
+               "clipboard history retainedEntries preserves entries with 10_000 limit")
         let previewID = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
         let nextPreviewID = UUID(uuidString: "00000000-0000-0000-0000-000000000102")!
         let updatedPreview = ClipboardHistoryEntry(id: previewID, text: "updated")
@@ -11470,7 +11489,7 @@ struct MetricsTests {
         for language in AppLanguage.allCases {
             let values = Mirror(reflecting: FeatureStrings.clipboard(language)).children
                 .compactMap { $0.value as? String }
-            expect(values.count == 52 && values.allSatisfy { !$0.isEmpty },
+            expect(values.count == 53 && values.allSatisfy { !$0.isEmpty },
                    "every clipboard string is set for \(language.rawValue)")
             expect(values.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible clipboard strings (\(language.rawValue))")
