@@ -13662,28 +13662,13 @@ struct MetricsTests {
         expect(ScreenCaptureTool.available(isAvailable: captureFeatures.contains)
                 == [.screenshot, .recording, .text, .color],
                "the capture chooser keeps a stable order for every installed mode")
-        // The capture tools are sections side by side rather than one
-        // switcher hiding three of them, so no page state decides which is
-        // on screen and every tool's own shortcut sits in its own section
-        // (issue #757).
-        let captureSettingsSources = ["ScreenCaptureSettings", "ScreenshotSettings",
-                                      "ScreenRecorderSettings"]
-            .map { name -> String in
-                let text = (try? String(
-                    contentsOfFile: "Sources/Vorssaint/UI/Settings/\(name).swift",
-                    encoding: .utf8)) ?? ""
-                return text.components(separatedBy: "\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-                    .joined(separator: "\n")
-            }
-        expect(captureSettingsSources[0].contains("ForEach(availableTools")
-                && !captureSettingsSources[0].contains("selectedTool"),
-               "the capture page shows every installed tool instead of one at a time")
-        let shortcutTools = Set(captureSettingsSources.joined(separator: "\n")
-            .components(separatedBy: "ToolShortcutRows(tool: .").dropFirst()
-            .map { String($0.prefix { $0.isLetter }) })
-        expect(shortcutTools == Set(ScreenCaptureTool.allCases.map { "\($0)" }),
-               "every capture tool carries its own shortcut in its own section")
+        let captureSettingsSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenCaptureSettings.swift",
+            encoding: .utf8)) ?? ""
+        expect(captureSettingsSource.contains("selectedTool")
+                && captureSettingsSource.contains(".pickerStyle(.segmented)")
+                && captureSettingsSource.contains("ToolShortcutRows(tool: currentTool"),
+               "the capture page uses a segmented picker with tool-specific shortcuts in the top section")
         expect(!ScreenshotSupport.captureAvailabilityChanged(
                     activeTools: [.screenshot, .recording],
                     availableTools: [.screenshot, .recording])
