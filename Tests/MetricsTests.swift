@@ -2776,6 +2776,8 @@ struct MetricsTests {
                "panel cut and paste control is visible by default")
         expect(registeredDefaults[DefaultsKey.colorPickerBareHex] as? Bool == false,
                "color picker keeps the # prefix by default")
+        expect(registeredDefaults[DefaultsKey.screenOCRRemoveLineBreaks] as? Bool == false,
+               "copy text from screen keeps line breaks by default")
         expect(registeredDefaults[DefaultsKey.screenOCRDetectQRCodes] as? Bool == true,
                "copy text from screen reads QR codes by default")
         expect(registeredDefaults[DefaultsKey.micMuteMenuBarIndicator] as? Bool == true,
@@ -7392,8 +7394,12 @@ struct MetricsTests {
                 && SettingsSearchSupport.matches(
                     query: "screen recording",
                     title: FeatureStrings.screenshot(.enUS).screenCaptureTitle,
+                    keywords: captureSearchKeywords)
+                && SettingsSearchSupport.matches(
+                    query: "line breaks",
+                    title: FeatureStrings.screenshot(.enUS).screenCaptureTitle,
                     keywords: captureSearchKeywords),
-               "Screenshot and Screen recording find the one Screen capture page")
+               "Screen capture tools and their options find the one settings page")
 
         let freshSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
                                                                  availableHeight: 1200)
@@ -8641,9 +8647,41 @@ struct MetricsTests {
             QuickToolsSupport.RecognizedLine(text: "below", x: 0.1, y: 0.4),
             QuickToolsSupport.RecognizedLine(text: "   ", x: 0.2, y: 0.6),
         ]
-        expectEqual(QuickToolsSupport.joinedRecognizedText(ocrLines), "hello\nworld\nbelow",
+        expectEqual(QuickToolsSupport.joinedRecognizedText(ocrLines, removingLineBreaks: false),
+                    "hello\nworld\nbelow",
                     "screen OCR joins lines top to bottom, left to right, dropping blanks")
-        expectEqual(QuickToolsSupport.joinedRecognizedText([]), "",
+        expectEqual(QuickToolsSupport.joinedRecognizedText(ocrLines, removingLineBreaks: true),
+                    "hello world below",
+                    "screen OCR can join lines with spaces")
+        let joinedOCRPair: (String, String, Bool) -> String = { first, second, removingLineBreaks in
+            QuickToolsSupport.joinedRecognizedText([
+                .init(text: first, x: 0.1, y: 0.8),
+                .init(text: second, x: 0.1, y: 0.4),
+            ], removingLineBreaks: removingLineBreaks)
+        }
+        expectEqual(joinedOCRPair("这是", "测试", true), "这是测试",
+                    "screen OCR joins Chinese lines without spaces")
+        expectEqual(joinedOCRPair("これは", "テストです", true), "これはテストです",
+                    "screen OCR joins Japanese lines without spaces")
+        expectEqual(joinedOCRPair("これは", "ﾃｽﾄです", true), "これはﾃｽﾄです",
+                    "screen OCR joins halfwidth Japanese kana without spaces")
+        expectEqual(joinedOCRPair("이것은", "테스트입니다", true), "이것은 테스트입니다",
+                    "screen OCR keeps Korean word spaces at line seams")
+        expectEqual(joinedOCRPair("ㅋㅋ", "ㅎㅎ", true), "ㅋㅋ ㅎㅎ",
+                    "screen OCR keeps spaces between Hangul compatibility jamo")
+        expectEqual(joinedOCRPair("version", "版本", true), "version 版本",
+                    "screen OCR separates mixed Latin and CJK seams")
+        expectEqual(joinedOCRPair("Hello ", " world", true), "Hello world",
+                    "screen OCR normalizes spaced-script boundary whitespace")
+        expectEqual(joinedOCRPair("这是 ", " 测试", true), "这是测试",
+                    "screen OCR trims boundary whitespace before a tight CJK seam")
+        expectEqual(joinedOCRPair("이것은 ", " 테스트", true), "이것은 테스트",
+                    "screen OCR normalizes Korean boundary whitespace to one separator")
+        expectEqual(joinedOCRPair("这是", "测试", false), "这是\n测试",
+                    "screen OCR preserves Chinese line breaks when removal is off")
+        expectEqual(joinedOCRPair("这是 ", " 测试", false), "这是 \n 测试",
+                    "screen OCR preserves boundary whitespace when line removal is off")
+        expectEqual(QuickToolsSupport.joinedRecognizedText([], removingLineBreaks: false), "",
                     "screen OCR joins an empty result to an empty string")
 
         // QR codes: several join top to bottom, left to right, blanks dropped.
@@ -10331,10 +10369,11 @@ struct MetricsTests {
                    "\(prefix) a field that can clear says so")
             expect(strings.shortcutPressKeys.count <= 16,
                    "\(prefix) the waiting cap stays short enough for the field")
-            let ocrQRStrings = [strings.ocrQRToggle, strings.ocrQRCaption, strings.ocrQRCopied,
-                                strings.qrResultTitle, strings.qrResultCopy, strings.qrResultOpen]
-            expect(ocrQRStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
-                   "\(prefix) screen QR strings are present without em dash")
+            let ocrStrings = [strings.ocrRemoveLineBreaksToggle, strings.ocrRemoveLineBreaksCaption,
+                              strings.ocrQRToggle, strings.ocrQRCaption, strings.ocrQRCopied,
+                              strings.qrResultTitle, strings.qrResultCopy, strings.qrResultOpen]
+            expect(ocrStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
+                   "\(prefix) screen OCR strings are present without em dash")
             let highlightsStrings = [strings.highlightsTitle, strings.highlightsTitleClipboardRedesign,
                                      strings.highlightsCaptionDockPreview,
                                      strings.highlightsCaptionScreenshot,
