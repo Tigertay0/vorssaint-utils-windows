@@ -38,6 +38,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - Auto-quit now retries watching windows when accessibility initially lists no open window, ensuring apps quit properly when their last window is closed. Thanks to @iltonandrew.
 - Screen recording settings in Traditional Chinese (Taiwan) now use the standard microphone term 麥克風 instead of the Hong Kong Cantonese term 咪高風. Thanks to @watain666.
 - Mouse exceptions now match non-bundled executable programs and Java runtimes alongside regular application bundles. Thanks to @iltonandrew.
+- Settings backups now keep machine-local program paths out of exported files and preserve local exceptions across a restore. Thanks to @iltonandrew.
 - Uninstalling a feature now removes it from Command Bar pins in Settings.
 - Pressing Escape in the clipboard history quick panel now clears batch selection or closes the panel directly instead of closing the preview pane first. Thanks to @naveenkrdy.
 - Adding points to a custom fan curve now updates and saves the curve instead of discarding the new point.
