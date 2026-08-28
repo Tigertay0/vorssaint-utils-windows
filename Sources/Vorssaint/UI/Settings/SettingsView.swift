@@ -887,6 +887,7 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
     @AppStorage(DefaultsKey.dockPreviewBackgroundOpacity) private var dockPreviewBackgroundOpacity = 1.0
     @AppStorage(DefaultsKey.dockPreviewOpenDelay) private var dockPreviewOpenDelay = DockPreviewSupport.defaultOpenDelayMilliseconds
+    @AppStorage(DefaultsKey.dockPreviewQuitAppOnClose) private var dockPreviewQuitAppOnClose = false
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickMinimize = false
     @AppStorage(DefaultsKey.dockClickHide) private var dockClickHide = false
     @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleWindows = false
@@ -1054,6 +1055,9 @@ struct SwitcherSettings: View {
                                     .frame(width: 52, alignment: .trailing)
                             }
                             SettingsCaptionText(l10n.s.dockPreviewBackgroundOpacityCaption)
+                            Toggle(l10n.s.dockPreviewQuitAppOnClose,
+                                   isOn: $dockPreviewQuitAppOnClose)
+                            SettingsCaptionText(l10n.s.dockPreviewQuitAppOnCloseCaption)
                         }
                     }
                 } header: {

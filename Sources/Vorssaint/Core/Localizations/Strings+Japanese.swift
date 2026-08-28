@@ -225,6 +225,8 @@ extension Strings {
         dockPreviewBackgroundOpacityCaption: "下げると、パネルの後ろにあるものがより見えるようになります。",
         dockPreviewOpenDelay: "表示までの待ち時間",
         dockPreviewOpenDelayCaption: "ポインタをアイコンに置いてからパネルが開くまでの時間です。",
+        dockPreviewQuitAppOnClose: "× ボタンでアプリを終了",
+        dockPreviewQuitAppOnCloseCaption: "Dock Preview では、× はそのウインドウだけを閉じる代わりにアプリ全体を終了します。",
         dockClickMinimize: "Dock クリックでしまう",
         dockClickMinimizeCaption: "手前のアプリの Dock アイコンをクリックするとウインドウをしまいます。もう一度クリックすると戻ります。",
         dockClickCycleWindows: "Dock クリックでウインドウを切り替え",
