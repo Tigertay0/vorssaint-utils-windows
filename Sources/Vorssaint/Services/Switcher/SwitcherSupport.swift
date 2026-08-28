@@ -477,13 +477,18 @@ enum SwitcherSupport {
     }
 
     /// Some professional media apps expose their main surface as a floating
-    /// Accessibility window instead of a standard macOS window. Match bundle
-    /// prefixes because recent releases append version or application suffixes.
+    /// or undescribed Accessibility window instead of a standard macOS window.
+    /// Match bundle prefixes case-insensitively because releases vary between
+    /// lowercase, uppercase and versioned bundle identifiers.
     static func isSupportedMediaFloatingWindow(bundleIdentifier: String?, subrole: String?) -> Bool {
-        guard subrole == "AXFloatingWindow", let bundleIdentifier else { return false }
-        return bundleIdentifier.hasPrefix("com.adobe.Audition")
-            || bundleIdentifier.hasPrefix("com.adobe.AfterEffects")
-            || bundleIdentifier.hasPrefix("com.adobe.PremierePro")
+        guard let subrole, subrole == "AXFloatingWindow" || subrole == "AXUnknown",
+              let bundleIdentifier else { return false }
+        let lower = bundleIdentifier.lowercased()
+        return lower.hasPrefix("com.adobe.audition")
+            || lower.hasPrefix("com.adobe.aftereffects")
+            || lower.hasPrefix("com.adobe.premiere")
+            || lower.hasPrefix("com.adobe.mediaencoder")
+            || lower.hasPrefix("com.adobe.characteranimator")
     }
 
     /// Some full-screen playback surfaces keep a nonstandard Accessibility

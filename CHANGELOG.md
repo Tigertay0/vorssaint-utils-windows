@@ -22,6 +22,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - Cleaner leftover scans now cover more preference panes and plugin folders while refusing nested app data, version folders, links and other ambiguous paths.
 
 ### Fixed
+- App Switcher now recognizes floating and undescribed workspace windows from professional media apps.
 - Super key now restores its source when the app is force-quit, preventing Caps Lock or a right-side modifier from being left inactive.
 - App Switcher now rejects stale hidden-Space surfaces without hiding real fullscreen windows on another Space. Thanks to @naveenkrdy.
 - App Switcher middle-click now closes only the card under the pointer and leaves panel chrome untouched.

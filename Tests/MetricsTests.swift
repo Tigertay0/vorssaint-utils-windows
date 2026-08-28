@@ -2228,6 +2228,22 @@ struct MetricsTests {
             bundleIdentifier: "com.adobe.PremierePro.26",
             subrole: "AXFloatingWindow"),
                "App Switcher accepts versioned supported media windows")
+        expect(SwitcherSupport.isSupportedMediaFloatingWindow(
+            bundleIdentifier: "com.adobe.premierepro.2024",
+            subrole: "AXFloatingWindow"),
+               "App Switcher accepts lowercase supported media bundle identifiers")
+        expect(SwitcherSupport.isSupportedMediaFloatingWindow(
+            bundleIdentifier: "com.adobe.Premiere.15",
+            subrole: "AXFloatingWindow"),
+               "App Switcher accepts short-form supported media bundle identifiers")
+        expect(SwitcherSupport.isSupportedMediaFloatingWindow(
+            bundleIdentifier: "com.adobe.PremierePro.26",
+            subrole: "AXUnknown"),
+               "App Switcher accepts undescribed workspace windows from supported media apps")
+        expect(SwitcherSupport.isSupportedMediaFloatingWindow(
+            bundleIdentifier: "com.adobe.mediaencoder.2024",
+            subrole: "AXUnknown"),
+               "App Switcher accepts helper media engine workspace windows")
         expect(!SwitcherSupport.isSupportedMediaFloatingWindow(
             bundleIdentifier: "com.adobe.AfterEffects.application",
             subrole: "AXDialog"),
@@ -2236,6 +2252,10 @@ struct MetricsTests {
             bundleIdentifier: "com.example.editor",
             subrole: "AXFloatingWindow"),
                "App Switcher keeps floating windows from unrelated apps filtered")
+        expect(!SwitcherSupport.isSupportedMediaFloatingWindow(
+            bundleIdentifier: "com.example.editor",
+            subrole: "AXUnknown"),
+               "App Switcher keeps undescribed windows from unrelated apps filtered")
         expect(SwitcherSupport.isSwitchableNonstandardWindow(
             role: "AXWindow",
             subrole: "AXUnknown",
