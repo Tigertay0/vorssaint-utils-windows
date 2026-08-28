@@ -25,6 +25,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - App Switcher now rejects stale hidden-Space surfaces without hiding real fullscreen windows on another Space. Thanks to @naveenkrdy.
 - App Switcher middle-click now closes only the card under the pointer and leaves panel chrome untouched.
 - Multi-line text snippets now paste every line in order while preserving rich clipboard content and keeping transient text out of history. Thanks to @fermincasagrande.
+- Text snippets now keep their trigger buffer when typed on the macOS Accessibility Keyboard. Thanks to @fermincasagrande.
 - Dock click actions and previews now stay behind fullscreen content and sample high-rate pointer movement without overloading the hover tap. Thanks to @iltonandrew.
 - Clipboard history now trims against the encoded file size before saving, preventing its store from becoming unreadable.
 - Kill Process now sorts consistently and revalidates the exact process before terminating it, preventing a recycled process identifier from targeting a different process.
