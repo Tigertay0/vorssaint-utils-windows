@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens Super key shutdown, process termination, window handling, pasteboard restoration, sensor selection and favicon downloads. It also improves Settings, Scratchpad, floating panels and several menu bar behaviors.
+Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens Super key shutdown, process termination, window handling, pasteboard restoration, sensor selection and favicon downloads. It also improves Settings, Scratchpad, Screenshot Editor, floating panels and several menu bar behaviors.
 
 ### Added
 - Clipboard history now offers retention limit options for 10,000 items and unlimited storage.
@@ -34,6 +34,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - CPU temperature and Fan Control curves now use only mapped processor sensors, recognize M3 core readings and distinguish an unavailable helper from unsupported hardware.
 - Settings now enforces its design minimum size across window resizing, layout updates and window restore, preventing the sidebar and preferences from compressing or clipping.
 - Scratchpad windows now drag reliably from anywhere in the top bar, keep generous resize borders and minimum dimensions, and include a close button on each tab.
+- Screenshot editor windows now enforce their designed minimum size across manual and accessibility resizing, preventing the canvas and tools from compressing into a narrow strip. Thanks to @iltonandrew.
 - Text-heavy floating panels now keep their content readable over bright windows when Liquid Glass is enabled.
 - Auto-quit now retries watching windows when accessibility initially lists no open window, ensuring apps quit properly when their last window is closed. Thanks to @iltonandrew.
 - Screen recording settings in Traditional Chinese (Taiwan) now use the standard microphone term 麥克風 instead of the Hong Kong Cantonese term 咪高風. Thanks to @watain666.
