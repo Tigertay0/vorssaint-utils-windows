@@ -47,6 +47,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - Adding points to a custom fan curve now updates and saves the curve instead of discarding the new point.
 - The battery icon in the menu bar now preserves its rectangular aspect ratio when split into its own item instead of rendering as a square. Thanks to @Yahddyyp.
 - Cleaning Mode now uses a forgiving 6-second press window for the Escape unlock gesture and resets the count when modifier keys are pressed while wiping. Thanks to @iltonandrew.
+- Dock previews now move to the vacated screen edge when an auto-hiding Dock slides away instead of floating detached. Thanks to @iltonandrew.
 
 ## [3.3.3-beta.3] - 2026-08-26
 
