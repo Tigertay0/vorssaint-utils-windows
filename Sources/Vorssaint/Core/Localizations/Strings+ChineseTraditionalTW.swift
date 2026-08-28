@@ -675,6 +675,8 @@ extension Strings {
         diskSection: "磁碟",
         diskUsed: "已用",
         diskFree: "可用",
+        diskAvailable: "可用",
+        diskPurgeable: "可清除",
         diskInternal: "內建",
         diskExternal: "外接",
         diskSelect: "選擇磁碟",

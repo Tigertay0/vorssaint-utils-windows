@@ -674,6 +674,8 @@ extension Strings {
         diskSection: "Festplatten",
         diskUsed: "belegt",
         diskFree: "frei",
+        diskAvailable: "verfügbar",
+        diskPurgeable: "löschbar",
         diskInternal: "Intern",
         diskExternal: "Extern",
         diskSelect: "Festplatte wählen",

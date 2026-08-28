@@ -674,6 +674,8 @@ extension Strings {
         diskSection: "Disques",
         diskUsed: "utilisé",
         diskFree: "libre",
+        diskAvailable: "disponible",
+        diskPurgeable: "purgeable",
         diskInternal: "Interne",
         diskExternal: "Externe",
         diskSelect: "Choisir un disque",

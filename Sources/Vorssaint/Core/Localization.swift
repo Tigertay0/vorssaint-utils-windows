@@ -806,6 +806,8 @@ struct Strings {
     let diskSection: String
     let diskUsed: String
     let diskFree: String
+    let diskAvailable: String
+    let diskPurgeable: String
     let diskInternal: String
     let diskExternal: String
     let diskSelect: String
@@ -1788,6 +1790,8 @@ extension Strings {
         diskSection: "Discos",
         diskUsed: "usado",
         diskFree: "livre",
+        diskAvailable: "disponível",
+        diskPurgeable: "purgável",
         diskInternal: "Interno",
         diskExternal: "Externo",
         diskSelect: "Selecionar disco",
@@ -2759,6 +2763,8 @@ extension Strings {
         diskSection: "Disks",
         diskUsed: "used",
         diskFree: "free",
+        diskAvailable: "available",
+        diskPurgeable: "purgeable",
         diskInternal: "Internal",
         diskExternal: "External",
         diskSelect: "Select disk",

@@ -674,6 +674,8 @@ extension Strings {
         diskSection: "ディスク",
         diskUsed: "使用済み",
         diskFree: "空き",
+        diskAvailable: "利用可能",
+        diskPurgeable: "パージ可能",
         diskInternal: "内蔵",
         diskExternal: "外部",
         diskSelect: "ディスクを選択",

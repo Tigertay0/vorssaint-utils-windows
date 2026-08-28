@@ -675,6 +675,8 @@ extension Strings {
         diskSection: "디스크",
         diskUsed: "사용됨",
         diskFree: "사용 가능",
+        diskAvailable: "사용 가능",
+        diskPurgeable: "삭제 가능",
         diskInternal: "내장",
         diskExternal: "외장",
         diskSelect: "디스크 선택",

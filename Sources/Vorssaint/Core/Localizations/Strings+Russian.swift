@@ -675,6 +675,8 @@ extension Strings {
         diskSection: "Диски",
         diskUsed: "занято",
         diskFree: "свободно",
+        diskAvailable: "доступно",
+        diskPurgeable: "очищаемый",
         diskInternal: "Внутренний",
         diskExternal: "Внешний",
         diskSelect: "Выбрать диск",

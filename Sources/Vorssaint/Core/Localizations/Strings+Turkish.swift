@@ -674,6 +674,8 @@ extension Strings {
         diskSection: "Diskler",
         diskUsed: "kullanıldı",
         diskFree: "boş",
+        diskAvailable: "kullanılabilir",
+        diskPurgeable: "silinebilir",
         diskInternal: "Dahili",
         diskExternal: "Harici",
         diskSelect: "Disk seç",
