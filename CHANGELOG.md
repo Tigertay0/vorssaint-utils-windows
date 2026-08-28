@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens process termination, window handling, pasteboard restoration, sensor selection and favicon downloads. It also improves Settings, Scratchpad, floating panels and several menu bar behaviors.
+Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens Super key shutdown, process termination, window handling, pasteboard restoration, sensor selection and favicon downloads. It also improves Settings, Scratchpad, floating panels and several menu bar behaviors.
 
 ### Added
 - Clipboard history now offers retention limit options for 10,000 items and unlimited storage.
@@ -21,6 +21,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - Cleaner leftover scans now cover more preference panes and plugin folders while refusing nested app data, version folders, links and other ambiguous paths.
 
 ### Fixed
+- Super key now restores its source when the app is force-quit, preventing Caps Lock or a right-side modifier from being left inactive.
 - App Switcher now rejects stale hidden-Space surfaces without hiding real fullscreen windows on another Space. Thanks to @naveenkrdy.
 - App Switcher middle-click now closes only the card under the pointer and leaves panel chrome untouched.
 - Multi-line text snippets now paste every line in order while preserving rich clipboard content and keeping transient text out of history. Thanks to @fermincasagrande.

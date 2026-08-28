@@ -15283,6 +15283,35 @@ struct MetricsTests {
                 && !SuperKeySupport.mappingMarkerAfterClear(previous: false,
                                                             readbackConfirmed: false),
                "only confirmed clear readback removes the write-ahead mapping marker")
+        expect(SuperKeySupport.mappingRequestIsAuthorized(
+            requestGeneration: 4,
+            currentGeneration: 4,
+            tapIsCurrent: true,
+            stopping: false
+        )
+                && !SuperKeySupport.mappingRequestIsAuthorized(
+                    requestGeneration: 4,
+                    currentGeneration: 5,
+                    tapIsCurrent: true,
+                    stopping: false
+                )
+                && !SuperKeySupport.mappingRequestIsAuthorized(
+                    requestGeneration: 4,
+                    currentGeneration: 4,
+                    tapIsCurrent: false,
+                    stopping: false
+                ),
+               "a stop or replaced event tap invalidates a queued Super key mapping")
+        expect(SuperKeyMappingGuard.cleanupSource(in: [
+            "Vorssaint", SuperKeyMappingGuard.cleanupArgument, "capsLock",
+        ]) == .capsLock
+                && SuperKeyMappingGuard.cleanupSource(in: [
+                    "Vorssaint", SuperKeyMappingGuard.cleanupArgument, "rightCommand",
+                ]) == .rightCommand
+                && SuperKeyMappingGuard.cleanupSource(in: [
+                    "Vorssaint", SuperKeyMappingGuard.cleanupArgument, "invalid",
+                ]) == nil,
+               "the crash guard accepts only a real Super key source")
 
         let mappingReport = """
         RegistryID  Key                   Value
@@ -15354,6 +15383,11 @@ struct MetricsTests {
             property: SuperKeySupport.userMappingProperty,
             ownedSource: .capsLock
         ) == [foreignMapping], "a newly connected keyboard can converge when only the owned mapping differs")
+        expect(SuperKeyMappingGuard.mappingsAfterCleanup(
+            ownedDifferenceReport,
+            source: .capsLock
+        ) == [foreignMapping],
+               "the crash guard removes only the mapping owned by the Super key")
 
         let noActionReport = """
         HIDKeyboardModifierMappingPairs = {
