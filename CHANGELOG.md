@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens Super key shutdown, process termination, window handling, pasteboard restoration, sensor selection and favicon downloads. It also improves Settings, Scratchpad, Screenshot Editor, floating panels and several menu bar behaviors.
+Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broadens app update and safe cleanup discovery, and hardens Super key shutdown, process termination, window handling, pasteboard restoration, sensor selection, Cleaning Mode unlock and favicon downloads. It also improves Settings, Scratchpad, Screenshot Editor, floating panels and several menu bar behaviors.
 
 ### Added
 - Clipboard history now offers retention limit options for 10,000 items and unlimited storage.
@@ -46,6 +46,7 @@ Vorssaint expands clipboard, Super key, App Switcher and snippet controls, broad
 - Pressing Escape in the clipboard history quick panel now clears batch selection or closes the panel directly instead of closing the preview pane first. Thanks to @naveenkrdy.
 - Adding points to a custom fan curve now updates and saves the curve instead of discarding the new point.
 - The battery icon in the menu bar now preserves its rectangular aspect ratio when split into its own item instead of rendering as a square. Thanks to @Yahddyyp.
+- Cleaning Mode now uses a forgiving 6-second press window for the Escape unlock gesture and resets the count when modifier keys are pressed while wiping. Thanks to @iltonandrew.
 
 ## [3.3.3-beta.3] - 2026-08-26
 
