@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint adds quit and close protections, expands screen text recognition, capture magnifier, the screen recording editor, clipboard, Super key, Dock Preview, App Switcher, Window Layout, mouse controls, snippet controls and the disk image installer, broadens app update and safe cleanup discovery, and hardens unattended cleanup, shortcut capture and key caps, permission guide recovery, input session switching, Accessibility timeouts, Volume Mixer audio rendering, helper process attribution and teardown, Super key shutdown, process termination, local build signing, update and uninstallation teardown, switching to the chosen app, window handling and shared on-screen parsing, pasteboard restoration, the Homebrew panel's package list, the radial menu's Now Playing card, the docked shelf's saved items, sensor selection, Cleaning Mode unlock, favicon downloads, the What's New showcase video download, stopping a recording, and the sound of screen recordings. It also improves mouse scrolling feel, disk space and system monitor metrics, screen recording preparation, Command Bar, App Switcher and radial menu responsiveness, Settings, Scratchpad, Screenshot Editor, floating panels and several menu bar behaviors.
+Vorssaint adds quit and close protections, expands screen text recognition, capture magnifier, the screen recording editor, clipboard, Super key, Dock Preview, App Switcher, Window Layout, mouse controls, snippet controls and the disk image installer, broadens app update and safe cleanup discovery, and hardens unattended cleanup, shortcut capture and key caps, permission guide recovery, input session switching, Accessibility timeouts, Volume Mixer audio rendering, helper process attribution and teardown, Super key shutdown, process termination, local build signing, update and uninstallation teardown, switching to the chosen app, window handling and shared on-screen parsing, pasteboard restoration, the Homebrew panel's package list and long running package jobs, the radial menu's Now Playing card, the docked shelf's saved items, sensor selection, Cleaning Mode unlock, favicon downloads, the What's New showcase video download, stopping a recording, and the sound of screen recordings. It also improves mouse scrolling feel, disk space and system monitor metrics, screen recording preparation, Command Bar, App Switcher and radial menu responsiveness, Settings, Scratchpad, Screenshot Editor, floating panels and several menu bar behaviors.
 
 ### Added
 - Settings now includes optional protections for Command-Q and Command-W that follow the active keyboard layout, with customizable hold duration, double press, extra modifier requirements and per-app scopes. Thanks to @RuanMD and @PathGao.
@@ -30,6 +30,8 @@ Vorssaint adds quit and close protections, expands screen text recognition, capt
 - The screen recording editor can now blur any area of the picture for as long as you choose, keeping names, emails and other private details unreadable even inside zooms.
 
 ### Changed
+- The Command Bar now prepares each group of rows once while it opens instead of redoing the same work as every source arrives, so the first keystrokes land sooner. Thanks to @PathGao.
+- Window Layout shortcuts now find the app that owns the focused window directly instead of reading the whole list of running apps for each candidate. Thanks to @PathGao.
 - Long screen recordings now prepare pointer and zoom effects more efficiently before preview and export. Thanks to @PathGao.
 - Minimizing a window right after switching to it now stops reading window state once the previous app is back, instead of repeating the same Accessibility reads throughout the minimize animation, so the keyboard stays responsive. Thanks to @PathGao.
 - Using the same Window Layout shortcut for left or right again now carries the window to the display on that side, landing on the half it came in through.
@@ -56,6 +58,7 @@ Vorssaint adds quit and close protections, expands screen text recognition, capt
 - The recording editor's filmstrip now scrubs through the video when you drag across it, showing the frame under the pointer as you go. Hold Shift while dragging to pick a stretch to cut out, and each cut-out stretch now goes dark on the filmstrip. Thanks to @saminton.
 
 ### Fixed
+- A Homebrew install, upgrade or uninstall that stops responding no longer leaves the panel unable to answer anything else, and a slow download or build is still allowed to finish. Thanks to @PathGao.
 - Automatic cleaning now leaves protected items in place instead of requesting an administrator password while unattended, and reports that they could not be moved to the Trash. Thanks to @PathGao.
 - Local builds now verify their stable signing identity before use and unlock its dedicated keychain when needed, preventing rebuilds from losing existing system permissions. Thanks to @PathGao.
 - Features that handle keyboard, mouse and media keys now step aside during fast user switching, preventing input stalls in the active account. Thanks to @PathGao.
