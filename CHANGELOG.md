@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint adds protections for Command Q and Command W, a pause on lock option for Keep Awake, pointer and stray click controls for mice, blur in the recording editor, sharing from the Shelf, and new options across capture, clipboard, Super key, App Switcher, Dock Preview and Window Layout. It also makes the Command Bar, App Switcher, Dock Preview, radial menu and cleaning faster, widens app update and leftover discovery, and fixes input, window switching, clipboard, capture and audio behavior throughout.
+Vorssaint adds protections for Command Q and Command W, a pause on lock option for Keep Awake, pointer and stray click controls for mice, blur in the recording editor, sharing from the Shelf, and new options across capture, clipboard, Super key, App Switcher, Dock Preview and Window Layout. It also makes the Command Bar, App Switcher, Dock Preview, radial menu and cleaning faster, widens app update and leftover discovery, and fixes input, window switching, clipboard, capture, app installation and audio behavior throughout.
 
 ### Added
 - Optional protections for Command Q and Command W, with a hold, a double press or an extra modifier, per app and following your keyboard layout. Thanks to @RuanMD and @PathGao.
@@ -65,6 +65,7 @@ Vorssaint adds protections for Command Q and Command W, a pause on lock option f
 - The radial menu checks only which extra button opens a wheel, instead of loading every wheel and icon on each event. Thanks to @PathGao.
 
 ### Fixed
+- An app installed from a disk image now opens from Applications instead of a hidden read-only copy, so large apps start correctly.
 - Stopping a recording while you type no longer risks a crash or misplaced typing moments. Thanks to @PathGao.
 - Screen recordings capture the Mac's sound once, so apps turned down in the Volume Mixer no longer come back doubled.
 - Adding points to a custom cooling curve keeps every sensor and saves without crashing.
