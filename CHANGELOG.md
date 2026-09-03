@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [3.3.3-beta.4] - 2026-09-03
 
 ### Summary
 Vorssaint adds protections for Command Q and Command W, a pause on lock option for Keep Awake, pointer and stray click controls for mice, blur in the recording editor, sharing from the Shelf, and new options across capture, clipboard, Super key, App Switcher, Dock Preview and Window Layout. It also makes the Command Bar, App Switcher, Dock Preview, radial menu and cleaning faster, widens app update and leftover discovery, and fixes input, window switching, clipboard, capture, app installation and audio behavior throughout.
