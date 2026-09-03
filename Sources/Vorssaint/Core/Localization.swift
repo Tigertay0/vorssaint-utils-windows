@@ -968,9 +968,6 @@ struct Strings {
     let supportIntroDoneButton: String
     let discordIntroTitle: String
     let discordIntroMessage: String
-    let discordIntroBenefitHelp: String
-    let discordIntroBenefitFeedback: String
-    let discordIntroBenefitPreviews: String
     let discordIntroJoinButton: String
     let communityIntroTitle: String
     let communityIntroMessage: String
@@ -1971,9 +1968,6 @@ extension Strings {
         supportIntroDoneButton: "Concluir",
         discordIntroTitle: "A comunidade do Vorssaint no Discord está começando",
         discordIntroMessage: "A comunidade do Vorssaint é nova e ainda está em desenvolvimento. Entre desde o começo para conhecer outros usuários e ajudar a construir um espaço acolhedor em torno do app.",
-        discordIntroBenefitHelp: "Tire dúvidas e compartilhe fluxos de trabalho",
-        discordIntroBenefitFeedback: "Relate bugs, peça melhorias e ajude a decidir o que vem depois",
-        discordIntroBenefitPreviews: "Acompanhe o desenvolvimento, prévias e novidades de versões",
         discordIntroJoinButton: "Entrar na comunidade no Discord",
         communityIntroTitle: "Vem ver antes de todo mundo",
         communityIntroMessage: "Quem já me seguia no X viu várias novidades desta atualização antes de todo mundo. Lá eu posto prévias do que vem depois e mostro como funciona, para você já saber o básico antes mesmo da atualização sair. Segue lá e veja o que vem depois!",
@@ -2969,9 +2963,6 @@ extension Strings {
         supportIntroDoneButton: "Done",
         discordIntroTitle: "The Vorssaint Discord community is just getting started",
         discordIntroMessage: "The Vorssaint community is new and still being built. Join early to meet other users and help build a welcoming space around the app.",
-        discordIntroBenefitHelp: "Get help and share workflows",
-        discordIntroBenefitFeedback: "Report bugs, request improvements and shape what comes next",
-        discordIntroBenefitPreviews: "See work in progress, early previews and release news",
         discordIntroJoinButton: "Join the Discord community",
         communityIntroTitle: "See it before everyone else",
         communityIntroMessage: "People who already followed me on X saw several changes in this update before anyone else. I post previews of what is coming and show how it works, so you already know the basics before the update ships. Follow along and see what comes next!",

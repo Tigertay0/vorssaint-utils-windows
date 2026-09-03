@@ -12326,9 +12326,6 @@ struct MetricsTests {
                 strings.supportIntroCoffeeButton,
                 strings.discordIntroTitle,
                 strings.discordIntroMessage,
-                strings.discordIntroBenefitHelp,
-                strings.discordIntroBenefitFeedback,
-                strings.discordIntroBenefitPreviews,
                 strings.discordIntroJoinButton,
                 strings.communityIntroTitle,
                 strings.communityIntroMessage,
@@ -15454,6 +15451,19 @@ struct MetricsTests {
                 && decodedProfiles[0].mouseButton == RadialMenuMouseTrigger.back.rawValue
                 && decodedProfiles[0].items.count == 4,
                "profile encodes and decodes accurately with trimmed name")
+
+        let renamedPresetProfile = RadialMenuProfilePreset.media.createProfile(name: "Renamed")
+        let presetRoundTrip = RadialMenuSupport.decodeProfiles(
+            RadialMenuSupport.encodeProfiles([renamedPresetProfile]))
+        expect(renamedPresetProfile.preset == RadialMenuProfilePreset.media.rawValue
+                && presetRoundTrip.first?.preset == RadialMenuProfilePreset.media.rawValue,
+               "a wheel keeps the starter set it came from, whatever it is renamed to")
+        let profileWithoutPreset = Data("""
+        [{"id":"\(UUID().uuidString)","name":"Old Wheel","color":"accent",\
+        "shortcut":"","mouseButton":"off","items":[]}]
+        """.utf8)
+        expect(RadialMenuSupport.decodeProfiles(profileWithoutPreset).first?.preset == nil,
+               "a wheel saved before the starter set was recorded decodes without one")
 
         let dupID = UUID()
         let dups = [
