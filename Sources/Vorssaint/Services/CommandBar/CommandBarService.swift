@@ -2570,8 +2570,13 @@ final class CommandBarService: ObservableObject {
             if event.modifierFlags.contains(.command) {
                 // `characters` is the Command-aware key macOS resolves: it
                 // follows remapped Latin layouts and supplies the positional
-                // Latin equivalent when the active layout is non-Latin.
-                let key = event.characters?.lowercased()
+                // Latin equivalent when the active layout is non-Latin. Option
+                // rewrites it into the alternate glyph, and the app's own menu
+                // owns ⌥⌘H, so while Option is held the unmodified reading is
+                // the one that still names the key to swallow.
+                let key = (event.modifierFlags.contains(.option)
+                    ? event.charactersIgnoringModifiers
+                    : event.characters)?.lowercased()
                 switch key {
                 case "q", "w", "m", "h":
                     // The app's menu owns these combinations and the panel is

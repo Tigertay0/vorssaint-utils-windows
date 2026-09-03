@@ -21779,7 +21779,8 @@ struct MetricsTests {
             .last ?? "").components(separatedBy: "\n    private func ")
         let monitor = monitorParts.first ?? ""
         expect(monitorParts.count > 1
-                && monitor.contains("let key = event.characters?.lowercased()")
+                && monitor.contains("? event.charactersIgnoringModifiers")
+                && monitor.contains(": event.characters)?.lowercased()")
                 && monitor.contains("let key = event.charactersIgnoringModifiers?.lowercased()")
                 && !monitor.contains("case kVK_ANSI_Q")
                 && monitor.contains("digitIndex(for: event.keyCode)"),
