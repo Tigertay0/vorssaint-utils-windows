@@ -35,6 +35,7 @@ Vorssaint adds protections for Command Q and Command W, a pause on lock option f
 - The Command Bar can restart Vorssaint. Thanks to @CSkjolden.
 
 ### Changed
+- Dragging a window to the top edge of the screen now maximizes it, and the update highlights tour covers Window Layout, Quit Protection, and recording blur.
 - Smooth scrolling feels consistent on standard and high-refresh displays, with adjustable speed and response and no lost wheel distance.
 - The recording editor's filmstrip scrubs as you drag across it. Hold Shift to pick a stretch to cut out, and cut stretches go dark. Thanks to @saminton.
 - Settings search and the Command Bar group results under their main page, navigate with arrow keys and deep link to exact sections. Thanks to @pergioa.
