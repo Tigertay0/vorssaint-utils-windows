@@ -532,7 +532,7 @@ extension Strings {
         shelfTooltipLinkPlural: "%d개 링크",
         shelfActionOpen: "열기",
         shelfActionOpenWith: "다음으로 열기",
-        shelfActionAirDrop: "AirDrop으로 공유",
+        shelfActionShare: "공유",
 
         breakdownMeasuring: "측정 중…",
 

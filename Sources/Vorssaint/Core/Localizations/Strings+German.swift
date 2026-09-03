@@ -531,7 +531,7 @@ extension Strings {
         shelfTooltipLinkPlural: "%d Links",
         shelfActionOpen: "Öffnen",
         shelfActionOpenWith: "Öffnen mit",
-        shelfActionAirDrop: "Mit AirDrop teilen",
+        shelfActionShare: "Teilen",
 
         breakdownMeasuring: "Wird gemessen…",
 

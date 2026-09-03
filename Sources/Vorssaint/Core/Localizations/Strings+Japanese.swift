@@ -531,7 +531,7 @@ extension Strings {
         shelfTooltipLinkPlural: "%d 件のリンク",
         shelfActionOpen: "開く",
         shelfActionOpenWith: "このアプリケーションで開く",
-        shelfActionAirDrop: "AirDropで共有",
+        shelfActionShare: "共有",
 
         breakdownMeasuring: "計測中…",
 

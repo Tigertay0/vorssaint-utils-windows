@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint adds protections for Command Q and Command W, a pause on lock option for Keep Awake, pointer and stray click controls for mice, blur in the recording editor, and new options across capture, clipboard, Shelf, Super key, App Switcher, Dock Preview and Window Layout. It also makes the Command Bar, App Switcher, Dock Preview, radial menu and cleaning faster, widens app update and leftover discovery, and fixes input, window switching, clipboard, capture and audio behavior throughout.
+Vorssaint adds protections for Command Q and Command W, a pause on lock option for Keep Awake, pointer and stray click controls for mice, blur in the recording editor, sharing from the Shelf, and new options across capture, clipboard, Super key, App Switcher, Dock Preview and Window Layout. It also makes the Command Bar, App Switcher, Dock Preview, radial menu and cleaning faster, widens app update and leftover discovery, and fixes input, window switching, clipboard, capture and audio behavior throughout.
 
 ### Added
 - Optional protections for Command Q and Command W, with a hold, a double press or an extra modifier, per app and following your keyboard layout. Thanks to @RuanMD and @PathGao.
@@ -27,6 +27,7 @@ Vorssaint adds protections for Command Q and Command W, a pause on lock option f
 - Clipboard history can clear all unpinned items from the Command Bar after a confirmation. Thanks to @CSkjolden.
 - Clipboard history offers retention limits of 10,000 items and unlimited storage.
 - Shelf can clear every item when you use its close button, while hiding and collapsing keep them. Thanks to @bilalnoork.
+- Shelf can share its files with any app or person the Mac offers, from a button in its footer or the right-click menu.
 - Copy Text from Screen can join recognized lines into a single paragraph with script aware spacing. Thanks to @ywu73.
 - Cleaning Mode can keep the screen visible with a discreet corner indicator instead of blacking it out.
 - Eject all disks can leave chosen drives mounted, so backup and permanent storage stay connected. Thanks to @PathGao.

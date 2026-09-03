@@ -532,7 +532,7 @@ extension Strings {
         shelfTooltipLinkPlural: "%d 個連結",
         shelfActionOpen: "打開",
         shelfActionOpenWith: "打開方式",
-        shelfActionAirDrop: "透過 AirDrop 分享",
+        shelfActionShare: "分享",
 
         breakdownMeasuring: "測量中…",
 

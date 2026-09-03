@@ -532,7 +532,7 @@ extension Strings {
         shelfTooltipLinkPlural: "%d ссылок",
         shelfActionOpen: "Открыть",
         shelfActionOpenWith: "Открыть с помощью",
-        shelfActionAirDrop: "Поделиться через AirDrop",
+        shelfActionShare: "Поделиться",
 
         breakdownMeasuring: "Измерение…",
 

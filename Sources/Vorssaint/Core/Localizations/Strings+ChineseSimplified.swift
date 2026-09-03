@@ -531,7 +531,7 @@ extension Strings {
         shelfTooltipLinkPlural: "%d 个链接",
         shelfActionOpen: "打开",
         shelfActionOpenWith: "打开方式",
-        shelfActionAirDrop: "通过 AirDrop 共享",
+        shelfActionShare: "共享",
 
         breakdownMeasuring: "测量中…",
 
