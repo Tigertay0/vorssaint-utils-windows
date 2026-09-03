@@ -2006,6 +2006,10 @@ struct MetricsTests {
                "external-display Keep Awake is opt-in")
         expect(registeredDefaults[DefaultsKey.keepAwakeConnectedToPower] as? Bool == false,
                "power-connected Keep Awake is opt-in")
+        expect(registeredDefaults[DefaultsKey.keepAwakePauseWhenLocked] as? Bool == false,
+               "pausing Keep Awake on screen lock is opt-in")
+        expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.keepAwakePauseWhenLocked),
+               "the Keep Awake screen-lock preference follows settings backups")
         expect(registeredDefaults[DefaultsKey.hotkeyEnabled] as? Bool == true,
                "global hotkey is on for clean installs")
         expect(registeredDefaults[DefaultsKey.keepAwakeShortcut] as? String == "control+option+command:40",
@@ -2064,6 +2068,17 @@ struct MetricsTests {
             sessionActive: true,
             automaticSessionActive: false
         ) == .none, "clearing automatic conditions does not end a manual session")
+        expect(KeepAwakeAutomationSupport.isScreenLocked(
+            sessionDictionary: ["CGSSessionScreenIsLocked": true]
+        ), "the Keep Awake lock guard reads a locked session")
+        expect(!KeepAwakeAutomationSupport.isScreenLocked(
+            sessionDictionary: ["CGSSessionScreenIsLocked": false]
+        ), "the Keep Awake lock guard reads an unlocked session")
+        expect(KeepAwakeAutomationSupport.isScreenLocked(
+            sessionDictionary: ["CGSSessionScreenIsLocked": NSNumber(value: true)]
+        ), "the Keep Awake lock guard accepts the session dictionary's numeric bridge")
+        expect(!KeepAwakeAutomationSupport.isScreenLocked(sessionDictionary: nil),
+               "an unreadable lock state does not strand Keep Awake in a pause")
         let sleepDisabledReport = """
         System-wide power settings:
          SleepDisabled\t\t1
