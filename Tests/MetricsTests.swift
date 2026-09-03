@@ -14022,7 +14022,7 @@ struct MetricsTests {
                    "no em-dash in visible camera preview strings (\(language.rawValue))")
             let radialMenuValues = Mirror(reflecting: FeatureStrings.radialMenu(language)).children
                 .compactMap { $0.value as? String }
-            expect(radialMenuValues.count == 91 && radialMenuValues.allSatisfy { !$0.isEmpty },
+            expect(radialMenuValues.count == 97 && radialMenuValues.allSatisfy { !$0.isEmpty },
                    "every radial menu string is set for \(language.rawValue)")
             expect(radialMenuValues.allSatisfy { !$0.contains("—") },
                    "no em-dash in visible radial menu strings (\(language.rawValue))")
@@ -15559,6 +15559,35 @@ struct MetricsTests {
                 == [MouseButtonShortcutSupport.forwardButtonNumber],
                "claimed mouse buttons fall back to the legacy button key like the full decode")
         legacyButtonDefaults.removePersistentDomain(forName: "com.vorssaint.tests.radialLegacyButton")
+
+        var reorderItems = [
+            RadialMenuItem(kind: .app, name: "A"),
+            RadialMenuItem(kind: .app, name: "B"),
+            RadialMenuItem(kind: .app, name: "C"),
+        ]
+        let itemToMove = reorderItems[0]
+        let targetItem = reorderItems[2]
+        if let from = reorderItems.firstIndex(where: { $0.id == itemToMove.id }),
+           let to = reorderItems.firstIndex(where: { $0.id == targetItem.id }) {
+            reorderItems.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        }
+        expect(reorderItems.map(\.name) == ["B", "C", "A"],
+               "radial items can be reordered correctly by drag target")
+
+        var swapItems = [
+            RadialMenuItem(kind: .app, name: "A"),
+            RadialMenuItem(kind: .app, name: "B"),
+            RadialMenuItem(kind: .app, name: "C"),
+            RadialMenuItem(kind: .app, name: "D"),
+        ]
+        let firstToSwap = swapItems[0]
+        let secondToSwap = swapItems[2]
+        if let from = swapItems.firstIndex(where: { $0.id == firstToSwap.id }),
+           let to = swapItems.firstIndex(where: { $0.id == secondToSwap.id }) {
+            swapItems.swapAt(from, to)
+        }
+        expect(swapItems.map(\.name) == ["C", "B", "A", "D"],
+               "radial items can be swapped directly without displacing intermediate items")
 
         // The cheap read and the full decode can disagree on a corrupt blob,
         // so only one of them may decide whether the click is passed on: once

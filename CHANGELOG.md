@@ -33,6 +33,7 @@ Vorssaint adds protections for Command Q and Command W, a pause on lock option f
 - Eject all disks can leave chosen drives mounted, so backup and permanent storage stay connected. Thanks to @PathGao.
 - The disk image installer shows progress while it copies and verifies an app, then offers to trash the download and reveal the app, remembering both answers.
 - The Command Bar can restart Vorssaint. Thanks to @CSkjolden.
+- Radial menu settings include an interactive wheel preview that lets you drag to swap actions, click to configure, and navigate submenus.
 
 ### Changed
 - Dragging a window to the top edge of the screen now maximizes it, and the update highlights tour covers Window Layout, Quit Protection, and recording blur.
