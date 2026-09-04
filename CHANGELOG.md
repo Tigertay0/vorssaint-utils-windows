@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint adds edge snap controls and a shortcut for recent captures, refines the radial menu, and improves color picking, app icons, readability, localization, mouse reconnection behavior and build checks.
+Vorssaint adds edge snap controls and a shortcut for recent captures, refines the radial menu, and improves color picking, app icons, readability, localization, mouse reconnection behavior, shortcut conflict detection and build checks.
 
 ### Added
 - Switching Spaces by dragging a button can follow your hand, the way a trackpad swipe does, in Mouse settings.
@@ -21,6 +21,7 @@ Vorssaint adds edge snap controls and a shortcut for recent captures, refines th
 - Panel outlines answer the system's Increase Contrast, which they were ignoring while already following reduced motion and transparency.
 
 ### Fixed
+- Shortcut recording detects system shortcuts even when they have never been customized. Thanks to @owendaw.
 - Mouse acceleration stays disabled after disconnecting and reconnecting a mouse.
 - The App Switcher shows supported alternate app icons without flickering during navigation. Thanks to @EugeneCarldotme and @hash00.
 - Color picking copies the sampled pixel's correct color and shows matching values in the magnifier. Thanks to @MaksimEgorov.
