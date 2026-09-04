@@ -3753,6 +3753,26 @@ struct MetricsTests {
                "pointer-following brightness keys arrive switched off")
         expect(registeredDefaults[DefaultsKey.brightnessOSDEnabled] as? Bool == false,
                "brightness adjustment overlay arrives switched off")
+        expect(registeredDefaults[DefaultsKey.keyboardBrightnessDecreaseShortcut] as? String
+                == GlobalShortcut.keyboardBrightnessDecreaseDefault.storageValue
+                && registeredDefaults[DefaultsKey.keyboardBrightnessIncreaseShortcut] as? String
+                == GlobalShortcut.keyboardBrightnessIncreaseDefault.storageValue,
+               "keyboard brightness shortcuts ship with distinct defaults")
+        expect(registeredDefaults[DefaultsKey.keyboardBrightnessShortcutsEnabled] as? Bool == false,
+               "keyboard brightness shortcuts arrive switched off")
+        let keyboardShortcutSettings: [String: Any] = [
+            DefaultsKey.keyboardBrightnessShortcutsEnabled: true,
+            DefaultsKey.keyboardBrightnessDecreaseShortcut: "control+command:27",
+            DefaultsKey.keyboardBrightnessIncreaseShortcut: "control+command:24",
+        ]
+        let keyboardShortcutBackup = SettingsBackupSupport.payload(appVersion: "test") {
+            keyboardShortcutSettings[$0]
+        }
+        let restoredKeyboardShortcuts = SettingsBackupSupport.sanitizedSettings(from: keyboardShortcutBackup)
+        expect(keyboardShortcutSettings.allSatisfy { key, value in
+            (restoredKeyboardShortcuts?[key] as? NSObject) == (value as? NSObject)
+        }, "keyboard brightness opt-in and custom shortcuts survive a settings backup")
+
         expect(registeredDefaults[DefaultsKey.screenshotOpenEditorDirectly] as? Bool == false,
                "capture keeps showing the preview unless the user opts into the editor")
         expect(registeredDefaults[DefaultsKey.screenshotDefaultAction] as? String == "",
@@ -14608,6 +14628,22 @@ struct MetricsTests {
         expect(GlobalShortcutRole.availableRoles(isAvailable: { $0 != .switcher })
                 .allSatisfy { $0 != .switcher && $0 != .switcherWindow },
                "the shortcut editor lists installed roles even without reading enable keys")
+        expect(GlobalShortcutRole.keyboardBrightnessDecrease.feature == .brightness
+                && GlobalShortcutRole.keyboardBrightnessIncrease.feature == .brightness
+                && GlobalShortcutRole.keyboardBrightnessDecrease.group == .mouseKeyboard
+                && GlobalShortcutRole.keyboardBrightnessIncrease.group == .mouseKeyboard,
+               "keyboard brightness stays owned by the brightness service but appears with keyboard controls")
+        expect(GlobalShortcutRole.keyboardBrightnessDecrease.requiredEnableKeys
+                == [DefaultsKey.keyboardBrightnessShortcutsEnabled]
+                && GlobalShortcutRole.keyboardBrightnessIncrease.requiredEnableKeys
+                == [DefaultsKey.keyboardBrightnessShortcutsEnabled],
+               "keyboard brightness shortcuts require explicit opt-in")
+        expect(!GlobalShortcutRole.activeRoles(isOn: { _ in false })
+                .contains(where: \.isKeyboardBrightness),
+               "keyboard brightness shortcuts reserve no combination before opt-in")
+        expect(!GlobalShortcutRole.activeRoles(isOn: { _ in true }, isAvailable: { $0 != .brightness })
+                .contains(where: \.isKeyboardBrightness),
+               "removing the brightness feature releases both keyboard shortcuts")
 
         let superSpace = GlobalShortcut(keyCode: Int64(kVK_Space), modifiers: .validMask)
         let customSuperSpace = GlobalShortcut(keyCode: Int64(kVK_Space),
@@ -15282,6 +15318,16 @@ struct MetricsTests {
                 && BrightnessSupport.deviceValue(for: -0.2, maximum: 100) == 0
                 && BrightnessSupport.deviceValue(for: 1.7, maximum: 100) == 100,
                "slider values map onto the display's own scale with clamping")
+        expect(BrightnessSupport.steppedKeyboardLightLevel(current: 0.5, direction: -1)
+                == 0.5 - BrightnessSupport.keyboardLightStep
+                && BrightnessSupport.steppedKeyboardLightLevel(current: 0.5, direction: 1)
+                == 0.5 + BrightnessSupport.keyboardLightStep,
+               "keyboard brightness shortcuts move by one system-sized step")
+        expect(BrightnessSupport.steppedKeyboardLightLevel(current: 0, direction: -1) == 0
+                && BrightnessSupport.steppedKeyboardLightLevel(current: 1, direction: 1) == 1,
+               "keyboard brightness shortcut steps clamp to the supported range")
+        expect(BrightnessSupport.steppedKeyboardLightLevel(current: .nan, direction: 1) == 0,
+               "an invalid keyboard brightness reading never reaches the private setter")
 
         // EDID UUID chunks at fixed positions: vendor, product (little endian),
         // manufacture date, image size.
