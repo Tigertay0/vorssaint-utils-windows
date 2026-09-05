@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-Vorssaint adds edge snap controls and shortcuts for recent captures and keyboard brightness, and refines the radial menu. It adds capture menu and magnifier zoom choices and improves color picking, app icons, readability, localization, mouse reconnection, system shortcut handling and build checks.
+Vorssaint adds edge snap controls and shortcuts for recent captures and keyboard brightness, and refines the radial menu. It adds capture menu and magnifier zoom choices and improves color picking, app icons, readability, localization, mouse reconnection, system shortcut recovery and build checks.
 
 ### Added
 - Each capture tool can hide the mode menu when opened with its keyboard shortcut. Thanks to @EugeneCarldotme.
@@ -24,7 +24,7 @@ Vorssaint adds edge snap controls and shortcuts for recent captures and keyboard
 - Panel outlines answer the system's Increase Contrast, which they were ignoring while already following reduced motion and transparency.
 
 ### Fixed
-- App Switcher takes over the reverse window shortcut without disabling screenshots, and restores keys left disabled after a crash. Thanks to @owendaw.
+- App Switcher restores native shortcuts after crashes even when disabled, and its reverse window shortcut leaves screenshots available. Thanks to @owendaw.
 - Shortcut recording detects system shortcuts even when they have never been customized. Thanks to @owendaw.
 - Mouse acceleration stays disabled after disconnecting and reconnecting a mouse.
 - The App Switcher shows supported alternate app icons without flickering during navigation. Thanks to @EugeneCarldotme and @hash00.
