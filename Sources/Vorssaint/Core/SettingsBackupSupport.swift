@@ -128,6 +128,7 @@ enum SettingsBackupSupport {
         DefaultsKey.fanControlRecoveryNeeded,
         DefaultsKey.fanControlHelperVersion,
         DefaultsKey.switcherNativeHotkeysSuppressed,
+        DefaultsKey.systemShortcutsSuppressed,
         // DDC capability belongs to one physical monitor on one Mac port.
         DefaultsKey.brightnessDDCWriteOnlyPaths,
     ]
