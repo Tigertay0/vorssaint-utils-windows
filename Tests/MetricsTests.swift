@@ -2947,6 +2947,16 @@ struct MetricsTests {
             bundleIdentifier: "com.example.editor",
             subrole: "AXUnknown"),
                "App Switcher keeps undescribed windows from unrelated apps filtered")
+        for tags: UInt32 in [786946, 795138] {
+            expect(!SwitcherSupport.isSwitchableNonstandardWindow(
+                role: "AXWindow",
+                subrole: "AXUnknown",
+                fillsScreen: false,
+                hasNormalWindowLevel: true,
+                acceptsUndescribedSubroles: false,
+                isExcludedFromWindowCycle: SpaceHopSupport.isExcludedFromWindowCycle(windowTagsLow: tags)),
+                   "App Switcher excludes helper windows that opt out of window cycling")
+        }
         expect(SwitcherSupport.isSwitchableNonstandardWindow(
             role: "AXWindow",
             subrole: "AXUnknown",
