@@ -5378,7 +5378,7 @@ struct MetricsTests {
         expect(CleanerPolicy.isExcludedCacheEntry("com.spotify.client")
                && CleanerPolicy.isExcludedCacheEntry("COM.SPOTIFY.CLIENT")
                && CleanerPolicy.isExcludedCacheEntry("com.spotify.client.helper"),
-               "Spotify caches holding Spicetify state are excluded even when all caches are selected")
+               "caches holding installed customizations are excluded even when all caches are selected")
         expect(!CleanerPolicy.isExcludedCacheEntry("com.vendor.editor")
                && !CleanerPolicy.isExcludedCacheEntry("ms-playwright"),
                "ordinary and downloadable sensitive caches remain available for review")

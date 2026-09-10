@@ -55,7 +55,7 @@ enum CleanerPolicy {
         "com.apple.FontRegistry", "com.apple.ATS",
         "com.apple.akd", "com.apple.AuthKit",
         "com.paceap.", "com.native-instruments", "com.fabfilter",
-        // Spotify stores Spicetify Marketplace state alongside its cache.
+        // This cache also holds installed customizations that cannot be rebuilt.
         "com.spotify.client",
     ]
 
