@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Summary
-App Switcher opens more smoothly with many windows, can focus its list on the display under the pointer, no longer counts hidden helper windows and keeps newly opened windows focused after switching. Screenshot previews gain optional keyboard focus, Scratchpad adds shortcuts to create and close tabs, the menu bar panel reads as one surface up to its arrow, and Cleaner protects app customizations when clearing caches.
+App Switcher opens more smoothly with many windows, can focus its list on the display under the pointer, excludes hidden helper windows and keeps newly opened windows focused after switching. Screenshot previews gain optional keyboard focus, Scratchpad adds tab shortcuts, the menu bar panel keeps a continuous background, Cleaner protects app customizations when clearing caches, and Quit on close preserves incoming calls.
 
 ### Added
 - App Switcher can show only windows on the display under the pointer, staying closed on empty displays. Thanks to @EugeneCarldotme.
@@ -18,6 +18,7 @@ App Switcher opens more smoothly with many windows, can focus its list on the di
 - The App Switcher opens more smoothly when many windows are open. Thanks to @bebricoOOOOOOf.
 
 ### Fixed
+- Quit on close keeps incoming calls connected when their app has no open window. Thanks to @Borisserz.
 - Cleaner preserves installed customizations stored in an app's cache when all optional caches are selected. Thanks to @EugeneCarldotme.
 - App Switcher keeps newly opened windows focused without interrupting normal window switching. Thanks to @akune.
 - The App Switcher no longer shows blank entries for hidden helper windows that apps keep out of window cycling. Thanks to @EugeneCarldotme.
