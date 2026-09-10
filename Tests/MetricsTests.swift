@@ -5481,7 +5481,35 @@ struct MetricsTests {
         expect(registeredDefaults[DefaultsKey.mediaImageProfiles] as? String == "[]",
                "Media image profiles start empty")
         expect((registeredDefaults[DefaultsKey.autoQuitExceptions] as? [String]) == Defaults.mandatoryAutoQuitExceptionBundleIDs,
-               "Finder stays in the default auto-quit exception list")
+               "Finder and Phone stay in the default auto-quit exception list")
+        expect(Defaults.mandatoryAutoQuitExceptionBundleIDs.contains(Defaults.finderBundleIdentifier)
+                && Defaults.mandatoryAutoQuitExceptionBundleIDs.contains(Defaults.phoneBundleIdentifier),
+               "Quit on close never terminates Finder or Phone (Continuity calls)")
+        expect(Defaults.sanitizedAutoQuitExceptions([Defaults.finderBundleIdentifier])
+                .contains(Defaults.phoneBundleIdentifier),
+               "existing auto-quit exception lists gain Phone on sanitize")
+        expect(AutoQuitSupport.shouldDisplayException(
+            bundleID: Defaults.phoneBundleIdentifier, isInstalled: false) == false,
+               "Phone stays out of the exceptions UI when the app is not installed")
+        expect(AutoQuitSupport.shouldDisplayException(
+            bundleID: Defaults.phoneBundleIdentifier, isInstalled: true),
+               "Phone appears in the exceptions UI when the app is present")
+        expect(AutoQuitSupport.shouldDisplayException(
+            bundleID: Defaults.finderBundleIdentifier, isInstalled: true),
+               "Finder remains visible in the exceptions UI")
+        expect(AutoQuitSupport.visibleExceptions(
+            [Defaults.finderBundleIdentifier, Defaults.phoneBundleIdentifier, "com.example.app"],
+            isInstalled: { $0 != Defaults.phoneBundleIdentifier }
+        ) == [Defaults.finderBundleIdentifier, "com.example.app"],
+               "hiding Phone leaves other exceptions, including mandatory Finder, visible")
+        expect(Defaults.mandatoryAutoQuitExceptionBundleIDs.contains(Defaults.phoneBundleIdentifier),
+               "Phone remains a mandatory quit exception even when hidden from the UI")
+        let autoQuitSettingsSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/AutoQuitSettings.swift",
+            encoding: .utf8)) ?? ""
+        expect(autoQuitSettingsSource.contains("AutoQuitSupport.visibleExceptions")
+                && autoQuitSettingsSource.contains("InstalledApps.url(for:"),
+               "the AutoQuit settings list filters exceptions through installation-aware visibility")
         expect(registeredDefaults[DefaultsKey.panelCollapsedSections] == nil,
                "panel collapsed sections intentionally has no registered default")
         expect(registeredDefaults[DefaultsKey.panelUtilityOrder] == nil,
@@ -5520,8 +5548,8 @@ struct MetricsTests {
                == ["com.example.One", "com.example.Two"],
                "bundle id lists are trimmed and deduplicated")
         expect(Defaults.sanitizedAutoQuitExceptions(["com.example.One", Defaults.finderBundleIdentifier])
-               == [Defaults.finderBundleIdentifier, "com.example.One"],
-               "Finder is mandatory in the auto-quit exception list")
+               == [Defaults.finderBundleIdentifier, Defaults.phoneBundleIdentifier, "com.example.One"],
+               "Finder and Phone are mandatory in the auto-quit exception list")
         expect(AutoQuitSupport.isExcepted(bundleIdentifier: "com.example.direct",
                                           bundleURL: nil,
                                           exceptions: ["com.example.direct"]),
