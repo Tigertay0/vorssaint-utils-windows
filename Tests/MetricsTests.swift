@@ -18857,6 +18857,9 @@ struct MetricsTests {
                     enabled: true) == nil,
                "the visible shortcut menu assigns a numbered slot or removes a tool from 1 through 9")
 
+        // MARK: Assistive keyboard click recognition
+        assistiveKeyboardChecks { expect($0, $1) }
+
         // MARK: Remappable screenshot tool shortcuts
         screenshotToolShortcutChecks { expect($0, $1) }
         do {
