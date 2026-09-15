@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Faqra</AssemblyName>
+    <RootNamespace>Faqra.App</RootNamespace>
+    <StartupObject>Faqra.App.Program</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- App.xaml then compiles as a Page, so the WPF build does not generate a second Main. -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Faqra.App.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Faqra.Core/Faqra.Core.csproj" />
+    <ProjectReference Include="../Faqra.Win32/Faqra.Win32.csproj" />
+    <ProjectReference Include="../Faqra.Services/Faqra.Services.csproj" />
+  </ItemGroup>
+</Project>
