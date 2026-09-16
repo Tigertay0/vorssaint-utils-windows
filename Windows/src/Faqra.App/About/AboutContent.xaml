@@ -1,0 +1,49 @@
+<UserControl x:Class="Faqra.App.About.AboutContent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <StackPanel HorizontalAlignment="Center" MaxWidth="420">
+        <Image x:Name="GlyphImage" Width="76" Height="76" Margin="0,8,0,14" />
+        <TextBlock x:Name="NameText"
+                   FontFamily="{StaticResource FaqraDisplayFont}"
+                   FontSize="22"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3,0,0">
+            <TextBlock x:Name="VersionText" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+            <Border x:Name="BetaBadge"
+                    Margin="6,0,0,0"
+                    Padding="6,1"
+                    CornerRadius="8"
+                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="BetaText"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+            </Border>
+        </StackPanel>
+        <TextBlock x:Name="DescriptionText"
+                   Style="{StaticResource Caption}"
+                   TextAlignment="Center"
+                   Margin="0,14,0,0" />
+        <ui:Button x:Name="GitHubButton"
+                   Margin="0,16,0,0"
+                   HorizontalAlignment="Center"
+                   Appearance="Secondary"
+                   Icon="{ui:SymbolIcon Link24}"
+                   Click="OnViewOnGitHub" />
+        <TextBlock x:Name="CopyrightText"
+                   FontSize="11"
+                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                   HorizontalAlignment="Center"
+                   Margin="0,16,0,0" />
+        <TextBlock x:Name="CreditText"
+                   FontSize="11"
+                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   Margin="0,2,0,0" />
+    </StackPanel>
+</UserControl>

@@ -32,9 +32,11 @@ public class TrayMenuAdapterTests
         var quit = entries.Single(e => e.Title == "Quit Faqra");
         var settings = entries.Single(e => e.Title == "Settings…");
         var activateFor = entries.Single(e => e.Title == "Activate for…");
+        var updates = entries.Single(e => e.Title == "Check for updates…");
         Assert.True(about.Enabled);
         Assert.True(quit.Enabled);
         Assert.False(settings.Enabled);
+        Assert.False(updates.Enabled);
         Assert.False(activateFor.Enabled);
         Assert.All(activateFor.Children!, child => Assert.False(child.Enabled));
         Assert.Equal(TrayMenuAction.About, lookup[about.Id].Action);

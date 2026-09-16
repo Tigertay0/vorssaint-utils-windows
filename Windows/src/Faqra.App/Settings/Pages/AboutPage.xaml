@@ -1,0 +1,9 @@
+<UserControl x:Class="Faqra.App.Settings.Pages.AboutPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:about="clr-namespace:Faqra.App.About">
+    <StackPanel>
+        <TextBlock x:Name="TitleText" Style="{StaticResource PageTitle}" />
+        <about:AboutContent Margin="0,12,0,0" />
+    </StackPanel>
+</UserControl>

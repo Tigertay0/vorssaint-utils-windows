@@ -7,21 +7,32 @@ namespace Faqra.App.Tests;
 public class AboutWindowTests
 {
     [Fact]
-    public void ConstructsAndShowsUpstreamContent()
+    public void AboutContent_ShowsIdentityVersionAndUpstreamCredit()
+    {
+        StaThread.Run(() =>
+        {
+            var content = new AboutContent();
+            var s = Strings.EnUS;
+
+            Assert.Equal(AppInfo.Name, content.NameText.Text);
+            Assert.StartsWith(s.VersionPrefix, content.VersionText.Text);
+            Assert.Equal(s.AboutDescription, content.DescriptionText.Text);
+            Assert.Equal(s.ViewOnGitHub, content.GitHubButton.Content);
+            Assert.Equal(AppInfo.Copyright, content.CopyrightText.Text);
+            Assert.Equal(AppInfo.UpstreamCredit, content.CreditText.Text);
+            Assert.NotNull(content.GlyphImage.Source);
+        });
+    }
+
+    [Fact]
+    public void AboutWindow_TitlesItselfFromTheMenuString()
     {
         StaThread.Run(() =>
         {
             var window = new AboutWindow();
             try
             {
-                var s = Strings.EnUS;
-                Assert.Equal(s.MenuAbout, window.Title);
-                Assert.Equal(AppInfo.Name, window.NameText.Text);
-                Assert.StartsWith(s.VersionPrefix, window.VersionText.Text);
-                Assert.Equal(s.AboutDescription, window.DescriptionText.Text);
-                Assert.Equal(s.ViewOnGitHub, window.GitHubButton.Content);
-                Assert.Equal(AppInfo.Copyright, window.CopyrightText.Text);
-                Assert.NotNull(window.GlyphImage.Source);
+                Assert.Equal(Strings.EnUS.MenuAbout, window.Title);
             }
             finally
             {

@@ -1,0 +1,24 @@
+<UserControl x:Class="Faqra.App.Onboarding.WelcomeStep"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <Border CornerRadius="10" Padding="24,28" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+            <StackPanel HorizontalAlignment="Center">
+                <Image x:Name="GlyphImage" Width="96" Height="96" />
+                <TextBlock x:Name="NameText"
+                           FontFamily="{StaticResource FaqraDisplayFont}"
+                           FontSize="26"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,10,0,0" />
+                <TextBlock x:Name="BodyText"
+                           Style="{StaticResource Caption}"
+                           TextAlignment="Center"
+                           MaxWidth="360"
+                           Margin="0,6,0,0" />
+            </StackPanel>
+        </Border>
+
+        <StackPanel x:Name="Bullets" Margin="4,20,4,0" />
+    </StackPanel>
+</UserControl>

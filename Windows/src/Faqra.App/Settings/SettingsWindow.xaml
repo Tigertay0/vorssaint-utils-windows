@@ -1,0 +1,102 @@
+<ui:FluentWindow x:Class="Faqra.App.Settings.SettingsWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 MinWidth="772"
+                 MinHeight="528"
+                 Width="900"
+                 Height="720"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar x:Name="WindowTitleBar" Grid.Row="0" ShowMaximize="True" />
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="SidebarColumn" Width="210" MinWidth="198" MaxWidth="240" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar: search over a grouped page list, mirroring the upstream split view. -->
+            <Grid Grid.Column="0" Margin="10,0,6,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <ui:TextBox x:Name="SearchBox"
+                            Grid.Row="0"
+                            Margin="2,0,2,8"
+                            Icon="{ui:SymbolIcon Search24}"
+                            TextChanged="OnSearchChanged"
+                            PreviewKeyDown="OnSearchKeyDown" />
+
+                <ListBox x:Name="PageList"
+                         Grid.Row="1"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         HorizontalContentAlignment="Stretch"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         SelectionChanged="OnPageSelected">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                            <Setter Property="Padding" Value="8,7" />
+                            <Setter Property="Margin" Value="0,1" />
+                            <!-- Group headers are rows too, so they must not be selectable. -->
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsHeader}" Value="True">
+                                    <Setter Property="IsHitTestVisible" Value="False" />
+                                    <Setter Property="Focusable" Value="False" />
+                                    <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="Padding" Value="2,0" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock Text="{Binding Title}"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Margin="2,10,0,2"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           Visibility="{Binding HeaderVisibility}" />
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding PageVisibility}">
+                                    <TextBlock Text="{Binding Glyph}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               Width="22"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Title}"
+                                               FontSize="13"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+
+            <GridSplitter Grid.Column="1"
+                          Width="1"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
+
+            <ScrollViewer Grid.Column="2" x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" Padding="0">
+                <ContentControl x:Name="DetailHost" Margin="28,12,28,32" />
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

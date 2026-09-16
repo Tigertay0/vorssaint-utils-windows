@@ -38,6 +38,60 @@ public sealed partial class Strings
     public required string Indefinitely { get; init; }
     public required string KeepAwakeTitle { get; init; }
 
+    // Feature hub (platform)
+    public required string FeatureNotAvailableOnWindows { get; init; }
+
+    // Settings window
+    public required string SettingsTitle { get; init; }
+    public required string SettingsSearchPlaceholder { get; init; }
+    public required IReadOnlyDictionary<Settings.SettingsSection, string> SettingsSectionTitles { get; init; }
+    public required IReadOnlyDictionary<Settings.SettingsPage, string> SettingsPageTitles { get; init; }
+
+    // General page
+    public required string LaunchAtLogin { get; init; }
+    public required string LaunchAtLoginNeedsApproval { get; init; }
+    public required string LaunchAtLoginUnstableLocation { get; init; }
+    public required string LanguageLabel { get; init; }
+    public required string AppearanceLabel { get; init; }
+    public required string AppearanceSystem { get; init; }
+    public required string AppearanceLight { get; init; }
+    public required string AppearanceDark { get; init; }
+    public required string TraySection { get; init; }
+    public required string ShowTrayIcon { get; init; }
+    public required string ShowTrayIconHint { get; init; }
+    public required string ShowTrayIconAction { get; init; }
+
+    // Advanced page
+    public required string BackupTitle { get; init; }
+    public required string BackupDescription { get; init; }
+    public required string BackupExportButton { get; init; }
+    public required string BackupImportButton { get; init; }
+    public required string BackupExported { get; init; }
+    public required string BackupInvalidFile { get; init; }
+    public required string BackupImportConfirmTitle { get; init; }
+    public required string BackupImportConfirmBody { get; init; }
+    public required string BackupImportAction { get; init; }
+    public required string Cancel { get; init; }
+
+    // Onboarding
+    public required string OnboardingWelcomeTitle { get; init; }
+    public required string OnboardingWelcomeBody { get; init; }
+    public required string OnboardingBullet1Title { get; init; }
+    public required string OnboardingBullet1Body { get; init; }
+    public required string OnboardingBullet2Title { get; init; }
+    public required string OnboardingBullet2Body { get; init; }
+    public required string OnboardingBullet3Title { get; init; }
+    public required string OnboardingBullet3Body { get; init; }
+    public required string OnboardingPurposeTitle { get; init; }
+    public required string OnboardingPurposeBody { get; init; }
+    public required string OnboardingPurposeSkip { get; init; }
+    public required string OnboardingDoneTitle { get; init; }
+    public required string OnboardingDoneBody { get; init; }
+    public required string OnboardingDoneHint { get; init; }
+    public required string OnboardingBack { get; init; }
+    public required string OnboardingContinue { get; init; }
+    public required string OnboardingStart { get; init; }
+
     // About
     public required string AboutDescription { get; init; }
     public required string VersionPrefix { get; init; }

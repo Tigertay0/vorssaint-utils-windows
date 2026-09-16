@@ -25,6 +25,7 @@ public sealed class StatusItemController : IDisposable
     // Actions with a working handler in this milestone; the rest render greyed out.
     private static readonly HashSet<TrayMenuAction> ImplementedActions =
     [
+        TrayMenuAction.OpenSettings,
         TrayMenuAction.About,
         TrayMenuAction.Quit,
     ];
@@ -104,6 +105,9 @@ public sealed class StatusItemController : IDisposable
     {
         switch (item.Action)
         {
+            case TrayMenuAction.OpenSettings:
+                App.ShowSettings();
+                break;
             case TrayMenuAction.About:
                 AboutWindow.ShowSingleton();
                 break;

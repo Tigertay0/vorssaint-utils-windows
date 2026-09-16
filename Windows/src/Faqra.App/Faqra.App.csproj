@@ -16,6 +16,11 @@
     <InternalsVisibleTo Include="Faqra.App.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Fluent design system for WPF: the brief is a native Windows 11 app, so the official
+         package ships instead of hand-recreating Fluent's controls and theming. -->
+    <PackageReference Include="WPF-UI" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Faqra.Core/Faqra.Core.csproj" />
     <ProjectReference Include="../Faqra.Win32/Faqra.Win32.csproj" />
     <ProjectReference Include="../Faqra.Services/Faqra.Services.csproj" />
