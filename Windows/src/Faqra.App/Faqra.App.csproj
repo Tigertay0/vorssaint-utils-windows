@@ -11,6 +11,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- App.xaml then compiles as a Page, so the WPF build does not generate a second Main. -->
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <!-- Precompiled native code for the startup path: the app is a tray utility that launches with
+         Windows, so the first frame matters more than the package size. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Faqra.App.Tests" />

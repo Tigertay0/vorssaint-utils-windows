@@ -45,6 +45,26 @@ both work and the accent follows the user's Windows accent color. No component h
 
 Spacing runs on a 4px scale. Section headers carry more space above than below (20 above, 8 below).
 
+## Motion
+
+Curves and durations come from [transitions.dev](https://transitions.dev), pulled with
+`npx transitions-dev add <name>`, not invented here and not copied from upstream's SwiftUI springs,
+which read as slow on Windows. `CubicBezierEase` in `src/Faqra.App/Motion.cs` solves the CSS
+cubic-bezier directly, because WPF has no such easing function.
+
+| Token | Value | Where it is used |
+|---|---|---|
+| shared ease | `cubic-bezier(0.22, 1, 0.36, 1)` | every transition below |
+| card-resize | 300ms | the island growing; closing runs at 180ms, the dropdown's 60% ratio |
+| panel-reveal | 400ms open, 350ms close, 16px travel | the island's expanded content, and module swaps |
+| menu-dropdown | 250ms open, 150ms close, 0.97 pre-scale | the island's sections grid |
+| toggle | `cubic-bezier(0.34, 1.35, 0.64, 1)` | available for controls that should overshoot |
+
+Two deliberate omissions. panel-reveal's 2px cross-blur is dropped on the island, because a
+transparent window is composited in software and a per-frame blur would cost more than it adds.
+Every animation is skipped entirely when `SystemParameters.ClientAreaAnimation` is off, which is
+how Windows reports reduced motion.
+
 ## Deliberate deviations from upstream
 
 | Upstream | Faqra | Why |
@@ -55,6 +75,8 @@ Spacing runs on a 4px scale. Section headers carry more space above than below (
 | SF Symbols | Segoe Fluent Icons glyphs | The native icon family; one family throughout. |
 | Permissions tab requests macOS grants | Informational only | Windows needs no consent grant for anything Faqra does. |
 | Alert with named action buttons | Message box whose body names the action | WPF's message box labels its buttons OK and Cancel. |
+| Notch fixed to the built-in screen | The island follows the pointer between monitors, or pins to primary | A Mac's cutout cannot move. Windows has no cutout, so the useful meaning of upstream's "automatic" is to be on the display you are working on. |
+| Notch always at the top | The island attaches to the top, left or right edge | Same reason: nothing physically fixes it to the top. The edge lives in `faqraIslandEdge`, a Faqra-prefixed key so it can never collide with an upstream one. |
 
 ## Verification
 

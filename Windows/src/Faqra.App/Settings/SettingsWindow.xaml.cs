@@ -18,12 +18,19 @@ public partial class SettingsWindow
     /// <summary>Pages with content in this milestone. The rest arrive with their features.</summary>
     private static readonly IReadOnlySet<SettingsPage> ImplementedPages = new HashSet<SettingsPage>
     {
-        SettingsPage.General, SettingsPage.Features, SettingsPage.Advanced, SettingsPage.About,
+        SettingsPage.General, SettingsPage.Features, SettingsPage.Notch, SettingsPage.Advanced, SettingsPage.About,
     };
 
     private static SettingsWindow? s_instance;
 
     private readonly List<SidebarRow> _rows = [];
+
+    /// <summary>
+    /// Pages are kept once built. Rebuilding the Feature Hub's sixty-six rows on every click was
+    /// the slowest thing in the window.
+    /// </summary>
+    private readonly Dictionary<SettingsPage, UIElement> _pages = [];
+
     private bool _loading;
 
     public SettingsWindow()
@@ -88,9 +95,18 @@ public partial class SettingsWindow
         store.Set(DefaultsKey.SettingsWindowHeight, Height);
     }
 
-    private void OnLanguageChanged(object? sender, EventArgs e) => Populate();
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        _pages.Clear();
+        Populate();
+    }
 
-    private void OnFeaturesChanged(object? sender, EventArgs e) => Populate();
+    private void OnFeaturesChanged(object? sender, EventArgs e)
+    {
+        // A feature flipping changes which pages exist and what the hub shows, so the cache goes.
+        _pages.Clear();
+        Populate();
+    }
 
     /// <summary>Rebuilds the sidebar from the pages this build has and the features installed now.</summary>
     private void Populate(string? query = null)
@@ -155,13 +171,19 @@ public partial class SettingsWindow
             return;
         }
         DetailScroll.ScrollToTop();
-        DetailHost.Content = CreatePage(page);
+        if (!_pages.TryGetValue(page, out var view))
+        {
+            view = CreatePage(page);
+            _pages[page] = view;
+        }
+        DetailHost.Content = view;
     }
 
     private static UIElement CreatePage(SettingsPage page) => page switch
     {
         SettingsPage.General => new GeneralPage(),
         SettingsPage.Features => new FeatureHubPage(),
+        SettingsPage.Notch => new IslandPage(),
         SettingsPage.Advanced => new AdvancedPage(),
         SettingsPage.About => new AboutPage(),
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, "no view for this page yet"),

@@ -152,6 +152,7 @@ public static partial class RegisteredDefaults
 
         // Notch (island). NotchEnabled lives in CoreDefaults (deliberate deviation: on).
         [DefaultsKey.NotchDisplay] = "automatic",
+        [DefaultsKey.IslandEdge] = "top",
         [DefaultsKey.NotchSize] = "spacious",
         [DefaultsKey.NotchCustomWidth] = 440L,
         [DefaultsKey.NotchCustomHeight] = 480L,

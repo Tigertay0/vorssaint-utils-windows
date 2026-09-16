@@ -8,7 +8,7 @@ using Faqra.Win32.Native;
 namespace Faqra.Win32.Display;
 
 /// <summary>One display, in physical pixels, with the scale needed to convert to DIPs.</summary>
-public sealed record MonitorGeometry(RECT Bounds, RECT WorkArea, double Scale, bool IsPrimary)
+public sealed record MonitorGeometry(IntPtr Handle, RECT Bounds, RECT WorkArea, double Scale, bool IsPrimary)
 {
     /// <summary>Full bounds in device-independent pixels.</summary>
     public double WidthDip => Bounds.Width / Scale;
@@ -37,6 +37,20 @@ public static class MonitorInfo
     public static MonitorGeometry ForWindow(IntPtr hwnd) =>
         For(User32.MonitorFromWindow(hwnd, User32.MONITOR_DEFAULTTONEAREST));
 
+    /// <summary>The display containing a screen point, or the nearest one.</summary>
+    public static MonitorGeometry ForPoint(int x, int y) =>
+        For(User32.MonitorFromPoint(new POINT { X = x, Y = y }, User32.MONITOR_DEFAULTTONEAREST));
+
+    /// <summary>The display the pointer is on right now.</summary>
+    public static MonitorGeometry UnderPointer()
+    {
+        if (!User32.GetCursorPos(out var point))
+        {
+            return Primary();
+        }
+        return ForPoint(point.X, point.Y);
+    }
+
     private static MonitorGeometry For(IntPtr monitor)
     {
         var info = new MONITORINFO { cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
@@ -44,14 +58,14 @@ public static class MonitorInfo
         {
             // No monitor information: fall back to a 1080p primary at 100%, so the island still shows.
             var fallback = new RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1080 };
-            return new MonitorGeometry(fallback, fallback, 1.0, IsPrimary: true);
+            return new MonitorGeometry(monitor, fallback, fallback, 1.0, IsPrimary: true);
         }
         var scale = 1.0;
         if (Shcore.GetDpiForMonitor(monitor, Shcore.MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 && dpiX > 0)
         {
             scale = dpiX / 96.0;
         }
-        return new MonitorGeometry(info.rcMonitor, info.rcWork, scale, (info.dwFlags & MONITORINFOF_PRIMARY) != 0);
+        return new MonitorGeometry(monitor, info.rcMonitor, info.rcWork, scale, (info.dwFlags & MONITORINFOF_PRIMARY) != 0);
     }
 
     /// <summary>

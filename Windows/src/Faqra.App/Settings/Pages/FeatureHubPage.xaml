@@ -83,9 +83,22 @@
                         <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <ui:CardControl Margin="0,0,0,4" Opacity="{Binding RowOpacity}">
-                                        <ui:CardControl.Header>
-                                            <StackPanel>
+                                    <!-- A plain bordered row rather than a CardControl: sixty-six of
+                                         them are built at once, and the card's template was the
+                                         slowest part of opening this page. -->
+                                    <Border Margin="0,0,0,4"
+                                            Padding="14,10"
+                                            CornerRadius="6"
+                                            Opacity="{Binding RowOpacity}"
+                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                            BorderThickness="1">
+                                      <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{Binding Title}" Style="{StaticResource Body}" VerticalAlignment="Center" />
                                                     <Border Margin="8,0,0,0"
@@ -116,14 +129,16 @@
                                                            Visibility="{Binding BlockedVisibility}"
                                                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                                            Margin="0,3,0,0" />
-                                            </StackPanel>
-                                        </ui:CardControl.Header>
-                                        <ui:Button Content="{Binding ButtonText}"
+                                        </StackPanel>
+                                        <ui:Button Grid.Column="1"
+                                                   VerticalAlignment="Center"
+                                                   Content="{Binding ButtonText}"
                                                    IsEnabled="{Binding CanFlip}"
                                                    Tag="{Binding}"
                                                    Click="OnToggleFeature"
                                                    MinWidth="88" />
-                                    </ui:CardControl>
+                                      </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

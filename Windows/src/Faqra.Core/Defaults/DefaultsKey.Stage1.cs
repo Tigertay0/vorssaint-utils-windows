@@ -158,6 +158,13 @@ public static partial class DefaultsKey
 
     // Notch (island)
     public const string NotchDisplay = "notchDisplay";
+
+    /// <summary>
+    /// Faqra-only: which screen edge the island is attached to. Upstream has no equivalent because a
+    /// Mac's notch is always at the top, so the key carries the Faqra prefix to avoid ever colliding
+    /// with an upstream key of the same meaning.
+    /// </summary>
+    public const string IslandEdge = "faqraIslandEdge";               // top | left | right
     public const string NotchSize = "notchSize";
     public const string NotchCustomWidth = "notchCustomWidth";
     public const string NotchCustomHeight = "notchCustomHeight";

@@ -11,22 +11,26 @@
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
         Focusable="False">
-    <!-- The root paints nothing, so only the silhouette below is hit-tested and everything
-         around it stays click-through. The window rect is the larger of the two sizes in a
-         transition (upstream's motion envelope); the shape animates inside it. -->
+    <!-- The root paints nothing, so only the silhouette below is hit-tested and everything around
+         it stays click-through. The window rect is the larger of the two sizes in a transition
+         (upstream's motion envelope); the shape animates inside it, and the content is already laid
+         out at its final size so a resize only re-clips instead of running layout every frame. -->
     <Grid Background="{x:Null}">
         <Border x:Name="Shape"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Background="#FF0A0A0A"
-                CornerRadius="0,0,14,14"
+                ClipToBounds="True"
                 Cursor="Arrow">
-            <Grid x:Name="ShapeContent" ClipToBounds="True">
+            <Grid x:Name="ShapeContent" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <!-- Resting content: album art and a level meter, or the battery, or nothing. -->
                 <ContentControl x:Name="IdleHost" />
 
                 <!-- Expanded content: header plus the selected module. -->
-                <Grid x:Name="ExpandedRoot" Visibility="Collapsed">
+                <Grid x:Name="ExpandedRoot" Visibility="Collapsed" RenderTransformOrigin="0.5,0">
+                    <Grid.RenderTransform>
+                        <TranslateTransform x:Name="RevealTransform" />
+                    </Grid.RenderTransform>
                     <Grid.RowDefinitions>
                         <RowDefinition x:Name="SafeTopRow" Height="34" />
                         <RowDefinition Height="Auto" />
@@ -46,6 +50,7 @@
                                 Grid.Column="0"
                                 Style="{StaticResource IslandGlyphButton}"
                                 Content="&#xE700;"
+                                ToolTip="Sections (Ctrl+K)"
                                 Click="OnSectionsClicked" />
                         <TextBlock x:Name="ModuleTitle"
                                    Grid.Column="1"
@@ -60,16 +65,19 @@
                                 Grid.Column="2"
                                 Style="{StaticResource IslandGlyphButton}"
                                 Content="&#xE718;"
+                                ToolTip="Keep open"
                                 Click="OnPinClicked" />
                         <Button x:Name="SettingsButton"
                                 Grid.Column="3"
                                 Style="{StaticResource IslandGlyphButton}"
                                 Content="&#xE713;"
+                                ToolTip="Settings"
                                 Click="OnSettingsClicked" />
                         <Button x:Name="CollapseButton"
                                 Grid.Column="4"
                                 Style="{StaticResource IslandGlyphButton}"
                                 Content="&#xE70E;"
+                                ToolTip="Close (Esc)"
                                 Click="OnCollapseClicked" />
                     </Grid>
 

@@ -61,6 +61,27 @@ public sealed partial class Strings
     public required string ShowTrayIconHint { get; init; }
     public required string ShowTrayIconAction { get; init; }
 
+    // Island page
+    public required string IslandShow { get; init; }
+    public required string IslandShowHint { get; init; }
+    public required string IslandPosition { get; init; }
+    public required string IslandPositionTop { get; init; }
+    public required string IslandPositionLeft { get; init; }
+    public required string IslandPositionRight { get; init; }
+    public required string IslandDisplayLabel { get; init; }
+    public required string IslandDisplayFollow { get; init; }
+    public required string IslandDisplayPrimary { get; init; }
+    public required string IslandOpenOnHover { get; init; }
+    public required string IslandHoverExpands { get; init; }
+    public required string IslandHoverExpandsHint { get; init; }
+    public required string IslandSizeLabel { get; init; }
+    public required string IslandSizeCompact { get; init; }
+    public required string IslandSizeSpacious { get; init; }
+    public required string IslandIdleLabel { get; init; }
+    public required string IslandIdleMusic { get; init; }
+    public required string IslandIdleBattery { get; init; }
+    public required string IslandIdleNone { get; init; }
+
     // Advanced page
     public required string BackupTitle { get; init; }
     public required string BackupDescription { get; init; }

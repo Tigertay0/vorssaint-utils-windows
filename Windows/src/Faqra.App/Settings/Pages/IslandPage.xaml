@@ -1,0 +1,67 @@
+<UserControl x:Class="Faqra.App.Settings.Pages.IslandPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <StackPanel>
+        <TextBlock x:Name="TitleText" Style="{StaticResource PageTitle}" />
+
+        <ui:CardControl Margin="0,12,0,0" Icon="{ui:SymbolIcon Dock24}">
+            <ui:CardControl.Header>
+                <StackPanel>
+                    <TextBlock x:Name="ShowLabel" Style="{StaticResource Body}" />
+                    <TextBlock x:Name="ShowHint" Style="{StaticResource Caption}" Margin="0,4,0,0" MaxWidth="430" HorizontalAlignment="Left" />
+                </StackPanel>
+            </ui:CardControl.Header>
+            <ui:ToggleSwitch x:Name="ShowToggle" Click="OnShowToggled" />
+        </ui:CardControl>
+
+        <StackPanel x:Name="Options">
+            <ui:CardControl Margin="0,6,0,0" Icon="{ui:SymbolIcon AlignTop24}">
+                <ui:CardControl.Header>
+                    <TextBlock x:Name="PositionLabel" Style="{StaticResource Body}" />
+                </ui:CardControl.Header>
+                <ComboBox x:Name="PositionBox" MinWidth="190" SelectionChanged="OnPositionChosen" />
+            </ui:CardControl>
+
+            <ui:CardControl Margin="0,6,0,0" Icon="{ui:SymbolIcon Desktop24}">
+                <ui:CardControl.Header>
+                    <TextBlock x:Name="DisplayLabel" Style="{StaticResource Body}" />
+                </ui:CardControl.Header>
+                <ComboBox x:Name="DisplayBox" MinWidth="190" SelectionChanged="OnDisplayChosen" />
+            </ui:CardControl>
+
+            <ui:CardControl Margin="0,6,0,0" Icon="{ui:SymbolIcon Ruler24}">
+                <ui:CardControl.Header>
+                    <TextBlock x:Name="SizeLabel" Style="{StaticResource Body}" />
+                </ui:CardControl.Header>
+                <ComboBox x:Name="SizeBox" MinWidth="190" SelectionChanged="OnSizeChosen" />
+            </ui:CardControl>
+
+            <ui:CardControl Margin="0,6,0,0" Icon="{ui:SymbolIcon MusicNote224}">
+                <ui:CardControl.Header>
+                    <TextBlock x:Name="IdleLabel" Style="{StaticResource Body}" />
+                </ui:CardControl.Header>
+                <ComboBox x:Name="IdleBox" MinWidth="190" SelectionChanged="OnIdleChosen" />
+            </ui:CardControl>
+
+            <TextBlock x:Name="HoverHeader" Style="{StaticResource SectionHeader}" />
+
+            <ui:CardControl Icon="{ui:SymbolIcon Cursor24}">
+                <ui:CardControl.Header>
+                    <TextBlock x:Name="OpenOnHoverLabel" Style="{StaticResource Body}" />
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="OpenOnHoverToggle" Click="OnOpenOnHoverToggled" />
+            </ui:CardControl>
+
+            <ui:CardControl Margin="0,6,0,0" Icon="{ui:SymbolIcon ArrowExpand24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock x:Name="HoverExpandsLabel" Style="{StaticResource Body}" />
+                        <TextBlock x:Name="HoverExpandsHint" Style="{StaticResource Caption}" Margin="0,4,0,0" MaxWidth="430" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="HoverExpandsToggle" Click="OnHoverExpandsToggled" />
+            </ui:CardControl>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -103,11 +103,87 @@ public class IslandGeometryTests
     public void OriginIsCenteredAndFlushWithTheTopEdge()
     {
         var geometry = Ultrawide();
-        var resting = geometry.TopCenterOrigin(geometry.RestingSize(showsContent: false));
+        var resting = geometry.OriginFor(geometry.RestingSize(showsContent: false));
         Assert.Equal((1652.5, 0.0), resting);
 
-        var expanded = geometry.TopCenterOrigin(geometry.ExpandedSize(IslandModule.Controls));
+        var expanded = geometry.OriginFor(geometry.ExpandedSize(IslandModule.Controls));
         Assert.Equal((1440.0, 0.0), expanded);
+    }
+
+    [Fact]
+    public void OnASideEdgeTheRestingPillIsRotatedAndCentredVertically()
+    {
+        var left = new IslandGeometry(3440, 1440, 24, IslandSize.Spacious, edge: IslandEdge.Left);
+
+        // The same 135 by 24 pill, a quarter turn round.
+        Assert.Equal(new IslandSizeValue(24, 135), left.RestingSize(showsContent: false));
+        Assert.Equal((0.0, (1440 - 135) / 2.0), left.OriginFor(left.RestingSize(showsContent: false)));
+        // No inset: the panel replaces the pill rather than hanging below it.
+        Assert.Equal(0, left.ContentInset);
+    }
+
+    [Fact]
+    public void TheRightEdgeAnchorsThePanelToTheFarSide()
+    {
+        var right = new IslandGeometry(3440, 1440, 24, IslandSize.Spacious, edge: IslandEdge.Right);
+        var expanded = right.ExpandedSize(IslandModule.Controls);
+
+        Assert.Equal(560, expanded.Width);
+        Assert.Equal((3440 - 560.0, (1440 - expanded.Height) / 2), right.OriginFor(expanded));
+    }
+
+    [Fact]
+    public void RoundedCornersFaceAwayFromTheEdge()
+    {
+        var size = new IslandSizeValue(135, 24);
+
+        Assert.Equal((0, 0, 12, 12), Ultrawide().CornersFor(size));
+        Assert.Equal((0, 12, 12, 0), new IslandGeometry(3440, 1440, 24, edge: IslandEdge.Left).CornersFor(size));
+        Assert.Equal((12, 0, 0, 12), new IslandGeometry(3440, 1440, 24, edge: IslandEdge.Right).CornersFor(size));
+    }
+
+    [Fact]
+    public void ASideEdgePanelDropsTheTopInsetFromItsHeight()
+    {
+        var top = Ultrawide();
+        var left = new IslandGeometry(3440, 1440, 24, IslandSize.Spacious, edge: IslandEdge.Left);
+
+        // Same content, 34 fewer pixels of inset.
+        Assert.Equal(top.ExpandedSize(IslandModule.Controls).Height - top.SafeContentTop,
+            left.ExpandedSize(IslandModule.Controls).Height);
+    }
+
+    [Fact]
+    public void EdgeAndDisplayRawValuesRoundTrip()
+    {
+        foreach (var edge in Enum.GetValues<IslandEdge>())
+        {
+            Assert.Equal(edge, IslandSizes.EdgeFromRawValue(edge.RawValue()));
+        }
+        Assert.Equal(IslandEdge.Top, IslandSizes.EdgeFromRawValue(null));
+        Assert.Equal(IslandEdge.Top, IslandSizes.EdgeFromRawValue("bottom"));
+        Assert.False(IslandEdge.Top.IsVertical());
+        Assert.True(IslandEdge.Left.IsVertical());
+        Assert.True(IslandEdge.Right.IsVertical());
+
+        // Automatic follows the pointer; both of upstream's fixed-screen values pin to primary.
+        Assert.Equal(IslandDisplay.Automatic, IslandSizes.DisplayFromRawValue(null));
+        Assert.Equal(IslandDisplay.Main, IslandSizes.DisplayFromRawValue("main"));
+        Assert.Equal(IslandDisplay.Main, IslandSizes.DisplayFromRawValue("builtIn"));
+        Assert.Equal("automatic", IslandDisplay.Automatic.RawValue());
+    }
+
+    [Fact]
+    public void MotionUsesTheTransitionsDevTokens()
+    {
+        Assert.Equal((0.22, 1, 0.36, 1), IslandMotion.Ease);
+        Assert.Equal(TimeSpan.FromMilliseconds(300), IslandMotion.Grow);
+        Assert.Equal(TimeSpan.FromMilliseconds(180), IslandMotion.Shrink);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), IslandMotion.DropdownOpen);
+        Assert.Equal(TimeSpan.FromMilliseconds(150), IslandMotion.DropdownClose);
+        // Closing is faster than opening, so leaving the island feels immediate.
+        Assert.True(IslandMotion.Shrink < IslandMotion.Grow);
+        Assert.True(IslandMotion.DropdownClose < IslandMotion.DropdownOpen);
     }
 
     [Fact]
@@ -118,8 +194,6 @@ public class IslandGeometryTests
 
         Assert.Equal(IslandMotion.Grow, IslandMotion.Duration(small, big));
         Assert.Equal(IslandMotion.Shrink, IslandMotion.Duration(big, small));
-        Assert.Equal(TimeSpan.FromSeconds(0.34), IslandMotion.Grow);
-        Assert.Equal(TimeSpan.FromSeconds(0.26), IslandMotion.Shrink);
         // Same height, wider still counts as growing.
         Assert.Equal(IslandMotion.Grow, IslandMotion.Duration(small, new IslandSizeValue(200, 24)));
     }
@@ -130,8 +204,9 @@ public class IslandGeometryTests
         Assert.Equal(IslandSize.Compact, IslandSizes.FromRawValue("compact"));
         Assert.Equal(IslandSize.Spacious, IslandSizes.FromRawValue(null));
         Assert.Equal("spacious", IslandSize.Spacious.RawValue());
-        // Upstream's builtIn has no Windows meaning and falls back to the primary display.
-        Assert.Equal(IslandDisplay.Automatic, IslandSizes.DisplayFromRawValue("builtIn"));
+        // Upstream's builtIn names a fixed screen, which on Windows is the primary display, so it
+        // lands on the same behaviour as main rather than on the pointer-following automatic.
+        Assert.Equal(IslandDisplay.Main, IslandSizes.DisplayFromRawValue("builtIn"));
         Assert.Equal(IslandDisplay.Main, IslandSizes.DisplayFromRawValue("main"));
         Assert.Equal(IslandIdleContent.Music, IslandSizes.IdleContentFromRawValue(null));
         Assert.Equal(IslandIdleContent.Battery, IslandSizes.IdleContentFromRawValue("battery"));

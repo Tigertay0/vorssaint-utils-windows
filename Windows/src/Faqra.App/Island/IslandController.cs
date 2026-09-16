@@ -30,6 +30,13 @@ public sealed class IslandController : IDisposable
     /// </summary>
     private static readonly TimeSpan PointerPollInterval = TimeSpan.FromMilliseconds(50);
 
+    /// <summary>
+    /// How often the island checks which display the pointer is on while it is resting. One cursor
+    /// read and one monitor lookup is cheap enough to run four times a second, and the island only
+    /// moves when the answer changes.
+    /// </summary>
+    private static readonly TimeSpan MonitorPollInterval = TimeSpan.FromMilliseconds(250);
+
     private readonly ISettingsStore _store;
     private readonly FeatureRuntime _runtime;
     private readonly NowPlayingService _nowPlaying;
@@ -37,6 +44,7 @@ public sealed class IslandController : IDisposable
     private readonly DispatcherTimer _openTimer;
     private readonly DispatcherTimer _closeTimer;
     private readonly DispatcherTimer _pointerPoll;
+    private readonly DispatcherTimer _monitorPoll;
     private readonly OutsideClickMonitor _outsideClick = new();
 
     private IslandWindow? _window;
@@ -66,6 +74,9 @@ public sealed class IslandController : IDisposable
 
         _pointerPoll = new DispatcherTimer { Interval = PointerPollInterval };
         _pointerPoll.Tick += (_, _) => PollPointer();
+
+        _monitorPoll = new DispatcherTimer { Interval = MonitorPollInterval };
+        _monitorPoll.Tick += (_, _) => PollMonitor();
 
         _outsideClick.Pressed += OnOutsidePress;
         _nowPlaying.Changed += OnNowPlayingChanged;
@@ -109,6 +120,7 @@ public sealed class IslandController : IDisposable
         _topmost.ForegroundChanged += OnForegroundChanged;
 
         Render(animate: false);
+        _monitorPoll.Start();
     }
 
     private void Stop()
@@ -116,6 +128,7 @@ public sealed class IslandController : IDisposable
         _openTimer.Stop();
         _closeTimer.Stop();
         _pointerPoll.Stop();
+        _monitorPoll.Stop();
         _outsideClick.Stop();
         _topmost?.Dispose();
         _topmost = null;
@@ -125,10 +138,14 @@ public sealed class IslandController : IDisposable
         _sectionsOpen = false;
     }
 
+    /// <summary>
+    /// Which display hosts the island. Upstream picks the notched screen; Windows has none, so
+    /// automatic follows the pointer between monitors and the fixed settings pin it to primary.
+    /// </summary>
     private MonitorGeometry ChosenMonitor() =>
-        // Upstream picks the notched screen, then the menu-bar screen. Windows has neither, so the
-        // primary display is the island's home for both automatic and main.
-        MonitorInfo.Primary();
+        IslandSizes.DisplayFromRawValue(_store.String(DefaultsKey.NotchDisplay)) == IslandDisplay.Automatic
+            ? MonitorInfo.UnderPointer()
+            : MonitorInfo.Primary();
 
     private void RebuildGeometry()
     {
@@ -139,7 +156,28 @@ public sealed class IslandController : IDisposable
             IslandGeometry.DefaultBarHeight,
             layout,
             _store.Double(DefaultsKey.NotchCustomWidth),
-            _store.Double(DefaultsKey.NotchCustomHeight));
+            _store.Double(DefaultsKey.NotchCustomHeight),
+            IslandSizes.EdgeFromRawValue(_store.String(DefaultsKey.IslandEdge)));
+    }
+
+    /// <summary>
+    /// Moves the island to the display the pointer is on. Only while it is resting: yanking an open
+    /// island to another screen mid-use would lose whatever the user was reading.
+    /// </summary>
+    private void PollMonitor()
+    {
+        if (_window is null || _presentation != IslandPresentation.Collapsed || _suspendedForFullscreen)
+        {
+            return;
+        }
+        var target = ChosenMonitor();
+        if (target.Handle == _monitor.Handle)
+        {
+            return;
+        }
+        _monitor = target;
+        RebuildGeometry();
+        Render(animate: false);
     }
 
     // MARK: presentation
@@ -171,14 +209,12 @@ public sealed class IslandController : IDisposable
             return;
         }
         var target = TargetSize();
-        var (originDip, _) = _geometry.TopCenterOrigin(target);
-        var (originX, topY) = _monitor.ToScreenPixels(originDip, 0);
-
         var expanded = _presentation == IslandPresentation.Expanded;
-        _window.ShowExpanded(expanded, _geometry.SafeContentTop);
+
+        _window.ShowExpanded(expanded, _geometry.ContentInset, animate);
         if (expanded)
         {
-            _window.SetModule(ModuleTitle(_module), BuildModule(_module));
+            _window.SetModule(ModuleTitle(_module), BuildModule(_module), animate);
             _window.SetPinned(_pinned);
         }
         else
@@ -186,20 +222,42 @@ public sealed class IslandController : IDisposable
             _window.SetIdleContent(BuildIdleContent());
         }
 
-        _window.ApplyShape(_currentSize, target, _monitor.Scale, originX, topY, animate);
+        _window.ApplyShape(
+            _currentSize,
+            target,
+            RectFor(Envelope(_currentSize, target)),
+            RectFor(target),
+            _geometry.Edge,
+            _geometry.CornersFor(target),
+            animate);
         _currentSize = target;
 
         if (_presentation == IslandPresentation.Collapsed)
         {
             _pointerPoll.Stop();
             _outsideClick.Stop();
+            _monitorPoll.Start();
         }
         else
         {
+            // An open island stays put, so it stops watching for a monitor change until it closes.
+            _monitorPoll.Stop();
             _pointerPoll.Start();
             _outsideClick.Start();
         }
     }
+
+    /// <summary>The screen rectangle, in physical pixels, that a size occupies on its edge.</summary>
+    private ScreenRect RectFor(IslandSizeValue size)
+    {
+        var (dipX, dipY) = _geometry.OriginFor(size);
+        var (x, y) = _monitor.ToScreenPixels(dipX, dipY);
+        return new ScreenRect(x, y, _monitor.ToPixels(size.Width), _monitor.ToPixels(size.Height));
+    }
+
+    /// <summary>Backing space for both ends of a transition.</summary>
+    private static IslandSizeValue Envelope(IslandSizeValue from, IslandSizeValue to) =>
+        new(Math.Max(from.Width, to.Width), Math.Max(from.Height, to.Height));
 
     private string ModuleTitle(IslandModule module)
     {
@@ -406,7 +464,8 @@ public sealed class IslandController : IDisposable
                 {
                     _sectionsOpen = false;
                     Expand(takeFocus: false, module);
-                }));
+                }),
+                animate: true);
         }
         else
         {
@@ -488,7 +547,7 @@ public sealed class IslandController : IDisposable
     {
         if (e.Key is not (DefaultsKey.NotchEnabled or DefaultsKey.NotchSize or DefaultsKey.NotchDisplay
             or DefaultsKey.NotchIdleContent or DefaultsKey.NotchModuleOrder or DefaultsKey.NotchHiddenModules
-            or DefaultsKey.NotchCustomWidth or DefaultsKey.NotchCustomHeight))
+            or DefaultsKey.NotchCustomWidth or DefaultsKey.NotchCustomHeight or DefaultsKey.IslandEdge))
         {
             return;
         }

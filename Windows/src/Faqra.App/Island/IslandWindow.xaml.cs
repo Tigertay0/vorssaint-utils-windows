@@ -2,15 +2,21 @@
 // Copyright (C) 2026 Faqra contributors
 // Mirrors NotchWindowHost in Sources/Vorssaint/Services/Notch/NotchWindowHost.swift: the shaped,
 // non-activating, always-on-top surface. The state machine that drives it is IslandController.
+// Motion comes from transitions.dev's card-resize and panel-reveal tokens, not upstream's springs.
 
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Faqra.Core.Island;
 using Faqra.Win32.Windows;
 
 namespace Faqra.App.Island;
+
+/// <summary>A window rectangle in physical screen pixels.</summary>
+public readonly record struct ScreenRect(int X, int Y, int Width, int Height);
 
 public partial class IslandWindow
 {
@@ -44,24 +50,27 @@ public partial class IslandWindow
     }
 
     /// <summary>
-    /// Sets the window rect to the motion envelope and animates the silhouette inside it, so the
-    /// shape can grow before the window does and shrink before the window follows.
+    /// Moves and resizes the silhouette. The window takes the envelope of both sizes up front so
+    /// the shape can grow before the window does and shrink before the window follows, then the
+    /// window snaps to the final rect once the transition ends.
     /// </summary>
-    internal void ApplyShape(IslandSizeValue from, IslandSizeValue to, double scale, double originX, double screenTop, bool animate)
+    internal void ApplyShape(
+        IslandSizeValue from,
+        IslandSizeValue to,
+        ScreenRect envelope,
+        ScreenRect final,
+        IslandEdge edge,
+        (double TopLeft, double TopRight, double BottomRight, double BottomLeft) corners,
+        bool animate)
     {
         _shapeGeneration++;
         var generation = _shapeGeneration;
-        var radius = Math.Min(IslandLayout.Shoulder, to.Height / 2);
-        Shape.CornerRadius = new CornerRadius(0, 0, radius, radius);
 
-        void SetWindow(IslandSizeValue size) => WindowStyles.SetBounds(
-            Handle,
-            // The shape is centered in the window, so the window is centered on the same point and
-            // the silhouette never shifts sideways as it resizes.
-            (int)Math.Round(originX - (size.Width - to.Width) / 2 * scale),
-            (int)Math.Round(screenTop),
-            (int)Math.Round(size.Width * scale),
-            (int)Math.Round(size.Height * scale));
+        AlignToEdge(edge);
+        Shape.CornerRadius = new CornerRadius(corners.TopLeft, corners.TopRight, corners.BottomRight, corners.BottomLeft);
+        // Laying the content out at its final size once keeps the resize to a re-clip per frame.
+        ShapeContent.Width = to.Width;
+        ShapeContent.Height = to.Height;
 
         if (!animate || !SystemParameters.ClientAreaAnimation)
         {
@@ -69,54 +78,83 @@ public partial class IslandWindow
             Shape.BeginAnimation(HeightProperty, null);
             Shape.Width = to.Width;
             Shape.Height = to.Height;
-            SetWindow(to);
+            SetBounds(final);
             return;
         }
 
-        // Backing space for both ends: the shape grows before the window has to, and shrinks
-        // before the window follows it down.
-        SetWindow(new IslandSizeValue(Math.Max(from.Width, to.Width), Math.Max(from.Height, to.Height)));
+        SetBounds(envelope);
 
         var duration = IslandMotion.Duration(from, to);
-        var grows = duration == IslandMotion.Grow;
-        // Entering and exiting both ease out; a spring-like overshoot only on the way open.
-        IEasingFunction easing = grows
-            ? new BackEase { Amplitude = 0.18, EasingMode = EasingMode.EaseOut }
-            : new CubicEase { EasingMode = EasingMode.EaseOut };
-
-        var width = Animate(from.Width, to.Width, duration, easing);
+        var width = Motion.Double(from.Width, to.Width, duration);
         width.Completed += (_, _) =>
         {
             // A newer transition may have started; only the latest one owns the window rect.
             if (generation == _shapeGeneration)
             {
-                SetWindow(to);
+                SetBounds(final);
             }
         };
         Shape.BeginAnimation(WidthProperty, width);
-        Shape.BeginAnimation(HeightProperty, Animate(from.Height, to.Height, duration, easing));
+        Shape.BeginAnimation(HeightProperty, Motion.Double(from.Height, to.Height, duration));
     }
 
-    private static DoubleAnimation Animate(double from, double to, TimeSpan duration, IEasingFunction easing) =>
-        new(from, to, new Duration(duration)) { EasingFunction = easing, FillBehavior = FillBehavior.HoldEnd };
+    private void SetBounds(ScreenRect rect) =>
+        WindowStyles.SetBounds(Handle, rect.X, rect.Y, rect.Width, rect.Height);
 
-    internal void ShowExpanded(bool expanded, double safeContentTop)
+    /// <summary>
+    /// The shape sits against its edge inside the window, and the content against the same edge
+    /// inside the shape, so a growing silhouette reveals content from the edge it is attached to.
+    /// </summary>
+    private void AlignToEdge(IslandEdge edge)
     {
-        SafeTopRow.Height = new GridLength(safeContentTop);
+        var (horizontal, vertical) = edge switch
+        {
+            IslandEdge.Left => (HorizontalAlignment.Left, VerticalAlignment.Center),
+            IslandEdge.Right => (HorizontalAlignment.Right, VerticalAlignment.Center),
+            _ => (HorizontalAlignment.Center, VerticalAlignment.Top),
+        };
+        Shape.HorizontalAlignment = horizontal;
+        Shape.VerticalAlignment = vertical;
+        ShapeContent.HorizontalAlignment = horizontal;
+        ShapeContent.VerticalAlignment = vertical;
+    }
+
+    /// <summary>
+    /// Switches between the resting and expanded content. Opening runs transitions.dev's
+    /// panel-reveal: the panel travels in, fades up, on the shared ease. Its 2px cross-blur is left
+    /// out because this is a layered window, which WPF composites in software, so a per-frame blur
+    /// would cost more than it adds.
+    /// </summary>
+    internal void ShowExpanded(bool expanded, double contentInset, bool animate)
+    {
+        SafeTopRow.Height = new GridLength(contentInset);
         ExpandedRoot.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         IdleHost.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
-        if (expanded)
+        if (!expanded)
         {
-            // A cross-fade rather than a pop: the shape is already moving underneath.
-            ExpandedRoot.BeginAnimation(OpacityProperty,
-                Animate(0, 1, IslandMotion.ContentFade, new CubicEase { EasingMode = EasingMode.EaseOut }));
+            return;
         }
+        if (!animate || !SystemParameters.ClientAreaAnimation)
+        {
+            ExpandedRoot.Opacity = 1;
+            RevealTransform.Y = 0;
+            return;
+        }
+        ExpandedRoot.BeginAnimation(OpacityProperty, Motion.Double(0, 1, IslandMotion.ContentReveal));
+        RevealTransform.BeginAnimation(
+            TranslateTransform.YProperty,
+            Motion.Double(-IslandMotion.RevealTranslate, 0, IslandMotion.ContentReveal));
     }
 
-    internal void SetModule(string title, UIElement? content)
+    /// <summary>Swaps the module, cross-fading on panel-reveal's close duration.</summary>
+    internal void SetModule(string title, UIElement? content, bool animate)
     {
         ModuleTitle.Text = title;
         ModuleHost.Content = content;
+        if (animate && SystemParameters.ClientAreaAnimation)
+        {
+            ModuleHost.BeginAnimation(OpacityProperty, Motion.Double(0, 1, IslandMotion.ContentFade));
+        }
     }
 
     internal void SetIdleContent(UIElement? content) => IdleHost.Content = content;
@@ -176,7 +214,7 @@ public partial class IslandWindow
     private void OnPinClicked(object sender, RoutedEventArgs e) => _controller?.TogglePinned();
 
     private void OnSettingsClicked(object sender, RoutedEventArgs e) =>
-        App.ShowSettings(Core.Settings.SettingsPage.Features);
+        App.ShowSettings(Core.Settings.SettingsPage.Notch);
 
     private void OnCollapseClicked(object sender, RoutedEventArgs e) => _controller?.Collapse();
 }
