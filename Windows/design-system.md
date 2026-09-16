@@ -76,6 +76,13 @@ how Windows reports reduced motion.
 | Permissions tab requests macOS grants | Informational only | Windows needs no consent grant for anything Faqra does. |
 | Alert with named action buttons | Message box whose body names the action | WPF's message box labels its buttons OK and Cancel. |
 | Notch fixed to the built-in screen | The island follows the pointer between monitors, or pins to primary | A Mac's cutout cannot move. Windows has no cutout, so the useful meaning of upstream's "automatic" is to be on the display you are working on. |
+| Menu bar popover hanging under the status item, 0.18s fade | Tray flyout above the taskbar, 12px from the taskbar and screen edge, Acrylic, kept out of Alt+Tab; transitions.dev menu-dropdown (250ms in, 150ms out, 0.97 pre-scale from the bottom-right corner) | It is where Windows 11 puts its own tray flyouts (volume, network), and the motion comes from the shared tokens. |
+| Panel section titles uppercase at 10pt, cards at radius 10 | Sentence-case titles, Fluent cards at radius 8 with the card stroke | Fluent owns the look. |
+| Seven metric hues (cyan, mint, pink, orange and so on) | Accent for the first series, Fluent's success color for the second (upload, write), caution for power | No component hard-codes a color; the theme's semantic brushes carry both light and dark. |
+| Combined metrics text, or one status item per metric | One tray icon per metric, label over value, full reading in the tooltip; below 20px the value drops what the label says ("23" under "CPU", "3:42" under "BAT") | A 16px icon cannot fit "100%" or "3h42m" legibly. |
+| Memory pressure from the kernel's pressure level | Derived from free physical memory: Caution under 15% free, Critical under 5% | Windows has no pressure signal. The commit charge is not used: on the development PC it sat at 99% of a limit Windows grows on demand, on a healthy machine. |
+| "Swap used", "Open Activity Monitor", "on this Mac" | "Page file used", "Open Task Manager", "on this PC" | The Windows name for the same thing. |
+| Drag to reorder panel sections and blocks, eye buttons inline | Move up / Move down and switches on the Monitor settings page | Works from the keyboard, and the panel stays a read-only glance. |
 | Notch always at the top | The island attaches to the top, left or right edge | Same reason: nothing physically fixes it to the top. The edge lives in `faqraIslandEdge`, a Faqra-prefixed key so it can never collide with an upstream one. |
 
 ## Verification

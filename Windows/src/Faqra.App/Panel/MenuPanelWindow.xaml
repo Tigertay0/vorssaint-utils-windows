@@ -1,0 +1,92 @@
+<ui:FluentWindow x:Class="Faqra.App.Panel.MenuPanelWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Width="332"
+                 MinWidth="332"
+                 MaxWidth="332"
+                 SizeToContent="Height"
+                 ResizeMode="NoResize"
+                 ShowInTaskbar="False"
+                 Topmost="True"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Acrylic"
+                 WindowCornerPreference="Round"
+                 WindowStartupLocation="Manual">
+    <ui:FluentWindow.Resources>
+        <!-- One tab per section, like upstream's icon row. The selected tab takes the accent text
+             color on a subtle fill; the tooltip and automation name carry the section title. -->
+        <Style x:Key="PanelTab" TargetType="RadioButton">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource DefaultControlFocusVisualStyle}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Chrome" Background="Transparent" CornerRadius="6" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ui:FluentWindow.Resources>
+
+    <Grid x:Name="Root" Margin="12" RenderTransformOrigin="1,1">
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="RevealScale" ScaleX="1" ScaleY="1" />
+        </Grid.RenderTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Padding="2,4"
+                CornerRadius="8"
+                BorderThickness="1"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+            <UniformGrid x:Name="Tabs" Rows="1" />
+        </Border>
+
+        <ScrollViewer x:Name="Scroller"
+                      Grid.Row="1"
+                      Margin="0,12,0,0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Focusable="False">
+            <ContentControl x:Name="SectionHost" Focusable="False" />
+        </ScrollViewer>
+
+        <UniformGrid Grid.Row="2" Rows="1" Margin="0,12,0,0">
+            <ui:Button x:Name="SettingsButton"
+                       Margin="0,0,4,0"
+                       HorizontalAlignment="Stretch"
+                       Icon="{ui:SymbolIcon Settings24}"
+                       Click="OnSettingsClicked" />
+            <ui:Button x:Name="QuitButton"
+                       Margin="4,0,0,0"
+                       HorizontalAlignment="Stretch"
+                       Icon="{ui:SymbolIcon Power24}"
+                       Click="OnQuitClicked" />
+        </UniformGrid>
+    </Grid>
+</ui:FluentWindow>

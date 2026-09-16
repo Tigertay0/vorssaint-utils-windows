@@ -33,6 +33,19 @@ public static class FeatureWindowsSupport
 
     public static bool IsSupported(this AppFeature feature) => Classify(feature) != WindowsSupport.NotApplicable;
 
+    /// <summary>
+    /// Whether the feature actually works in this build. Supported answers "can Windows run it"; a
+    /// supported feature still waits for its milestone, and the hub says so instead of looking broken.
+    /// </summary>
+    public static bool IsBuilt(AppFeature feature) => feature
+        is AppFeature.Notch or AppFeature.NotchTimer
+        or AppFeature.MonitorCPU or AppFeature.MonitorGPU or AppFeature.MonitorMemory
+        or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower;
+
+    /// <summary>The hub's note for a feature Windows can run that this build does not have yet, else null.</summary>
+    public static string? PendingNote(AppFeature feature, Localization.FeatureHubStrings hub) =>
+        feature.IsSupported() && !IsBuilt(feature) ? hub.NotBuiltYet : null;
+
     /// <summary>Why the hub refuses to install this feature, or null when it may be installed.</summary>
     public static string? UnsupportedReason(AppFeature feature, Localization.Strings s) =>
         Classify(feature) == WindowsSupport.NotApplicable ? s.FeatureNotAvailableOnWindows : null;

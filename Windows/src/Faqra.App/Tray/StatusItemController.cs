@@ -37,6 +37,13 @@ public sealed class StatusItemController : IDisposable
     /// <summary>Set by the keep-awake service (milestone 5); drives the icon variant and tooltip.</summary>
     public bool KeepAwakeActive { get; private set; }
 
+    /// <summary>Raised on a left click or keyboard selection of the icon; the popover panel opens from it.</summary>
+    public event Action? Selected;
+
+    /// <summary>The icon's screen rectangle in physical pixels, or null while it sits in the overflow flyout.</summary>
+    public Core.Panel.PixelRect? IconRect() =>
+        _icon.TryGetRect(out var rect) ? new Core.Panel.PixelRect(rect.Left, rect.Top, rect.Right, rect.Bottom) : null;
+
     public StatusItemController()
     {
         _window = new TrayMessageWindow();
@@ -84,10 +91,7 @@ public sealed class StatusItemController : IDisposable
         }
     }
 
-    private void OnSelect()
-    {
-        // Left click opens the popover panel (milestone 4).
-    }
+    private void OnSelect() => Selected?.Invoke();
 
     private void ShowContextMenu(int x, int y)
     {

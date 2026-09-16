@@ -124,6 +124,11 @@
                                                            Margin="0,3,0,0"
                                                            MaxWidth="430"
                                                            HorizontalAlignment="Left" />
+                                                <TextBlock Text="{Binding PendingNote}"
+                                                           Style="{StaticResource Caption}"
+                                                           Visibility="{Binding PendingVisibility}"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           Margin="0,3,0,0" />
                                                 <TextBlock Text="{Binding BlockedReason}"
                                                            Style="{StaticResource Caption}"
                                                            Visibility="{Binding BlockedVisibility}"

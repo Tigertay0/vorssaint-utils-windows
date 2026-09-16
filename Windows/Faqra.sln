@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -13,6 +13,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Faqra.Core.Tests", "tests\Faqra.Core.Tests\Faqra.Core.Tests.csproj", "{1B4C2A6E-6C0C-4E4B-9C0E-2A6F0D2B1A05}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Faqra.App.Tests", "tests\Faqra.App.Tests\Faqra.App.Tests.csproj", "{1B4C2A6E-6C0C-4E4B-9C0E-2A6F0D2B1A06}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E8CC5677-C41F-434E-A5C0-590F5CDF8849}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Faqra.Services.Tests", "tests\Faqra.Services.Tests\Faqra.Services.Tests.csproj", "{C96AA98F-0562-4C0B-8EFD-B34CA561609A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,8 +48,15 @@ Global
 		{1B4C2A6E-6C0C-4E4B-9C0E-2A6F0D2B1A06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B4C2A6E-6C0C-4E4B-9C0E-2A6F0D2B1A06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B4C2A6E-6C0C-4E4B-9C0E-2A6F0D2B1A06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C96AA98F-0562-4C0B-8EFD-B34CA561609A} = {E8CC5677-C41F-434E-A5C0-590F5CDF8849}
 	EndGlobalSection
 EndGlobal

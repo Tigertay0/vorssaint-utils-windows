@@ -22,6 +22,14 @@ public static class WindowStyles
         User32.SetWindowLongPtrW(hwnd, User32.GWL_EXSTYLE, new IntPtr(exStyle));
     }
 
+    /// <summary>Keeps an activating window out of Alt+Tab and the taskbar.</summary>
+    public static void MakeToolWindow(IntPtr hwnd)
+    {
+        var exStyle = User32.GetWindowLongPtrW(hwnd, User32.GWL_EXSTYLE).ToInt64();
+        exStyle = (exStyle | User32.WS_EX_TOOLWINDOW) & ~(long)User32.WS_EX_APPWINDOW;
+        User32.SetWindowLongPtrW(hwnd, User32.GWL_EXSTYLE, new IntPtr(exStyle));
+    }
+
     /// <summary>Re-asserts topmost without moving, resizing or activating the window.</summary>
     public static void BringToTop(IntPtr hwnd) =>
         User32.SetWindowPos(hwnd, User32.HWND_TOPMOST, 0, 0, 0, 0,

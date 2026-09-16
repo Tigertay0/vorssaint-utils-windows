@@ -35,6 +35,7 @@ public sealed partial class FeatureHubStrings
     public required string Uninstall { get; init; }
     public required string BetaBadge { get; init; }
     public required string EnergyHelp { get; init; }
+    public required string NotBuiltYet { get; init; }
 
     // Restart banner
     public required string RestartBannerText { get; init; }

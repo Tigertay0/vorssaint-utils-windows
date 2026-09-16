@@ -135,7 +135,7 @@ public sealed class ModulePlaceholder : UserControl
     {
         Content = new TextBlock
         {
-            Text = $"{title} arrives with its feature.",
+            Text = Core.Localization.MonitorStrings.For(Core.Localization.L10n.Shared.Language).ComingLater,
             FontFamily = new FontFamily("Segoe UI Variable Text, Segoe UI"),
             FontSize = 12,
             Foreground = IslandPalette.Tertiary,

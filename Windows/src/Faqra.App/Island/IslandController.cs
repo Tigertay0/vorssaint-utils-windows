@@ -11,6 +11,7 @@ using Faqra.Core.Features;
 using Faqra.Core.Island;
 using Faqra.Core.Localization;
 using Faqra.Services.Media;
+using Faqra.Services.Monitor;
 using Faqra.Win32.Display;
 using FeatureRuntime = Faqra.Services.FeatureRuntime;
 using Faqra.Win32.Input;
@@ -40,6 +41,7 @@ public sealed class IslandController : IDisposable
     private readonly ISettingsStore _store;
     private readonly FeatureRuntime _runtime;
     private readonly NowPlayingService _nowPlaying;
+    private readonly SystemMonitor _systemMonitor;
     private readonly IslandHoverState _hover = new();
     private readonly DispatcherTimer _openTimer;
     private readonly DispatcherTimer _closeTimer;
@@ -60,11 +62,12 @@ public sealed class IslandController : IDisposable
     private bool _sectionsOpen;
     private bool _suspendedForFullscreen;
 
-    public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying)
+    public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying, SystemMonitor monitor)
     {
         _store = store;
         _runtime = runtime;
         _nowPlaying = nowPlaying;
+        _systemMonitor = monitor;
 
         _openTimer = new DispatcherTimer { Interval = IslandHoverState.OpenDelay };
         _openTimer.Tick += (_, _) => { _openTimer.Stop(); OpenFromHover(); };
@@ -136,6 +139,7 @@ public sealed class IslandController : IDisposable
         _window = null;
         _presentation = IslandPresentation.Collapsed;
         _sectionsOpen = false;
+        _systemMonitor.SetNotchVisible(false);
     }
 
     /// <summary>
@@ -196,7 +200,9 @@ public sealed class IslandController : IDisposable
 
     private IslandSizeValue TargetSize() => _presentation switch
     {
-        IslandPresentation.Expanded => _geometry.ExpandedSize(_module),
+        IslandPresentation.Expanded => _geometry.ExpandedSize(
+            _module,
+            systemRows: IslandSystemCards.Rows(SystemCards().Count, _geometry.SystemColumns)),
         IslandPresentation.Peek => _geometry.Peek,
         _ => _geometry.RestingSize(ShowsIdleContent()),
     };
@@ -212,6 +218,8 @@ public sealed class IslandController : IDisposable
         var expanded = _presentation == IslandPresentation.Expanded;
 
         _window.ShowExpanded(expanded, _geometry.ContentInset, animate);
+        // The monitor samples for the System module only while its cards are on screen.
+        _systemMonitor.SetNotchVisible(expanded && _module == IslandModule.System && !_sectionsOpen);
         if (expanded)
         {
             _window.SetModule(ModuleTitle(_module), BuildModule(_module), animate);
@@ -276,10 +284,13 @@ public sealed class IslandController : IDisposable
     {
         IslandModule.Music => new MusicModule(_nowPlaying),
         IslandModule.Timer => new TimerModule(),
+        IslandModule.System => new SystemModule(_systemMonitor, SystemCards(), _geometry.SystemColumns),
         // Modules whose feature is not ported yet keep their place in the section list; their
         // content arrives with the feature.
         _ => new ModulePlaceholder(ModuleTitle(module)),
     };
+
+    private IReadOnlyList<IslandSystemCard> SystemCards() => IslandSystemCards.Available(_runtime.IsAvailable, _systemMonitor.HasBattery);
 
     private UIElement? BuildIdleContent() => IdleContent() switch
     {
@@ -459,6 +470,7 @@ public sealed class IslandController : IDisposable
         }
         if (_sectionsOpen)
         {
+            _systemMonitor.SetNotchVisible(false);
             _window.SetModule(FeatureHubStrings.For(L10n.Shared.Language).TabFeatures,
                 new SectionPicker(VisibleModules(), module =>
                 {

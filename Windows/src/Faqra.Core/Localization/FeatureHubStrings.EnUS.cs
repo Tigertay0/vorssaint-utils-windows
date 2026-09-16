@@ -226,6 +226,7 @@ public sealed partial class FeatureHubStrings
         Uninstall = "Uninstall",
         BetaBadge = "Beta",
         EnergyHelp = "What the feature keeps alive while it is on. Uninstalled features load nothing at all.",
+        NotBuiltYet = "Coming in a later update",
 
         RestartBannerText = "Uninstalled features stop working right away and leave memory on the next launch.",
         RestartBannerButton = "Restart now",

@@ -133,4 +133,19 @@ public class FeatureCatalogTests
         Assert.Equal("Not available on Windows", FeatureWindowsSupport.UnsupportedReason(AppFeature.FinderCutPaste, Strings.EnUS));
         Assert.All(FeaturePreset.Essential.Features(), f => Assert.True(f.IsSupported()));
     }
+
+    [Fact]
+    public void BuiltIsASubsetOfSupportedAndPendingFeaturesSaySo()
+    {
+        Assert.All(AppFeatures.All.Where(FeatureWindowsSupport.IsBuilt), f => Assert.True(f.IsSupported()));
+        Assert.True(FeatureWindowsSupport.IsBuilt(AppFeature.MonitorCPU));
+        Assert.True(FeatureWindowsSupport.IsBuilt(AppFeature.NotchTimer));
+        Assert.False(FeatureWindowsSupport.IsBuilt(AppFeature.Mixer));
+        Assert.False(FeatureWindowsSupport.IsBuilt(AppFeature.KeepAwake));
+
+        Assert.Equal("Coming in a later update", FeatureWindowsSupport.PendingNote(AppFeature.Mixer, FeatureHubStrings.EnUS));
+        Assert.Null(FeatureWindowsSupport.PendingNote(AppFeature.MonitorDisk, FeatureHubStrings.EnUS));
+        // A feature Windows can never run already says so; it is not "coming".
+        Assert.Null(FeatureWindowsSupport.PendingNote(AppFeature.DockClick, FeatureHubStrings.EnUS));
+    }
 }

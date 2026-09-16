@@ -4,6 +4,7 @@
 
 using System.Windows;
 using Faqra.App.Onboarding;
+using Faqra.App.Panel;
 using Faqra.App.Settings;
 using Faqra.App.Tray;
 using Faqra.Core.Defaults;
@@ -16,6 +17,8 @@ public partial class App : Application
 {
     private AppServices? _services;
     private StatusItemController? _statusItem;
+    private MenuPanelController? _panel;
+    private TrayMetricsController? _trayMetrics;
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
@@ -25,6 +28,11 @@ public partial class App : Application
 
         _statusItem = new StatusItemController();
         _statusItem.Show();
+        _panel = new MenuPanelController(_services.Store, _services.FeatureRuntime, _services.Monitor, _statusItem.IconRect);
+        _statusItem.Selected += _panel.Toggle;
+        _trayMetrics = new TrayMetricsController(_services.Store, _services.FeatureRuntime, _services.Monitor);
+        _trayMetrics.SectionRequested += _panel.Show;
+        _trayMetrics.Sync();
         _services.StartFeatures();
 
         if (!_services.HasOnboarded)
@@ -61,6 +69,10 @@ public partial class App : Application
         {
             _services.Store.Changed -= OnSettingChanged;
         }
+        _trayMetrics?.Dispose();
+        _trayMetrics = null;
+        _panel?.Dispose();
+        _panel = null;
         _statusItem?.Dispose();
         _statusItem = null;
         _services?.Dispose();

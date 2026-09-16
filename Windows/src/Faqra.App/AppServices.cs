@@ -11,6 +11,7 @@ using Faqra.Core.Localization;
 using Faqra.Services;
 using Faqra.Services.Island;
 using Faqra.Services.Media;
+using Faqra.Services.Monitor;
 using Faqra.Services.Startup;
 
 namespace Faqra.App;
@@ -30,11 +31,13 @@ public sealed class AppServices : IDisposable
         LaunchAtLogin = new LaunchAtLogin(store);
         NowPlaying = new NowPlayingService();
         Timer = new IslandTimerService();
+        // The readers open their counters now, but nothing is sampled until a surface asks for a metric.
+        Monitor = new SystemMonitor(new WindowsMetricReaders(), store, feature => store.Bool(feature.AvailabilityKey()));
 
         // The runtime is built last: its bindings capture the services above, and a binding only
         // runs for a feature that is actually installed.
         FeatureRuntime = new FeatureRuntime(store, Bindings());
-        Island = new IslandController(store, FeatureRuntime, NowPlaying);
+        Island = new IslandController(store, FeatureRuntime, NowPlaying, Monitor);
     }
 
     /// <summary>The live instance. Available after <see cref="Start"/>.</summary>
@@ -49,6 +52,8 @@ public sealed class AppServices : IDisposable
     public NowPlayingService NowPlaying { get; }
 
     public IslandTimerService Timer { get; }
+
+    public SystemMonitor Monitor { get; }
 
     public IslandController Island { get; }
 
@@ -86,6 +91,8 @@ public sealed class AppServices : IDisposable
         // its battery or blank idle, so nothing waits on it.
         _ = NowPlaying.StartAsync();
         FeatureRuntime.SyncAtLaunch();
+        // Tray metrics switched on in a previous session need sampling from the first second.
+        Monitor.PlanDidChange();
     }
 
     /// <summary>
@@ -123,6 +130,7 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         Island.Dispose();
+        Monitor.Dispose();
         Timer.Dispose();
         NowPlaying.Dispose();
         Store.Dispose();

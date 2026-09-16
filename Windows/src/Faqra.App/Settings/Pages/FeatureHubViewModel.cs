@@ -40,6 +40,11 @@ public sealed class FeatureRowViewModel(AppFeature feature, FeatureRuntime runti
 
     public Visibility BlockedVisibility => BlockedReason is null ? Visibility.Collapsed : Visibility.Visible;
 
+    /// <summary>Set when Windows can run the feature but this build does not have it yet.</summary>
+    public string? PendingNote => FeatureWindowsSupport.PendingNote(Feature, hub);
+
+    public Visibility PendingVisibility => PendingNote is null ? Visibility.Collapsed : Visibility.Visible;
+
     /// <summary>Flips availability. The runtime refuses installs Windows cannot honor.</summary>
     public void Toggle()
     {
