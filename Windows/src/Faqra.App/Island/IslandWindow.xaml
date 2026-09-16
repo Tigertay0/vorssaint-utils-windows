@@ -1,0 +1,81 @@
+<Window x:Class="Faqra.App.Island.IslandWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="{x:Null}"
+        ShowActivated="False"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Topmost="True"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        Focusable="False">
+    <!-- The root paints nothing, so only the silhouette below is hit-tested and everything
+         around it stays click-through. The window rect is the larger of the two sizes in a
+         transition (upstream's motion envelope); the shape animates inside it. -->
+    <Grid Background="{x:Null}">
+        <Border x:Name="Shape"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Background="#FF0A0A0A"
+                CornerRadius="0,0,14,14"
+                Cursor="Arrow">
+            <Grid x:Name="ShapeContent" ClipToBounds="True">
+                <!-- Resting content: album art and a level meter, or the battery, or nothing. -->
+                <ContentControl x:Name="IdleHost" />
+
+                <!-- Expanded content: header plus the selected module. -->
+                <Grid x:Name="ExpandedRoot" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition x:Name="SafeTopRow" Height="34" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="1" Margin="14,0,10,0" Height="36">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button x:Name="SectionsButton"
+                                Grid.Column="0"
+                                Style="{StaticResource IslandGlyphButton}"
+                                Content="&#xE700;"
+                                Click="OnSectionsClicked" />
+                        <TextBlock x:Name="ModuleTitle"
+                                   Grid.Column="1"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontFamily="{StaticResource FaqraFont}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFF2F2F2"
+                                   TextTrimming="CharacterEllipsis" />
+                        <Button x:Name="PinButton"
+                                Grid.Column="2"
+                                Style="{StaticResource IslandGlyphButton}"
+                                Content="&#xE718;"
+                                Click="OnPinClicked" />
+                        <Button x:Name="SettingsButton"
+                                Grid.Column="3"
+                                Style="{StaticResource IslandGlyphButton}"
+                                Content="&#xE713;"
+                                Click="OnSettingsClicked" />
+                        <Button x:Name="CollapseButton"
+                                Grid.Column="4"
+                                Style="{StaticResource IslandGlyphButton}"
+                                Content="&#xE70E;"
+                                Click="OnCollapseClicked" />
+                    </Grid>
+
+                    <ContentControl x:Name="ModuleHost" Grid.Row="2" Margin="14,4,14,14" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

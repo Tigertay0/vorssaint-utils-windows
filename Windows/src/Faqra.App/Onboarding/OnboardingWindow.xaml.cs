@@ -31,8 +31,10 @@ public partial class OnboardingWindow
         var selectionApplied = store.Bool(DefaultsKey.HasOnboarded) || store.Int(DefaultsKey.OnboardingStep) >= 2;
         _selected = selectionApplied
             ? AppFeatures.All.Where(runtime.IsAvailable).ToHashSet()
-            : FeaturePreset.Essential.Features().ToHashSet();
-        _selectedPreset = selectionApplied ? null : FeaturePreset.Essential;
+            : FeaturePresets.FirstRunFeatures.ToHashSet();
+        // The first-run set is Essentials plus the island, so no preset card is pre-selected as an
+        // exact match; choosing one still replaces the selection outright.
+        _selectedPreset = null;
         _index = Math.Clamp(store.Int(DefaultsKey.OnboardingStep), 0, _steps.Count - 1);
 
         Render();

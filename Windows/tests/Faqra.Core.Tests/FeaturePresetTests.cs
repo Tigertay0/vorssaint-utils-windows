@@ -23,7 +23,18 @@ public class FeaturePresetTests
             FeaturePreset.Windows.EnableKeys());
 
     [Fact]
-    public void FirstRun_AppliesEssentialOnly()
+    public void FirstRunSetIsEssentialsPlusTheIsland()
+    {
+        Assert.Equal(10, FeaturePresets.FirstRunFeatures.Count);
+        Assert.Contains(AppFeature.Notch, FeaturePresets.FirstRunFeatures);
+        Assert.Contains(AppFeature.NotchTimer, FeaturePresets.FirstRunFeatures);
+        Assert.All(FeaturePreset.Essential.Features(), feature => Assert.Contains(feature, FeaturePresets.FirstRunFeatures));
+        // The island is Faqra's addition; upstream's Essential preset itself is untouched.
+        Assert.DoesNotContain(AppFeature.Notch, FeaturePreset.Essential.Features());
+    }
+
+    [Fact]
+    public void FirstRun_AppliesTheFirstRunSetOnly()
     {
         var store = DefaultsStore.InMemory();
         Assert.True(store.Bool(AppFeature.DockClick.AvailabilityKey())); // registered default before first run
@@ -32,7 +43,7 @@ public class FeaturePresetTests
 
         foreach (var feature in AppFeatures.All)
         {
-            Assert.Equal(FeaturePreset.Essential.Features().Contains(feature), store.Bool(feature.AvailabilityKey()));
+            Assert.Equal(FeaturePresets.FirstRunFeatures.Contains(feature), store.Bool(feature.AvailabilityKey()));
         }
     }
 

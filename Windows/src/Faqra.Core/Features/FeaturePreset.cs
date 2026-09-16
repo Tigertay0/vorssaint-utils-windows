@@ -28,7 +28,16 @@ public static class FeaturePresets
     };
 
     /// <summary>
-    /// A clean install starts from the small Essential set before any feature binding runs.
+    /// What a clean install starts with: upstream's Essential preset plus the island. Upstream ships
+    /// the island uninstalled and switched off, but the hover-at-top surface is the reason this port
+    /// exists, so it has to be there on the first launch. Everything else matches Essential.
+    /// </summary>
+    public static IReadOnlySet<AppFeature> FirstRunFeatures { get; } = FeaturePreset.Essential.Features()
+        .Concat([AppFeature.Notch, AppFeature.NotchTimer])
+        .ToHashSet();
+
+    /// <summary>
+    /// A clean install starts from the small first-run set before any feature binding runs.
     /// Updates keep every existing availability choice, and an interrupted setup keeps the
     /// selection already applied on its purpose step.
     /// </summary>
@@ -38,10 +47,9 @@ public static class FeaturePresets
         {
             return;
         }
-        var selected = FeaturePreset.Essential.Features();
         foreach (var feature in AppFeatures.All)
         {
-            store.Set(feature.AvailabilityKey(), selected.Contains(feature));
+            store.Set(feature.AvailabilityKey(), FirstRunFeatures.Contains(feature));
         }
     }
 

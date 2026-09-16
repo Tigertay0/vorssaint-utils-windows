@@ -27,6 +27,32 @@ public struct RECT
 [UnmanagedFunctionPointer(CallingConvention.Winapi)]
 public delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
+[UnmanagedFunctionPointer(CallingConvention.Winapi)]
+public delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+[StructLayout(LayoutKind.Sequential)]
+public struct MSLLHOOKSTRUCT
+{
+    public POINT pt;
+    public uint mouseData;
+    public uint flags;
+    public uint time;
+    public IntPtr dwExtraInfo;
+}
+
+[UnmanagedFunctionPointer(CallingConvention.Winapi)]
+public delegate void WinEventProc(
+    IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct MONITORINFO
+{
+    public uint cbSize;
+    public RECT rcMonitor;
+    public RECT rcWork;
+    public uint dwFlags;
+}
+
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 public struct WNDCLASSEXW
 {
@@ -74,6 +100,35 @@ public static class User32
     public const uint TPM_RETURNCMD = 0x0100;
 
     public const int SM_CXSMICON = 49;
+
+    public const int GWL_EXSTYLE = -20;
+    public const long WS_EX_TOPMOST = 0x00000008;
+    public const long WS_EX_TRANSPARENT = 0x00000020;
+    public const long WS_EX_TOOLWINDOW = 0x00000080;
+    public const long WS_EX_APPWINDOW = 0x00040000;
+    public const long WS_EX_NOACTIVATE = 0x08000000;
+
+    public static readonly IntPtr HWND_TOPMOST = new(-1);
+
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint SWP_NOACTIVATE = 0x0010;
+
+    public const int SW_HIDE = 0;
+    public const int SW_SHOWNOACTIVATE = 4;
+
+    public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+    public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+    public const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
+
+    public const uint MONITOR_DEFAULTTOPRIMARY = 0x00000001;
+    public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    public const int WH_MOUSE_LL = 14;
+    public const uint WM_LBUTTONDOWN = 0x0201;
+    public const uint WM_RBUTTONDOWN = 0x0204;
+    public const uint WM_MBUTTONDOWN = 0x0207;
+    public const uint WM_NCXBUTTONDOWN = 0x00AB;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern ushort RegisterClassExW(ref WNDCLASSEXW lpwcx);
@@ -132,6 +187,52 @@ public static class User32
 
     [DllImport("user32.dll")]
     public static extern uint GetDpiForSystem();
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+    public static extern IntPtr GetWindowLongPtrW(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    public static extern IntPtr SetWindowLongPtrW(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetMonitorInfoW(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SetWinEventHook(
+        uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventProc lpfnWinEventProc,
+        uint idProcess, uint idThread, uint dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern IntPtr SetWindowsHookExW(int idHook, LowLevelMouseProc lpfn, IntPtr hmod, uint dwThreadId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
     public static int LoWord(IntPtr value) => (short)((long)value & 0xFFFF);
 

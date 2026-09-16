@@ -25,6 +25,7 @@ public partial class App : Application
 
         _statusItem = new StatusItemController();
         _statusItem.Show();
+        _services.StartFeatures();
 
         if (!_services.HasOnboarded)
         {

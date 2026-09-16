@@ -46,6 +46,41 @@
                 <Setter Property="TextWrapping" Value="Wrap" />
             </Style>
 
+            <!-- The island draws its own chrome: it is a black surface over the desktop, not a
+                 themed window, so its controls carry fixed light-on-dark colors. -->
+            <Style x:Key="IslandGlyphButton" TargetType="Button">
+                <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="#FFB9B9B9" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Width" Value="28" />
+                <Setter Property="Height" Value="28" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Chrome"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="#22FFFFFF" />
+                                    <Setter Property="Foreground" Value="#FFFFFFFF" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="#33FFFFFF" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="Body" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{StaticResource FaqraFont}" />
                 <Setter Property="FontSize" Value="{StaticResource FaqraBodySize}" />

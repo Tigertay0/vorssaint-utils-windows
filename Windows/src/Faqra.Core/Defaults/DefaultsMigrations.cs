@@ -18,6 +18,27 @@ public static class DefaultsMigrations
         ActivateBetaChannelIfRunningBeta(store, appVersion);
         MigrateLegacyMenuBarTemperatureMetric(store);
         MigrateSilentHeadphonesDisconnectVolume(store);
+        InstallIslandOnce(store);
+    }
+
+    /// <summary>
+    /// Faqra's own migration, not upstream's. Installs the island once for anyone whose first run
+    /// happened before it joined the first-run set, because an install that never shows the island
+    /// is missing the feature this port was built for. The marker makes it a one-time change, so a
+    /// later uninstall is respected.
+    /// </summary>
+    public static void InstallIslandOnce(ISettingsStore store)
+    {
+        const string marker = "faqraIslandInstalled";
+        if (store.Bool(marker))
+        {
+            return;
+        }
+        store.Set(marker, true);
+        foreach (var feature in new[] { "notch", "notchTimer" })
+        {
+            store.Set(DefaultsKey.FeatureAvailable(feature), true);
+        }
     }
 
     /// <summary>The old beta visibility key becomes the panel section key (and an install when it was on).</summary>

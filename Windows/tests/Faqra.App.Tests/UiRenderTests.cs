@@ -72,8 +72,8 @@ public class UiRenderTests
 
             Assert.Equal(7, groups.Count);
             Assert.Equal(66, groups.Sum(group => group.Rows.Count));
-            // A clean install is the Essential preset: 8 installed of the 12 Windows-ready features.
-            Assert.Equal("8 of 12 features installed", page.CountText.Text);
+            // A clean install is Essentials plus the island: 10 installed of the 12 Windows-ready features.
+            Assert.Equal("10 of 12 features installed", page.CountText.Text);
             var mixer = groups.SelectMany(g => g.Rows).Single(row => row.Feature == AppFeature.Mixer);
             var dockClick = groups.SelectMany(g => g.Rows).Single(row => row.Feature == AppFeature.DockClick);
             Assert.True(mixer.IsInstalled);

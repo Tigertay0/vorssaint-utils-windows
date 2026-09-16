@@ -50,7 +50,7 @@ Spacing runs on a 4px scale. Section headers carry more space above than below (
 | Upstream | Faqra | Why |
 |---|---|---|
 | Menu bar status item, top right | System tray icon, bottom right, plus the island pill at top center | Windows 11 cannot move the taskbar to the top. |
-| Notch off by default | Island on by default | The hover-at-top behavior is the reason this port exists. |
+| Notch off by default, and absent from the Essentials preset | Island on by default, and added to the first-run set | The hover-at-top behavior is the reason this port exists, so it has to be there on the first launch. Upstream's presets themselves are unchanged; the addition lives in `FeaturePresets.FirstRunFeatures`, with a one-time migration for installs that predate it. |
 | Combined metrics in one status item | One tray icon per metric | A tray slot renders one small icon, not arbitrary-width text. |
 | SF Symbols | Segoe Fluent Icons glyphs | The native icon family; one family throughout. |
 | Permissions tab requests macOS grants | Informational only | Windows needs no consent grant for anything Faqra does. |
