@@ -4,7 +4,7 @@
 // global shortcut block of the General page (454-472): session, automation, pause while locked, battery
 // protection, the active tray icon, and the shortcut. Closed-lid mode and pointer jiggle are macOS
 // workarounds with no Windows counterpart; the menu bar countdown has no tray equivalent (the tooltip
-// carries the end time). The shortcut recorder arrives with milestone 6, so the shortcut is shown, not edited.
+// carries the end time).
 
 using System.Windows;
 using System.Windows.Controls;
@@ -26,7 +26,6 @@ public sealed class EnergyPage : UserControl
 
     private readonly KeepAwakeStrings _ks = KeepAwakeStrings.For(L10n.Shared.Language);
     private readonly Strings _s = L10n.Shared.S;
-    private readonly System.Windows.Controls.TextBlock _shortcutWarning;
 
     public EnergyPage()
     {
@@ -59,43 +58,20 @@ public sealed class EnergyPage : UserControl
             Tints, TintTitle, raw => DefaultsSanitizers.IconTint(raw), v => v.RawValue(), preview: true));
 
         Header(page, _ks.GlobalHotkeySection, _ks.HotkeyCaption);
-        var hotkeys = AppServices.Current.HotKeys;
-        var shortcut = new Wpf.Ui.Controls.TextBlock
-        {
-            Text = GlobalShortcutRole.KeepAwake.Saved(Store).DisplayText,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 12, 0),
-        };
-        shortcut.SetResourceReference(FontFamilyProperty, "FaqraMonoFont");
-        var toggle = new ToggleSwitch { IsChecked = Store.Bool(DefaultsKey.HotkeyEnabled) };
-        System.Windows.Automation.AutomationProperties.SetName(toggle, _ks.HotkeyToggle);
-        toggle.Click += (_, _) =>
-        {
-            Store.Set(DefaultsKey.HotkeyEnabled, toggle.IsChecked == true);
-            SyncWarning();
-        };
-        var controls = new StackPanel { Orientation = Orientation.Horizontal };
-        controls.Children.Add(shortcut);
-        controls.Children.Add(toggle);
-        page.Children.Add(Card(SymbolRegular.Keyboard24, _ks.HotkeyToggle, null, controls, top: 0));
-        _shortcutWarning = Text(_ks.ShortcutUnavailable, "Caption");
-        _shortcutWarning.SetResourceReference(ForegroundProperty, "SystemFillColorCautionBrush");
-        _shortcutWarning.Margin = new Thickness(4, 6, 0, 0);
-        page.Children.Add(_shortcutWarning);
-        SyncWarning();
-        if (hotkeys is not null)
-        {
-            hotkeys.Changed += SyncWarning;
-            Unloaded += (_, _) => hotkeys.Changed -= SyncWarning;
-        }
+        page.Children.Add(Toggle(SymbolRegular.Keyboard24, _ks.HotkeyToggle, null, DefaultsKey.HotkeyEnabled, top: 0));
+        var services = AppServices.Current;
+        var hub = FeatureHubStrings.For(L10n.Shared.Language);
+        Recorder = new ShortcutRecorder(GlobalShortcutRole.KeepAwake, Store, services.HotKeys, services.FeatureRuntime.IsAvailable,
+            role => hub.FeatureTitles[role.Feature()]);
+        page.Children.Add(Card(SymbolRegular.KeyCommand24, _s.KeepAwakeTitle, null, Recorder, top: 6));
 
         Content = page;
     }
 
-    private static ISettingsStore Store => AppServices.Current.Store;
+    /// <summary>The keep-awake shortcut recorder; exposed for render tests.</summary>
+    internal ShortcutRecorder Recorder { get; }
 
-    private void SyncWarning() =>
-        _shortcutWarning.Visibility = AppServices.Current.HotKeys?.State(GlobalShortcutRole.KeepAwake).Failed == true ? Visibility.Visible : Visibility.Collapsed;
+    private static ISettingsStore Store => AppServices.Current.Store;
 
     private string IconTitle(KeepAwakeActiveIcon icon) => icon switch
     {
