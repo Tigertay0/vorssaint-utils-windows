@@ -19,6 +19,20 @@ when it is picked up: enumerate `GetSessions()`, prefer a `Playing` session (mos
 first), fall back to `GetCurrentSession()`, subscribe to `SessionsChanged`, and keep swallowing
 exceptions from sessions that vanish mid-query.
 
+### Crash inside Windows' media session component (open, root cause unknown)
+
+Seen once, 2026-09-16 21:10:32, on the M5 test build: an access violation (0xc0000005) in
+`Windows.Media.MediaControl.dll` (10.0.26100.9278, offset 0x225b8) ended the process. That DLL backs
+the GlobalSystemMediaTransportControls API that `NowPlayingService` uses for the island's music idle
+view (milestone 3). The crash dump is `%LOCALAPPDATA%\CrashDumps\Faqra.exe.61016.dmp`. `dotnet-dump`
+shows no managed exception: the fault is on a native WinRT callback thread, and the UI thread was
+inside `OutsideClickMonitor.OnMouseEvent` (so the island or panel was open). No earlier Faqra crash in
+three days of event logs. Next step: open the dump in WinDbg with Microsoft symbols to get the native
+stack, then check `NowPlayingService` for a session released while its `MediaPropertiesChanged` /
+`PlaybackInfoChanged` callbacks are in flight (it detaches and drops the session RCW on every
+`CurrentSessionChanged`). A crash also ends any keep-awake session, since Windows drops a dead
+process's power request.
+
 ## Gaps a user will notice
 
 These are scheduled or deliberately out of scope, not broken. Listed because they look like bugs from
