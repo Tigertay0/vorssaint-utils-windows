@@ -88,6 +88,36 @@ public sealed unsafe class TrayIcon : IDisposable
         }
     }
 
+    /// <summary>
+    /// Shows a Windows notification from this icon (upstream posts a user notification). Returns false
+    /// when the icon is not in the tray or the shell refused.
+    /// </summary>
+    public bool ShowNotification(string title, string text)
+    {
+        if (!_added)
+        {
+            return false;
+        }
+        var data = Identity(_usesGuid);
+        data.uFlags |= Shell32.NIF_INFO;
+        data.dwInfoFlags = Shell32.NIIF_USER | Shell32.NIIF_LARGE_ICON;
+        CopyInto(data.szInfo, 256, text);
+        CopyInto(data.szInfoTitle, 64, title);
+        return Shell32.Shell_NotifyIconW(Shell32.NIM_MODIFY, ref data);
+    }
+
+    private static void CopyInto(char* destination, int capacity, string value)
+    {
+        var span = new Span<char>(destination, capacity);
+        span.Clear();
+        var length = Math.Min(value.Length, capacity - 1);
+        if (length > 0 && length < value.Length && char.IsHighSurrogate(value[length - 1]))
+        {
+            length--;
+        }
+        value.AsSpan(0, length).CopyTo(span);
+    }
+
     public void Remove()
     {
         if (!_added)

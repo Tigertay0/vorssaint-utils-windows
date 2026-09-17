@@ -8,11 +8,15 @@ using Faqra.Core;
 using Faqra.Core.Defaults;
 using Faqra.Core.Features;
 using Faqra.Core.Localization;
+using System.Windows.Threading;
 using Faqra.Services;
+using Faqra.Services.Audio;
+using Faqra.Services.KeepAwake;
 using Faqra.Services.Island;
 using Faqra.Services.Media;
 using Faqra.Services.Monitor;
 using Faqra.Services.Startup;
+using Faqra.Win32.Windows;
 
 namespace Faqra.App;
 
@@ -33,6 +37,10 @@ public sealed class AppServices : IDisposable
         Timer = new IslandTimerService();
         // The readers open their counters now, but nothing is sampled until a surface asks for a metric.
         Monitor = new SystemMonitor(new WindowsMetricReaders(), store, feature => store.Bool(feature.AvailabilityKey()));
+        // Neither touches Windows until StartFeatures: the mixer opens Core Audio on its own thread when
+        // the feature is installed, and keep awake only sets the execution state for a session.
+        Mixer = new AppVolumeMixer(store, () => store.Bool(AppFeature.Mixer.AvailabilityKey()), () => new WasapiAudioBackend(), new AudioThread(), Environment.ProcessId);
+        KeepAwake = new KeepAwakeManager(store, () => store.Bool(AppFeature.KeepAwake.AvailabilityKey()), new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
 
         // The runtime is built last: its bindings capture the services above, and a binding only
         // runs for a feature that is actually installed.
@@ -56,6 +64,16 @@ public sealed class AppServices : IDisposable
     public SystemMonitor Monitor { get; }
 
     public IslandController Island { get; }
+
+    public AppVolumeMixer Mixer { get; }
+
+    public KeepAwakeManager KeepAwake { get; }
+
+    /// <summary>Created by <see cref="StartFeatures"/>; null in tests that never start them.</summary>
+    public KeepAwakeHotkey? KeepAwakeHotkey { get; private set; }
+
+    /// <summary>Lock, power, display and hot key messages. Created by <see cref="StartFeatures"/>.</summary>
+    public SystemEventsWindow? SystemEvents { get; private set; }
 
     public Strings S => L10n.Shared.S;
 
@@ -90,7 +108,10 @@ public sealed class AppServices : IDisposable
         // Reading the system media session is async and may find nothing; the island falls back to
         // its battery or blank idle, so nothing waits on it.
         _ = NowPlaying.StartAsync();
+        SystemEvents = new SystemEventsWindow();
+        KeepAwakeHotkey = new KeepAwakeHotkey(Store, () => FeatureRuntime.IsAvailable(AppFeature.KeepAwake), SystemEvents, KeepAwake.Session.Toggle);
         FeatureRuntime.SyncAtLaunch();
+        KeepAwake.Start(SystemEvents);
         // Tray metrics switched on in a previous session need sampling from the first second.
         Monitor.PlanDidChange();
     }
@@ -101,6 +122,12 @@ public sealed class AppServices : IDisposable
     /// </summary>
     private Dictionary<AppFeature, Action> Bindings() => new()
     {
+        [AppFeature.Mixer] = () => Mixer.SyncWithPreferences(),
+        [AppFeature.KeepAwake] = () =>
+        {
+            KeepAwake.SyncWithFeatures();
+            KeepAwakeHotkey?.SyncWithPreferences();
+        },
         [AppFeature.Notch] = () => Island.SyncWithPreferences(),
         // The sub-features only change what the island shows, so they re-sync it when installed and
         // stop their own work when not.
@@ -130,6 +157,10 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         Island.Dispose();
+        KeepAwakeHotkey?.Dispose();
+        KeepAwake.Dispose();
+        SystemEvents?.Dispose();
+        Mixer.Dispose();
         Monitor.Dispose();
         Timer.Dispose();
         NowPlaying.Dispose();

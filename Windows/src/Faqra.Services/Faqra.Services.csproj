@@ -8,6 +8,10 @@
     <InternalsVisibleTo Include="Faqra.Services.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Core Audio (MMDevice, audio sessions, endpoint volume) wrappers for the mixer. -->
+    <PackageReference Include="NAudio.Wasapi" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Faqra.Core/Faqra.Core.csproj" />
     <ProjectReference Include="../Faqra.Win32/Faqra.Win32.csproj" />
   </ItemGroup>

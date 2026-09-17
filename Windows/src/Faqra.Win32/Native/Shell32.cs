@@ -44,7 +44,10 @@ public static class Shell32
     public const uint NIF_MESSAGE = 0x01;
     public const uint NIF_ICON = 0x02;
     public const uint NIF_TIP = 0x04;
+    public const uint NIF_INFO = 0x10;
     public const uint NIF_GUID = 0x20;
+    public const uint NIIF_USER = 0x04;
+    public const uint NIIF_LARGE_ICON = 0x20;
     public const uint NIF_SHOWTIP = 0x80;
 
     public const uint NOTIFYICON_VERSION_4 = 4;
