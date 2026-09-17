@@ -40,7 +40,8 @@ public static class FeatureWindowsSupport
     public static bool IsBuilt(AppFeature feature) => feature
         is AppFeature.Notch or AppFeature.NotchTimer or AppFeature.Mixer or AppFeature.KeepAwake
         or AppFeature.MonitorCPU or AppFeature.MonitorGPU or AppFeature.MonitorMemory
-        or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower;
+        or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower
+        or AppFeature.CommandBar;
 
     /// <summary>The hub's note for a feature Windows can run that this build does not have yet, else null.</summary>
     public static string? PendingNote(AppFeature feature, Localization.FeatureHubStrings hub) =>

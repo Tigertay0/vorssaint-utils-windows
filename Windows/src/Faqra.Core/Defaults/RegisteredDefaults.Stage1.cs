@@ -201,7 +201,7 @@ public static partial class RegisteredDefaults
         [DefaultsKey.NotchHideInCaptures] = false,
 
         // Command bar
-        [DefaultsKey.CommandBarShortcutEnabled] = false,
+        [DefaultsKey.CommandBarShortcutEnabled] = true,  // Faqra: on once the feature is installed (upstream false; see design-system.md)
         [DefaultsKey.CommandBarShortcut] = "option:32",  // Alt+Space (Windows VK)
         [DefaultsKey.CommandBarCompactMode] = false,
         [DefaultsKey.CommandBarDisabledSources] = "",

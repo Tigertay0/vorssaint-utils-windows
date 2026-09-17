@@ -89,10 +89,13 @@ public static class AppsFolder
     }
 
     /// <summary>The app's icon as an HBITMAP the caller must DeleteObject, or IntPtr.Zero.</summary>
-    public static IntPtr IconBitmap(InstalledApp app, int pixels)
+    public static IntPtr IconBitmap(InstalledApp app, int pixels) => ShellIconBitmap($"shell:AppsFolder\\{app.ParsingName}", pixels);
+
+    /// <summary>The shell icon of a file, folder or shell path as an HBITMAP the caller must DeleteObject, or IntPtr.Zero.</summary>
+    public static IntPtr ShellIconBitmap(string parsingName, int pixels)
     {
         var iid = typeof(IShellItemImageFactory).GUID;
-        if (SHCreateItemFromParsingName($"shell:AppsFolder\\{app.ParsingName}", IntPtr.Zero, ref iid, out var factory) != 0)
+        if (SHCreateItemFromParsingName(parsingName, IntPtr.Zero, ref iid, out var factory) != 0)
         {
             return IntPtr.Zero;
         }

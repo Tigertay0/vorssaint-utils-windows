@@ -142,9 +142,10 @@ public class FeatureCatalogTests
         Assert.True(FeatureWindowsSupport.IsBuilt(AppFeature.NotchTimer));
         Assert.True(FeatureWindowsSupport.IsBuilt(AppFeature.Mixer));
         Assert.True(FeatureWindowsSupport.IsBuilt(AppFeature.KeepAwake));
-        Assert.False(FeatureWindowsSupport.IsBuilt(AppFeature.CommandBar));
+        Assert.True(FeatureWindowsSupport.IsBuilt(AppFeature.CommandBar));
 
-        Assert.Equal("Coming in a later update", FeatureWindowsSupport.PendingNote(AppFeature.CommandBar, FeatureHubStrings.EnUS));
+        Assert.Equal("Coming in a later update", FeatureWindowsSupport.PendingNote(AppFeature.SoundOutputSwitcher, FeatureHubStrings.EnUS));
+        Assert.Null(FeatureWindowsSupport.PendingNote(AppFeature.CommandBar, FeatureHubStrings.EnUS));
         Assert.Null(FeatureWindowsSupport.PendingNote(AppFeature.MonitorDisk, FeatureHubStrings.EnUS));
         // A feature Windows can never run already says so; it is not "coming".
         Assert.Null(FeatureWindowsSupport.PendingNote(AppFeature.DockClick, FeatureHubStrings.EnUS));

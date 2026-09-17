@@ -73,6 +73,9 @@ public sealed class AppServices : IDisposable
     /// <summary>Created by <see cref="StartFeatures"/>; null in tests that never start them.</summary>
     public HotKeyRegistry? HotKeys { get; private set; }
 
+    /// <summary>The command bar. Created by <see cref="StartFeatures"/>.</summary>
+    public CommandBar.CommandBarController? CommandBar { get; private set; }
+
     /// <summary>Lock, power, display and hot key messages. Created by <see cref="StartFeatures"/>.</summary>
     public SystemEventsWindow? SystemEvents { get; private set; }
 
@@ -112,6 +115,8 @@ public sealed class AppServices : IDisposable
         SystemEvents = new SystemEventsWindow();
         HotKeys = new HotKeyRegistry(Store, FeatureRuntime.IsAvailable, SystemEvents);
         HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.KeepAwake, KeepAwake.Session.Toggle);
+        CommandBar = new CommandBar.CommandBarController(this);
+        HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.CommandBar, CommandBar.Toggle);
         FeatureRuntime.SyncAtLaunch();
         KeepAwake.Start(SystemEvents);
         // Tray metrics switched on in a previous session need sampling from the first second.
@@ -129,6 +134,15 @@ public sealed class AppServices : IDisposable
         {
             KeepAwake.SyncWithFeatures();
             HotKeys?.Sync();
+        },
+        [AppFeature.CommandBar] = () =>
+        {
+            HotKeys?.Sync();
+            if (!FeatureRuntime.IsAvailable(AppFeature.CommandBar))
+            {
+                CommandBar?.Hide(restoreFocus: false);
+            }
+            CommandBar?.Prepare();
         },
         [AppFeature.Notch] = () => Island.SyncWithPreferences(),
         // The sub-features only change what the island shows, so they re-sync it when installed and
@@ -160,6 +174,7 @@ public sealed class AppServices : IDisposable
     {
         Island.Dispose();
         HotKeys?.Dispose();
+        CommandBar?.Dispose();
         KeepAwake.Dispose();
         SystemEvents?.Dispose();
         Mixer.Dispose();

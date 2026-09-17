@@ -16,9 +16,9 @@ namespace Faqra.App.Settings;
 public partial class SettingsWindow
 {
     /// <summary>Pages with content in this milestone. The rest arrive with their features.</summary>
-    private static readonly IReadOnlySet<SettingsPage> ImplementedPages = new HashSet<SettingsPage>
+    internal static readonly IReadOnlySet<SettingsPage> ImplementedPages = new HashSet<SettingsPage>
     {
-        SettingsPage.General, SettingsPage.Features, SettingsPage.Energy, SettingsPage.Notch, SettingsPage.Monitor, SettingsPage.Shortcuts, SettingsPage.Advanced, SettingsPage.About,
+        SettingsPage.General, SettingsPage.Features, SettingsPage.Energy, SettingsPage.Notch, SettingsPage.Monitor, SettingsPage.CommandBar, SettingsPage.Shortcuts, SettingsPage.Advanced, SettingsPage.About,
     };
 
     private static SettingsWindow? s_instance;
@@ -186,6 +186,7 @@ public partial class SettingsWindow
         SettingsPage.Energy => new EnergyPage(),
         SettingsPage.Notch => new IslandPage(),
         SettingsPage.Monitor => new MonitorPage(),
+        SettingsPage.CommandBar => new CommandBarPage(),
         SettingsPage.Shortcuts => new ShortcutsPage(),
         SettingsPage.Advanced => new AdvancedPage(),
         SettingsPage.About => new AboutPage(),
