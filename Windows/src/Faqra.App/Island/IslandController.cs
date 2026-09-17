@@ -42,6 +42,7 @@ public sealed class IslandController : IDisposable
     private readonly FeatureRuntime _runtime;
     private readonly NowPlayingService _nowPlaying;
     private readonly SystemMonitor _systemMonitor;
+    private readonly Services.Audio.AppVolumeMixer _mixer;
     private readonly IslandHoverState _hover = new();
     private readonly DispatcherTimer _openTimer;
     private readonly DispatcherTimer _closeTimer;
@@ -62,12 +63,13 @@ public sealed class IslandController : IDisposable
     private bool _sectionsOpen;
     private bool _suspendedForFullscreen;
 
-    public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying, SystemMonitor monitor)
+    public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying, SystemMonitor monitor, Services.Audio.AppVolumeMixer mixer)
     {
         _store = store;
         _runtime = runtime;
         _nowPlaying = nowPlaying;
         _systemMonitor = monitor;
+        _mixer = mixer;
 
         _openTimer = new DispatcherTimer { Interval = IslandHoverState.OpenDelay };
         _openTimer.Tick += (_, _) => { _openTimer.Stop(); OpenFromHover(); };
@@ -285,6 +287,7 @@ public sealed class IslandController : IDisposable
         IslandModule.Music => new MusicModule(_nowPlaying),
         IslandModule.Timer => new TimerModule(),
         IslandModule.System => new SystemModule(_systemMonitor, SystemCards(), _geometry.SystemColumns),
+        IslandModule.Mixer => new MixerModule(_store, _runtime.IsAvailable, _mixer),
         // Modules whose feature is not ported yet keep their place in the section list; their
         // content arrives with the feature.
         _ => new ModulePlaceholder(ModuleTitle(module)),

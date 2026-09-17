@@ -149,7 +149,7 @@ public class PanelRenderTests
     }
 
     [Fact]
-    public void TabsFollowTheSavedOrderAndSkipUnbuiltSections()
+    public void TabsFollowTheSavedOrderAndInsertMissingSectionsCanonically()
     {
         var tabs = PanelLayout.Visible(
             PanelLayout.Order("power,keepAwake,network"),
@@ -158,7 +158,7 @@ public class PanelRenderTests
             brightnessControlEnabled: true,
             MenuPanelController.IsBuilt);
 
-        Assert.Equal([PanelSectionId.Power, PanelSectionId.Network, PanelSectionId.Disk, PanelSectionId.System], tabs);
+        Assert.Equal([PanelSectionId.Power, PanelSectionId.KeepAwake, PanelSectionId.Network, PanelSectionId.Disk, PanelSectionId.Mixer, PanelSectionId.System], tabs);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class PanelRenderTests
                 .Last(card => (card.Header as TextBlock)?.Text == S.Cpu).Content as Wpf.Ui.Controls.ToggleSwitch;
             Assert.True(graphToggle?.IsChecked, "the CPU graph is on by default");
 
-            // The first "Move down" belongs to System, the first section on a clean install.
+            // The first "Move down" belongs to Keep awake, the first section on a clean install.
             var moveDown = FindAll<Wpf.Ui.Controls.Button>(page)
                 .First(b => System.Windows.Automation.AutomationProperties.GetName(b).StartsWith(S.MoveDown, StringComparison.Ordinal));
             moveDown.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
@@ -216,7 +216,7 @@ public class PanelRenderTests
                 services.FeatureRuntime.IsAvailable,
                 false,
                 MenuPanelController.IsBuilt);
-            Assert.Equal([PanelSectionId.Network, PanelSectionId.System, PanelSectionId.Disk, PanelSectionId.Power], tabs);
+            Assert.Equal([PanelSectionId.Mixer, PanelSectionId.KeepAwake, PanelSectionId.System, PanelSectionId.Network, PanelSectionId.Disk, PanelSectionId.Power], tabs);
 
             SaveElement(page, "settings-monitor", 840);
         });

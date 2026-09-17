@@ -38,7 +38,7 @@ public static class FeatureWindowsSupport
     /// supported feature still waits for its milestone, and the hub says so instead of looking broken.
     /// </summary>
     public static bool IsBuilt(AppFeature feature) => feature
-        is AppFeature.Notch or AppFeature.NotchTimer
+        is AppFeature.Notch or AppFeature.NotchTimer or AppFeature.Mixer or AppFeature.KeepAwake
         or AppFeature.MonitorCPU or AppFeature.MonitorGPU or AppFeature.MonitorMemory
         or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower;
 

@@ -20,7 +20,11 @@ internal interface IPanelSectionView
 }
 
 /// <summary>What a section needs to decide which blocks it shows.</summary>
-internal sealed record SectionContext(ISettingsStore Store, Func<AppFeature, bool> IsAvailable);
+internal sealed record SectionContext(
+    ISettingsStore Store,
+    Func<AppFeature, bool> IsAvailable,
+    Services.Audio.AppVolumeMixer? Mixer = null,
+    Services.KeepAwake.KeepAwakeManager? KeepAwake = null);
 
 internal static class SectionKit
 {

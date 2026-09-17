@@ -43,7 +43,8 @@ public sealed class MonitorPage : UserControl
         BuildOrderRows();
 
         Header(page, _s.InThePanel, _s.InThePanelCaption);
-        foreach (var section in EditableSections())
+        // The mixer and keep awake have no blocks to pick, only their visibility above (upstream's flat toggle).
+        foreach (var section in EditableSections().Where(id => Items(id).Any()))
         {
             page.Children.Add(SectionExpander(section));
         }
@@ -226,6 +227,8 @@ public sealed class MonitorPage : UserControl
 
     private static SymbolRegular SectionIcon(PanelSectionId id) => id switch
     {
+        PanelSectionId.KeepAwake => SymbolRegular.WeatherMoon24,
+        PanelSectionId.Mixer => SymbolRegular.Speaker224,
         PanelSectionId.Network => SymbolRegular.Globe24,
         PanelSectionId.Disk => SymbolRegular.Storage24,
         PanelSectionId.Power => SymbolRegular.Flash24,

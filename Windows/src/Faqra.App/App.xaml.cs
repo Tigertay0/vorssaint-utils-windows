@@ -26,9 +26,9 @@ public partial class App : Application
         ApplyAppearance();
         _services.Store.Changed += OnSettingChanged;
 
-        _statusItem = new StatusItemController();
+        _statusItem = new StatusItemController(_services.Store, _services.KeepAwake, () => _services.FeatureRuntime.IsAvailable(Core.Features.AppFeature.KeepAwake));
         _statusItem.Show();
-        _panel = new MenuPanelController(_services.Store, _services.FeatureRuntime, _services.Monitor, _statusItem.IconRect);
+        _panel = new MenuPanelController(_services.Store, _services.FeatureRuntime, _services.Monitor, _services.Mixer, _services.KeepAwake, _statusItem.IconRect);
         _statusItem.Selected += _panel.Toggle;
         _trayMetrics = new TrayMetricsController(_services.Store, _services.FeatureRuntime, _services.Monitor);
         _trayMetrics.SectionRequested += _panel.Show;

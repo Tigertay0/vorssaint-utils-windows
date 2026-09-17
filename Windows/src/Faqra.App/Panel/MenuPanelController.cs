@@ -14,6 +14,8 @@ using Faqra.Core.Island;
 using Faqra.Core.Localization;
 using Faqra.Core.Metrics;
 using Faqra.Core.Panel;
+using Faqra.Services.Audio;
+using Faqra.Services.KeepAwake;
 using Faqra.Services.Monitor;
 using Faqra.Win32.Display;
 using Faqra.Win32.Input;
@@ -39,6 +41,8 @@ public sealed class MenuPanelController : IDisposable
     private readonly ISettingsStore _store;
     private readonly FeatureRuntime _runtime;
     private readonly SystemMonitor _monitor;
+    private readonly AppVolumeMixer _mixer;
+    private readonly KeepAwakeManager _keepAwake;
     private readonly Func<PixelRect?> _iconRect;
     private readonly OutsideClickMonitor _outsideClick = new();
 
@@ -49,11 +53,13 @@ public sealed class MenuPanelController : IDisposable
     private DateTime _closedAt = DateTime.MinValue;
     private bool _open;
 
-    public MenuPanelController(ISettingsStore store, FeatureRuntime runtime, SystemMonitor monitor, Func<PixelRect?> iconRect)
+    public MenuPanelController(ISettingsStore store, FeatureRuntime runtime, SystemMonitor monitor, AppVolumeMixer mixer, KeepAwakeManager keepAwake, Func<PixelRect?> iconRect)
     {
         _store = store;
         _runtime = runtime;
         _monitor = monitor;
+        _mixer = mixer;
+        _keepAwake = keepAwake;
         _iconRect = iconRect;
         _outsideClick.Pressed += OnOutsidePress;
         _monitor.SnapshotChanged += OnSnapshot;
@@ -64,7 +70,8 @@ public sealed class MenuPanelController : IDisposable
 
     /// <summary>The sections built on Windows so far; the rest wait for their milestone.</summary>
     internal static bool IsBuilt(PanelSectionId id) =>
-        id is PanelSectionId.System or PanelSectionId.Network or PanelSectionId.Disk or PanelSectionId.Power;
+        id is PanelSectionId.KeepAwake or PanelSectionId.Mixer
+            or PanelSectionId.System or PanelSectionId.Network or PanelSectionId.Disk or PanelSectionId.Power;
 
     public void Toggle()
     {
@@ -126,6 +133,7 @@ public sealed class MenuPanelController : IDisposable
         _closedAt = DateTime.UtcNow;
         _outsideClick.Stop();
         _monitor.SetPanelNeeds(default);
+        ReleaseView();
         Animate(window, opening: false);
     }
 
@@ -183,14 +191,14 @@ public sealed class MenuPanelController : IDisposable
         {
             return;
         }
+        ReleaseView();
         if (!_tabs.Contains(id))
         {
-            _view = null;
             _window.SetSection(PanelText.Label(strings.ComingLater, 12, PanelBrushes.Secondary));
             _monitor.SetPanelNeeds(default);
             return;
         }
-        _view = CreateSection(id, new SectionContext(_store, _runtime.IsAvailable), strings);
+        _view = CreateSection(id, new SectionContext(_store, _runtime.IsAvailable, _mixer, _keepAwake), strings);
         if (_view is DiskSectionView disk)
         {
             disk.SelectionChanged += () => _view?.Update(_monitor.Snapshot);
@@ -200,8 +208,17 @@ public sealed class MenuPanelController : IDisposable
         _monitor.SetPanelNeeds(NeedsFor(id));
     }
 
+    /// <summary>Sections with their own live source (mixer, keep awake) stop listening when they leave the screen.</summary>
+    private void ReleaseView()
+    {
+        (_view as IDisposable)?.Dispose();
+        _view = null;
+    }
+
     internal static IPanelSectionView CreateSection(PanelSectionId id, SectionContext context, MonitorStrings strings) => id switch
     {
+        PanelSectionId.KeepAwake when context.KeepAwake is { } keepAwake => new KeepAwakeSectionView(context, keepAwake, SectionPalette.Panel),
+        PanelSectionId.Mixer when context.Mixer is { } mixer => new MixerSectionView(context, mixer, SectionPalette.Panel),
         PanelSectionId.Network => new NetworkSectionView(context, strings),
         PanelSectionId.Disk => new DiskSectionView(context, strings),
         PanelSectionId.Power => new PowerSectionView(context, strings),
@@ -328,6 +345,7 @@ public sealed class MenuPanelController : IDisposable
         _store.Changed -= OnSettingChanged;
         _monitor.SnapshotChanged -= OnSnapshot;
         _outsideClick.Dispose();
+        ReleaseView();
         _window?.Close();
         _window = null;
     }

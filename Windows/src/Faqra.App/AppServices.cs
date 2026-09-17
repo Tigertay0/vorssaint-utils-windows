@@ -45,7 +45,7 @@ public sealed class AppServices : IDisposable
         // The runtime is built last: its bindings capture the services above, and a binding only
         // runs for a feature that is actually installed.
         FeatureRuntime = new FeatureRuntime(store, Bindings());
-        Island = new IslandController(store, FeatureRuntime, NowPlaying, Monitor);
+        Island = new IslandController(store, FeatureRuntime, NowPlaying, Monitor, Mixer);
     }
 
     /// <summary>The live instance. Available after <see cref="Start"/>.</summary>

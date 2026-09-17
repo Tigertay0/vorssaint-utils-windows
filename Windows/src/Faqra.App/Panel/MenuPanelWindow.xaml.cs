@@ -76,6 +76,8 @@ public partial class MenuPanelWindow
 
     internal static string SectionTitle(PanelSectionId id, MonitorStrings s) => id switch
     {
+        PanelSectionId.KeepAwake => L10n.Shared.S.KeepAwakeTitle,
+        PanelSectionId.Mixer => MixerStrings.For(L10n.Shared.Language).Section,
         PanelSectionId.System => s.SystemSection,
         PanelSectionId.Network => s.NetworkSection,
         PanelSectionId.Disk => s.DiskSection,
@@ -85,7 +87,8 @@ public partial class MenuPanelWindow
 
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
+        // Esc inside the mixer's percent field cancels the edit, not the panel.
+        if (e.Key == Key.Escape && Keyboard.FocusedElement is not TextBox)
         {
             CloseRequested?.Invoke();
             e.Handled = true;

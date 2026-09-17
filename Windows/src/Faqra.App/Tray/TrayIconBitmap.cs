@@ -4,6 +4,7 @@
 
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Faqra.Core.Defaults;
 using Faqra.Win32.Icons;
 
 namespace Faqra.App.Tray;
@@ -11,12 +12,13 @@ namespace Faqra.App.Tray;
 /// <summary>Rasterizes the tray glyph at a pixel size and turns it into an HICON or a WPF bitmap.</summary>
 public static class TrayIconBitmap
 {
-    public static BitmapSource Render(int pixels, bool active, bool lightTaskbar)
+    public static BitmapSource Render(int pixels, bool active, bool lightTaskbar,
+        KeepAwakeActiveIcon icon = KeepAwakeActiveIcon.Brand, KeepAwakeIconTint tint = KeepAwakeIconTint.Orange)
     {
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            GlyphPainter.Draw(dc, pixels, active, lightTaskbar);
+            GlyphPainter.Draw(dc, pixels, active, lightTaskbar, icon, tint);
         }
         var bitmap = new RenderTargetBitmap(pixels, pixels, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
@@ -24,17 +26,19 @@ public static class TrayIconBitmap
         return bitmap;
     }
 
-    public static byte[] RenderPixels(int pixels, bool active, bool lightTaskbar)
+    public static byte[] RenderPixels(int pixels, bool active, bool lightTaskbar,
+        KeepAwakeActiveIcon icon = KeepAwakeActiveIcon.Brand, KeepAwakeIconTint tint = KeepAwakeIconTint.Orange)
     {
-        var bitmap = Render(pixels, active, lightTaskbar);
+        var bitmap = Render(pixels, active, lightTaskbar, icon, tint);
         var stride = pixels * 4;
         var buffer = new byte[stride * pixels];
         bitmap.CopyPixels(buffer, stride, 0);
         return buffer;
     }
 
-    public static NativeIcon RenderIcon(int pixels, bool active, bool lightTaskbar) =>
-        IconFactory.CreateFromPbgra32(pixels, pixels, RenderPixels(pixels, active, lightTaskbar));
+    public static NativeIcon RenderIcon(int pixels, bool active, bool lightTaskbar,
+        KeepAwakeActiveIcon icon = KeepAwakeActiveIcon.Brand, KeepAwakeIconTint tint = KeepAwakeIconTint.Orange) =>
+        IconFactory.CreateFromPbgra32(pixels, pixels, RenderPixels(pixels, active, lightTaskbar, icon, tint));
 
     /// <summary>True when any pixel on the outermost ring has ink (the mark would be clipped by the slot).</summary>
     public static bool InkTouchesEdge(byte[] pbgra, int pixels)
