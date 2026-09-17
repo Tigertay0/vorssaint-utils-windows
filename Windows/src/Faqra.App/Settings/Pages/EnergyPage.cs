@@ -13,6 +13,7 @@ using Faqra.Core.Defaults;
 using Faqra.Core.KeepAwake;
 using Faqra.Core.Localization;
 using Faqra.Core.Settings;
+using Faqra.Core.Shortcuts;
 using Faqra.Core.Tray;
 using Wpf.Ui.Controls;
 
@@ -58,10 +59,10 @@ public sealed class EnergyPage : UserControl
             Tints, TintTitle, raw => DefaultsSanitizers.IconTint(raw), v => v.RawValue(), preview: true));
 
         Header(page, _ks.GlobalHotkeySection, _ks.HotkeyCaption);
-        var hotkey = AppServices.Current.KeepAwakeHotkey;
+        var hotkeys = AppServices.Current.HotKeys;
         var shortcut = new Wpf.Ui.Controls.TextBlock
         {
-            Text = hotkey?.Shortcut.DisplayText ?? string.Empty,
+            Text = GlobalShortcutRole.KeepAwake.Saved(Store).DisplayText,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 12, 0),
         };
@@ -82,10 +83,10 @@ public sealed class EnergyPage : UserControl
         _shortcutWarning.Margin = new Thickness(4, 6, 0, 0);
         page.Children.Add(_shortcutWarning);
         SyncWarning();
-        if (hotkey is not null)
+        if (hotkeys is not null)
         {
-            hotkey.RegistrationChanged += SyncWarning;
-            Unloaded += (_, _) => hotkey.RegistrationChanged -= SyncWarning;
+            hotkeys.Changed += SyncWarning;
+            Unloaded += (_, _) => hotkeys.Changed -= SyncWarning;
         }
 
         Content = page;
@@ -94,7 +95,7 @@ public sealed class EnergyPage : UserControl
     private static ISettingsStore Store => AppServices.Current.Store;
 
     private void SyncWarning() =>
-        _shortcutWarning.Visibility = AppServices.Current.KeepAwakeHotkey?.RegistrationFailed == true ? Visibility.Visible : Visibility.Collapsed;
+        _shortcutWarning.Visibility = AppServices.Current.HotKeys?.State(GlobalShortcutRole.KeepAwake).Failed == true ? Visibility.Visible : Visibility.Collapsed;
 
     private string IconTitle(KeepAwakeActiveIcon icon) => icon switch
     {

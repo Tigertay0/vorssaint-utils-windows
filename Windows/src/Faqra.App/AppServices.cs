@@ -15,6 +15,7 @@ using Faqra.Services.KeepAwake;
 using Faqra.Services.Island;
 using Faqra.Services.Media;
 using Faqra.Services.Monitor;
+using Faqra.Services.Shortcuts;
 using Faqra.Services.Startup;
 using Faqra.Win32.Windows;
 
@@ -70,7 +71,7 @@ public sealed class AppServices : IDisposable
     public KeepAwakeManager KeepAwake { get; }
 
     /// <summary>Created by <see cref="StartFeatures"/>; null in tests that never start them.</summary>
-    public KeepAwakeHotkey? KeepAwakeHotkey { get; private set; }
+    public HotKeyRegistry? HotKeys { get; private set; }
 
     /// <summary>Lock, power, display and hot key messages. Created by <see cref="StartFeatures"/>.</summary>
     public SystemEventsWindow? SystemEvents { get; private set; }
@@ -109,7 +110,8 @@ public sealed class AppServices : IDisposable
         // its battery or blank idle, so nothing waits on it.
         _ = NowPlaying.StartAsync();
         SystemEvents = new SystemEventsWindow();
-        KeepAwakeHotkey = new KeepAwakeHotkey(Store, () => FeatureRuntime.IsAvailable(AppFeature.KeepAwake), SystemEvents, KeepAwake.Session.Toggle);
+        HotKeys = new HotKeyRegistry(Store, FeatureRuntime.IsAvailable, SystemEvents);
+        HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.KeepAwake, KeepAwake.Session.Toggle);
         FeatureRuntime.SyncAtLaunch();
         KeepAwake.Start(SystemEvents);
         // Tray metrics switched on in a previous session need sampling from the first second.
@@ -126,7 +128,7 @@ public sealed class AppServices : IDisposable
         [AppFeature.KeepAwake] = () =>
         {
             KeepAwake.SyncWithFeatures();
-            KeepAwakeHotkey?.SyncWithPreferences();
+            HotKeys?.Sync();
         },
         [AppFeature.Notch] = () => Island.SyncWithPreferences(),
         // The sub-features only change what the island shows, so they re-sync it when installed and
@@ -157,7 +159,7 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         Island.Dispose();
-        KeepAwakeHotkey?.Dispose();
+        HotKeys?.Dispose();
         KeepAwake.Dispose();
         SystemEvents?.Dispose();
         Mixer.Dispose();

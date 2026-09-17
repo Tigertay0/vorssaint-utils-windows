@@ -10,12 +10,23 @@ using Faqra.Win32.Native;
 
 namespace Faqra.Win32.Windows;
 
+/// <summary>A window that owns global hot keys; ids are the WM_HOTKEY wParam.</summary>
+public interface IHotKeyHost
+{
+    /// <summary>False when another app (or another id here) already owns the combination.</summary>
+    bool RegisterHotKey(int id, uint modifiers, uint virtualKey);
+
+    void UnregisterHotKey(int id);
+
+    event Action<int>? HotKeyPressed;
+}
+
 /// <summary>
 /// Hidden top-level window for the system broadcasts a background app needs: session lock, power
 /// source, display topology and global hot keys. Top-level because WM_POWERBROADCAST and
 /// WM_DISPLAYCHANGE are not delivered to message-only windows. UI thread only.
 /// </summary>
-public sealed class SystemEventsWindow : IDisposable
+public sealed class SystemEventsWindow : IHotKeyHost, IDisposable
 {
     private const string ClassName = "FaqraSystemEventsWindow";
     private const uint WM_DISPLAYCHANGE = 0x007E;
