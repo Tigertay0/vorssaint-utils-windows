@@ -55,6 +55,8 @@ public sealed class KeepAwakeManager : IDisposable
         DefaultsKey.KeepAwakeRunningApps, DefaultsKey.KeepAwakePauseWhenLocked,
     ];
 
+    private static readonly TimeSpan EndSlack = TimeSpan.FromMilliseconds(250);
+
     private readonly ISettingsStore _store;
     private readonly Func<bool> _featureAvailable;
     private readonly SynchronizationContext _context;
@@ -79,7 +81,7 @@ public sealed class KeepAwakeManager : IDisposable
         Session = new KeepAwakeSession(store, featureAvailable, environment, () => DateTime.UtcNow);
         Session.Changed += OnSessionChanged;
         Session.SessionEnded += reason => SessionEnded?.Invoke(reason);
-        _endTimer = new Timer(_ => Post(Session.Tick));
+        _endTimer = new Timer(_ => Post(OnEndTimer));
         _batteryTimer = new Timer(_ => Post(Session.CheckBattery));
         _store.Changed += OnSettingChanged;
     }
@@ -122,6 +124,29 @@ public sealed class KeepAwakeManager : IDisposable
         Apply();
     }
 
+    /// <summary>True while a timed session's end is scheduled.</summary>
+    internal bool EndTimerArmed { get; private set; }
+
+    internal void DisarmEndTimerForTest()
+    {
+        _endTimer.Change(Timeout.Infinite, Timeout.Infinite);
+        EndTimerArmed = false;
+    }
+
+    /// <summary>
+    /// The timer runs on the tick clock and the end is wall-clock time, so it can fire a few
+    /// milliseconds early. A tick that finds the session still running re-arms for the remainder.
+    /// </summary>
+    internal void OnEndTimer()
+    {
+        EndTimerArmed = false;
+        Session.Tick();
+        if (Session.IsActive && !EndTimerArmed)
+        {
+            ScheduleEnd();
+        }
+    }
+
     private void OnPowerChanged()
     {
         // A resume can land after the end time without the timer having fired yet.
@@ -161,11 +186,14 @@ public sealed class KeepAwakeManager : IDisposable
         if (Session.EndsAt is not { } end || !Session.IsActive)
         {
             _endTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            EndTimerArmed = false;
             return;
         }
-        var due = end - DateTime.UtcNow;
+        // A little past the end, so the common case lands after it rather than just before.
+        var due = end - DateTime.UtcNow + EndSlack;
         var clamped = due < TimeSpan.Zero ? TimeSpan.Zero : due > TimeSpan.FromDays(1) ? TimeSpan.FromDays(1) : due;
         _endTimer.Change(clamped, Timeout.InfiniteTimeSpan);
+        EndTimerArmed = true;
     }
 
     private void SyncBatteryWatch()

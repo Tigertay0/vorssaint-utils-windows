@@ -37,6 +37,24 @@ public class KeepAwakeManagerTests
         Assert.Equal((false, false), manager.AppliedState);
     }
 
+    // Live regression: the end timer fired a hair before the wall-clock end, the tick saw the session
+    // still running, nothing re-armed the timer, and the PC stayed awake past the end.
+    [Fact]
+    public void EndTimerFiringEarly_RearmsInsteadOfGivingUp()
+    {
+        var store = DefaultsStore.InMemory(RegisteredDefaults.All);
+        using var manager = new KeepAwakeManager(store, () => true, new InlineContext(), new FakeEnvironment());
+        manager.Session.Activate(15);
+        manager.DisarmEndTimerForTest();
+
+        manager.OnEndTimer();
+
+        Assert.True(manager.Session.IsActive);
+        Assert.True(manager.EndTimerArmed);
+        manager.Session.Deactivate(KeepAwakeEndReason.Manual);
+        Assert.False(manager.EndTimerArmed);
+    }
+
     [Fact]
     public void SyncWithFeatures_UninstallEndsTheSession()
     {
