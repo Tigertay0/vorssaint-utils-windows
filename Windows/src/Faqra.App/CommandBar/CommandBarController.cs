@@ -179,7 +179,6 @@ public sealed class CommandBarController : IDisposable
         };
         // Clicking another window or switching apps closes the bar, like upstream's activation observer.
         window.Deactivated += (_, _) => Hide(restoreFocus: false);
-        window.SizeChanged += (_, _) => Place();
         _window = window;
         return window;
     }
@@ -535,9 +534,10 @@ public sealed class CommandBarController : IDisposable
         {
             return;
         }
-        var width = _monitor.ToPixels(_window.ActualWidth);
-        var height = _monitor.ToPixels(_window.ActualHeight);
-        WindowStyles.SetBounds(_window.Handle, _origin.X, _origin.Y, width, height);
+        // Position only: setting the size from outside would switch WPF's SizeToContent off, and the bar
+        // must keep growing and shrinking with its list from the fixed top edge.
+        _window.Left = _origin.X / _monitor.Scale;
+        _window.Top = _origin.Y / _monitor.Scale;
     }
 
     public void Dispose()

@@ -6,6 +6,7 @@
                  Width="560"
                  MinWidth="560"
                  MaxWidth="560"
+                 MinHeight="0"
                  SizeToContent="Height"
                  ResizeMode="NoResize"
                  ShowInTaskbar="False"
