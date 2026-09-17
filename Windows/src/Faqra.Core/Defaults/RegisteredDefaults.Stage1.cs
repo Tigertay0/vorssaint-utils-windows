@@ -34,7 +34,7 @@ public static partial class RegisteredDefaults
         [DefaultsKey.KeepAwakeMouseJiggleEnabled] = false,
         [DefaultsKey.KeepAwakeMouseJiggleInterval] = 5L,
         [DefaultsKey.HotkeyEnabled] = true,
-        [DefaultsKey.KeepAwakeShortcut] = "control+option+command:40",
+        [DefaultsKey.KeepAwakeShortcut] = "control+option+command:75",   // Ctrl+Alt+Win+K (Windows VK)
         [DefaultsKey.KeepAwakeIconTint] = "orange",
         [DefaultsKey.KeepAwakeActiveIcon] = "vorssaint",
         [DefaultsKey.ShowCountdown] = false,
