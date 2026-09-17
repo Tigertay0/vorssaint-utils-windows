@@ -19,29 +19,34 @@ when it is picked up: enumerate `GetSessions()`, prefer a `Playing` session (mos
 first), fall back to `GetCurrentSession()`, subscribe to `SessionsChanged`, and keep swallowing
 exceptions from sessions that vanish mid-query.
 
-### Crash inside Windows' media session component (root cause found, fix pending)
+### Crash inside Windows' media session component (seen once, not reproduced)
 
 Seen once, 2026-09-16 21:10:32, on the M5 test build: an access violation (0xc0000005) in
 `Windows.Media.MediaControl.dll` (10.0.26100.9278, offset 0x225b8). Dump:
 `%LOCALAPPDATA%\CrashDumps\Faqra.exe.61016.dmp`. A crash also ends any keep-awake session.
 
 Native stack, read without WinDbg by a small dbghelp + Microsoft public symbols tool
-(`%TEMP%\faqra-live\dumpsym`): the fault is in `GlobalSystemMediaTransportControlsSessionImpl`'s own
+(`%TEMP%\faqra-tools\dumpsym`): the fault is in `GlobalSystemMediaTransportControlsSessionImpl`'s own
 playback-update work item on a shell thread-pool thread, while it releases the session's cached
 playback-info object (`[session+0x70]`) whose memory had already been freed and reused (vtable read
 0x400000000). No Faqra code was on the stack and every other thread was idle.
 
-Why it was freed: `GetPlaybackInfo` reads that same cached pointer and takes a reference without a
-lock, and the update work item swaps and releases it without a lock. When a read lands inside a swap,
-the caller gets a reference to an object that is freed and immediately reallocated as the new cached
-object; when the caller's RCW later releases it, the session's cache holds freed memory and the next
-playback update crashes. `NowPlayingService.RefreshAsync` calls `GetPlaybackInfo` from a thread-pool
-continuation right after each `PlaybackInfoChanged`/`MediaPropertiesChanged` event, which is
-exactly when the next update is likely to run. A Windows race, made likely by Faqra's timing.
+The first suspect, not confirmed by the stress runs below: `GetPlaybackInfo` reads that same cached
+pointer and takes a reference without a lock, and the update work item swaps and releases it without
+a lock, so a read landing inside a swap could over-release the object. `NowPlayingService.RefreshAsync`
+calls `GetPlaybackInfo` from a thread-pool continuation right after each playback or media event.
 
-Status: hypothesis from the dump and disassembly. A stress repro (`%TEMP%\faqra-live\gsmtcrace`)
-compares the current call pattern with the candidate fix (read playback info only inside the
-`PlaybackInfoChanged` callback, which runs inside the update work item and so cannot race it).
+
+Status: not reproduced, so no fix is applied. A stress tool (`%TEMP%\faqra-tools\gsmtcrace`) runs a
+silent media session flipping between playing and paused about 65 times a second and tried three
+triggers on 2026-09-17, all surviving: NowPlayingService's exact pattern (90 s, 5,901 reads), four
+threads calling `GetPlaybackInfo` in a tight loop (90 s, 312 million reads over 5,788 swaps, which
+argues against the simple read-during-swap race above), and acquiring, subscribing to and dropping
+the session with forced garbage collection (240 s, 10,359 cycles). What the tool does not reproduce
+is a real app's session: Spotify or a browser sending artwork and timeline updates, several sessions
+changing at once, and the current session switching between apps. If it happens again, keep the
+new dump and note what was playing.
+
 ## Gaps a user will notice
 
 These are scheduled or deliberately out of scope, not broken. Listed because they look like bugs from
