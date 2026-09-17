@@ -463,5 +463,6 @@ public sealed class AppVolumeMixer : IDisposable
             done.Set();
         });
         done.Wait(TimeSpan.FromSeconds(2));
+        _dispatcher.Dispose();
     }
 }

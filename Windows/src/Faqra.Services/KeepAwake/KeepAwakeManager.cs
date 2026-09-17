@@ -58,6 +58,7 @@ public sealed class KeepAwakeManager : IDisposable
     private readonly ISettingsStore _store;
     private readonly Func<bool> _featureAvailable;
     private readonly SynchronizationContext _context;
+    private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
     private readonly Timer _endTimer;
     private readonly Timer _batteryTimer;
     private SystemEventsWindow? _events;
@@ -214,6 +215,12 @@ public sealed class KeepAwakeManager : IDisposable
     {
         if (_disposed)
         {
+            return;
+        }
+        // The execution state belongs to the owning thread; clearing it anywhere else would leave the PC held awake.
+        if (Environment.CurrentManagedThreadId != _ownerThreadId)
+        {
+            _context.Send(_ => Dispose(), null);
             return;
         }
         _store.Changed -= OnSettingChanged;

@@ -84,6 +84,12 @@ how Windows reports reduced motion.
 | "Swap used", "Open Activity Monitor", "on this Mac" | "Page file used", "Open Task Manager", "on this PC" | The Windows name for the same thing. |
 | Drag to reorder panel sections and blocks, eye buttons inline | Move up / Move down and switches on the Monitor settings page | Works from the keyboard, and the panel stays a read-only glance. |
 | Notch always at the top | The island attaches to the top, left or right edge | Same reason: nothing physically fixes it to the top. The edge lives in `faqraIslandEdge`, a Faqra-prefixed key so it can never collide with an upstream one. |
+| Mixer rows at up to 200% with an amber boost state, a per-app output picker | Rows stop at 100%, no boost color, no per-app picker | Windows session volume cannot exceed 100% or reroute one app. |
+| Keep-awake status glyphs from SF Symbols | Segoe Fluent Icons: Cafe, View, QuietHours, Lightbulb, drawn on their ink in the chosen tint; the brand style tints the Faqra mark | One icon family throughout. |
+| "Connected to power" needs a battery reporting AC | On mains counts as connected, battery or not | A desktop user who switches the automation on expects it to work. |
+| Menu bar countdown title | Not offered; the tooltip reads "awake until 15:45" | A tray icon has no text beside it. |
+| Keep-awake shortcut ⌃⌥⌘K | Ctrl+Alt+Win+K | The Windows key takes Command's place. |
+| Mixer's percent field is a native text field inside the popover | A text box that appears on click; Esc cancels the edit instead of closing the panel | Same behavior, WPF focus model. |
 
 ## Verification
 

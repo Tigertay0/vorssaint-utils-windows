@@ -56,6 +56,18 @@ public sealed class AudioThread : IAudioDispatcher
 
     private void Run()
     {
+        try
+        {
+            RunQueue();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Dispose gave up waiting on a stalled call; the thread just ends.
+        }
+    }
+
+    private void RunQueue()
+    {
         foreach (var action in _queue.GetConsumingEnumerable())
         {
             try
@@ -73,7 +85,11 @@ public sealed class AudioThread : IAudioDispatcher
     public void Dispose()
     {
         _queue.CompleteAdding();
-        _thread.Join(TimeSpan.FromSeconds(2));
-        _queue.Dispose();
+        // A Core Audio call can hang; then the background thread is left to die with the process
+        // rather than having its queue disposed under it.
+        if (_thread.Join(TimeSpan.FromSeconds(2)))
+        {
+            _queue.Dispose();
+        }
     }
 }

@@ -18,6 +18,8 @@ public sealed class KeepAwakeHotkey : IDisposable
     private readonly Func<bool> _featureAvailable;
     private readonly SystemEventsWindow _events;
     private readonly Action _toggle;
+    private readonly SynchronizationContext? _context = SynchronizationContext.Current;
+    private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
     private bool _registered;
 
     public KeepAwakeHotkey(ISettingsStore store, Func<bool> featureAvailable, SystemEventsWindow events, Action toggle)
@@ -74,9 +76,18 @@ public sealed class KeepAwakeHotkey : IDisposable
 
     private void OnSettingChanged(object? sender, Core.Defaults.SettingsChangedEventArgs e)
     {
-        if (e.Key is DefaultsKey.HotkeyEnabled or DefaultsKey.KeepAwakeShortcut)
+        if (e.Key is not (DefaultsKey.HotkeyEnabled or DefaultsKey.KeepAwakeShortcut))
+        {
+            return;
+        }
+        // Hot keys belong to the window's thread; a setting written elsewhere re-registers there.
+        if (_context is null || Environment.CurrentManagedThreadId == _ownerThreadId)
         {
             SyncWithPreferences();
+        }
+        else
+        {
+            _context.Post(_ => SyncWithPreferences(), null);
         }
     }
 

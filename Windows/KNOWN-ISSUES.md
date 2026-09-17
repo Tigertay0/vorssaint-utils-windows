@@ -24,11 +24,22 @@ exceptions from sessions that vanish mid-query.
 These are scheduled or deliberately out of scope, not broken. Listed because they look like bugs from
 the outside.
 
-- **Keep awake and Check for updates are greyed out** in the tray menu. Milestones 5 and 7.
-- **The mixer, keep awake and command bar are not built yet.** The Feature Hub now labels them
-  "Coming in a later update"; the popover panel hides their tabs until they exist.
-- **Island sections still to come:** Controls and Mixer show "Coming in a later update." Music,
-  Timer and System are built.
+- **Check for updates is greyed out** in the tray menu. Milestone 7.
+- **The command bar is not built yet.** The Feature Hub labels it "Coming in a later update".
+- **Island Controls section still to come:** it shows "Coming in a later update." Music, Timer,
+  System and Mixer are built.
+- **Mixer pieces upstream has that this build leaves out:** volume above 100% (Windows caps an app's
+  session volume at 100%, so a saved boost plays at 100%), a per-app output picker (Windows has no
+  per-app routing API), the system sounds and microphone pickers, finer volume steps, and the output
+  switcher shortcut. Apps are listed by executable, so two different apps built as the same
+  "app.exe" share one row.
+- **Keep awake pieces upstream has that this build leaves out:** the "selected apps are running"
+  automation (needs an app picker), pointer jiggle, the menu bar countdown (a tray icon has no title;
+  the tooltip shows the end time), closed-lid mode (macOS only). The shortcut is fixed at
+  Ctrl+Alt+Win+K until the shortcut recorder lands in milestone 6.
+- **"External display" automation guesses what is built in.** Windows has no built-in flag; a
+  display counts as built in when it is connected internally (a laptop panel). On a desktop every
+  monitor is external, so the automation is on whenever it is switched on.
 - **Monitor readings upstream has that Windows does not show:** temperatures and fan speed (no
   Windows API without vendor drivers), SMART data, disk eject and tools, the speed test, per-app
   CPU/GPU/memory/network/energy lists, battery health and cycle count, adapter wattage. The panel's
