@@ -54,9 +54,9 @@ public static partial class RegisteredDefaults
         [DefaultsKey.MixerHeadphonesDisconnectVolumePercent] = 25L,
         [DefaultsKey.PreciseVolumeRollerEnabled] = false,
         [DefaultsKey.SoundOutputSwitcherEnabled] = false,
-        [DefaultsKey.SoundOutputSwitcherShortcut] = "control+option+command:1",
+        [DefaultsKey.SoundOutputSwitcherShortcut] = "control+option+command:83",  // Ctrl+Alt+Win+S (Windows VK)
         [DefaultsKey.MicMuteShortcutEnabled] = false,
-        [DefaultsKey.MicMuteShortcut] = "control+option+command:46",
+        [DefaultsKey.MicMuteShortcut] = "control+option+command:77",  // Ctrl+Alt+Win+M (Windows VK)
         [DefaultsKey.MicMuteActive] = false,
         [DefaultsKey.MicMuteMenuBarIndicator] = true,
         [DefaultsKey.PanelToggleMicMute] = true,
@@ -202,7 +202,7 @@ public static partial class RegisteredDefaults
 
         // Command bar
         [DefaultsKey.CommandBarShortcutEnabled] = false,
-        [DefaultsKey.CommandBarShortcut] = "option:49",
+        [DefaultsKey.CommandBarShortcut] = "option:32",  // Alt+Space (Windows VK)
         [DefaultsKey.CommandBarCompactMode] = false,
         [DefaultsKey.CommandBarDisabledSources] = "",
         [DefaultsKey.CommandBarAliases] = "",
