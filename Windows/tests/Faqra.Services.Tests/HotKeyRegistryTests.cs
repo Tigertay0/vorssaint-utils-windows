@@ -192,6 +192,20 @@ public class HotKeyRegistryTests
     }
 
     [Fact]
+    public void AThrowingHandlerDoesNotEscapeTheHotKeyMessage()
+    {
+        var (registry, host, _) = Create();
+        registry.Bind(GlobalShortcutRole.KeepAwake, () => throw new InvalidOperationException("boom"));
+        registry.Sync();
+        GlobalShortcutRole? failed = null;
+        registry.HandlerFailed += (role, _) => failed = role;
+
+        host.Press(1);
+
+        Assert.Equal(GlobalShortcutRole.KeepAwake, failed);
+    }
+
+    [Fact]
     public void DisposeUnregistersEverything()
     {
         var (registry, host, store) = Create();

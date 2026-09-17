@@ -44,6 +44,9 @@ public sealed class HotKeyRegistry : IDisposable
     /// <summary>Raised when any role's registration state changed.</summary>
     public event Action? Changed;
 
+    /// <summary>A bound handler threw; the registry kept running.</summary>
+    public event Action<GlobalShortcutRole, Exception>? HandlerFailed;
+
     public bool IsSuspended => _suspendCount > 0;
 
     /// <summary>Stable per role; keep awake stays 1 so tools that post WM_HOTKEY 1 keep working.</summary>
@@ -147,7 +150,17 @@ public sealed class HotKeyRegistry : IDisposable
         {
             if (HotKeyId(role) == id && State(role).Registered is not null)
             {
-                handler();
+                // WM_HOTKEY arrives in a window procedure called from native code: an exception escaping here
+                // ends the whole process, so one feature's failure must not take every other feature down.
+                try
+                {
+                    handler();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceError($"Faqra: the {role} shortcut failed: {ex}");
+                    HandlerFailed?.Invoke(role, ex);
+                }
                 return;
             }
         }

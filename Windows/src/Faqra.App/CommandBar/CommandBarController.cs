@@ -52,6 +52,8 @@ public sealed class CommandBarController : IDisposable
     private IntPtr _previousForeground;
     private PixelPoint _origin;
     private MonitorGeometry? _monitor;
+    private IReadOnlyDictionary<string, CommandBarUse>? _usage;
+    private bool _hiding;
 
     public CommandBarController(AppServices services)
     {
@@ -116,23 +118,42 @@ public sealed class CommandBarController : IDisposable
 
     public void Hide(bool restoreFocus)
     {
-        if (_window is null || !_window.IsVisible)
+        // Window.Hide raises Deactivated, which calls back in here; the outer call owns the focus hand-back.
+        if (_hiding || _window is null || !_window.IsVisible)
         {
             return;
         }
-        _window.Hide();
+        _hiding = true;
+        try
+        {
+            HideWindow(_window, restoreFocus);
+        }
+        finally
+        {
+            _hiding = false;
+        }
+    }
+
+    private void HideWindow(CommandBarWindow window, bool restoreFocus)
+    {
+        var previous = _previousForeground;
+        _previousForeground = IntPtr.Zero;
+        _usage = null;
+        window.Hide();
         _mode = CommandBarMode.Search;
         _modeRow = null;
         // Nothing typed here is kept (CommandBarService.swift:371-411).
-        _window.Query = string.Empty;
+        window.Query = string.Empty;
         _pool = [];
         _items = [];
-        if (restoreFocus && _previousForeground != IntPtr.Zero)
+        if (restoreFocus && previous != IntPtr.Zero)
         {
-            OpenWindows.Activate(_previousForeground);
+            OpenWindows.Activate(previous);
         }
-        _previousForeground = IntPtr.Zero;
     }
+
+    /// <summary>What was used, read once per opening rather than on every keystroke.</summary>
+    private IReadOnlyDictionary<string, CommandBarUse> Usage => _usage ??= CommandBarUsage.Load(_services.Store);
 
     private CommandBarWindow EnsureWindow()
     {
@@ -252,7 +273,7 @@ public sealed class CommandBarController : IDisposable
     private List<CommandBarListItem> HomeItems(CommandBarStrings bar)
     {
         var byId = UniqueById(_pool);
-        var usage = CommandBarUsage.Load(_services.Store);
+        var usage = Usage;
         var sections = CommandBarCatalogSupport.Home(byId.Values.Select(r => r.Entry).ToList(), usage, CommandBarCatalog.CuratedSuggestionIds, bar);
         var items = new List<CommandBarListItem>();
         foreach (var section in sections)
@@ -284,7 +305,7 @@ public sealed class CommandBarController : IDisposable
         var byId = UniqueById(_pool);
         var text = SearchText(query, byId.Values);
         var ranked = CommandBarRanking.Rank(byId.Values.Select(r => r.Entry).ToList(), text,
-            CommandBarUsage.Load(_services.Store), _queryMemory, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            Usage, _queryMemory, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         items.AddRange(ranked.Select(entry => new CommandBarListItem(byId[entry.Id], null)));
         return items;
     }
@@ -488,7 +509,7 @@ public sealed class CommandBarController : IDisposable
         {
             _queryMemory.Record(query, row.Entry.Id, ++_step);
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            CommandBarUsage.Save(_services.Store, CommandBarUsage.Recording(CommandBarUsage.Load(_services.Store), row.Entry.Id, now));
+            CommandBarUsage.Save(_services.Store, CommandBarUsage.Recording(Usage, row.Entry.Id, now));
         }
         // Rows that bring another window forward must not have focus snatched back to the old one.
         Hide(restoreFocus: !row.ActivatesAnotherWindow);

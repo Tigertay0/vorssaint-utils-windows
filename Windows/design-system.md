@@ -89,6 +89,12 @@ how Windows reports reduced motion.
 | "Connected to power" needs a battery reporting AC | On mains counts as connected, battery or not | A desktop user who switches the automation on expects it to work. |
 | Menu bar countdown title | Not offered; the tooltip reads "awake until 15:45" | A tray icon has no text beside it. |
 | Keep-awake shortcut ⌃⌥⌘K | Ctrl+Alt+Win+K | The Windows key takes Command's place. |
+| Shortcut key caps as glyphs (⌃⌥⌘K) on a 108pt recorder | "Ctrl+Alt+Win+K" in `FaqraMonoFont` on a 150px key cap, Reset beside it, one message line under it | Windows names modifiers in words, which needs more width; mono keeps the caps aligned. |
+| Shortcut conflicts read live from the WindowServer's hot key table | A fixed list of Windows-reserved combinations (Win+L, Ctrl+Alt+Del, Alt+Tab, Win+Tab, Ctrl+Shift+Esc, Alt+Esc, Ctrl+Esc, Alt+F4), then Windows refusing the registration | Windows has no readable table of its own or other apps' shortcuts. |
+| Command bar never takes activation from the app in front | The bar activates, and hands focus back to that window when it closes without opening something | WPF cannot type into a window that is not active. |
+| Command bar shortcut off by default | On once the Command Bar feature is installed (the feature itself still ships uninstalled) | Installing the bar is the opt-in; a bar with no way to open it looks broken. Alt+Space falls back to Ctrl+Alt+Space, with a notice on its settings page, when another app holds it. |
+| Command bar: HUD material, 22pt window radius, 10pt rows, 9pt uppercase tracked headings, ⌘1-9 | Acrylic with Windows' rounded corners, 6px rows with a subtle fill, sentence-case 12px semibold headings, Ctrl+1-9 | Fluent owns the look; Ctrl takes Command's place. |
+| Command bar opens instantly | Also instant, no transition | A bar opened many times a day should not animate (the motion rulebook's frequency rule). |
 | Mixer's percent field is a native text field inside the popover | A text box that appears on click; Esc cancels the edit instead of closing the panel | Same behavior, WPF focus model. |
 
 ## Verification

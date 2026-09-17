@@ -190,8 +190,9 @@ internal sealed class CommandBarCatalog(AppServices services)
             var description = FileVersionInfo.GetVersionInfo(path).FileDescription;
             return string.IsNullOrWhiteSpace(description) ? Path.GetFileNameWithoutExtension(path) : description.Trim();
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
+            // A protected process's executable may not be readable; its file name still names it.
             return Path.GetFileNameWithoutExtension(path);
         }
     }

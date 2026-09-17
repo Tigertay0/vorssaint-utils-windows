@@ -19,27 +19,45 @@ when it is picked up: enumerate `GetSessions()`, prefer a `Playing` session (mos
 first), fall back to `GetCurrentSession()`, subscribe to `SessionsChanged`, and keep swallowing
 exceptions from sessions that vanish mid-query.
 
-### Crash inside Windows' media session component (open, root cause unknown)
+### Crash inside Windows' media session component (root cause found, fix pending)
 
 Seen once, 2026-09-16 21:10:32, on the M5 test build: an access violation (0xc0000005) in
-`Windows.Media.MediaControl.dll` (10.0.26100.9278, offset 0x225b8) ended the process. That DLL backs
-the GlobalSystemMediaTransportControls API that `NowPlayingService` uses for the island's music idle
-view (milestone 3). The crash dump is `%LOCALAPPDATA%\CrashDumps\Faqra.exe.61016.dmp`. `dotnet-dump`
-shows no managed exception: the fault is on a native WinRT callback thread, and the UI thread was
-inside `OutsideClickMonitor.OnMouseEvent` (so the island or panel was open). No earlier Faqra crash in
-three days of event logs. Next step: open the dump in WinDbg with Microsoft symbols to get the native
-stack, then check `NowPlayingService` for a session released while its `MediaPropertiesChanged` /
-`PlaybackInfoChanged` callbacks are in flight (it detaches and drops the session RCW on every
-`CurrentSessionChanged`). A crash also ends any keep-awake session, since Windows drops a dead
-process's power request.
+`Windows.Media.MediaControl.dll` (10.0.26100.9278, offset 0x225b8). Dump:
+`%LOCALAPPDATA%\CrashDumps\Faqra.exe.61016.dmp`. A crash also ends any keep-awake session.
 
+Native stack, read without WinDbg by a small dbghelp + Microsoft public symbols tool
+(`%TEMP%\faqra-live\dumpsym`): the fault is in `GlobalSystemMediaTransportControlsSessionImpl`'s own
+playback-update work item on a shell thread-pool thread, while it releases the session's cached
+playback-info object (`[session+0x70]`) whose memory had already been freed and reused (vtable read
+0x400000000). No Faqra code was on the stack and every other thread was idle.
+
+Why it was freed: `GetPlaybackInfo` reads that same cached pointer and takes a reference without a
+lock, and the update work item swaps and releases it without a lock. When a read lands inside a swap,
+the caller gets a reference to an object that is freed and immediately reallocated as the new cached
+object; when the caller's RCW later releases it, the session's cache holds freed memory and the next
+playback update crashes. `NowPlayingService.RefreshAsync` calls `GetPlaybackInfo` from a thread-pool
+continuation right after each `PlaybackInfoChanged`/`MediaPropertiesChanged` event, which is
+exactly when the next update is likely to run. A Windows race, made likely by Faqra's timing.
+
+Status: hypothesis from the dump and disassembly. A stress repro (`%TEMP%\faqra-live\gsmtcrace`)
+compares the current call pattern with the candidate fix (read playback info only inside the
+`PlaybackInfoChanged` callback, which runs inside the update work item and so cannot race it).
 ## Gaps a user will notice
 
 These are scheduled or deliberately out of scope, not broken. Listed because they look like bugs from
 the outside.
 
 - **Check for updates is greyed out** in the tray menu. Milestone 7.
-- **The command bar is not built yet.** The Feature Hub labels it "Coming in a later update".
+- **Command bar pieces upstream has that this build leaves out:** menu commands of the app in front,
+  file search, the selected text, emoji, clipboard history, saved links and scripts, the actions panel
+  (pin, name, hide, a row's own shortcut), the per-app shortcuts sheet, compact mode, drag to move, the
+  Windows Settings panes, Wi-Fi, today's date and time rows, and the learned query habits store (plain
+  usage still ranks). An app row always launches; it does not switch to a running copy first.
+- **Command bar is not in the first-run set**, like upstream: install it from the Feature Hub. Its
+  Alt+Space shortcut is on once installed.
+- **Shortcuts page lists only built features** (keep awake, command bar). A shortcut another app
+  already holds is reported only when Windows refuses it at registration; Windows has no readable
+  list of other apps' shortcuts.
 - **Island Controls section still to come:** it shows "Coming in a later update." Music, Timer,
   System and Mixer are built.
 - **Mixer pieces upstream has that this build leaves out:** volume above 100% (Windows caps an app's
@@ -49,8 +67,7 @@ the outside.
   "app.exe" share one row.
 - **Keep awake pieces upstream has that this build leaves out:** the "selected apps are running"
   automation (needs an app picker), pointer jiggle, the menu bar countdown (a tray icon has no title;
-  the tooltip shows the end time), closed-lid mode (macOS only). The shortcut is fixed at
-  Ctrl+Alt+Win+K until the shortcut recorder lands in milestone 6.
+  the tooltip shows the end time), closed-lid mode (macOS only).
 - **"External display" automation guesses what is built in.** Windows has no built-in flag; a
   display counts as built in when it is connected internally (a laptop panel). On a desktop every
   monitor is external, so the automation is on whenever it is switched on.

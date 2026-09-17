@@ -89,16 +89,14 @@ public static class OpenWindows
         return !(DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, out var cloaked, sizeof(int)) == 0 && cloaked != 0);
     }
 
+    // A fixed buffer, not GetWindowTextLength: another process's window answers that length itself, and a
+    // hostile one could claim gigabytes. Titles longer than this are cut, which a row would truncate anyway.
+    private const int MaxTitleLength = 512;
+
     private static string TitleOf(IntPtr hWnd)
     {
-        var length = GetWindowTextLengthW(hWnd);
-        if (length <= 0)
-        {
-            return string.Empty;
-        }
-        var buffer = new StringBuilder(length + 1);
-        GetWindowTextW(hWnd, buffer, buffer.Capacity);
-        return buffer.ToString().Trim();
+        var buffer = new StringBuilder(MaxTitleLength);
+        return GetWindowTextW(hWnd, buffer, MaxTitleLength) > 0 ? buffer.ToString().Trim() : string.Empty;
     }
 
     [DllImport("user32.dll")]
@@ -122,9 +120,6 @@ public static class OpenWindows
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetWindowTextLengthW(IntPtr hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowTextW(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
