@@ -1016,24 +1016,6 @@ final class DockPreviewService: ObservableObject {
         }
     }
 
-    private func clampedPanelFrame(_ frame: CGRect) -> CGRect {
-        let visibleFrame = visibleFrameForScreen(containing: frame)
-        let padding = DockPreviewSupport.edgePadding
-        let minX = visibleFrame.minX + padding
-        let maxX = visibleFrame.maxX - frame.width - padding
-        let minY = visibleFrame.minY + padding
-        let maxY = visibleFrame.maxY - frame.height - padding
-
-        func clamped(_ value: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {
-            min(max(value, lower), max(lower, upper))
-        }
-
-        return CGRect(x: clamped(frame.minX, lower: minX, upper: maxX),
-                      y: clamped(frame.minY, lower: minY, upper: maxY),
-                      width: frame.width,
-                      height: frame.height)
-    }
-
     private func ensurePanel() -> NSPanel {
         if let panel { return panel }
 
@@ -1108,12 +1090,6 @@ final class DockPreviewService: ObservableObject {
         for id in Array(pinnedPanelWindows.keys) {
             closePinnedPanel(id)
         }
-    }
-
-    private func visibleFrameForScreen(containing rect: CGRect) -> CGRect {
-        let point = rect.center
-        return (NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.withMouse)?.visibleFrame
-            ?? NSScreen.pointerVisibleFrame
     }
 
     // MARK: - Dock hit testing
@@ -1417,6 +1393,30 @@ private extension CGRect {
     }
 }
 
+private func visibleFrameForScreen(containing rect: CGRect) -> CGRect {
+    let point = rect.center
+    return (NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.withMouse)?.visibleFrame
+        ?? NSScreen.pointerVisibleFrame
+}
+
+private func clampedPanelFrame(_ frame: CGRect) -> CGRect {
+    let visibleFrame = visibleFrameForScreen(containing: frame)
+    let padding = DockPreviewSupport.edgePadding
+    let minX = visibleFrame.minX + padding
+    let maxX = visibleFrame.maxX - frame.width - padding
+    let minY = visibleFrame.minY + padding
+    let maxY = visibleFrame.maxY - frame.height - padding
+
+    func clamped(_ value: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {
+        min(max(value, lower), max(lower, upper))
+    }
+
+    return CGRect(x: clamped(frame.minX, lower: minX, upper: maxX),
+                  y: clamped(frame.minY, lower: minY, upper: maxY),
+                  width: frame.width,
+                  height: frame.height)
+}
+
 final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     private static let refreshInterval: TimeInterval = 0.75
     private static let maximumWindowCount = 12
@@ -1688,29 +1688,5 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
         frame.size = size
         panel.setFrame(clampedPanelFrame(frame), display: true, animate: true)
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
-    }
-
-    private func clampedPanelFrame(_ frame: CGRect) -> CGRect {
-        let visibleFrame = visibleFrameForScreen(containing: frame)
-        let padding = DockPreviewSupport.edgePadding
-        let minX = visibleFrame.minX + padding
-        let maxX = visibleFrame.maxX - frame.width - padding
-        let minY = visibleFrame.minY + padding
-        let maxY = visibleFrame.maxY - frame.height - padding
-
-        func clamped(_ value: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {
-            min(max(value, lower), max(lower, upper))
-        }
-
-        return CGRect(x: clamped(frame.minX, lower: minX, upper: maxX),
-                      y: clamped(frame.minY, lower: minY, upper: maxY),
-                      width: frame.width,
-                      height: frame.height)
-    }
-
-    private func visibleFrameForScreen(containing rect: CGRect) -> CGRect {
-        let point = rect.center
-        return (NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.withMouse)?.visibleFrame
-            ?? NSScreen.pointerVisibleFrame
     }
 }
