@@ -23,32 +23,32 @@ public sealed record AgentEvent(
 {
     public static AgentEvent? TryParse(string line)
     {
-        JsonObject? obj;
         try
         {
-            obj = JsonNode.Parse(line) as JsonObject;
+            if (JsonNode.Parse(line) is not JsonObject obj || Text(obj, "hook_event_name") is not { Length: > 0 } name)
+            {
+                return null;
+            }
+            return new AgentEvent(
+                name,
+                Text(obj, "session_id") ?? "unknown",
+                Text(obj, "faqra_agent") ?? "claude",
+                Text(obj, "cwd") ?? string.Empty,
+                Text(obj, "tool_name"),
+                obj["tool_input"] as JsonObject,
+                Text(obj, "prompt"),
+                Text(obj, "message"),
+                Text(obj, "last_assistant_message"),
+                Text(obj, "notification_type"),
+                Text(obj, "term_program"),
+                Text(obj, "claude_entrypoint"));
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // ArgumentException: .NET 8 reports duplicate property names this way, and only when
+            // the object is first read, so the reads stay inside the try.
             return null;
         }
-        if (obj is null || Text(obj, "hook_event_name") is not { Length: > 0 } name)
-        {
-            return null;
-        }
-        return new AgentEvent(
-            name,
-            Text(obj, "session_id") ?? "unknown",
-            Text(obj, "faqra_agent") ?? "claude",
-            Text(obj, "cwd") ?? string.Empty,
-            Text(obj, "tool_name"),
-            obj["tool_input"] as JsonObject,
-            Text(obj, "prompt"),
-            Text(obj, "message"),
-            Text(obj, "last_assistant_message"),
-            Text(obj, "notification_type"),
-            Text(obj, "term_program"),
-            Text(obj, "claude_entrypoint"));
     }
 
     private static string? Text(JsonObject obj, string key) =>

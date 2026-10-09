@@ -33,21 +33,21 @@ public static class HookPayload
     /// <summary>The line sent to Faqra for this stdin, or null when stdin is not a JSON object.</summary>
     public static string? ToLine(string stdin, string eventArg, string agent, Func<string, string?> env, string processCwd)
     {
-        JsonObject? payload;
         try
         {
-            payload = JsonNode.Parse(stdin.TrimStart('﻿')) as JsonObject;
+            if (JsonNode.Parse(stdin.TrimStart('﻿')) is not JsonObject payload)
+            {
+                return null;
+            }
+            Normalize(payload, eventArg, agent, env, processCwd);
+            return payload.ToJsonString(AgentJson.Compact);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // ArgumentException: .NET 8 reports duplicate property names this way, and only when
+            // the object is first read, so the whole walk stays inside the try.
             return null;
         }
-        if (payload is null)
-        {
-            return null;
-        }
-        Normalize(payload, eventArg, agent, env, processCwd);
-        return payload.ToJsonString(AgentJson.Compact);
     }
 
     private static void Normalize(JsonObject payload, string eventArg, string agent, Func<string, string?> env, string processCwd)
@@ -150,7 +150,7 @@ public static class HookPayload
                 {
                     obj[key] = Cut(text, limit);
                     truncated = true;
-                    budget = 0;
+                    budget -= limit;
                 }
                 else
                 {

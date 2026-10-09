@@ -34,6 +34,7 @@ public class AgentEventTests
     [InlineData("{\"session_id\":\"s1\"}")]
     [InlineData("{\"hook_event_name\":42}")]
     [InlineData("nope")]
+    [InlineData("{\"a\":1,\"a\":2}")]
     public void RefusesALineWithoutAnEventName(string line) => Assert.Null(AgentEvent.TryParse(line));
 
     [Fact]

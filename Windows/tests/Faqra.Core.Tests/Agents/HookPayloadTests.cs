@@ -15,6 +15,7 @@ public class HookPayloadTests
     [InlineData("not json")]
     [InlineData("[1,2]")]
     [InlineData("42")]
+    [InlineData("{\"a\":1,\"a\":2}")]
     public void IgnoresAnythingButAnObject(string stdin) =>
         Assert.Null(HookPayload.ToLine(stdin, "Stop", "claude", NoEnv, @"C:\work"));
 
@@ -61,6 +62,31 @@ public class HookPayloadTests
         var line = Line($"{{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"s1\",\"tool_name\":\"Edit\",\"tool_input\":{{\"file_path\":\"a.cs\",\"old_string\":\"{small}\",\"new_string\":\"{huge}\"}}}}");
         Assert.Equal(small, line["tool_input"]!["old_string"]!.GetValue<string>());
         Assert.Equal(HookPayload.MaxEditString + 1, line["tool_input"]!["new_string"]!.GetValue<string>().Length);
+        Assert.True(line["faqra_diff_truncated"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public void ACutOnTheEachBodyLimitLeavesTheRestOfTheBudgetForLaterEdits()
+    {
+        var first = new string('a', 300 * 1024);
+        var second = new string('b', 100 * 1024);
+        var line = Line($"{{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"s1\",\"tool_name\":\"MultiEdit\",\"tool_input\":{{\"file_path\":\"a.cs\",\"edits\":[{{\"old_string\":\"{first}\",\"new_string\":\"x\"}},{{\"old_string\":\"{second}\",\"new_string\":\"y\"}}]}}}}");
+        var edits = line["tool_input"]!["edits"]!.AsArray();
+        Assert.Equal(new string('a', HookPayload.MaxEditString) + "…", edits[0]!["old_string"]!.GetValue<string>());
+        Assert.Equal(second, edits[1]!["old_string"]!.GetValue<string>());
+        Assert.True(line["faqra_diff_truncated"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public void CutsBodiesBeyondTheTotalBudgetToWhatIsLeft()
+    {
+        var body = new string('c', 200 * 1024);
+        var edit = $"{{\"old_string\":\"{body}\",\"new_string\":\"x\"}}";
+        var line = Line($"{{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"s1\",\"tool_name\":\"MultiEdit\",\"tool_input\":{{\"edits\":[{edit},{edit},{edit}]}}}}");
+        var edits = line["tool_input"]!["edits"]!.AsArray();
+        Assert.Equal(body, edits[0]!["old_string"]!.GetValue<string>());
+        Assert.Equal(body, edits[1]!["old_string"]!.GetValue<string>());
+        Assert.Equal(HookPayload.MaxEditTotal - 2 * (body.Length + 1) + 1, edits[2]!["old_string"]!.GetValue<string>().Length);
         Assert.True(line["faqra_diff_truncated"]!.GetValue<bool>());
     }
 
