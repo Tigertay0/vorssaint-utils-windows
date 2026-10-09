@@ -4,6 +4,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Faqra.App.Agents;
 using Faqra.App.Island.Modules;
+using Faqra.App.Settings;
+using Faqra.App.Settings.Pages;
 using Faqra.Core.Agents;
 using Faqra.Services.Agents;
 
@@ -135,6 +137,40 @@ public class AgentsRenderTests
         Assert.Contains("Needs your OK", AllText(after[0]));
     });
 
+    [Fact]
+    public void ThePageOffersAReviewedInstall() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = Directory.CreateTempSubdirectory("faqra-page-").FullName;
+        var settings = Path.Combine(dir, "settings.json");
+        File.WriteAllText(settings, "{\n  \"hooks\": {\n    \"Stop\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"C:/x/coucou-hook.exe\\\" Stop\"\n          }\n        ]\n      }\n    ]\n  }\n}\n");
+        var relay = Path.Combine(dir, "faqra-hook.exe");
+        File.WriteAllText(relay, "stub");
+        var page = new AgentsPage(settings, relay);
+        RenderInk(page, "settings-agents", 840, 560);
+        var texts = AllText(page);
+        Assert.Contains("Hooks not installed", texts);
+        Assert.Contains("Coucou's hooks still run on 1 of", texts);
+        Directory.Delete(dir, recursive: true);
+    });
+
+    [Fact]
+    public void TheReviewShowsTheDiffBeforeWriting() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = Directory.CreateTempSubdirectory("faqra-review-").FullName;
+        var settings = Path.Combine(dir, "settings.json");
+        File.WriteAllText(settings, "{\n  \"a\": 1\n}\n");
+        var review = new ConfigReviewWindow(ConfigReviewWindow.Mode.Install, settings, @"C:\x\faqra-hook.exe", coucouEvents: 0);
+        RenderInk((FrameworkElement)review.Content, "settings-agents-review", 760, 560);
+        var texts = AllText((DependencyObject)review.Content);
+        Assert.Contains(texts.Split('\n'), line => line.StartsWith('+') && line.Contains("\"SessionStart\": ["));
+        Assert.Contains("settings.json.bak-", texts);
+        Assert.Equal("{\n  \"a\": 1\n}\n", File.ReadAllText(settings));
+        review.Close();
+        Directory.Delete(dir, recursive: true);
+    });
+
     private static List<System.Windows.Controls.Button> Rows(DependencyObject root)
     {
         var rows = new List<System.Windows.Controls.Button>();
@@ -161,6 +197,11 @@ public class AgentsRenderTests
             if (node is System.Windows.Controls.TextBlock block)
             {
                 builder.Append(block.Text).Append('\n');
+            }
+            // A CardControl's Header is not a logical child until the template is applied.
+            if (node is Wpf.Ui.Controls.CardControl { Header: DependencyObject header })
+            {
+                Walk(header);
             }
             foreach (var child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>())
             {
