@@ -24,36 +24,42 @@ public static partial class Relay
 
     public static int Run(string[] args, Stream stdin, Func<string, string?> env, string cwd, string pipeName)
     {
-        var eventArg = args.Length > 0 ? args[0] : string.Empty;
-        if (ReadAll(stdin) is not { } text || HookPayload.ToLine(text, eventArg, "claude", env, cwd) is not { } line)
-        {
-            return 0;
-        }
-        // A Faqra that stops reading is not worth a slower session: the send gets a fixed budget.
-        Task.Run(() => Send(pipeName, line)).Wait(RunBudgetMs);
+        // Reading stdin and sending share one budget: neither a stdin that never closes nor a Faqra that stops
+        // reading is worth a slower session. The work runs on a pool (background) thread, so a blocked read
+        // cannot keep the process alive once Main returns.
+        Task.Run(() => ReadAndSend(args.Length > 0 ? args[0] : string.Empty, stdin, env, cwd, pipeName)).Wait(RunBudgetMs);
         return 0;
+    }
+
+    private static void ReadAndSend(string eventArg, Stream stdin, Func<string, string?> env, string cwd, string pipeName)
+    {
+        try
+        {
+            if (ReadAll(stdin) is not { } text || HookPayload.ToLine(text, eventArg, "claude", env, cwd) is not { } line)
+            {
+                return;
+            }
+            Send(pipeName, line);
+        }
+        catch (Exception)
+        {
+            // A hook must never fail the session: whatever goes wrong, it carries on as if Faqra did not exist.
+        }
     }
 
     private static void Send(string pipeName, string line)
     {
-        try
+        // NamedPipeClientStream.Connect keeps retrying a pipe that does not exist until its timeout, and
+        // Faqra being closed is the common case. WaitNamedPipe returns at once when there is no pipe and
+        // waits only while every instance is busy, so a false answer means: give up now.
+        if (!WaitNamedPipe(@"\\.\pipe\" + pipeName, ConnectBudgetMs))
         {
-            // NamedPipeClientStream.Connect keeps retrying a pipe that does not exist until its timeout, and
-            // Faqra being closed is the common case. WaitNamedPipe returns at once when there is no pipe and
-            // waits only while every instance is busy, so a false answer means: give up now.
-            if (!WaitNamedPipe(@"\\.\pipe\" + pipeName, ConnectBudgetMs))
-            {
-                return;
-            }
-            using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
-            pipe.Connect(ConnectBudgetMs);
-            pipe.Write(Encoding.UTF8.GetBytes(line + "\n"));
-            pipe.Flush();
+            return;
         }
-        catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException)
-        {
-            // Faqra is closed, busy, or the pipe belongs to someone else: the session carries on as if Faqra did not exist.
-        }
+        using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
+        pipe.Connect(ConnectBudgetMs);
+        pipe.Write(Encoding.UTF8.GetBytes(line + "\n"));
+        pipe.Flush();
     }
 
     [LibraryImport("kernel32.dll", EntryPoint = "WaitNamedPipeW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]

@@ -75,4 +75,43 @@ public class RelayTests
         Assert.InRange(clock.ElapsedMilliseconds, Relay.RunBudgetMs - 100, Relay.RunBudgetMs + 1500);
         await connected;
     }
+
+    [Fact]
+    public void GivesUpOnAStdinThatNeverCloses()
+    {
+        using var stdin = new BlockingStream();
+        try
+        {
+            var clock = Stopwatch.StartNew();
+            Assert.Equal(0, Relay.Run(["Stop"], stdin, NoEnv, @"C:\work", PipeName()));
+            Assert.InRange(clock.ElapsedMilliseconds, 0, Relay.RunBudgetMs + 1500);
+        }
+        finally
+        {
+            stdin.Release();
+        }
+    }
+
+    private sealed class BlockingStream : Stream
+    {
+        private readonly ManualResetEventSlim _gate = new(false);
+
+        public void Release() => _gate.Set();
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            _gate.Wait();
+            return 0;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 }
