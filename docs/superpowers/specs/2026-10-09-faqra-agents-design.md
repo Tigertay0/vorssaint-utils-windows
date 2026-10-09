@@ -1,6 +1,6 @@
 # Faqra Agents: design
 
-Date: 2026-10-09. Status: proposed, waiting for the owner's approval.
+Date: 2026-10-09. Status: approved by the owner 2026-10-09; M7 (installer) runs after A3.
 
 Faqra Agents watches the AI coding agents running on this PC (Claude Code first) from the island,
 lets the owner approve, answer and reply to them without switching to the terminal or the
@@ -33,13 +33,14 @@ Not chosen: Claude Code channels (research preview; needs a launch flag the Anti
 cannot pass), `claude -p --resume` into a live session (the docs warn it interleaves two writers
 into one transcript), and typing into the terminal window (steals focus, fragile).
 
-## Coexisting with Coucou
+## Coucou's leftover hooks
 
-Coucou is installed on this PC: `coucou-hook.exe` is registered on 12 Claude Code events in
-`~/.claude/settings.json`. Two apps answering the same permission request would show two cards and
-race. Installing Faqra's hooks therefore offers, in the same diff, to remove Coucou's entries
-(those whose command contains `coucou-hook`). The owner can keep Coucou instead, in which case
-Faqra watches only and never answers. Coucou itself (the app) is the owner's to quit or uninstall.
+Coucou has been removed from this PC (no app folder, no `coucou-hook.exe`, no uninstall entry), but
+its 12 hooks are still registered in `~/.claude/settings.json`, so every Claude Code event runs a
+command that no longer exists. Installing Faqra's hooks offers, in the same reviewed diff, to remove
+every entry whose command contains `coucou-hook`. If Coucou is ever reinstalled, the same rule
+applies: two apps answering one permission request would race, so Faqra answers only when
+Coucou's hooks are gone and otherwise watches only.
 
 ## How it works
 
@@ -145,7 +146,7 @@ Each ends with a published build in `Faqra-test`, a desktop check, and a commit.
 | A7 | Weekly recap | Counts only (time, sessions, files, lines, commands, permissions, top agent and project, busiest day), 12 weeks kept locally, a Monday summary, a shareable image. |
 | A8 | Service pills | GitHub, Vercel, Stripe, n8n, Resend, Notion and Cal.com, each polled only once its key exists. |
 
-M7 (installer and release) resumes after A3 or at the end, as the owner prefers.
+M7 (installer and release) runs after A3, then A4 to A8.
 
 ## Not ported
 
@@ -177,7 +178,7 @@ file (no safe Windows equivalent, as Coucou's own Windows notes say).
   session.
 - **Free text for questions** is undocumented; the fallback above keeps the box useful either way.
 - **Relay start-up cost** on every tool call; measured in A1 with the http-hook fallback ready.
-- **Two watchers.** Running Coucou and Faqra together would double every card; install handles it.
+- **Two watchers.** Coucou's hooks alongside Faqra's would double every card; install removes them, and Faqra stays watch-only while they exist.
 
 ## Testing
 
