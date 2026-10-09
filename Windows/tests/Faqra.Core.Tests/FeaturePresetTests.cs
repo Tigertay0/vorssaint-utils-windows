@@ -25,9 +25,10 @@ public class FeaturePresetTests
     [Fact]
     public void FirstRunSetIsEssentialsPlusTheIsland()
     {
-        Assert.Equal(10, FeaturePresets.FirstRunFeatures.Count);
+        Assert.Equal(11, FeaturePresets.FirstRunFeatures.Count);
         Assert.Contains(AppFeature.Notch, FeaturePresets.FirstRunFeatures);
         Assert.Contains(AppFeature.NotchTimer, FeaturePresets.FirstRunFeatures);
+        Assert.Contains(AppFeature.FaqraAgents, FeaturePresets.FirstRunFeatures);
         Assert.All(FeaturePreset.Essential.Features(), feature => Assert.Contains(feature, FeaturePresets.FirstRunFeatures));
         // The island is Faqra's addition; upstream's Essential preset itself is untouched.
         Assert.DoesNotContain(AppFeature.Notch, FeaturePreset.Essential.Features());

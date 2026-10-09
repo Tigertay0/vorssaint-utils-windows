@@ -13,7 +13,7 @@ public enum SettingsPage
     General, Features, Energy, Monitor,
     Mouse, Switcher, KeyDebounce, SuperKey, CutPaste, AutoQuit, QuitProtection, Cleaner, Uninstaller,
     UrlCleaner, Homebrew, AppUpdates, Media, Clipboard, WindowLayout, Shelf, QuickTools, TextSnippets,
-    Screenshot, RadialMenu, CommandBar, KillProcess, Notch,
+    Screenshot, RadialMenu, CommandBar, KillProcess, Notch, Agents,
     Shortcuts, Advanced, About,
 }
 
@@ -54,6 +54,7 @@ public static class SettingsDirectory
         new(SettingsPage.KillProcess, SettingsSection.AppManagement, ""), // Cancel
         new(SettingsPage.Notch, SettingsSection.Utilities, ""),           // TVMonitor
         new(SettingsPage.CommandBar, SettingsSection.Utilities, ""),      // CommandPrompt
+        new(SettingsPage.Agents, SettingsSection.Utilities, "\uE99A"),      // Robot
         new(SettingsPage.QuickTools, SettingsSection.Utilities, ""),
         new(SettingsPage.Screenshot, SettingsSection.Utilities, ""),      // Camera
         new(SettingsPage.UrlCleaner, SettingsSection.Utilities, ""),      // Link
@@ -114,6 +115,7 @@ public static class SettingsDirectory
         SettingsPage.TextSnippets => [AppFeature.TextSnippets],
         SettingsPage.RadialMenu => [AppFeature.RadialMenu],
         SettingsPage.CommandBar => [AppFeature.CommandBar],
+        SettingsPage.Agents => [AppFeature.FaqraAgents],
         _ => [],
     };
 
@@ -170,6 +172,7 @@ public static class SettingsDirectory
             or AppFeature.NotchDownloads => SettingsPage.Notch,
         AppFeature.RadialMenu => SettingsPage.RadialMenu,
         AppFeature.CommandBar => SettingsPage.CommandBar,
+        AppFeature.FaqraAgents => SettingsPage.Agents,
         AppFeature.MonitorCPU or AppFeature.MonitorGPU or AppFeature.MonitorMemory or AppFeature.MonitorNetwork
             or AppFeature.MonitorDisk or AppFeature.MonitorPower or AppFeature.FanControl => SettingsPage.Monitor,
         _ => SettingsPage.Features,

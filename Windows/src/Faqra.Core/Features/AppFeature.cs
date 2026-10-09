@@ -8,7 +8,7 @@ namespace Faqra.Core.Features;
 /// Every feature the Features hub can switch off entirely. The raw value (see
 /// <see cref="AppFeatures.RawValue"/>) is the stable identity persisted inside the availability
 /// key, so members can be added but never renamed. All 66 upstream members are kept, including
-/// the ones that have no Windows meaning, so settings stay compatible with upstream backups.
+/// the ones that have no Windows meaning, so settings stay compatible with upstream backups. Faqra's own features follow them, with Faqra-prefixed raw values that can never collide with an upstream one.
 /// </summary>
 public enum AppFeature
 {
@@ -30,6 +30,8 @@ public enum AppFeature
     NotchAccessories, NotchLyrics, NotchQueue, NotchDownloads,
     // System monitor, one entry per metric family
     MonitorCPU, MonitorGPU, MonitorMemory, MonitorNetwork, MonitorDisk, MonitorPower, FanControl,
+    // Faqra only
+    FaqraAgents,
 }
 
 /// <summary>Hub sections, in display order.</summary>

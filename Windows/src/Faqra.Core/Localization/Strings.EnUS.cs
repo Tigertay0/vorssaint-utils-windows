@@ -74,6 +74,7 @@ public sealed partial class Strings
             [Settings.SettingsPage.CommandBar] = "Command Bar",
             [Settings.SettingsPage.KillProcess] = "Kill process",
             [Settings.SettingsPage.Notch] = "Island",
+            [Settings.SettingsPage.Agents] = "Agents",
             [Settings.SettingsPage.Shortcuts] = "Keyboard shortcuts",
             [Settings.SettingsPage.Advanced] = "Advanced",
             [Settings.SettingsPage.About] = "About",

@@ -71,9 +71,9 @@ public class UiRenderTests
             var groups = Assert.IsAssignableFrom<IReadOnlyList<FeatureGroupViewModel>>(page.GroupList.ItemsSource);
 
             Assert.Equal(7, groups.Count);
-            Assert.Equal(66, groups.Sum(group => group.Rows.Count));
-            // A clean install is Essentials plus the island: 10 installed of the 12 Windows-ready features.
-            Assert.Equal("10 of 12 features installed", page.CountText.Text);
+            Assert.Equal(67, groups.Sum(group => group.Rows.Count));
+            // A clean install is Essentials plus the island and Agents: 11 installed of the 13 Windows-ready features.
+            Assert.Equal("11 of 13 features installed", page.CountText.Text);
             var mixer = groups.SelectMany(g => g.Rows).Single(row => row.Feature == AppFeature.Mixer);
             var dockClick = groups.SelectMany(g => g.Rows).Single(row => row.Feature == AppFeature.DockClick);
             Assert.True(mixer.IsInstalled);
@@ -141,7 +141,7 @@ public class UiRenderTests
                 FeaturePreset.Essential.Features().ToHashSet(), FeaturePreset.Essential, _ => { }, _ => { });
             var groups = Assert.IsAssignableFrom<IReadOnlyList<PurposeGroupViewModel>>(purpose.GroupList.ItemsSource);
             // Only Windows-ready features are offered; everything offered is selectable.
-            Assert.Equal(12, groups.Sum(group => group.Rows.Count));
+            Assert.Equal(13, groups.Sum(group => group.Rows.Count));
             Assert.All(groups.SelectMany(g => g.Rows), row => Assert.True(row.CanSelect));
             Save(purpose, "onboarding-purpose", 496, 900);
 

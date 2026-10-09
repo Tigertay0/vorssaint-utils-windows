@@ -7,7 +7,7 @@ namespace Faqra.Core.Tests;
 public class FeatureCatalogTests
 {
     [Fact]
-    public void CatalogHasAllSixtySixUpstreamFeatures() => Assert.Equal(66, AppFeatures.All.Count);
+    public void CatalogHasEveryUpstreamFeaturePlusFaqrasOwn() => Assert.Equal(67, AppFeatures.All.Count);
 
     [Fact]
     public void RawValuesMatchUpstreamCaseNames()
@@ -46,7 +46,7 @@ public class FeatureCatalogTests
         Assert.Equal(7, AppFeatures.FeaturesIn(FeatureGroup.ClipboardFiles).Count);
         Assert.Equal(4, AppFeatures.FeaturesIn(FeatureGroup.Sound).Count);
         Assert.Equal(4, AppFeatures.FeaturesIn(FeatureGroup.EnergyDisplay).Count);
-        Assert.Equal(26, AppFeatures.FeaturesIn(FeatureGroup.Tools).Count);
+        Assert.Equal(27, AppFeatures.FeaturesIn(FeatureGroup.Tools).Count);
         Assert.Equal(7, AppFeatures.FeaturesIn(FeatureGroup.Monitor).Count);
     }
 
@@ -58,7 +58,7 @@ public class FeatureCatalogTests
     public void AvailabilityDefaultsShipEverythingOnExceptOptIns()
     {
         var defaults = AppFeatures.AvailabilityDefaults;
-        Assert.Equal(66, defaults.Count);
+        Assert.Equal(67, defaults.Count);
         Assert.Equal(false, defaults["featureAvailable.focusFollowsMouse"]);
         Assert.Equal(false, defaults["featureAvailable.fanControl"]);
         Assert.Equal(false, defaults["featureAvailable.diskImageInstaller"]);

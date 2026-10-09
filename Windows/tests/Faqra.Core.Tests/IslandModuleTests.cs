@@ -8,11 +8,11 @@ public class IslandModuleTests
     private static readonly HashSet<AppFeature> Essential = FeaturePreset.Essential.Features().ToHashSet();
 
     [Fact]
-    public void ThirteenModulesWithUniqueRawValuesAndShortcutKeys()
+    public void FourteenModulesWithUniqueRawValuesAndShortcutKeys()
     {
-        Assert.Equal(13, IslandModules.All.Count);
-        Assert.Equal(13, IslandModules.All.Select(m => m.RawValue()).Distinct(StringComparer.Ordinal).Count());
-        Assert.Equal(13, IslandModules.All.Select(m => m.ShortcutKey()).Distinct().Count());
+        Assert.Equal(14, IslandModules.All.Count);
+        Assert.Equal(14, IslandModules.All.Select(m => m.RawValue()).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(14, IslandModules.All.Select(m => m.ShortcutKey()).Distinct().Count());
         foreach (var module in IslandModules.All)
         {
             Assert.Equal(module, IslandModules.FromRawValue(module.RawValue()));
@@ -52,8 +52,8 @@ public class IslandModuleTests
 
         Assert.Equal(IslandModule.System, visible[0]);
         Assert.Equal(IslandModule.Controls, visible[1]);
-        Assert.Equal(13, visible.Count);
-        Assert.Equal(13, visible.Distinct().Count());
+        Assert.Equal(14, visible.Count);
+        Assert.Equal(14, visible.Distinct().Count());
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class IslandModuleTests
         var visible = IslandModules.Visible("controls,controls,bogus,timer", null, _ => true);
         Assert.Equal(IslandModule.Controls, visible[0]);
         Assert.Equal(IslandModule.Timer, visible[1]);
-        Assert.Equal(13, visible.Count);
+        Assert.Equal(14, visible.Count);
     }
 
     [Fact]

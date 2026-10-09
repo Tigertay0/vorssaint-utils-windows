@@ -19,6 +19,7 @@ public static class DefaultsMigrations
         MigrateLegacyMenuBarTemperatureMetric(store);
         MigrateSilentHeadphonesDisconnectVolume(store);
         InstallIslandOnce(store);
+        InstallAgentsOnce(store);
     }
 
     /// <summary>
@@ -39,6 +40,21 @@ public static class DefaultsMigrations
         {
             store.Set(DefaultsKey.FeatureAvailable(feature), true);
         }
+    }
+
+    /// <summary>
+    /// Faqra's own migration. Installs Agents once for anyone whose first run predates it; the marker
+    /// makes it one-time, so a later uninstall is respected.
+    /// </summary>
+    public static void InstallAgentsOnce(ISettingsStore store)
+    {
+        const string marker = "faqraAgentsInstalled";
+        if (store.Bool(marker))
+        {
+            return;
+        }
+        store.Set(marker, true);
+        store.Set(DefaultsKey.FeatureAvailable("faqraAgents"), true);
     }
 
     /// <summary>The old beta visibility key becomes the panel section key (and an install when it was on).</summary>

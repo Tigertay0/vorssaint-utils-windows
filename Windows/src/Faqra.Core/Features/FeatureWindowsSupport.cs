@@ -26,7 +26,8 @@ public static class FeatureWindowsSupport
         AppFeature.Mixer or AppFeature.KeepAwake or AppFeature.CommandBar
             or AppFeature.Notch or AppFeature.NotchTimer
             or AppFeature.MonitorCPU or AppFeature.MonitorGPU or AppFeature.MonitorMemory
-            or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower => WindowsSupport.Supported,
+            or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower
+            or AppFeature.FaqraAgents => WindowsSupport.Supported,
         AppFeature.SoundOutputSwitcher => WindowsSupport.Approximate,
         _ => WindowsSupport.NotApplicable,
     };
@@ -41,7 +42,7 @@ public static class FeatureWindowsSupport
         is AppFeature.Notch or AppFeature.NotchTimer or AppFeature.Mixer or AppFeature.KeepAwake
         or AppFeature.MonitorCPU or AppFeature.MonitorGPU or AppFeature.MonitorMemory
         or AppFeature.MonitorNetwork or AppFeature.MonitorDisk or AppFeature.MonitorPower
-        or AppFeature.CommandBar;
+        or AppFeature.CommandBar or AppFeature.FaqraAgents;
 
     /// <summary>The hub's note for a feature Windows can run that this build does not have yet, else null.</summary>
     public static string? PendingNote(AppFeature feature, Localization.FeatureHubStrings hub) =>

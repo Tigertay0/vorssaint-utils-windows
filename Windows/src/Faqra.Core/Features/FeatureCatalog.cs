@@ -124,6 +124,7 @@ public static partial class AppFeatures
         AppFeature.MonitorDisk => "internaldrive",
         AppFeature.MonitorPower => "bolt.fill",
         AppFeature.FanControl => "fanblades.fill",
+        AppFeature.FaqraAgents => "sparkles",
         _ => throw new ArgumentOutOfRangeException(nameof(feature), feature, null),
     };
 

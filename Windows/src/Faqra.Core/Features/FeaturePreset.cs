@@ -31,9 +31,10 @@ public static class FeaturePresets
     /// What a clean install starts with: upstream's Essential preset plus the island. Upstream ships
     /// the island uninstalled and switched off, but the hover-at-top surface is the reason this port
     /// exists, so it has to be there on the first launch. Everything else matches Essential.
+    /// Faqra's Agents ships installed too: it does nothing until the owner installs Claude Code's hooks.
     /// </summary>
     public static IReadOnlySet<AppFeature> FirstRunFeatures { get; } = FeaturePreset.Essential.Features()
-        .Concat([AppFeature.Notch, AppFeature.NotchTimer])
+        .Concat([AppFeature.Notch, AppFeature.NotchTimer, AppFeature.FaqraAgents])
         .ToHashSet();
 
     /// <summary>

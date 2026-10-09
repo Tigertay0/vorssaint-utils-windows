@@ -79,6 +79,7 @@ public sealed partial class FeatureHubStrings
             [AppFeature.MonitorDisk] = "Disks",
             [AppFeature.MonitorPower] = "Power",
             [AppFeature.FanControl] = "Fan Control",
+            [AppFeature.FaqraAgents] = "Agents",
         },
         FeatureDescriptions = new Dictionary<AppFeature, string>
         {
@@ -148,6 +149,7 @@ public sealed partial class FeatureHubStrings
             [AppFeature.MonitorDisk] = "Disk space and activity",
             [AppFeature.MonitorPower] = "Battery, power and charging",
             [AppFeature.FanControl] = "Control fans manually or with temperature curves while seeing live and target RPM",
+            [AppFeature.FaqraAgents] = "Watch Claude Code sessions from the island, each with a thinking orb that shows what it is doing.",
         },
         GroupTitles = new Dictionary<FeatureGroup, string>
         {

@@ -12,7 +12,7 @@ namespace Faqra.Core.Island;
 /// </summary>
 public enum IslandModule
 {
-    Controls, Mixer, Music, Clipboard, Captures, Files, System, Tools, Calendar, Notifications, Timer, Camera, Downloads,
+    Controls, Mixer, Music, Clipboard, Captures, Files, System, Tools, Calendar, Notifications, Timer, Camera, Downloads, FaqraAgents,
 }
 
 public static class IslandModules
@@ -34,6 +34,7 @@ public static class IslandModules
         IslandModule.Timer => "timer",
         IslandModule.Camera => "camera",
         IslandModule.Downloads => "downloads",
+        IslandModule.FaqraAgents => "faqraAgents",
         _ => throw new ArgumentOutOfRangeException(nameof(module), module, null),
     };
 
@@ -56,6 +57,7 @@ public static class IslandModules
         IslandModule.Timer => 'r',
         IslandModule.Camera => 'w',
         IslandModule.Downloads => 'd',
+        IslandModule.FaqraAgents => 'g',
         _ => throw new ArgumentOutOfRangeException(nameof(module), module, null),
     };
 
@@ -75,6 +77,7 @@ public static class IslandModules
         IslandModule.Timer => "",         // Stopwatch
         IslandModule.Camera => "",        // Webcam
         IslandModule.Downloads => "",     // Download
+        IslandModule.FaqraAgents => "\uE99A",      // Robot
         _ => throw new ArgumentOutOfRangeException(nameof(module), module, null),
     };
 
@@ -88,6 +91,7 @@ public static class IslandModules
         IslandModule.Timer => isAvailable(AppFeature.NotchTimer),
         IslandModule.Camera => isAvailable(AppFeature.CameraPreview),
         IslandModule.Downloads => isAvailable(AppFeature.NotchDownloads),
+        IslandModule.FaqraAgents => isAvailable(AppFeature.FaqraAgents),
         IslandModule.Notifications => isAvailable(AppFeature.NotchNotifications),
         IslandModule.Calendar => isAvailable(AppFeature.NotchCalendar),
         IslandModule.Mixer => isAvailable(AppFeature.Mixer),
