@@ -45,7 +45,11 @@ public sealed class AgentHub : IDisposable
     public event Action? Changed;
 
     /// <summary>For render tests: shows a prepared board without a pipe. Never called by the app.</summary>
-    public void ReplaceBoardForTests(AgentBoard board) => Board = board;
+    public void ReplaceBoardForTests(AgentBoard board)
+    {
+        Board = board;
+        Changed?.Invoke();
+    }
 
     /// <summary>Starts or stops listening; stopping forgets every session. Call on the context's thread.</summary>
     public void SetRunning(bool running)

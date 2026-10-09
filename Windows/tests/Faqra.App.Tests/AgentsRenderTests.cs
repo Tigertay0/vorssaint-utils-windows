@@ -112,6 +112,47 @@ public class AgentsRenderTests
         Assert.Contains("Needs your OK", AllText(view));
     });
 
+    [Fact]
+    public void RowsAreReusedWhenASessionChangesState() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var first = "{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"a\",\"cwd\":\"C:\\\\code\\\\faqra\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dotnet test\"}}";
+        var second = "{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"b\",\"cwd\":\"C:\\\\code\\\\site\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls\"}}";
+        using var hub = HubWith(first, second);
+        var module = new AgentsModule(hub, () => true);
+        var before = Rows(module);
+        Assert.Equal(2, before.Count);
+        var site = before.Single(r => AllText(r).Contains("site"));
+        var faqra = before.Single(r => AllText(r).Contains("faqra"));
+
+        var board = hub.Board.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"b\",\"cwd\":\"C:\\\\code\\\\site\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf dist\"}}")!, new DateTimeOffset(2026, 10, 9, 11, 59, 0, TimeSpan.Zero));
+        hub.ReplaceBoardForTests(board);
+
+        var after = Rows(module);
+        Assert.Equal(2, after.Count);
+        Assert.Same(site, after[0]);
+        Assert.Same(faqra, after[1]);
+        Assert.Contains("Needs your OK", AllText(after[0]));
+    });
+
+    private static List<System.Windows.Controls.Button> Rows(DependencyObject root)
+    {
+        var rows = new List<System.Windows.Controls.Button>();
+        void Walk(DependencyObject node)
+        {
+            if (node is System.Windows.Controls.Button button)
+            {
+                rows.Add(button);
+            }
+            foreach (var child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>())
+            {
+                Walk(child);
+            }
+        }
+        Walk(root);
+        return rows;
+    }
+
     private static string AllText(DependencyObject root)
     {
         var builder = new System.Text.StringBuilder();
