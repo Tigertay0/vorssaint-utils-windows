@@ -124,3 +124,16 @@ the outside.
   but records whatever path the build currently sits at, which breaks if that folder moves.
 - **Only English ships.** The twelve other languages resolve to English by design until their
   catalogs are ported.
+- **Agents only watches for now.** The island shows each Claude Code session's orb, state and recent
+  steps, but approving a tool, answering a question, replying when a turn ends and jumping to the
+  session's window come in A2 and A3. Until then Claude Code still asks in its own window.
+- **A busy session that goes quiet for 30 minutes rests.** A session left Working, Thinking or in an
+  error with no hook event for 30 minutes shows as Idle, since a crashed or killed Claude Code never
+  sends SessionEnd. Sessions waiting on an approval or a question are kept.
+- **Agents hooks outlive the feature.** Uninstalling Agents in the Feature Hub stops the island
+  listening but leaves the hooks in `~/.claude/settings.json`; each hook then gives up in about 74 ms
+  (about 78 ms when Faqra is listening, budget 80 ms). Remove them from Settings, Agents. The M7
+  uninstaller should offer the same.
+- **The relay ships only with the dual publish.** `faqra-hook.exe` is copied to
+  `%LOCALAPPDATA%\Faqra\bin` from the folder Faqra runs in, so a build published without it cannot
+  install hooks. M7 packaging carries it.
