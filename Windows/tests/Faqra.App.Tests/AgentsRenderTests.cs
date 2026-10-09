@@ -3,7 +3,9 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Faqra.App.Agents;
+using Faqra.App.Island.Modules;
 using Faqra.Core.Agents;
+using Faqra.Services.Agents;
 
 namespace Faqra.App.Tests;
 
@@ -59,4 +61,72 @@ public class AgentsRenderTests
         orb.Measure(new Size(100, 100));
         Assert.Equal(new Size(18, 18), orb.DesiredSize);
     });
+
+    private static AgentHub HubWith(params string[] lines)
+    {
+        var hub = new AgentHub("faqra-test-unused", SynchronizationContext.Current ?? new SynchronizationContext(),
+            () => new DateTimeOffset(2026, 10, 9, 12, 0, 0, TimeSpan.Zero));
+        var board = AgentBoard.Empty;
+        foreach (var line in lines)
+        {
+            board = board.Apply(AgentEvent.TryParse(line)!, new DateTimeOffset(2026, 10, 9, 11, 58, 0, TimeSpan.Zero));
+        }
+        hub.ReplaceBoardForTests(board);
+        return hub;
+    }
+
+    [Fact]
+    public void TheModuleListsSessionsMostUrgentFirst() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        using var hub = HubWith(
+            "{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"a\",\"cwd\":\"C:\\\\code\\\\faqra\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dotnet test\"}}",
+            "{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"b\",\"cwd\":\"C:\\\\code\\\\site\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf dist\"}}");
+        var module = new AgentsModule(hub, () => true);
+        var host = new System.Windows.Controls.Border { Background = Island.Modules.IslandPalette.Surface, Child = module, Width = 412, Height = 400 };
+        Assert.True(RenderInk(host, "island-agents", 412, 400) > 0);
+        var texts = AllText(module);
+        Assert.True(texts.IndexOf("site") < texts.IndexOf("faqra"), "the waiting session comes first");
+        Assert.Contains("Needs your OK", texts);
+        Assert.Contains("Runs dotnet test", texts);
+    });
+
+    [Fact]
+    public void TheEmptyModuleSaysHowToStart() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        using var hub = HubWith();
+        var module = new AgentsModule(hub, () => false);
+        var host = new System.Windows.Controls.Border { Background = Island.Modules.IslandPalette.Surface, Child = module, Width = 412, Height = 300 };
+        RenderInk(host, "island-agents-empty", 412, 300);
+        Assert.Contains("Install the Claude Code hooks", AllText(module));
+    });
+
+    [Fact]
+    public void ThePillShowsTheMostUrgentState() => StaThread.Run(() =>
+    {
+        var board = AgentBoard.Empty.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"b\",\"tool_name\":\"Bash\"}")!, DateTimeOffset.Now);
+        var view = new IdleAgentsView(board.MostUrgent!);
+        var host = new System.Windows.Controls.Border { Background = Island.Modules.IslandPalette.Surface, Child = view, Width = 135, Height = 24 };
+        RenderInk(host, "island-agents-pill", 135, 24);
+        Assert.Contains("Needs your OK", AllText(view));
+    });
+
+    private static string AllText(DependencyObject root)
+    {
+        var builder = new System.Text.StringBuilder();
+        void Walk(DependencyObject node)
+        {
+            if (node is System.Windows.Controls.TextBlock block)
+            {
+                builder.Append(block.Text).Append('\n');
+            }
+            foreach (var child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>())
+            {
+                Walk(child);
+            }
+        }
+        Walk(root);
+        return builder.ToString();
+    }
 }

@@ -3,13 +3,17 @@
 // Mirrors NotchService in Sources/Vorssaint/Services/Notch/NotchService.swift: the island's state
 // machine. Hover timings, the focus split and the collapse rules are upstream's.
 
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using Faqra.App.Island.Modules;
+using Faqra.Core;
+using Faqra.Core.Agents;
 using Faqra.Core.Defaults;
 using Faqra.Core.Features;
 using Faqra.Core.Island;
 using Faqra.Core.Localization;
+using Faqra.Services.Agents;
 using Faqra.Services.Media;
 using Faqra.Services.Monitor;
 using Faqra.Win32.Display;
@@ -43,6 +47,7 @@ public sealed class IslandController : IDisposable
     private readonly NowPlayingService _nowPlaying;
     private readonly SystemMonitor _systemMonitor;
     private readonly Services.Audio.AppVolumeMixer _mixer;
+    private readonly AgentHub _agents;
     private readonly IslandHoverState _hover = new();
     private readonly DispatcherTimer _openTimer;
     private readonly DispatcherTimer _closeTimer;
@@ -62,14 +67,16 @@ public sealed class IslandController : IDisposable
     private bool _pinned;
     private bool _sectionsOpen;
     private bool _suspendedForFullscreen;
+    private (string? Id, AgentState? State) _agentsShown;
 
-    public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying, SystemMonitor monitor, Services.Audio.AppVolumeMixer mixer)
+    public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying, SystemMonitor monitor, Services.Audio.AppVolumeMixer mixer, AgentHub agents)
     {
         _store = store;
         _runtime = runtime;
         _nowPlaying = nowPlaying;
         _systemMonitor = monitor;
         _mixer = mixer;
+        _agents = agents;
 
         _openTimer = new DispatcherTimer { Interval = IslandHoverState.OpenDelay };
         _openTimer.Tick += (_, _) => { _openTimer.Stop(); OpenFromHover(); };
@@ -85,6 +92,7 @@ public sealed class IslandController : IDisposable
 
         _outsideClick.Pressed += OnOutsidePress;
         _nowPlaying.Changed += OnNowPlayingChanged;
+        _agents.Changed += OnAgentsChanged;
         _store.Changed += OnSettingChanged;
     }
 
@@ -189,8 +197,13 @@ public sealed class IslandController : IDisposable
     // MARK: presentation
 
     private bool ShowsIdleContent() =>
-        IdleContent() != IslandIdleContent.None
+        UrgentAgent() is not null
+        || IdleContent() != IslandIdleContent.None
         && (IdleContent() != IslandIdleContent.Music || _nowPlaying.Current.HasTrack);
+
+    /// <summary>The session the resting pill shows: any agent busy or waiting outranks music and battery.</summary>
+    private AgentSession? UrgentAgent() =>
+        _runtime.IsAvailable(AppFeature.FaqraAgents) && _agents.Board.IsActive ? _agents.Board.MostUrgent : null;
 
     private IslandIdleContent IdleContent() =>
         IslandSizes.IdleContentFromRawValue(_store.String(DefaultsKey.NotchIdleContent));
@@ -277,6 +290,7 @@ public sealed class IslandController : IDisposable
             IslandModule.Music => hub.FeatureTitles[AppFeature.NotchQueue] is { Length: > 0 } ? "Music" : "Music",
             IslandModule.Timer => hub.FeatureTitles[AppFeature.NotchTimer],
             IslandModule.Mixer => hub.FeatureTitles[AppFeature.Mixer],
+            IslandModule.FaqraAgents => hub.FeatureTitles[AppFeature.FaqraAgents],
             IslandModule.System => hub.GroupTitles[FeatureGroup.Monitor],
             _ => module.RawValue(),
         };
@@ -288,6 +302,7 @@ public sealed class IslandController : IDisposable
         IslandModule.Timer => new TimerModule(),
         IslandModule.System => new SystemModule(_systemMonitor, SystemCards(), _geometry.SystemColumns),
         IslandModule.Mixer => new MixerModule(_store, _runtime.IsAvailable, _mixer),
+        IslandModule.FaqraAgents => new AgentsModule(_agents, AgentHooksInstalled),
         // Modules whose feature is not ported yet keep their place in the section list; their
         // content arrives with the feature.
         _ => new ModulePlaceholder(ModuleTitle(module)),
@@ -295,12 +310,34 @@ public sealed class IslandController : IDisposable
 
     private IReadOnlyList<IslandSystemCard> SystemCards() => IslandSystemCards.Available(_runtime.IsAvailable, _systemMonitor.HasBattery);
 
-    private UIElement? BuildIdleContent() => IdleContent() switch
+    private UIElement? BuildIdleContent()
     {
-        IslandIdleContent.Music when _nowPlaying.Current.HasTrack => new IdleMusicView(_nowPlaying.Current),
-        IslandIdleContent.Battery => new IdleBatteryView(),
-        _ => null,
-    };
+        var urgent = UrgentAgent();
+        _agentsShown = (urgent?.Id, urgent?.State);
+        if (urgent is not null)
+        {
+            return new IdleAgentsView(urgent);
+        }
+        return IdleContent() switch
+        {
+            IslandIdleContent.Music when _nowPlaying.Current.HasTrack => new IdleMusicView(_nowPlaying.Current),
+            IslandIdleContent.Battery => new IdleBatteryView(),
+            _ => null,
+        };
+    }
+
+    private static bool AgentHooksInstalled()
+    {
+        try
+        {
+            return File.Exists(AppPaths.ClaudeSettingsFile)
+                && Core.Agents.Install.ClaudeHookConfig.Inspect(File.ReadAllText(AppPaths.ClaudeSettingsFile)).Installed;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Core.Agents.Install.ConfigFormatException)
+        {
+            return false;
+        }
+    }
 
     // MARK: hover
 
@@ -558,6 +595,23 @@ public sealed class IslandController : IDisposable
         });
     }
 
+    /// <summary>
+    /// Re-renders the resting pill only when the session or state it shows changes, so its orb keeps
+    /// moving through the many events a busy session sends.
+    /// </summary>
+    private void OnAgentsChanged()
+    {
+        if (_window is null || _presentation != IslandPresentation.Collapsed)
+        {
+            return;
+        }
+        var urgent = UrgentAgent();
+        if ((urgent?.Id, urgent?.State) != _agentsShown)
+        {
+            Render(animate: true);
+        }
+    }
+
     private void OnSettingChanged(object? sender, SettingsChangedEventArgs e)
     {
         if (e.Key is not (DefaultsKey.NotchEnabled or DefaultsKey.NotchSize or DefaultsKey.NotchDisplay
@@ -573,6 +627,7 @@ public sealed class IslandController : IDisposable
     {
         _store.Changed -= OnSettingChanged;
         _nowPlaying.Changed -= OnNowPlayingChanged;
+        _agents.Changed -= OnAgentsChanged;
         _outsideClick.Dispose();
         Stop();
     }

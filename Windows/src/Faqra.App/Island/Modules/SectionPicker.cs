@@ -119,6 +119,7 @@ public sealed class SectionPicker : UserControl
         IslandModule.Notifications => "Alerts",
         IslandModule.Timer => "Timer",
         IslandModule.Camera => "Camera",
+        IslandModule.FaqraAgents => "Agents",
         IslandModule.Downloads => "Downloads",
         _ => module.RawValue(),
     };

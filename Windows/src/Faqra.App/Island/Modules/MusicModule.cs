@@ -117,8 +117,9 @@ public sealed class MusicModule : UserControl
         border.SetValue(Border.CornerRadiusProperty, new CornerRadius(radius));
         border.SetValue(Border.SnapsToDevicePixelsProperty, true);
         var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
-        presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-        presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+        // Buttons default to centered content; a row that sets Stretch gets the full width.
+        presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, new TemplateBindingExtension(HorizontalContentAlignmentProperty));
+        presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, new TemplateBindingExtension(VerticalContentAlignmentProperty));
         border.AppendChild(presenter);
 
         var template = new ControlTemplate(typeof(Button)) { VisualTree = border };

@@ -3,13 +3,16 @@
 // Plays the role of the singletons wired in Sources/Vorssaint/App/AppDelegate.swift and main.swift,
 // and of the binding table in App/FeatureRuntime.swift.
 
+using System.Security.Principal;
 using Faqra.App.Island;
 using Faqra.Core;
+using Faqra.Core.Agents;
 using Faqra.Core.Defaults;
 using Faqra.Core.Features;
 using Faqra.Core.Localization;
 using System.Windows.Threading;
 using Faqra.Services;
+using Faqra.Services.Agents;
 using Faqra.Services.Audio;
 using Faqra.Services.KeepAwake;
 using Faqra.Services.Island;
@@ -45,8 +48,14 @@ public sealed class AppServices : IDisposable
 
         // The runtime is built last: its bindings capture the services above, and a binding only
         // runs for a feature that is actually installed.
+        // Listens only once the feature is installed and the app has started its features (never in tests).
+        Agents = new AgentHub(
+            AgentPipe.Name(WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName, Environment.GetEnvironmentVariable),
+            new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher),
+            () => DateTimeOffset.Now,
+            AppPaths.AgentsLogFile);
         FeatureRuntime = new FeatureRuntime(store, Bindings());
-        Island = new IslandController(store, FeatureRuntime, NowPlaying, Monitor, Mixer);
+        Island = new IslandController(store, FeatureRuntime, NowPlaying, Monitor, Mixer, Agents);
     }
 
     /// <summary>The live instance. Available after <see cref="Start"/>.</summary>
@@ -69,6 +78,10 @@ public sealed class AppServices : IDisposable
     public AppVolumeMixer Mixer { get; }
 
     public KeepAwakeManager KeepAwake { get; }
+
+    public AgentHub Agents { get; }
+
+    private bool _featuresStarted;
 
     /// <summary>Created by <see cref="StartFeatures"/>; null in tests that never start them.</summary>
     public HotKeyRegistry? HotKeys { get; private set; }
@@ -109,6 +122,7 @@ public sealed class AppServices : IDisposable
     /// </summary>
     public void StartFeatures()
     {
+        _featuresStarted = true;
         // Reading the system media session is async and may find nothing; the island falls back to
         // its battery or blank idle, so nothing waits on it.
         _ = NowPlaying.StartAsync();
@@ -130,6 +144,23 @@ public sealed class AppServices : IDisposable
     private Dictionary<AppFeature, Action> Bindings() => new()
     {
         [AppFeature.Mixer] = () => Mixer.SyncWithPreferences(),
+        [AppFeature.FaqraAgents] = () =>
+        {
+            if (!_featuresStarted)
+            {
+                return;
+            }
+            var on = FeatureRuntime.IsAvailable(AppFeature.FaqraAgents);
+            if (on)
+            {
+                RelayDeployment.Ensure(AppContext.BaseDirectory, AppPaths.AgentsRelayFile);
+            }
+            Agents.SetRunning(on);
+            if (FeatureRuntime.IsAvailable(AppFeature.Notch))
+            {
+                Island.SyncWithPreferences();
+            }
+        },
         [AppFeature.KeepAwake] = () =>
         {
             KeepAwake.SyncWithFeatures();
@@ -173,6 +204,7 @@ public sealed class AppServices : IDisposable
     public void Dispose()
     {
         Island.Dispose();
+        Agents.Dispose();
         HotKeys?.Dispose();
         CommandBar?.Dispose();
         KeepAwake.Dispose();

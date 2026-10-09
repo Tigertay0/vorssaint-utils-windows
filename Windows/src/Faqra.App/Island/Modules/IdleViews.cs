@@ -9,6 +9,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Faqra.App.Agents;
+using Faqra.Core.Agents;
+using Faqra.Core.Localization;
 using Faqra.Services.Media;
 using Faqra.Win32.Power;
 
@@ -144,5 +147,31 @@ public sealed class ModulePlaceholder : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
         };
+    }
+}
+
+/// <summary>The resting pill while an agent is busy or waiting: its orb and its state, most urgent session first.</summary>
+public sealed class IdleAgentsView : UserControl
+{
+    public IdleAgentsView(AgentSession session)
+    {
+        Margin = new Thickness(6, 0, 8, 0);
+        var style = AgentOrbStyles.For(session.State);
+        var orb = new OrbView { Diameter = 18, VerticalAlignment = VerticalAlignment.Center };
+        orb.Apply(style, AgentInk.For(style.Tone));
+        var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        row.Children.Add(orb);
+        row.Children.Add(new TextBlock
+        {
+            Text = AgentsText.State(session, AgentsStrings.For(L10n.Shared.Language)),
+            Margin = new Thickness(6, 0, 0, 0),
+            MaxWidth = 100,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            FontFamily = new FontFamily("Segoe UI Variable Text, Segoe UI"),
+            FontSize = 11,
+            Foreground = IslandPalette.Primary,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        Content = row;
     }
 }
