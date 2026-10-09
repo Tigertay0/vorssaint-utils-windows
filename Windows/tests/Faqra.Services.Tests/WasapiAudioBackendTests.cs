@@ -3,7 +3,8 @@ using Faqra.Win32.Display;
 
 namespace Faqra.Services.Tests;
 
-// Live-machine checks: read-only against the real audio stack.
+// Live-machine checks: read-only against the real audio stack. Tests that need an output device
+// carry the AudioDevice trait; CI filters them out because GitHub's runners have no audio endpoints.
 public class WasapiAudioBackendTests
 {
     private static T OnAudioThread<T>(Func<IAudioBackend, T> read)
@@ -37,6 +38,7 @@ public class WasapiAudioBackendTests
     }
 
     [Fact]
+    [Trait("Requires", "AudioDevice")]
     public void ListsOutputsAndTheDefaultIsOneOfThem()
     {
         var (devices, defaultId) = OnAudioThread(b => (b.Devices(), b.DefaultDeviceId()));
@@ -61,6 +63,7 @@ public class WasapiAudioBackendTests
     }
 
     [Fact]
+    [Trait("Requires", "AudioDevice")]
     public void DefaultOutputLevelIsReadable()
     {
         var level = OnAudioThread(b => b.DefaultDeviceId() is { } id ? b.OutputLevel(id) : null);

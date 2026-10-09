@@ -42,7 +42,8 @@ jobs:
         run: dotnet build Faqra.sln -c Release --no-restore
 
       - name: Unit tests
-        run: dotnet test Faqra.sln -c Release --no-build --logger "trx;LogFileName=results.trx"
+        # GitHub's Windows runners have no audio endpoints; tests that need one run on desktops only.
+        run: dotnet test Faqra.sln -c Release --no-build --filter "Requires!=AudioDevice" --logger "trx;LogFileName=results.trx"
 
       - name: Selftest
         run: ./src/Faqra.App/bin/Release/net8.0-windows10.0.19041.0/Faqra.exe --selftest
