@@ -106,19 +106,33 @@ public sealed class ConfigReviewWindow : FluentWindow
         ? ClaudeHookConfig.Install(json, _relayPath, _removeCoucou.IsChecked == true)
         : ClaudeHookConfig.Uninstall(json, _removeCoucou.IsChecked == true);
 
-    private void Refresh()
+    /// <summary>True when the confirm button can be clicked.</summary>
+    internal bool CanConfirm => _confirm.IsEnabled;
+
+    /// <summary>Ticks or unticks the Coucou cleanup box and recomputes the preview.</summary>
+    internal void SetRemoveCoucou(bool value)
+    {
+        _removeCoucou.IsChecked = value;
+        Refresh();
+    }
+
+    private bool Refresh()
     {
         try
         {
             _preview = ConfigFile.Preview(_settingsPath, Transform, DateTime.Now);
         }
-        catch (ConfigFormatException ex)
+        catch (Exception ex) when (ex is ConfigFormatException or IOException or UnauthorizedAccessException)
         {
             _preview = null;
-            Show(string.Format(System.Globalization.CultureInfo.CurrentCulture, _s.FileUnreadableFormat, ex.Message), isError: true);
+            _diff.Children.Clear();
+            _backup.Text = string.Empty;
+            var format = ex is ConfigFormatException ? _s.FileUnreadableFormat : _s.WriteFailedFormat;
+            Show(string.Format(System.Globalization.CultureInfo.CurrentCulture, format, ex.Message), isError: true);
             _confirm.IsEnabled = false;
-            return;
+            return false;
         }
+        Show(string.Empty, isError: false);
         _backup.Text = _preview.BackupPath is { } backup
             ? string.Format(System.Globalization.CultureInfo.CurrentCulture, _s.ReviewBackupFormat, backup)
             : _s.ReviewNewFile;
@@ -133,28 +147,41 @@ public sealed class ConfigReviewWindow : FluentWindow
             _diff.Children.Add(Line(prefix + line.Text, line.Kind));
         }
         _confirm.IsEnabled = _preview.Changes;
+        return true;
     }
 
     private void Confirm()
     {
+        if (TryApply())
+        {
+            DialogResult = true;
+        }
+    }
+
+    /// <summary>Writes the previewed edit; false when nothing was written (file changed, or a write error).</summary>
+    internal bool TryApply()
+    {
         if (_preview is null)
         {
-            return;
+            return false;
         }
         try
         {
             ConfigFile.Apply(_preview);
-            DialogResult = true;
+            return true;
         }
         catch (ConfigChangedException)
         {
-            Refresh();
-            Show(_s.FileChanged, isError: false);
+            if (Refresh())
+            {
+                Show(_s.FileChanged, isError: false);
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Show(string.Format(System.Globalization.CultureInfo.CurrentCulture, _s.WriteFailedFormat, ex.Message), isError: true);
         }
+        return false;
     }
 
     private void Show(string text, bool isError)

@@ -171,6 +171,133 @@ public class AgentsRenderTests
         Directory.Delete(dir, recursive: true);
     });
 
+    private const string CoucouOnly = "{\n  \"hooks\": {\n    \"Stop\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"C:/x/coucou-hook.exe\\\" Stop\"\n          }\n        ]\n      }\n    ]\n  }\n}\n";
+    private const string Relay = @"C:\x\faqra-hook.exe";
+
+    private static string TempDir() => Directory.CreateTempSubdirectory("faqra-fix-").FullName;
+
+    private static ConfigReviewWindow Install(string settings, int coucouEvents = 0) =>
+        new(ConfigReviewWindow.Mode.Install, settings, Relay, coucouEvents);
+
+    private static string[] Lines(ConfigReviewWindow review) => AllText((DependencyObject)review.Content).Split('\n');
+
+    [Fact]
+    public void TryApplyWritesTheEditAndKeepsAnExactBackup() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = TempDir();
+        var settings = Path.Combine(dir, "settings.json");
+        const string original = "{\n  \"a\": 1\n}\n";
+        File.WriteAllText(settings, original);
+        var review = Install(settings);
+        Assert.True(review.TryApply());
+        Assert.Contains("SessionStart", File.ReadAllText(settings));
+        var backup = Assert.Single(Directory.GetFiles(dir, "settings.json.bak-*"));
+        Assert.Equal(original, File.ReadAllText(backup));
+        review.Close();
+        Directory.Delete(dir, recursive: true);
+    });
+
+    [Fact]
+    public void AFileChangedAfterThePreviewIsReshownNotWritten() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = TempDir();
+        var settings = Path.Combine(dir, "settings.json");
+        File.WriteAllText(settings, "{\n  \"a\": 1\n}\n");
+        var review = Install(settings);
+        const string changed = "{\n  \"b\": 2\n}\n";
+        File.WriteAllText(settings, changed);
+        Assert.False(review.TryApply());
+        Assert.Equal(changed, File.ReadAllText(settings));
+        Assert.Empty(Directory.GetFiles(dir, "settings.json.bak-*"));
+        var lines = Lines(review);
+        Assert.Contains("Claude's settings changed since this preview. Here is the new version.", lines);
+        Assert.Contains(lines, line => line.StartsWith('+') && line.Contains("\"b\": 2"));
+        review.Close();
+        Directory.Delete(dir, recursive: true);
+    });
+
+    [Fact]
+    public void UncheckingTheCoucouBoxKeepsItsHooks() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = TempDir();
+        var settings = Path.Combine(dir, "settings.json");
+        File.WriteAllText(settings, CoucouOnly);
+        var review = Install(settings, coucouEvents: 1);
+        Assert.Contains(Lines(review), line => line.StartsWith('-') && line.Contains("coucou-hook"));
+        review.SetRemoveCoucou(false);
+        Assert.DoesNotContain(Lines(review), line => line.StartsWith('-') && line.Contains("coucou-hook"));
+        review.Close();
+        Directory.Delete(dir, recursive: true);
+    });
+
+    [Fact]
+    public void AFileThatIsNotUtf8DisablesConfirmAndWritesNothing() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = TempDir();
+        var settings = Path.Combine(dir, "settings.json");
+        byte[] bytes = [0x7B, 0x22, 0x61, 0x22, 0x3A, 0x22, 0xFF, 0xFE, 0x22, 0x7D];
+        File.WriteAllBytes(settings, bytes);
+        var review = Install(settings);
+        Assert.False(review.CanConfirm);
+        Assert.Contains("aren't plain JSON", AllText((DependencyObject)review.Content));
+        Assert.False(review.TryApply());
+        Assert.Equal(bytes, File.ReadAllBytes(settings));
+        Assert.Empty(Directory.GetFiles(dir, "settings.json.bak-*"));
+        var page = new AgentsPage(settings, Path.Combine(dir, "faqra-hook.exe"));
+        Assert.Contains("aren't plain JSON", AllText(page));
+        Assert.False(ActionButton(page).IsEnabled);
+        review.Close();
+        Directory.Delete(dir, recursive: true);
+    });
+
+    [Fact]
+    public void ThePageReflectsInstalledPartialAndMissingRelay() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        var dir = TempDir();
+        var settings = Path.Combine(dir, "settings.json");
+        var relay = Path.Combine(dir, "faqra-hook.exe");
+        File.WriteAllText(relay, "stub");
+
+        File.WriteAllText(settings, Core.Agents.Install.ClaudeHookConfig.Install(null, relay, removeCoucou: false));
+        var installed = new AgentsPage(settings, relay);
+        Assert.Contains("Hooks installed", AllText(installed));
+        Assert.Equal("Remove hooks", ActionButton(installed).Content);
+
+        File.WriteAllText(settings, "{\n  \"hooks\": {\n    \"Stop\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"C:/x/faqra-hook.exe\\\" Stop\"\n          }\n        ]\n      }\n    ]\n  }\n}\n");
+        var partial = new AgentsPage(settings, relay);
+        Assert.Contains("Hooks need reinstalling", AllText(partial));
+
+        File.Delete(settings);
+        File.Delete(relay);
+        var missing = new AgentsPage(settings, relay);
+        Assert.Equal("Review and install", ActionButton(missing).Content);
+        Assert.False(ActionButton(missing).IsEnabled);
+        Directory.Delete(dir, recursive: true);
+    });
+
+    private static Wpf.Ui.Controls.Button ActionButton(DependencyObject root)
+    {
+        Wpf.Ui.Controls.Button? found = null;
+        void Walk(DependencyObject node)
+        {
+            if (node is Wpf.Ui.Controls.Button button)
+            {
+                found = button;
+            }
+            foreach (var child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>())
+            {
+                Walk(child);
+            }
+        }
+        Walk(root);
+        return found ?? throw new InvalidOperationException("no button");
+    }
+
     private static List<System.Windows.Controls.Button> Rows(DependencyObject root)
     {
         var rows = new List<System.Windows.Controls.Button>();

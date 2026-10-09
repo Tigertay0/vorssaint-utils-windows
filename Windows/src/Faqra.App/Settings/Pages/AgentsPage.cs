@@ -51,7 +51,7 @@ public sealed class AgentsPage : UserControl
         string? problem = null;
         try
         {
-            status = ClaudeHookConfig.Inspect(File.Exists(_settingsPath) ? File.ReadAllText(_settingsPath) : null);
+            status = ClaudeHookConfig.Inspect(File.Exists(_settingsPath) ? ConfigEdit.Decode(File.ReadAllBytes(_settingsPath)) : null);
         }
         catch (ConfigFormatException ex)
         {
