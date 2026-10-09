@@ -96,6 +96,16 @@ how Windows reports reduced motion.
 | Command bar: HUD material, 22pt window radius, 10pt rows, 9pt uppercase tracked headings, ⌘1-9 | Acrylic with Windows' rounded corners, 6px rows with a subtle fill, sentence-case 12px semibold headings, Ctrl+1-9 | Fluent owns the look; Ctrl takes Command's place. |
 | Command bar opens instantly | Also instant, no transition | A bar opened many times a day should not animate (the motion rulebook's frequency rule). |
 | Mixer's percent field is a native text field inside the popover | A text box that appears on click; Esc cancels the edit instead of closing the panel | Same behavior, WPF focus model. |
+| (No upstream equivalent) Agents module and feature, from Coucou | A Faqra-only island module and feature, persisted as `faqraAgents` | Watching Claude Code is the owner's request; the Faqra prefix keeps it from ever colliding with an upstream module or feature. |
+| Coucou's Mochi mascot | A thinking orb: its motion is the agent's state and its ink is the urgency | Mochi is not licensed for reuse, and an orb carries the same state in one glyph. |
+| Island resting content follows the music or battery setting | An agent that is busy or waiting takes the resting pill first | A session that needs the owner outranks what is playing. |
+| Island section picker tiles centred their icon and title | Icon and title left-aligned in each tile | The tiles always asked for left alignment; a shared button template had been overriding it, and now honours each button's own alignment. |
+
+## Components
+
+| Component | Source | What changed |
+|---|---|---|
+| Thinking orb (`OrbView`) | [Thinking Orbs](https://21st.dev/@yogesharc/components/thinking-orbs), yogesharc, MIT | Ported from SVG to a WPF `FrameworkElement`; the math is unchanged and tested frame by frame against the original. Ink comes from the agent's tone (the island palette plus Windows 11's dark caution, critical and success colours), never a hard-coded per-orb colour. It animates only while on screen and holds one frame when Windows' animations are off. |
 
 ## Verification
 
