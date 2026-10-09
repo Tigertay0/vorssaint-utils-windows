@@ -4,6 +4,7 @@
 // Sources/Vorssaint/App/AppDelegate.swift (lines 83-98, 1155-1233)
 
 using System.Windows;
+using System.Windows.Threading;
 using Faqra.App.About;
 using Faqra.Core.Defaults;
 using Faqra.Core.Features;
@@ -26,6 +27,9 @@ public sealed class StatusItemController : IDisposable
     private static readonly Guid MainIconGuid = new("6f1c3c0e-3b1a-4b62-9a7e-3f2a1f5d9c01");
     private const uint MainIconId = 1;
 
+    /// <summary>How soon to try again after the shell refused the icon (sign-in, display wake, Explorer restart).</summary>
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
+
     // Actions with a working handler in this milestone; the rest render greyed out.
     private static readonly HashSet<TrayMenuAction> ImplementedActions =
     [
@@ -41,6 +45,7 @@ public sealed class StatusItemController : IDisposable
     private readonly ISettingsStore _store;
     private readonly KeepAwakeManager _keepAwake;
     private readonly Func<bool> _keepAwakeAvailable;
+    private readonly DispatcherTimer _retry = new() { Interval = RetryDelay };
     private NativeIcon? _iconHandle;
 
     public bool KeepAwakeActive => _keepAwake.Session.IsActive;
@@ -64,6 +69,7 @@ public sealed class StatusItemController : IDisposable
         _window.Callback += OnCallback;
         _window.TaskbarCreated += OnTaskbarCreated;
         _icon = new TrayIcon(_window.Handle, MainIconId, MainIconGuid);
+        _retry.Tick += OnRetry;
         L10n.Shared.Changed += OnLanguageChanged;
     }
 
@@ -82,10 +88,20 @@ public sealed class StatusItemController : IDisposable
             session.IsActive, session.Trigger, session.ActiveConditions,
             session.EndsAt is { } end ? KeepAwakeFormat.ShortTime(end) : null,
             L10n.Shared.S, KeepAwakeStrings.For(L10n.Shared.Language));
-        _icon.Update(fresh.Handle, tooltip);
+        var shown = _icon.Update(fresh.Handle, tooltip);
         _iconHandle?.Dispose();
         _iconHandle = fresh;
+        if (shown)
+        {
+            _retry.Stop();
+        }
+        else
+        {
+            _retry.Start();
+        }
     }
+
+    private void OnRetry(object? sender, EventArgs e) => Refresh();
 
     private void OnTaskbarCreated()
     {
@@ -178,6 +194,8 @@ public sealed class StatusItemController : IDisposable
 
     public void Dispose()
     {
+        _retry.Stop();
+        _retry.Tick -= OnRetry;
         _keepAwake.Changed -= Refresh;
         _keepAwake.SessionEnded -= OnSessionEnded;
         _store.Changed -= OnSettingChanged;

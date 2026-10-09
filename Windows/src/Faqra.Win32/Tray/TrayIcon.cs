@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Faqra contributors
 // Plays the role of NSStatusItem in Sources/Vorssaint/App/StatusItemController.swift
 
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Faqra.Win32.Native;
 
@@ -12,6 +11,8 @@ namespace Faqra.Win32.Tray;
 /// One notification-area icon. A stable GUID lets Windows remember the icon's pinned position
 /// across launches; because the shell binds that GUID to the executable path, adding falls back
 /// to the classic window+id identity when the GUID is refused (e.g. after the exe moved).
+/// Shell refusals are reported, never thrown: the taskbar turns calls away for a few seconds after a
+/// display wake, and a throw from a redraw used to end the process.
 /// The shell copies the HICON on add/modify, so callers may destroy theirs afterwards.
 /// </summary>
 public sealed unsafe class TrayIcon : IDisposable
@@ -21,14 +22,21 @@ public sealed unsafe class TrayIcon : IDisposable
     private readonly IntPtr _hwnd;
     private readonly uint _id;
     private readonly Guid? _guid;
+    private readonly INotifyIconShell _shell;
     private bool _usesGuid;
     private bool _added;
 
     public TrayIcon(IntPtr ownerWindow, uint id, Guid? guid = null)
+        : this(ownerWindow, id, guid, NotifyIconShell.Instance)
+    {
+    }
+
+    internal TrayIcon(IntPtr ownerWindow, uint id, Guid? guid, INotifyIconShell shell)
     {
         _hwnd = ownerWindow;
         _id = id;
         _guid = guid;
+        _shell = shell;
     }
 
     public bool IsAdded => _added;
@@ -36,15 +44,25 @@ public sealed unsafe class TrayIcon : IDisposable
     /// <summary>Forget the shell-side state, e.g. after Explorer restarted and dropped every icon.</summary>
     public void MarkRemoved() => _added = false;
 
-    public void Add(IntPtr hIcon, string tooltip)
+    /// <summary>
+    /// Puts the icon in the tray. Returns false when the shell refused, which is routine around sign-in,
+    /// display wake and Explorer restarts; the caller tries again on its next update.
+    /// </summary>
+    public bool Add(IntPtr hIcon, string tooltip)
     {
+        // A call to a hung taskbar can be queued and run later; sent now, the fallback below could leave
+        // a second icon behind once Explorer catches up.
+        if (!_shell.IsTaskbarResponsive())
+        {
+            return false;
+        }
         var data = Identity(useGuid: _guid.HasValue);
         data.uFlags |= Shell32.NIF_MESSAGE | Shell32.NIF_ICON | Shell32.NIF_TIP | Shell32.NIF_SHOWTIP;
         data.uCallbackMessage = TrayMessageWindow.CallbackMessage;
         data.hIcon = hIcon;
         WriteTip(ref data, tooltip);
 
-        if (Shell32.Shell_NotifyIconW(Shell32.NIM_ADD, ref data))
+        if (AddOrReuse(ref data))
         {
             _usesGuid = _guid.HasValue;
         }
@@ -52,41 +70,46 @@ public sealed unsafe class TrayIcon : IDisposable
         {
             data.uFlags &= ~Shell32.NIF_GUID;
             data.guidItem = default;
-            if (!Shell32.Shell_NotifyIconW(Shell32.NIM_ADD, ref data))
+            if (!AddOrReuse(ref data))
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Shell_NotifyIcon(NIM_ADD) failed");
+                return false;
             }
             _usesGuid = false;
         }
         else
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Shell_NotifyIcon(NIM_ADD) failed");
+            return false;
         }
         _added = true;
 
         var version = Identity(_usesGuid);
         version.uVersionOrTimeout = Shell32.NOTIFYICON_VERSION_4;
-        Shell32.Shell_NotifyIconW(Shell32.NIM_SETVERSION, ref version);
+        _shell.NotifyIcon(Shell32.NIM_SETVERSION, ref version);
+        return true;
     }
 
-    public void Update(IntPtr hIcon, string tooltip)
+    /// <summary>Redraws the icon, adding it first when needed. Returns false while the shell refuses.</summary>
+    public bool Update(IntPtr hIcon, string tooltip)
     {
-        if (!_added)
+        if (_added)
         {
-            Add(hIcon, tooltip);
-            return;
-        }
-        var data = Identity(_usesGuid);
-        data.uFlags |= Shell32.NIF_ICON | Shell32.NIF_TIP | Shell32.NIF_SHOWTIP;
-        data.hIcon = hIcon;
-        WriteTip(ref data, tooltip);
-        if (!Shell32.Shell_NotifyIconW(Shell32.NIM_MODIFY, ref data))
-        {
-            // The shell forgot us (Explorer restart without TaskbarCreated reaching us yet); re-add.
+            var data = Identity(_usesGuid);
+            data.uFlags |= Shell32.NIF_ICON | Shell32.NIF_TIP | Shell32.NIF_SHOWTIP;
+            data.hIcon = hIcon;
+            WriteTip(ref data, tooltip);
+            if (_shell.NotifyIcon(Shell32.NIM_MODIFY, ref data))
+            {
+                return true;
+            }
+            // The shell forgot us (Explorer restarted before TaskbarCreated reached us) or is busy (display wake).
             _added = false;
-            Add(hIcon, tooltip);
         }
+        return Add(hIcon, tooltip);
     }
+
+    /// <summary>Adds the icon, or adopts it when it outlived a refused update and is still in the tray.</summary>
+    private bool AddOrReuse(ref NOTIFYICONDATAW data) =>
+        _shell.NotifyIcon(Shell32.NIM_ADD, ref data) || _shell.NotifyIcon(Shell32.NIM_MODIFY, ref data);
 
     /// <summary>
     /// Shows a Windows notification from this icon (upstream posts a user notification). Returns false
@@ -103,7 +126,7 @@ public sealed unsafe class TrayIcon : IDisposable
         data.dwInfoFlags = Shell32.NIIF_USER | Shell32.NIIF_LARGE_ICON;
         CopyInto(data.szInfo, 256, text);
         CopyInto(data.szInfoTitle, 64, title);
-        return Shell32.Shell_NotifyIconW(Shell32.NIM_MODIFY, ref data);
+        return _shell.NotifyIcon(Shell32.NIM_MODIFY, ref data);
     }
 
     private static void CopyInto(char* destination, int capacity, string value)
@@ -125,7 +148,7 @@ public sealed unsafe class TrayIcon : IDisposable
             return;
         }
         var data = Identity(_usesGuid);
-        Shell32.Shell_NotifyIconW(Shell32.NIM_DELETE, ref data);
+        _shell.NotifyIcon(Shell32.NIM_DELETE, ref data);
         _added = false;
     }
 

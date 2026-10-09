@@ -6,6 +6,23 @@ gaps a user would notice.
 
 ## Defects
 
+### Tray icons ended Faqra after the display woke (fixed, desktop check pending)
+
+Two crashes on the M6 test build, 2026-09-24 20:16 and 2026-09-26 13:23, each after more than a day
+of uptime and each 8 seconds after the display woke from keyboard or mouse input (Kernel-Power 566,
+reason InputHid), just before Windows re-enumerated the displays. Stack: `TrayMetricsController.Draw`
+→ `TrayIcon.Update` → `NIM_MODIFY` refused → `Add` → both `NIM_ADD` calls refused →
+`Win32Exception` (1008), unhandled on the dispatcher. Faqra survived seven other wakes in those days,
+so the taskbar turns calls away only some of the time.
+
+Fixed in `TrayIcon`: refusals return false instead of throwing; an icon that outlived a refused update
+is adopted with `NIM_MODIFY` rather than added a second time; nothing is sent while the taskbar does
+not answer a 500 ms `WM_NULL`, because a call queued to a hung taskbar can run later and leave a
+duplicate. The metric icons stay undrawn after a refusal so the next reading retries; the main icon
+retries every 2 seconds. `TrayIconTests` reproduces the crash against a fake shell. Not yet checked on
+the desktop: with the fixed build running, restart Explorer, then freeze it for about 8 seconds; Faqra
+should stay up and every icon should come back exactly once.
+
 ### The island can show a paused session instead of the one playing (deferred)
 
 Reported 2026-09-16 as "the island shows yesterday's YouTube tab instead of Spotify". Investigated

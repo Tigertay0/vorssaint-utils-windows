@@ -4,4 +4,7 @@
     <RootNamespace>Faqra.Win32</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Faqra.Services.Tests" />
+  </ItemGroup>
 </Project>

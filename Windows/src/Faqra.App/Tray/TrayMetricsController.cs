@@ -86,9 +86,18 @@ public sealed class TrayMetricsController : IDisposable
                 continue;
             }
             var handle = MetricGlyphPainter.RenderIcon(pixels, text, light);
-            entry.Icon.Update(handle.Handle, text.Tooltip);
+            var shown = entry.Icon.Update(handle.Handle, text.Tooltip);
             entry.Handle?.Dispose();
-            _icons[metric] = (entry.Icon, handle, text);
+            if (shown)
+            {
+                _icons[metric] = (entry.Icon, handle, text);
+            }
+            else
+            {
+                // The shell refused (display wake, Explorer restart); stay undrawn so the next reading retries.
+                handle.Dispose();
+                _icons[metric] = (entry.Icon, null, default);
+            }
         }
     }
 
