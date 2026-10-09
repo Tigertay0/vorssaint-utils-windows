@@ -13,6 +13,9 @@
     <ProjectReference Include="../../src/Faqra.Core/Faqra.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Agents/Data/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>
