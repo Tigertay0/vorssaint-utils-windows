@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Faqra.Services/Faqra.Services.csproj" />
+    <ProjectReference Include="../../src/Faqra.Hook/Faqra.Hook.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

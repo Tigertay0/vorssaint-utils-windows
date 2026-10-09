@@ -18,6 +18,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E8CC5677
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Faqra.Services.Tests", "tests\Faqra.Services.Tests\Faqra.Services.Tests.csproj", "{C96AA98F-0562-4C0B-8EFD-B34CA561609A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E86699B7-D494-401D-9C45-11073E7DF98E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Faqra.Hook", "src\Faqra.Hook\Faqra.Hook.csproj", "{CD0F76DE-8F37-48D0-AF03-E43874C3066F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,11 +56,16 @@ Global
 		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C96AA98F-0562-4C0B-8EFD-B34CA561609A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD0F76DE-8F37-48D0-AF03-E43874C3066F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD0F76DE-8F37-48D0-AF03-E43874C3066F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD0F76DE-8F37-48D0-AF03-E43874C3066F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD0F76DE-8F37-48D0-AF03-E43874C3066F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C96AA98F-0562-4C0B-8EFD-B34CA561609A} = {E8CC5677-C41F-434E-A5C0-590F5CDF8849}
+		{CD0F76DE-8F37-48D0-AF03-E43874C3066F} = {E86699B7-D494-401D-9C45-11073E7DF98E}
 	EndGlobalSection
 EndGlobal
