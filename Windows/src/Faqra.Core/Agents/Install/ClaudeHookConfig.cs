@@ -119,7 +119,10 @@ public static class ClaudeHookConfig
         return root["hooks"] as JsonObject ?? throw new ConfigFormatException("\"hooks\" is not an object");
     }
 
-    /// <summary>Removes every handler whose command contains the marker; empties it leaves behind go too. True when anything went.</summary>
+    /// <summary>
+    /// Removes every handler whose command contains the marker; empties it leaves behind go too. True when anything went.
+    /// Non-list event values are skipped, not refused: only Install refuses them (for Faqra's own events, where it writes), so the owner's values stay untouched.
+    /// </summary>
     private static bool Remove(JsonObject hooks, string marker)
     {
         var removed = false;

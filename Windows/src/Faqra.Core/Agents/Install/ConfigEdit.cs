@@ -31,5 +31,16 @@ public static class ConfigEdit
         }
     }
 
-    public static string Decode(byte[] bytes) => new UTF8Encoding(false).GetString(bytes).TrimStart('﻿');
+    /// <summary>Decodes UTF-8 strictly: bytes that are not valid UTF-8 are refused rather than replaced, so a lossy copy is never written back.</summary>
+    public static string Decode(byte[] bytes)
+    {
+        try
+        {
+            return new UTF8Encoding(false, throwOnInvalidBytes: true).GetString(bytes).TrimStart('﻿');
+        }
+        catch (DecoderFallbackException)
+        {
+            throw new ConfigFormatException("the file is not valid UTF-8");
+        }
+    }
 }
