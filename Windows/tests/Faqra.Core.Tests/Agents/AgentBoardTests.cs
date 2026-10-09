@@ -118,6 +118,33 @@ public class AgentBoardTests
     }
 
     [Fact]
+    public void ASessionFirstSeenWithASubagentIsBackground()
+    {
+        var board = AgentBoard.Empty.Apply(E("SubagentStart"), T0);
+        Assert.Equal(AgentState.Background, Only(board).State);
+        Assert.Equal(1, Only(board).Subagents);
+        Assert.True(board.IsActive);
+    }
+
+    [Fact]
+    public void CompactingWhileSubagentsRunRestsToBackground()
+    {
+        var board = AgentBoard.Empty.Apply(E("PreCompact"), T0)
+            .Apply(E("SubagentStart"), T0.AddSeconds(1))
+            .Apply(E("PostCompact"), T0.AddSeconds(2));
+        Assert.Equal(AgentState.Background, Only(board).State);
+    }
+
+    [Fact]
+    public void ASubagentSpawnShowsOnceInTheTicker()
+    {
+        var board = AgentBoard.Empty
+            .Apply(E("PreToolUse", tool: "Task", input: "{\"description\":\"Review the diff\"}"), T0)
+            .Apply(E("SubagentStart"), T0.AddSeconds(1));
+        Assert.Single(Only(board).Steps, step => step.Kind == AgentStepKind.Subagent);
+    }
+
+    [Fact]
     public void CompactingShowsThenRests()
     {
         var board = AgentBoard.Empty.Apply(E("PreCompact"), T0);

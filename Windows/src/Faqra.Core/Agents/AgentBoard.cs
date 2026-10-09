@@ -106,10 +106,10 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
         "Notification" => Notified(s, e.Message ?? string.Empty),
         "Stop" => s with { State = AgentState.Finished, FinishedAt = now, LastMessage = e.LastAssistantMessage ?? e.Message ?? s.LastMessage },
         "StopFailure" => s with { State = AgentState.Error, LastMessage = e.Message ?? s.LastMessage },
-        "SubagentStart" => Step(s with { Subagents = s.Subagents + 1 }, now, AgentStepKind.Subagent, string.Empty),
+        "SubagentStart" => s with { Subagents = s.Subagents + 1, State = s.State == AgentState.Idle ? AgentState.Background : s.State },
         "SubagentStop" => SubagentDone(s, now),
         "PreCompact" => s with { State = AgentState.Compacting },
-        "PostCompact" => s with { State = AgentState.Idle },
+        "PostCompact" => s with { State = Resting(s) },
         _ => null,
     };
 
