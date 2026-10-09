@@ -25,6 +25,7 @@ public sealed unsafe class TrayIcon : IDisposable
     private readonly INotifyIconShell _shell;
     private bool _usesGuid;
     private bool _added;
+    private bool _shownBefore;
 
     public TrayIcon(IntPtr ownerWindow, uint id, Guid? guid = null)
         : this(ownerWindow, id, guid, NotifyIconShell.Instance)
@@ -56,35 +57,25 @@ public sealed unsafe class TrayIcon : IDisposable
         {
             return false;
         }
-        var data = Identity(useGuid: _guid.HasValue);
-        data.uFlags |= Shell32.NIF_MESSAGE | Shell32.NIF_ICON | Shell32.NIF_TIP | Shell32.NIF_SHOWTIP;
-        data.uCallbackMessage = TrayMessageWindow.CallbackMessage;
-        data.hIcon = hIcon;
-        WriteTip(ref data, tooltip);
-
-        if (AddOrReuse(ref data))
-        {
-            _usesGuid = _guid.HasValue;
-        }
-        else if (_guid.HasValue)
-        {
-            data.uFlags &= ~Shell32.NIF_GUID;
-            data.guidItem = default;
-            if (!AddOrReuse(ref data))
-            {
-                return false;
-            }
-            _usesGuid = false;
-        }
-        else
+        // After a refused update the icon is usually still in the tray under the identity it was shown with.
+        var guidFirst = _guid.HasValue && (_usesGuid || !_shownBefore);
+        if (!TryShow(guidFirst, hIcon, tooltip) && !(_guid.HasValue && TryShow(!guidFirst, hIcon, tooltip)))
         {
             return false;
         }
-        _added = true;
 
         var version = Identity(_usesGuid);
         version.uVersionOrTimeout = Shell32.NOTIFYICON_VERSION_4;
-        _shell.NotifyIcon(Shell32.NIM_SETVERSION, ref version);
+        if (!_shell.NotifyIcon(Shell32.NIM_SETVERSION, ref version))
+        {
+            // Without version 4 the shell sends the old callback layout, which TrayMessageWindow misreads;
+            // take the icon back out so the next update adds it again.
+            var shown = Identity(_usesGuid);
+            _shell.NotifyIcon(Shell32.NIM_DELETE, ref shown);
+            return false;
+        }
+        _added = true;
+        _shownBefore = true;
         return true;
     }
 
@@ -107,9 +98,21 @@ public sealed unsafe class TrayIcon : IDisposable
         return Add(hIcon, tooltip);
     }
 
-    /// <summary>Adds the icon, or adopts it when it outlived a refused update and is still in the tray.</summary>
-    private bool AddOrReuse(ref NOTIFYICONDATAW data) =>
-        _shell.NotifyIcon(Shell32.NIM_ADD, ref data) || _shell.NotifyIcon(Shell32.NIM_MODIFY, ref data);
+    /// <summary>Adds the icon under one identity, or adopts it when it outlived a refused update.</summary>
+    private bool TryShow(bool useGuid, IntPtr hIcon, string tooltip)
+    {
+        var data = Identity(useGuid);
+        data.uFlags |= Shell32.NIF_MESSAGE | Shell32.NIF_ICON | Shell32.NIF_TIP | Shell32.NIF_SHOWTIP;
+        data.uCallbackMessage = TrayMessageWindow.CallbackMessage;
+        data.hIcon = hIcon;
+        WriteTip(ref data, tooltip);
+        if (!_shell.NotifyIcon(Shell32.NIM_ADD, ref data) && !_shell.NotifyIcon(Shell32.NIM_MODIFY, ref data))
+        {
+            return false;
+        }
+        _usesGuid = useGuid;
+        return true;
+    }
 
     /// <summary>
     /// Shows a Windows notification from this icon (upstream posts a user notification). Returns false

@@ -17,16 +17,48 @@ internal interface INotifyIconShell
     bool IsTaskbarResponsive();
 }
 
+/// <summary>The real shell. UI thread only, like every tray icon that shares it.</summary>
 internal sealed class NotifyIconShell : INotifyIconShell
 {
     /// <summary>Long enough for a healthy taskbar, short enough not to stall the UI thread.</summary>
     private const uint ProbeTimeoutMilliseconds = 500;
 
-    public static readonly NotifyIconShell Instance = new();
+    /// <summary>How long a taskbar that did not answer is reported busy without asking it again.</summary>
+    private const long QuietMilliseconds = 2_000;
+
+    public static readonly NotifyIconShell Instance = new(ProbeTaskbar, () => Environment.TickCount64);
+
+    private readonly Func<bool> _probe;
+    private readonly Func<long> _clock;
+    private long? _askAgainAt;
+
+    internal NotifyIconShell(Func<bool> probe, Func<long> clock)
+    {
+        _probe = probe;
+        _clock = clock;
+    }
 
     public bool NotifyIcon(uint message, ref NOTIFYICONDATAW data) => Shell32.Shell_NotifyIconW(message, ref data);
 
     public bool IsTaskbarResponsive()
+    {
+        var now = _clock();
+        if (_askAgainAt is { } askAgainAt && now < askAgainAt)
+        {
+            return false;
+        }
+        if (_probe())
+        {
+            _askAgainAt = null;
+            return true;
+        }
+        // A busy taskbar makes each probe wait the full timeout, and seven metric icons asking in turn
+        // would hold the UI thread for seconds.
+        _askAgainAt = now + QuietMilliseconds;
+        return false;
+    }
+
+    private static bool ProbeTaskbar()
     {
         var taskbar = User32.FindWindowW("Shell_TrayWnd", null);
         return taskbar != IntPtr.Zero

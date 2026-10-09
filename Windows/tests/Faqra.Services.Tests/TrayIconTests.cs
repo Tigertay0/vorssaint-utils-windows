@@ -105,6 +105,64 @@ public class TrayIconTests
         Assert.Equal([$"guid:{IconGuid}"], shell.Icons);
     }
 
+    [Fact]
+    public void AfterARefusalAnIconShownWithTheWindowIdentityKeepsIt()
+    {
+        var shell = new FakeShell { GuidOwnedElsewhere = true };
+        var icon = new TrayIcon(Owner, 10, IconGuid, shell);
+        icon.Update(Glyph, "CPU 12%");
+        shell.RefuseAll = true;
+        icon.Update(Glyph, "CPU 13%");
+
+        shell.RefuseAll = false;
+        shell.GuidOwnedElsewhere = false;
+
+        Assert.True(icon.Update(Glyph, "CPU 14%"));
+        Assert.Equal([$"window:{Owner}:10"], shell.Icons);
+    }
+
+    [Fact]
+    public void ARefusedVersionUpgradeTakesTheIconBackOutSoTheNextUpdateRedoesIt()
+    {
+        // Without version 4 the shell sends the old callback layout, which TrayMessageWindow misreads.
+        var shell = new FakeShell { RefuseSetVersionOnce = true };
+        var icon = new TrayIcon(Owner, 10, IconGuid, shell);
+
+        Assert.False(icon.Update(Glyph, "CPU 12%"));
+        Assert.Empty(shell.Icons);
+
+        Assert.True(icon.Update(Glyph, "CPU 12%"));
+        Assert.Equal([$"guid:{IconGuid}"], shell.Icons);
+    }
+
+    [Fact]
+    public void ATaskbarThatDidNotAnswerIsLeftAloneForTwoSeconds()
+    {
+        var now = 0L;
+        var probes = 0;
+        var shell = new NotifyIconShell(() => { probes++; return false; }, () => now);
+
+        Assert.False(shell.IsTaskbarResponsive());
+        now += 1_999;
+        Assert.False(shell.IsTaskbarResponsive());
+        Assert.Equal(1, probes);
+
+        now += 1;
+        Assert.False(shell.IsTaskbarResponsive());
+        Assert.Equal(2, probes);
+    }
+
+    [Fact]
+    public void AnAnsweringTaskbarIsAskedEveryTime()
+    {
+        var probes = 0;
+        var shell = new NotifyIconShell(() => { probes++; return true; }, () => 0L);
+
+        Assert.True(shell.IsTaskbarResponsive());
+        Assert.True(shell.IsTaskbarResponsive());
+        Assert.Equal(2, probes);
+    }
+
     /// <summary>
     /// Plays the notification area: icons keyed by GUID (or window+id without one), a taskbar that can
     /// stop answering, and GUIDs the shell has bound to another executable path.
@@ -114,6 +172,7 @@ public class TrayIconTests
         public bool RefuseAll { get; set; }
         public bool Responsive { get; set; } = true;
         public bool GuidOwnedElsewhere { get; set; }
+        public bool RefuseSetVersionOnce { get; set; }
         public HashSet<string> Icons { get; } = [];
         public List<uint> Calls { get; } = [];
 
@@ -125,6 +184,11 @@ public class TrayIconTests
             var usesGuid = (data.uFlags & Shell32.NIF_GUID) != 0;
             if (RefuseAll || !Responsive || (usesGuid && GuidOwnedElsewhere))
             {
+                return false;
+            }
+            if (message == Shell32.NIM_SETVERSION && RefuseSetVersionOnce)
+            {
+                RefuseSetVersionOnce = false;
                 return false;
             }
             var key = usesGuid ? $"guid:{data.guidItem}" : $"window:{data.hWnd}:{data.uID}";

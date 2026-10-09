@@ -23,6 +23,9 @@ retries every 2 seconds. `TrayIconTests` reproduces the crash against a fake she
 the desktop: with the fixed build running, restart Explorer, then freeze it for about 8 seconds; Faqra
 should stay up and every icon should come back exactly once.
 
+Left as is (rare): a delete the shell refuses is not retried. Turning a metric off during the few
+seconds after a wake can leave its icon in the tray until Faqra quits.
+
 ### The island can show a paused session instead of the one playing (deferred)
 
 Reported 2026-09-16 as "the island shows yesterday's YouTube tab instead of Spotify". Investigated
@@ -63,6 +66,22 @@ the session with forced garbage collection (240 s, 10,359 cycles). What the tool
 is a real app's session: Spotify or a browser sending artwork and timeline updates, several sessions
 changing at once, and the current session switching between apps. If it happens again, keep the
 new dump and note what was playing.
+
+A second crash in the same family, 2026-09-28 05:05:12, after 30 hours of uptime, no dump:
+`NullReferenceException` in `WinRT.IObjectReference.Finalize()` (WER CLR20r3: WinRT.Runtime 2.2.0.0,
+method token 0x060007bf, IL offset 0; nothing else on the stack). The finalizer's `Dispose()` and,
+through tier-1 guarded devirtualization, `ObjectReference<T>.Release()` and .NET 8's managed
+`Marshal.Release` (`*(*(void***)pUnk + 2)`) can all be inlined into that one frame, so a near-null
+fault there fits releasing a native object whose memory was already freed and zeroed: the same
+over-release the 2026-09-16 dump showed from Windows' side. `NowPlayingService` is the only WinRT
+user, and every `RefreshAsync` leaves media properties, playback info and buffers to the finalizer,
+so the object cannot be named without a full dump. No fix applied. CsWinRT issue #2532 (finalizer
+release into an uninitializing apartment) was checked and does not match: Faqra never tears down an
+apartment, and that stack keeps `Release()` as its own frame. Next step: turn on full WER dumps for
+`Faqra.exe` on the test machine (needs one admin prompt) so the next crash names the object.
+
+Related bug found while reading, not a crash: `ReadThumbnailAsync` ignores the buffer that
+`stream.ReadAsync` returns and reads its own, which Windows may leave empty, so artwork can be missing.
 
 ## Gaps a user will notice
 
