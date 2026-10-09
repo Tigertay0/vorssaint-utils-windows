@@ -172,7 +172,7 @@ public sealed class AgentsModule : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = installed ? _s.EmptyHintInstalled : _s.EmptyHintNotInstalled,
-            MaxWidth = 300,
+            MaxWidth = 340,
             TextWrapping = TextWrapping.Wrap,
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center,

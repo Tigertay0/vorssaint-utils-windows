@@ -183,6 +183,58 @@ public class AgentBoardTests
     }
 
     [Fact]
+    public void RestsAWorkingSessionAfterThirtyMinutesOfSilence()
+    {
+        var board = AgentBoard.Empty.Apply(E("PreToolUse", tool: "Read"), T0);
+        Assert.Equal(AgentState.Working, Only(board.Tick(T0 + AgentBoard.BusyTimeout - TimeSpan.FromSeconds(1))).State);
+        Assert.Equal(AgentState.Idle, Only(board.Tick(T0 + AgentBoard.BusyTimeout)).State);
+    }
+
+    [Fact]
+    public void RestsAFailedSessionAfterThirtyMinutesOfSilence()
+    {
+        var board = AgentBoard.Empty.Apply(E("StopFailure", message: "boom"), T0);
+        Assert.Equal(AgentState.Error, Only(board.Tick(T0 + AgentBoard.BusyTimeout - TimeSpan.FromSeconds(1))).State);
+        Assert.Equal(AgentState.Idle, Only(board.Tick(T0 + AgentBoard.BusyTimeout)).State);
+    }
+
+    [Fact]
+    public void RestsABackgroundSessionAfterThirtyMinutesOfSilence()
+    {
+        var board = AgentBoard.Empty.Apply(E("SubagentStart"), T0);
+        Assert.Equal(AgentState.Background, Only(board).State);
+        var rested = Only(board.Tick(T0 + AgentBoard.BusyTimeout));
+        Assert.Equal(AgentState.Idle, rested.State);
+        Assert.Equal(1, rested.Subagents);
+    }
+
+    [Fact]
+    public void KeepsWaitingForAnApprovalOrAQuestion()
+    {
+        var approval = AgentBoard.Empty.Apply(E("PermissionRequest", tool: "Bash"), T0);
+        var question = AgentBoard.Empty.Apply(E("PermissionRequest", tool: "AskUserQuestion"), T0);
+        var later = T0 + AgentBoard.BusyTimeout + TimeSpan.FromHours(1);
+        Assert.Equal(AgentState.Approval, Only(approval.Tick(later)).State);
+        Assert.Equal(AgentState.Question, Only(question.Tick(later)).State);
+    }
+
+    [Fact]
+    public void TheBusyTimeoutCountsFromTheLastEvent()
+    {
+        var board = AgentBoard.Empty
+            .Apply(E("PreToolUse", tool: "Read"), T0)
+            .Apply(E("PostToolUse", tool: "Read"), T0.AddMinutes(20));
+        Assert.Equal(AgentState.Working, Only(board.Tick(T0.AddMinutes(40))).State);
+    }
+
+    [Fact]
+    public void TickKeepsTheSameBoardWhenNothingTimesOut()
+    {
+        var board = AgentBoard.Empty.Apply(E("PreToolUse", tool: "Read"), T0);
+        Assert.Same(board, board.Tick(T0 + AgentBoard.BusyTimeout - TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
     public void OrdersByUrgencyThenRecency()
     {
         var board = AgentBoard.Empty

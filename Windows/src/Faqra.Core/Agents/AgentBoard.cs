@@ -47,6 +47,12 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
     /// <summary>A session with no event for this long is gone (its terminal was closed without SessionEnd).</summary>
     public static readonly TimeSpan IdleExpiry = TimeSpan.FromHours(12);
 
+    /// <summary>
+    /// A busy or failed session with no event for this long is treated as resting: its terminal was most likely
+    /// closed mid-turn. Long enough that a slow build is not misread.
+    /// </summary>
+    public static readonly TimeSpan BusyTimeout = TimeSpan.FromMinutes(30);
+
     private static readonly HashSet<string> SearchTools = new(StringComparer.Ordinal) { "Grep", "Glob", "WebSearch", "WebFetch" };
 
     public bool IsActive => Sessions.Values.Any(session => session.State != AgentState.Idle);
@@ -89,9 +95,18 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
             {
                 sessions = sessions.SetItem(session.Id, session with { State = Resting(session) });
             }
+            else if (IsStale(session, now))
+            {
+                sessions = sessions.SetItem(session.Id, session with { State = AgentState.Idle });
+            }
         }
         return ReferenceEquals(sessions, Sessions) ? this : this with { Sessions = sessions };
     }
+
+    private static bool IsStale(AgentSession session, DateTimeOffset now) =>
+        session.State is AgentState.Thinking or AgentState.Working or AgentState.Searching or AgentState.Compacting
+            or AgentState.Background or AgentState.Error
+        && now - session.UpdatedAt >= BusyTimeout;
 
     private static AgentState Resting(AgentSession session) => session.Subagents > 0 ? AgentState.Background : AgentState.Idle;
 

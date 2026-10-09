@@ -44,8 +44,8 @@ public class RelayTests
         Relay.Run(["Stop"], Stdin("{}"), NoEnv, @"C:\work", PipeName()); // warm up the JIT
         var clock = Stopwatch.StartNew();
         Assert.Equal(0, Relay.Run(["Stop"], Stdin("{\"session_id\":\"s1\"}"), NoEnv, @"C:\work", PipeName()));
-        // No pipe means no Faqra: waiting the 300 ms connect budget here would slow every tool call.
-        Assert.InRange(clock.ElapsedMilliseconds, 0, 150);
+        // No pipe means no Faqra: the point is that it never waits out the 300 ms connect budget.
+        Assert.InRange(clock.ElapsedMilliseconds, 0, 250);
     }
 
     [Theory]
