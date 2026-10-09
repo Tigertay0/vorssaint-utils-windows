@@ -64,5 +64,39 @@ public sealed class ConfigFileTests : IDisposable
         Assert.Throws<ConfigFormatException>(() => ConfigFile.Preview(SettingsPath, json => ClaudeHookConfig.Install(json, "x", false), Now));
     }
 
+    [Fact]
+    public void ApplyNeverOverwritesAnExistingBackup()
+    {
+        File.WriteAllText(SettingsPath, "{\n  \"a\": 1\n}\n");
+        var preview = ConfigFile.Preview(SettingsPath, AddKey, Now);
+        File.WriteAllText(preview.BackupPath!, "earlier backup");
+
+        var used = ConfigFile.Apply(preview);
+
+        Assert.NotNull(used);
+        Assert.NotEqual(preview.BackupPath, used);
+        Assert.Equal("earlier backup", File.ReadAllText(preview.BackupPath!));
+        Assert.Equal("{\n  \"a\": 1\n}\n", File.ReadAllText(used!));
+        Assert.Equal(preview.After, File.ReadAllText(SettingsPath));
+    }
+
+    [Fact]
+    public void AFailedApplyLeavesNoTempFileBehind()
+    {
+        File.WriteAllText(SettingsPath, "{\n  \"a\": 1\n}\n");
+        var preview = ConfigFile.Preview(SettingsPath, AddKey, Now);
+        File.SetAttributes(SettingsPath, FileAttributes.ReadOnly);
+        try
+        {
+            Assert.ThrowsAny<Exception>(() => ConfigFile.Apply(preview));
+        }
+        finally
+        {
+            File.SetAttributes(SettingsPath, FileAttributes.Normal);
+        }
+        Assert.False(File.Exists(SettingsPath + ".faqra-tmp"));
+        Assert.Equal("{\n  \"a\": 1\n}\n", File.ReadAllText(SettingsPath));
+    }
+
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 }

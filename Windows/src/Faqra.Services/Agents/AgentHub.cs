@@ -103,9 +103,9 @@ public sealed class AgentHub : IDisposable
                 server?.Dispose();
                 return;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex)
             {
-                // Another process holds the name (or a burst used every instance): wait and try again.
+                // Another process holds the name, a burst used every instance, or something unexpected: wait and try again.
                 server?.Dispose();
                 Trace.TraceWarning($"Faqra agents pipe: {ex.Message}");
                 try
@@ -122,6 +122,9 @@ public sealed class AgentHub : IDisposable
             _ = Task.Run(() => Serve(connection, token), CancellationToken.None);
         }
     }
+
+    /// <summary>Test seam: runs after a line parsed and before it is posted to the context.</summary>
+    internal Action? BeforePost { get; set; }
 
     private async Task Serve(NamedPipeServerStream connection, CancellationToken token)
     {
@@ -140,8 +143,14 @@ public sealed class AgentHub : IDisposable
             {
                 return;
             }
+            BeforePost?.Invoke();
             Post(() =>
             {
+                // A run that was stopped meanwhile must not put sessions back on the emptied board.
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
                 Board = Board.Apply(e, _now());
                 Log(e);
                 Changed?.Invoke();

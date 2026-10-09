@@ -94,4 +94,39 @@ public class AgentHubTests
         Assert.DoesNotContain("secret plans", text);
         File.Delete(log);
     }
+
+    [Fact]
+    public async Task AnEventReadBeforeStopNeverReturnsToTheBoard()
+    {
+        var pipe = "faqra-test-" + Guid.NewGuid().ToString("N");
+        using var context = new SerialContext();
+        using var hub = new AgentHub(pipe, context, () => T0);
+        using var reached = new ManualResetEventSlim();
+        using var gate = new ManualResetEventSlim();
+        hub.BeforePost = () =>
+        {
+            reached.Set();
+            gate.Wait(5000);
+        };
+        hub.SetRunning(true);
+        await SendAsync(pipe, "{\"hook_event_name\":\"SessionStart\",\"session_id\":\"late\"}");
+        Assert.True(reached.Wait(5000));
+
+        hub.SetRunning(false);
+        await Drain(context);
+        gate.Set();
+        await Drain(context);
+        await Task.Delay(200);
+        await Drain(context);
+
+        Assert.False(hub.IsRunning);
+        Assert.Empty(hub.Board.Sessions);
+    }
+
+    private static Task Drain(SynchronizationContext context)
+    {
+        var done = new TaskCompletionSource();
+        context.Post(_ => done.SetResult(), null);
+        return done.Task;
+    }
 }

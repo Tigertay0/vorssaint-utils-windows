@@ -31,8 +31,11 @@ public static class ConfigFile
             UnifiedDiff.Lines(text, after), exists ? ConfigEdit.BackupPath(path, now, File.Exists) : null);
     }
 
-    /// <summary>Writes the previewed text, keeping the old file byte for byte as the backup.</summary>
-    public static void Apply(ConfigPreview preview)
+    /// <summary>
+    /// Writes the previewed text, keeping the old file byte for byte as the backup, and returns the backup
+    /// path actually used (null for a new file). An existing backup is never overwritten.
+    /// </summary>
+    public static string? Apply(ConfigPreview preview)
     {
         var exists = File.Exists(preview.Path);
         var bytes = exists ? File.ReadAllBytes(preview.Path) : [];
@@ -40,16 +43,41 @@ public static class ConfigFile
         {
             throw new ConfigChangedException();
         }
+        var backup = exists ? preview.BackupPath : null;
+        if (backup is not null && File.Exists(backup))
+        {
+            backup = ConfigEdit.BackupPath(preview.Path, DateTime.Now, File.Exists);
+        }
         Directory.CreateDirectory(Path.GetDirectoryName(preview.Path)!);
         var temp = preview.Path + ".faqra-tmp";
-        File.WriteAllText(temp, preview.After, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        if (exists)
+        var placed = false;
+        try
         {
-            File.Replace(temp, preview.Path, preview.BackupPath);
+            File.WriteAllText(temp, preview.After, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            if (exists)
+            {
+                File.Replace(temp, preview.Path, backup);
+            }
+            else
+            {
+                File.Move(temp, preview.Path);
+            }
+            placed = true;
         }
-        else
+        finally
         {
-            File.Move(temp, preview.Path);
+            if (!placed)
+            {
+                try
+                {
+                    File.Delete(temp);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Faqra could not remove {temp}: {ex.Message}");
+                }
+            }
         }
+        return backup;
     }
 }

@@ -46,5 +46,33 @@ public sealed class RelayDeploymentTests : IDisposable
         Assert.True(RelayDeployment.Ensure(Source, Target));
     }
 
+    [Fact]
+    public void AFailedPlacementPutsTheOldRelayBack()
+    {
+        Ship("v1");
+        RelayDeployment.Ensure(Source, Target);
+        Ship("v2");
+
+        var ok = RelayDeployment.Ensure(Source, Target, (_, _) => throw new IOException("blocked"));
+
+        Assert.True(ok);
+        Assert.Equal("v1", File.ReadAllText(Target));
+    }
+
+    [Fact]
+    public void RemovesRelaysSetAsideByEarlierUpdates()
+    {
+        Ship("v1");
+        RelayDeployment.Ensure(Source, Target);
+        var stale = Target + ".old-20200101000000000";
+        File.WriteAllText(stale, "ancient");
+        Ship("v2");
+
+        Assert.True(RelayDeployment.Ensure(Source, Target));
+
+        Assert.Equal("v2", File.ReadAllText(Target));
+        Assert.False(File.Exists(stale));
+    }
+
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 }
