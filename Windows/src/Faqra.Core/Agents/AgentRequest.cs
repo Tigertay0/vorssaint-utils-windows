@@ -18,7 +18,8 @@ public sealed record AgentRequest(
     IReadOnlyList<AgentQuestion> Questions,
     IReadOnlyList<string> AlwaysRules,
     bool AlwaysAcceptsEdits,
-    DateTimeOffset ReceivedAt)
+    DateTimeOffset ReceivedAt,
+    bool InputTruncated = false)
 {
     public bool CanAlways => Kind == AgentRequestKind.Approval && (AlwaysRules.Count > 0 || AlwaysAcceptsEdits);
 
@@ -32,10 +33,21 @@ public sealed record AgentRequest(
                 AgentQuestions.Parse(e.ToolInput), [], false, now);
         }
         return new AgentRequest(id, e.SessionId, AgentRequestKind.Approval, tool, DetailOf(tool, e.ToolInput), [],
-            PermissionReply.AlwaysRuleLabels(e.PermissionSuggestions), PermissionReply.AlwaysAcceptsEdits(e.PermissionSuggestions), now);
+            PermissionReply.AlwaysRuleLabels(e.PermissionSuggestions), PermissionReply.AlwaysAcceptsEdits(e.PermissionSuggestions), now, e.InputTruncated);
     }
 
-    private static string DetailOf(string tool, JsonObject? input) => tool switch
+    private static string DetailOf(string tool, JsonObject? input)
+    {
+        var known = KnownField(tool, input);
+        if (known.Length > 0 || input is null || input.Count == 0)
+        {
+            return known;
+        }
+        // An unfamiliar tool (an MCP tool, Task) still shows what it was given.
+        return input.ToJsonString(AgentJson.Indented);
+    }
+
+    private static string KnownField(string tool, JsonObject? input) => tool switch
     {
         "Bash" or "PowerShell" => Field(input, "command"),
         "Read" or "Edit" or "MultiEdit" or "Write" => Field(input, "file_path"),

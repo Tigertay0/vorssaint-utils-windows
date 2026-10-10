@@ -47,6 +47,14 @@ public class AgentEventTests
     }
 
     [Fact]
+    public void ReadsTheInputTruncatedFlag()
+    {
+        Assert.True(AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"faqra_input_truncated\":true}")!.InputTruncated);
+        Assert.False(AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\"}")!.InputTruncated);
+        Assert.False(AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"faqra_input_truncated\":\"yes\"}")!.InputTruncated);
+    }
+
+    [Fact]
     public void ReadsSuggestionsAndTheTranscript()
     {
         var e = AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s\",\"transcript_path\":\"C:\\\\Users\\\\me\\\\.claude\\\\projects\\\\p\\\\s.jsonl\",\"permission_suggestions\":[{\"type\":\"setMode\",\"mode\":\"acceptEdits\",\"destination\":\"session\"}]}")!;

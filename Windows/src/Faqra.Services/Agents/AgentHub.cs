@@ -404,10 +404,22 @@ public sealed class AgentHub : IDisposable
     }
 
     /// <summary>The conversation's name, for the events after which Claude Code may have named or renamed it. Off the context's thread.</summary>
-    private string? TitleFor(AgentEvent e) =>
-        _projectsRoot is not null && e.Event is "SessionStart" or "UserPromptSubmit" or "Stop" or "PermissionRequest"
-            ? SessionTitles.Read(e.TranscriptPath, _projectsRoot)
-            : null;
+    private string? TitleFor(AgentEvent e)
+    {
+        if (_projectsRoot is null || e.Event is not ("SessionStart" or "UserPromptSubmit" or "Stop" or "PermissionRequest"))
+        {
+            return null;
+        }
+        try
+        {
+            return SessionTitles.Read(e.TranscriptPath, _projectsRoot);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Trace.TraceWarning($"Faqra agents title: {ex.Message}");
+            return null;
+        }
+    }
 
     /// <summary>
     /// Remembers, once per session, which window the session runs in. Runs on the pipe thread while the relay is still

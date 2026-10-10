@@ -68,6 +68,7 @@ public sealed partial class AgentsStrings
     public required string AlwaysSavesFormat { get; init; }
     public required string AlwaysAcceptEdits { get; init; }
     public required string AnswerInClaude { get; init; }
+    public required string InputTruncated { get; init; }
     public required string QuestionOwnAnswer { get; init; }
     public required string Send { get; init; }
     public required string QuestionUnreadable { get; init; }

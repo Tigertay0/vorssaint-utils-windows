@@ -140,6 +140,10 @@ internal static class AgentCardParts
         var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
         hover.Setters.Add(new Setter(UIElement.OpacityProperty, 0.88, "Chrome"));
         template.Triggers.Add(hover);
+        var focused = new Trigger { Property = UIElement.IsKeyboardFocusedProperty, Value = true };
+        focused.Setters.Add(new Setter(Border.BorderBrushProperty, IslandPalette.Primary, "Chrome"));
+        focused.Setters.Add(new Setter(Border.BorderThicknessProperty, new Thickness(2), "Chrome"));
+        template.Triggers.Add(focused);
         var pressed = new Trigger { Property = ButtonBase.IsPressedProperty, Value = true };
         pressed.Setters.Add(new Setter(UIElement.RenderTransformProperty, new ScaleTransform(0.97, 0.97), "Chrome"));
         pressed.Setters.Add(new Setter(UIElement.RenderTransformOriginProperty, new Point(0.5, 0.5), "Chrome"));
@@ -171,7 +175,13 @@ internal sealed class ApprovalCard : ContentControl
                 TextWrapping = TextWrapping.Wrap,
             }, AgentCardParts.DetailMaxHeight));
         }
-        if (request.CanAlways)
+        if (request.InputTruncated)
+        {
+            var shortened = AgentCardParts.Caption(s.InputTruncated);
+            shortened.Margin = new Thickness(0, 6, 0, 0);
+            stack.Children.Add(shortened);
+        }
+        if (request.CanAlways && !request.InputTruncated)
         {
             var saves = request.AlwaysRules.ToList();
             if (request.AlwaysAcceptsEdits)
@@ -184,12 +194,15 @@ internal sealed class ApprovalCard : ContentControl
             stack.Children.Add(note);
         }
         var actions = AgentCardParts.Actions(AgentCardParts.Action(s.Deny, primary: false, (_, _) => decide(AgentDecision.Deny())));
-        if (request.CanAlways)
+        if (request.CanAlways && !request.InputTruncated)
         {
             actions.Children.Add(AgentCardParts.Action(s.AlwaysAllow, primary: false, (_, _) => decide(AgentDecision.Always)));
         }
         // Allow is never the default button: Enter must not run a command the owner has not read.
-        actions.Children.Add(AgentCardParts.Action(s.Allow, primary: true, (_, _) => decide(AgentDecision.Allow)));
+        if (!request.InputTruncated)
+        {
+            actions.Children.Add(AgentCardParts.Action(s.Allow, primary: true, (_, _) => decide(AgentDecision.Allow)));
+        }
         stack.Children.Add(AgentCardParts.Footer(actions, AgentCardParts.Quiet(s.AnswerInClaude, (_, _) => release())));
         Content = AgentCardParts.Panel(stack);
     }

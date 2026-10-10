@@ -71,14 +71,26 @@ public static class HookPayload
 
         var tool = StringOf(payload["tool_name"]);
         var isEdit = StringOf(payload["hook_event_name"]) == "PostToolUse" && tool is not null && EditTools.Contains(tool);
+        var isPermission = StringOf(payload["hook_event_name"]) == "PermissionRequest";
         var editBudget = MaxEditTotal;
         var truncated = false;
+        var inputBudget = MaxEditTotal;
+        var inputTruncated = false;
         foreach (var key in payload.Select(pair => pair.Key).ToList())
         {
             var child = payload[key];
             if (key == "tool_input" && tool == "AskUserQuestion")
             {
                 continue; // the answers echo the questions back whole
+            }
+            if (isPermission && key == "permission_suggestions")
+            {
+                continue; // small, and the Always label must match the rule the relay writes
+            }
+            if (isPermission && key == "tool_input" && child is not null)
+            {
+                payload[key] = TrimWhole(child, ref inputBudget, ref inputTruncated);
+                continue;
             }
             if (key == "tool_input" && isEdit && child is JsonObject input)
             {
@@ -90,6 +102,51 @@ public static class HookPayload
         if (truncated)
         {
             payload["faqra_diff_truncated"] = true;
+        }
+        if (inputTruncated)
+        {
+            payload["faqra_input_truncated"] = true;
+        }
+    }
+
+    /// <summary>
+    /// A permission request's input is what the owner approves, so every string keeps up to 256 KB and the whole
+    /// input 512 KB; anything cut is reported so the card can refuse to offer Allow.
+    /// </summary>
+    private static JsonNode TrimWhole(JsonNode node, ref int budget, ref bool truncated)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach (var key in obj.Select(pair => pair.Key).ToList())
+                {
+                    if (obj[key] is { } inner)
+                    {
+                        obj[key] = TrimWhole(inner, ref budget, ref truncated);
+                    }
+                }
+                return obj;
+            case JsonArray array:
+                for (var i = 0; i < array.Count; i++)
+                {
+                    if (array[i] is { } item)
+                    {
+                        array[i] = TrimWhole(item, ref budget, ref truncated);
+                    }
+                }
+                return array;
+            case JsonValue value when StringOf(value) is { } text:
+                var limit = Math.Max(0, Math.Min(MaxEditString, budget));
+                if (text.Length <= limit)
+                {
+                    budget -= text.Length;
+                    return value;
+                }
+                truncated = true;
+                budget -= limit;
+                return JsonValue.Create(Cut(text, limit))!;
+            default:
+                return node;
         }
     }
 

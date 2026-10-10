@@ -60,6 +60,7 @@ public sealed partial class AgentsStrings
         AlwaysSavesFormat = "Always allow also saves: {0}",
         AlwaysAcceptEdits = "accept edits for this session",
         AnswerInClaude = "Answer in Claude Code",
+        InputTruncated = "Faqra received a shortened copy. Answer in Claude Code to see all of it.",
         QuestionOwnAnswer = "Your own answer",
         Send = "Send",
         QuestionUnreadable = "Faqra can't read this question. Answer it in Claude Code.",

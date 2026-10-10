@@ -51,6 +51,32 @@ public class AgentCardRenderTests
         AgentsRenderTests.RenderInk(new Border { Background = IslandPalette.Surface, Child = element, Width = 412, Height = height }, name, 412, height);
 
     [Fact]
+    public void ATruncatedApprovalShowsACaptionAndCannotBeAllowed() => StaThread.Run(() =>
+    {
+        var request = Approval() with { InputTruncated = true };
+        var card = new ApprovalCard(request, "Faqra milestones", S, _ => { }, () => { });
+        Assert.Contains(S.InputTruncated, AgentsRenderTests.AllText(card));
+        var labels = All<Button>(card).Select(button => button.Content as string).ToList();
+        Assert.DoesNotContain("Allow", labels);
+        Assert.DoesNotContain("Always allow", labels);
+        Assert.Contains("Deny", labels);
+        Assert.Contains("Answer in Claude Code", labels);
+    });
+
+    [Fact]
+    public void ActionButtonsShowKeyboardFocusAndNoneIsTheDefault() => StaThread.Run(() =>
+    {
+        var card = new ApprovalCard(Approval(), "Faqra milestones", S, _ => { }, () => { });
+        var buttons = All<Button>(card).ToList();
+        Assert.NotEmpty(buttons);
+        foreach (var button in buttons)
+        {
+            Assert.False(button.IsDefault);
+            Assert.Contains(button.Template.Triggers.OfType<Trigger>(), t => t.Property == UIElement.IsKeyboardFocusedProperty);
+        }
+    });
+
+    [Fact]
     public void AnApprovalShowsTheCommandAndAllThreeChoices() => StaThread.Run(() =>
     {
         AgentDecision? chosen = null;

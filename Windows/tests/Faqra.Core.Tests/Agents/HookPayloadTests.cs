@@ -91,6 +91,43 @@ public class HookPayloadTests
     }
 
     [Fact]
+    public void APermissionRequestKeepsALongCommandWhole()
+    {
+        var command = new string('c', 10_000);
+        var line = Line($"{{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s1\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
+        Assert.Equal(command, line["tool_input"]!["command"]!.GetValue<string>());
+        Assert.Null(line["faqra_input_truncated"]);
+    }
+
+    [Fact]
+    public void APermissionRequestBeyondTheEditLimitIsCutAndFlagged()
+    {
+        var command = new string('c', HookPayload.MaxEditString + 10);
+        var line = Line($"{{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s1\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
+        Assert.Equal(HookPayload.MaxEditString + 1, line["tool_input"]!["command"]!.GetValue<string>().Length);
+        Assert.True(line["faqra_input_truncated"]!.GetValue<bool>());
+        Assert.Null(line["faqra_diff_truncated"]);
+    }
+
+    [Fact]
+    public void APreToolUseCommandIsStillCutAtTheUsualLimit()
+    {
+        var command = new string('c', 10_000);
+        var line = Line($"{{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s1\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
+        Assert.Equal(HookPayload.MaxString + 1, line["tool_input"]!["command"]!.GetValue<string>().Length);
+        Assert.Null(line["faqra_input_truncated"]);
+    }
+
+    [Fact]
+    public void APermissionRequestKeepsItsSuggestionsWhole()
+    {
+        var rule = new string('r', 5_000);
+        var line = Line($"{{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s1\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"x\"}},\"permission_suggestions\":[{{\"type\":\"addRules\",\"rules\":[{{\"toolName\":\"Bash\",\"ruleContent\":\"{rule}\"}}]}}]}}");
+        Assert.Equal(rule, line["permission_suggestions"]![0]!["rules"]![0]!["ruleContent"]!.GetValue<string>());
+        Assert.Null(line["faqra_input_truncated"]);
+    }
+
+    [Fact]
     public void KeepsAQuestionWhole()
     {
         var question = new string('q', HookPayload.MaxString + 500);

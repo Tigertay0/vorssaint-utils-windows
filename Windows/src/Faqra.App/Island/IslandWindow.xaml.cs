@@ -216,5 +216,5 @@ public partial class IslandWindow
     private void OnSettingsClicked(object sender, RoutedEventArgs e) =>
         App.ShowSettings(Core.Settings.SettingsPage.Notch);
 
-    private void OnCollapseClicked(object sender, RoutedEventArgs e) => _controller?.Collapse();
+    private void OnCollapseClicked(object sender, RoutedEventArgs e) => _controller?.Dismiss();
 }

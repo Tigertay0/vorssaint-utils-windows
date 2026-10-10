@@ -27,6 +27,9 @@ public sealed record AgentEvent(
     /// <summary>The session's transcript, where Claude Code keeps the conversation's name.</summary>
     public string? TranscriptPath { get; init; }
 
+    /// <summary>True when the relay had to cut part of a permission request's input, so the card cannot show all of it.</summary>
+    public bool InputTruncated { get; init; }
+
     public static AgentEvent? TryParse(string line)
     {
         try
@@ -51,6 +54,7 @@ public sealed record AgentEvent(
             {
                 PermissionSuggestions = obj["permission_suggestions"] as JsonArray,
                 TranscriptPath = Text(obj, "transcript_path"),
+                InputTruncated = obj["faqra_input_truncated"] is JsonValue flag && flag.GetValueKind() == JsonValueKind.True,
             };
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException)

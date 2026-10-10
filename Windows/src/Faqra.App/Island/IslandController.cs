@@ -518,6 +518,13 @@ public sealed class IslandController : IDisposable
             Render();
             return;
         }
+        Dismiss();
+    }
+
+    /// <summary>An explicit close: waiting requests go back to Claude Code at once, then the island collapses.</summary>
+    internal void Dismiss()
+    {
+        ReleaseAllRequests();
         Collapse();
     }
 

@@ -55,4 +55,27 @@ public class AgentRequestTests
     [InlineData("Task", "{}", "")]
     public void EachToolShowsWhatItActsOn(string tool, string input, string detail) =>
         Assert.Equal(detail, From($"{{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"{tool}\",\"tool_input\":{input}}}").Detail);
+
+    [Fact]
+    public void ATruncatedInputFlowsToTheRequest()
+    {
+        Assert.True(From("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"x\"},\"faqra_input_truncated\":true}").InputTruncated);
+        Assert.False(From("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"x\"}}").InputTruncated);
+    }
+
+    [Fact]
+    public void AnUnknownToolShowsItsWholeInput()
+    {
+        var detail = From("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"mcp__github__create_issue\",\"tool_input\":{\"title\":\"Bug\",\"body\":\"Steps\"}}").Detail;
+        Assert.Contains("\"title\": \"Bug\"", detail);
+        Assert.Contains("\"body\": \"Steps\"", detail);
+    }
+
+    [Fact]
+    public void ATaskWithoutADescriptionShowsItsPrompt() =>
+        Assert.Contains("Do X", From("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"Task\",\"tool_input\":{\"description\":\"\",\"prompt\":\"Do X\"}}").Detail);
+
+    [Fact]
+    public void AnEmptyInputKeepsTheDetailEmpty() =>
+        Assert.Equal(string.Empty, From("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"mcp__x__y\",\"tool_input\":{}}").Detail);
 }
