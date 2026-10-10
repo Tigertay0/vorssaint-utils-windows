@@ -246,7 +246,7 @@ public sealed class AgentHub : IDisposable
         var id = Guid.NewGuid().ToString("N");
         var decided = new TaskCompletionSource<AgentDecision?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var shown = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Post(() => shown.TrySetResult(!token.IsCancellationRequested && Open(id, e, decided)));
+        Post(() => Show(id, e, decided, shown, token));
         bool isShown;
         try
         {
@@ -285,6 +285,36 @@ public sealed class AgentHub : IDisposable
         catch (IOException)
         {
             // The relay left between the click and the write: Claude Code asks in its own UI.
+        }
+    }
+
+    /// <summary>
+    /// Runs <see cref="Open"/> and always completes <paramref name="shown"/>. If anything throws (the CanAsk delegate or a
+    /// UI handler), the request is let go like a release, so the relay closes with no bytes and Claude Code asks at once.
+    /// </summary>
+    private void Show(string id, AgentEvent e, TaskCompletionSource<AgentDecision?> decided, TaskCompletionSource<bool> shown, CancellationToken token)
+    {
+        var isShown = false;
+        try
+        {
+            isShown = !token.IsCancellationRequested && Open(id, e, decided);
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceWarning($"Faqra agents request: {ex.GetType().Name}: {ex.Message}");
+            try
+            {
+                Settle(id, null);
+            }
+            catch (Exception inner)
+            {
+                // Settle removes the entry and the card before it raises Changed, so only a handler can throw here.
+                Trace.TraceWarning($"Faqra agents request: {inner.GetType().Name}: {inner.Message}");
+            }
+        }
+        finally
+        {
+            shown.TrySetResult(isShown);
         }
     }
 

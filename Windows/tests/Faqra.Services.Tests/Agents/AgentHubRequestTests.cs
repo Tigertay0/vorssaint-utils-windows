@@ -172,6 +172,32 @@ public class AgentHubRequestTests
         Assert.True(await Eventually(() => hub.Board.Sessions.ContainsKey("s2")));
     }
 
+    [Theory]
+    [InlineData("canAsk")]
+    [InlineData("arrived")]
+    public async Task AThrowingHandlerLetsTheRequestGoAndTheHubKeepsServing(string thrower)
+    {
+        var pipe = NewPipe();
+        using var context = new SerialContext();
+        using var hub = Hub(context, pipe);
+        if (thrower == "canAsk")
+        {
+            hub.CanAsk = () => throw new InvalidOperationException("boom");
+        }
+        else
+        {
+            hub.RequestArrived += _ => throw new InvalidOperationException("boom");
+        }
+        using var relay = await FakeRelay.SendAsync(pipe, BashRequest);
+
+        Assert.Null(await relay.ReplyAsync(TimeSpan.FromSeconds(1)));
+        Assert.True(await Eventually(() => hub.Requests.Count == 0));
+        using (await FakeRelay.SendAsync(pipe, "{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s2\"}"))
+        {
+        }
+        Assert.True(await Eventually(() => hub.Board.Sessions.ContainsKey("s2")));
+    }
+
     [Fact]
     public async Task StoppingLetsEveryRequestGo()
     {
