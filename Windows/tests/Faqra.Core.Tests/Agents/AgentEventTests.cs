@@ -47,6 +47,17 @@ public class AgentEventTests
     }
 
     [Fact]
+    public void ReadsSuggestionsAndTheTranscript()
+    {
+        var e = AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s\",\"transcript_path\":\"C:\\\\Users\\\\me\\\\.claude\\\\projects\\\\p\\\\s.jsonl\",\"permission_suggestions\":[{\"type\":\"setMode\",\"mode\":\"acceptEdits\",\"destination\":\"session\"}]}")!;
+        Assert.Single(e.PermissionSuggestions!);
+        Assert.Equal(@"C:\Users\me\.claude\projects\p\s.jsonl", e.TranscriptPath);
+        var bare = AgentEvent.TryParse("{\"hook_event_name\":\"Stop\"}")!;
+        Assert.Null(bare.PermissionSuggestions);
+        Assert.Null(bare.TranscriptPath);
+    }
+
+    [Fact]
     public void NamesThePipePerUserUnlessOverridden()
     {
         Assert.Equal("faqra-agents-S-1-5-21-1", AgentPipe.Name("S-1-5-21-1", _ => null));

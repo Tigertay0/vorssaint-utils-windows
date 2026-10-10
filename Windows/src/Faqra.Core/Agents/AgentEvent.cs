@@ -21,6 +21,12 @@ public sealed record AgentEvent(
     string? TermProgram,
     string? Entrypoint)
 {
+    /// <summary>What Claude Code offers to remember on a PermissionRequest ("don't ask again" rules and modes).</summary>
+    public JsonArray? PermissionSuggestions { get; init; }
+
+    /// <summary>The session's transcript, where Claude Code keeps the conversation's name.</summary>
+    public string? TranscriptPath { get; init; }
+
     public static AgentEvent? TryParse(string line)
     {
         try
@@ -41,7 +47,11 @@ public sealed record AgentEvent(
                 Text(obj, "last_assistant_message"),
                 Text(obj, "notification_type"),
                 Text(obj, "term_program"),
-                Text(obj, "claude_entrypoint"));
+                Text(obj, "claude_entrypoint"))
+            {
+                PermissionSuggestions = obj["permission_suggestions"] as JsonArray,
+                TranscriptPath = Text(obj, "transcript_path"),
+            };
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
