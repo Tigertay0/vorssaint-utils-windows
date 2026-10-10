@@ -122,6 +122,10 @@ public sealed class IslandController : IDisposable
         {
             RebuildGeometry();
             Render(animate: false);
+            if (!CanShowAgentCards())
+            {
+                ReleaseAllRequests();
+            }
         }
     }
 
@@ -143,12 +147,18 @@ public sealed class IslandController : IDisposable
         _monitorPoll.Start();
     }
 
-    private void Stop()
+    /// <summary>Lets every waiting request go, so Claude Code asks in its terminal at once when no card can show.</summary>
+    private void ReleaseAllRequests()
     {
         foreach (var request in _agents.Requests.ToList())
         {
             _agents.Release(request.Id);
         }
+    }
+
+    private void Stop()
+    {
+        ReleaseAllRequests();
         _openTimer.Stop();
         _closeTimer.Stop();
         _pointerPoll.Stop();
@@ -445,7 +455,7 @@ public sealed class IslandController : IDisposable
             return;
         }
         // A waiting card is what the owner came for.
-        if (_agents.Requests.FirstOrDefault() is { } waiting)
+        if (CanShowAgents() && _agents.Requests.FirstOrDefault() is { } waiting)
         {
             _agentsFocus = waiting.SessionId;
             Expand(takeFocus: true, IslandModule.FaqraAgents);
@@ -644,7 +654,7 @@ public sealed class IslandController : IDisposable
     /// <summary>Shortcut: open on the oldest waiting card (else the most urgent session) and take the keyboard.</summary>
     public void JumpToWaitingAgent()
     {
-        if (_window is null || _suspendedForFullscreen)
+        if (!CanShowAgents())
         {
             return;
         }
@@ -665,7 +675,7 @@ public sealed class IslandController : IDisposable
     /// <summary>Shortcut: the next (+1) or previous (-1) session, opening the island on Agents first.</summary>
     public void CycleAgentSession(int delta)
     {
-        if (_window is null || _suspendedForFullscreen)
+        if (!CanShowAgents())
         {
             return;
         }
@@ -717,6 +727,7 @@ public sealed class IslandController : IDisposable
             {
                 Collapse();
                 WindowStyles.Hide(_window!.Handle);
+                ReleaseAllRequests();
             }
             else
             {
