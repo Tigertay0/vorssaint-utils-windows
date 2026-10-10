@@ -4,6 +4,10 @@
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- The relay and hub tests block pool threads on purpose while other test classes run in
+         parallel. On a two-core CI runner the pool grows too slowly and the timing bounds fail.
+         Production runs the relay in its own process, so this only affects the test host. -->
+    <ThreadPoolMinThreads>32</ThreadPoolMinThreads>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
