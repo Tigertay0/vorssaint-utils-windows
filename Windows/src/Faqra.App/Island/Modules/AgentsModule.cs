@@ -3,6 +3,7 @@
 // The session list plays the role of Coucou's session ticker (windows/src/views), https://github.com/Louis-CFM/coucou
 // (MIT License, Copyright (c) 2026 Louis Raillé), with a thinking orb in place of its mascot.
 
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -15,12 +16,14 @@ using Faqra.Services.Agents;
 namespace Faqra.App.Island.Modules;
 
 /// <summary>
-/// Every agent session, most urgent first, with the focused one's activity and Claude's last words below.
-/// Rows are kept and updated in place, so each orb keeps its motion while events arrive.
+/// Every agent session, most urgent first. Above the list sits the focused session's card (an approval, a question, or
+/// its latest answer); below it, the session's folder, the owner's last prompt, Claude's last words and its activity.
+/// Rows and cards are kept and updated in place, so orbs keep moving and the owner's picks and typing survive events.
 /// </summary>
 public sealed class AgentsModule : UserControl
 {
     private const int ActivityLines = 6;
+    private const string AnsweredKey = "answered:";
     private static readonly FontFamily TextFont = new("Segoe UI Variable Text, Segoe UI");
     private static readonly FontFamily MonoFont = new("Cascadia Mono, Consolas");
 
@@ -28,16 +31,19 @@ public sealed class AgentsModule : UserControl
     private readonly Func<bool> _hooksInstalled;
     private readonly AgentsStrings _s = AgentsStrings.For(L10n.Shared.Language);
     private readonly Dictionary<string, SessionRow> _rows = new(StringComparer.Ordinal);
+    private readonly ContentControl _card = new();
     private readonly StackPanel _list = new();
     private readonly StackPanel _detail = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
     private string? _focused;
+    private string? _cardKey;
 
     public AgentsModule(AgentHub hub, Func<bool> hooksInstalled)
     {
         _hub = hub;
         _hooksInstalled = hooksInstalled;
         var body = new StackPanel();
+        body.Children.Add(_card);
         body.Children.Add(_list);
         body.Children.Add(_detail);
         Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -52,6 +58,49 @@ public sealed class AgentsModule : UserControl
         };
     }
 
+    /// <summary>The owner clicked into a box that needs typing: the island should take the keyboard.</summary>
+    public event Action? KeyboardWanted;
+
+    /// <summary>The owner asked to see a session's window.</summary>
+    public event Action<AgentSession>? GoToWindowRequested;
+
+    /// <summary>The session the card and the details are about.</summary>
+    public AgentSession? FocusedSession =>
+        _focused is not null && _hub.Board.Sessions.TryGetValue(_focused, out var session) ? session : null;
+
+    /// <summary>Shows this session's card and details.</summary>
+    public void FocusSession(string sessionId)
+    {
+        if (_hub.Board.Sessions.ContainsKey(sessionId))
+        {
+            _focused = sessionId;
+            Render();
+        }
+    }
+
+    /// <summary>Moves to this session, unless the owner is in the middle of another session's request.</summary>
+    public void OfferFocus(string sessionId)
+    {
+        if (_focused is null || _focused == sessionId || _hub.Requests.All(request => request.SessionId != _focused))
+        {
+            FocusSession(sessionId);
+        }
+    }
+
+    /// <summary>Moves the focus to the next (+1) or previous (-1) session in the list, wrapping around.</summary>
+    public void MoveFocus(int delta)
+    {
+        var sessions = _hub.Board.Ordered;
+        if (sessions.Count == 0)
+        {
+            return;
+        }
+        var at = sessions.Select(session => session.Id).ToList().IndexOf(_focused ?? string.Empty);
+        var next = at < 0 ? 0 : ((at + delta) % sessions.Count + sessions.Count) % sessions.Count;
+        _focused = sessions[next].Id;
+        Render();
+    }
+
     private void Render()
     {
         var sessions = _hub.Board.Ordered;
@@ -60,6 +109,7 @@ public sealed class AgentsModule : UserControl
             _rows.Clear();
             _list.Children.Clear();
             _detail.Children.Clear();
+            ShowCard(null, null);
             _list.Children.Add(Empty());
             return;
         }
@@ -74,6 +124,7 @@ public sealed class AgentsModule : UserControl
         }
         if (_focused is null || sessions.All(s => s.Id != _focused))
         {
+            // The board orders sessions waiting on the owner first.
             _focused = sessions[0].Id;
         }
         for (var i = 0; i < sessions.Count; i++)
@@ -81,7 +132,7 @@ public sealed class AgentsModule : UserControl
             var session = sessions[i];
             if (!_rows.TryGetValue(session.Id, out var row))
             {
-                row = new SessionRow(id => Focus(id));
+                row = new SessionRow(id => FocusSession(id));
                 _rows[session.Id] = row;
             }
             row.Update(session, _s, DateTimeOffset.Now, session.Id == _focused);
@@ -95,13 +146,37 @@ public sealed class AgentsModule : UserControl
                 _list.Children.Insert(i, row);
             }
         }
-        RenderDetail(sessions.First(s => s.Id == _focused));
+        var focused = sessions.First(s => s.Id == _focused);
+        RenderCard(focused);
+        RenderDetail(focused);
     }
 
-    private void Focus(string id)
+    /// <summary>The focused session's card, rebuilt only when what it shows changes, so picks and typing survive.</summary>
+    private void RenderCard(AgentSession session)
     {
-        _focused = id;
-        Render();
+        if (_hub.Requests.FirstOrDefault(r => r.SessionId == session.Id) is { } request)
+        {
+            ShowCard(request.Id, () => request.Kind == AgentRequestKind.Question
+                ? new QuestionCard(request, session.Name, _s, decision => _hub.Answer(request.Id, decision), () => _hub.Release(request.Id), () => KeyboardWanted?.Invoke())
+                : new ApprovalCard(request, session.Name, _s, decision => _hub.Answer(request.Id, decision), () => _hub.Release(request.Id)));
+            return;
+        }
+        if (session.Unread && session.LastMessage is { Length: > 0 })
+        {
+            ShowCard($"{AnsweredKey}{session.Id}:{session.FinishedAt:O}", () => new AnsweredCard(session, _s, () => _hub.MarkRead(session.Id)));
+            return;
+        }
+        ShowCard(null, null);
+    }
+
+    private void ShowCard(string? key, Func<UIElement>? build)
+    {
+        if (key == _cardKey)
+        {
+            return;
+        }
+        _cardKey = key;
+        _card.Content = build?.Invoke();
     }
 
     private void RefreshTimes()
@@ -118,20 +193,34 @@ public sealed class AgentsModule : UserControl
     private void RenderDetail(AgentSession session)
     {
         _detail.Children.Clear();
-        if (session.LastMessage is { Length: > 0 } message)
+        var header = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 0, 0, 10) };
+        if (_hub.WindowOwner(session.Id) is not null)
+        {
+            var go = AgentCardParts.Action(_s.GoToWindow, primary: false, (_, _) => GoToWindowRequested?.Invoke(session));
+            DockPanel.SetDock(go, Dock.Right);
+            header.Children.Add(go);
+        }
+        header.Children.Add(new TextBlock
+        {
+            Text = string.Format(CultureInfo.CurrentCulture, _s.InFolderFormat, session.Project),
+            FontFamily = TextFont,
+            FontSize = 12,
+            Foreground = IslandPalette.Tertiary,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        _detail.Children.Add(header);
+        if (session.LastPrompt is { Length: > 0 } prompt)
+        {
+            _detail.Children.Add(Label(_s.PromptedHeader));
+            _detail.Children.Add(Paragraph(prompt));
+        }
+        // An answered card already shows Claude's words.
+        var answeredOnCard = _cardKey?.StartsWith(AnsweredKey, StringComparison.Ordinal) == true;
+        if (!answeredOnCard && session.LastMessage is { Length: > 0 } message)
         {
             _detail.Children.Add(Label(_s.LastMessageHeader));
-            _detail.Children.Add(new TextBlock
-            {
-                Text = message,
-                MaxHeight = 54,
-                TextWrapping = TextWrapping.Wrap,
-                TextTrimming = TextTrimming.WordEllipsis,
-                FontFamily = TextFont,
-                FontSize = 12,
-                Foreground = IslandPalette.Primary,
-                Margin = new Thickness(0, 2, 0, 10),
-            });
+            _detail.Children.Add(Paragraph(message));
         }
         if (session.Steps.Count == 0)
         {
@@ -151,6 +240,18 @@ public sealed class AgentsModule : UserControl
             });
         }
     }
+
+    private static TextBlock Paragraph(string text) => new()
+    {
+        Text = text,
+        MaxHeight = 54,
+        TextWrapping = TextWrapping.Wrap,
+        TextTrimming = TextTrimming.WordEllipsis,
+        FontFamily = TextFont,
+        FontSize = 12,
+        Foreground = IslandPalette.Primary,
+        Margin = new Thickness(0, 2, 0, 10),
+    };
 
     private UIElement Empty()
     {
@@ -212,11 +313,11 @@ public sealed class AgentsModule : UserControl
         Foreground = IslandPalette.Tertiary,
     };
 
-    /// <summary>One session: orb, project, status, and how long since its last event.</summary>
+    /// <summary>One session: orb, conversation name, status, and how long since its last event.</summary>
     private sealed class SessionRow : Button
     {
         private readonly OrbView _orb = new() { Diameter = 20, VerticalAlignment = VerticalAlignment.Center };
-        private readonly TextBlock _project = new() { FontFamily = TextFont, FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = IslandPalette.Primary, TextTrimming = TextTrimming.CharacterEllipsis };
+        private readonly TextBlock _name = new() { FontFamily = TextFont, FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = IslandPalette.Primary, TextTrimming = TextTrimming.CharacterEllipsis };
         private readonly TextBlock _status = new() { FontFamily = TextFont, FontSize = 12, Foreground = IslandPalette.Secondary, TextTrimming = TextTrimming.CharacterEllipsis };
         private readonly TextBlock _elapsed = new() { FontFamily = MonoFont, FontSize = 11, Foreground = IslandPalette.Tertiary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
         private string _id = string.Empty;
@@ -228,7 +329,7 @@ public sealed class AgentsModule : UserControl
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var text = new StackPanel { Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            text.Children.Add(_project);
+            text.Children.Add(_name);
             text.Children.Add(_status);
             Grid.SetColumn(text, 1);
             Grid.SetColumn(_elapsed, 2);
@@ -249,11 +350,11 @@ public sealed class AgentsModule : UserControl
             _id = session.Id;
             var style = AgentOrbStyles.For(session.State);
             _orb.Apply(style, AgentInk.For(style.Tone));
-            _project.Text = session.Project;
+            _name.Text = session.Name;
             _status.Text = AgentsText.Status(session, s);
             _elapsed.Text = AgentsText.Elapsed(now - session.UpdatedAt, s);
             Background = focused ? IslandPalette.FillStrong : IslandPalette.Fill;
-            System.Windows.Automation.AutomationProperties.SetName(this, $"{_project.Text}, {_status.Text}");
+            System.Windows.Automation.AutomationProperties.SetName(this, $"{_name.Text}, {_status.Text}");
         }
     }
 }

@@ -56,6 +56,23 @@ public sealed partial class AgentsStrings
     public required string OpenSettings { get; init; }
     public required string ActivityHeader { get; init; }
     public required string LastMessageHeader { get; init; }
+    public required string PromptedHeader { get; init; }
+    public required string InFolderFormat { get; init; }
+    public required string GoToWindow { get; init; }
+
+    // Cards
+    public required string CardTitleFormat { get; init; }
+    public required string Allow { get; init; }
+    public required string Deny { get; init; }
+    public required string AlwaysAllow { get; init; }
+    public required string AlwaysSavesFormat { get; init; }
+    public required string AlwaysAcceptEdits { get; init; }
+    public required string AnswerInClaude { get; init; }
+    public required string QuestionOwnAnswer { get; init; }
+    public required string Send { get; init; }
+    public required string QuestionUnreadable { get; init; }
+    public required string AnsweredTitle { get; init; }
+    public required string Dismiss { get; init; }
 
     // States
     public required string StateIdle { get; init; }
