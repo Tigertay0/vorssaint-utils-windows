@@ -17,6 +17,20 @@ public class AgentHubTests
         await client.FlushAsync();
     }
 
+    private static bool CanConnect(string pipe)
+    {
+        using var client = new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
+        try
+        {
+            client.Connect(100);
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
     private static async Task<AgentBoard> WaitFor(AgentHub hub, Func<AgentBoard, bool> done)
     {
         for (var i = 0; i < 100 && !done(hub.Board); i++)
@@ -71,8 +85,8 @@ public class AgentHubTests
         hub.SetRunning(false);
         Assert.False(hub.IsRunning);
         Assert.Empty((await WaitFor(hub, b => b.Sessions.Count == 0)).Sessions);
-        using var client = new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
-        Assert.Throws<TimeoutException>(() => client.Connect(300));
+        // Stop cancels the accept loop at once, but the listening instance is disposed on a thread-pool continuation a moment later.
+        Assert.True(await HubTestKit.Eventually(() => !CanConnect(pipe)));
     }
 
     [Fact]
