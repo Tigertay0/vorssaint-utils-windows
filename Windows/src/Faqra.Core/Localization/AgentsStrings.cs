@@ -20,6 +20,22 @@ public sealed partial class AgentsStrings
     public required string FileUnreadableFormat { get; init; }
     public required string Installed { get; init; }
     public required string Removed { get; init; }
+    public required string AlertsSection { get; init; }
+    public required string NeedsYouSound { get; init; }
+    public required string NeedsYouSoundCaption { get; init; }
+    public required string AnsweredSound { get; init; }
+    public required string AnsweredSoundCaption { get; init; }
+    public required string OpenOnAnswer { get; init; }
+    public required string OpenOnAnswerCaption { get; init; }
+    public required string ShortcutsToggle { get; init; }
+    public required string ShortcutsCaption { get; init; }
+    public required string WatchOnly { get; init; }
+
+    // Shortcuts page
+    public required string ShortcutJump { get; init; }
+    public required string ShortcutWindow { get; init; }
+    public required string ShortcutNext { get; init; }
+    public required string ShortcutPrevious { get; init; }
 
     // Review dialog
     public required string ReviewTitle { get; init; }

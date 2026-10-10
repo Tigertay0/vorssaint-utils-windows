@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Faqra contributors
 // Mirrors GlobalShortcutRole in Sources/Vorssaint/Core/GlobalShortcut.swift (lines 687-1003). Only the
-// roles whose features exist on Windows in Stage 1; the others join as their features are ported.
+// roles whose features exist on Windows in Stage 1; the others join as their features are ported. The four
+// Agents roles are Faqra's own, appended so the existing roles keep their hot key IDs.
 
 using Faqra.Core.Defaults;
 using Faqra.Core.Features;
@@ -13,6 +14,10 @@ public enum GlobalShortcutRole
     KeepAwake,
     SoundOutputSwitcher,
     CommandBar,
+    AgentsJumpToWaiting,
+    AgentsGoToWindow,
+    AgentsNextSession,
+    AgentsPreviousSession,
 }
 
 public static class GlobalShortcutRoleExtensions
@@ -22,6 +27,10 @@ public static class GlobalShortcutRoleExtensions
         GlobalShortcutRole.KeepAwake => DefaultsKey.KeepAwakeShortcut,
         GlobalShortcutRole.SoundOutputSwitcher => DefaultsKey.SoundOutputSwitcherShortcut,
         GlobalShortcutRole.CommandBar => DefaultsKey.CommandBarShortcut,
+        GlobalShortcutRole.AgentsJumpToWaiting => DefaultsKey.FaqraAgentsJumpShortcut,
+        GlobalShortcutRole.AgentsGoToWindow => DefaultsKey.FaqraAgentsWindowShortcut,
+        GlobalShortcutRole.AgentsNextSession => DefaultsKey.FaqraAgentsNextShortcut,
+        GlobalShortcutRole.AgentsPreviousSession => DefaultsKey.FaqraAgentsPreviousShortcut,
         _ => throw new ArgumentOutOfRangeException(nameof(role)),
     };
 
@@ -30,6 +39,10 @@ public static class GlobalShortcutRoleExtensions
         GlobalShortcutRole.KeepAwake => GlobalShortcut.KeepAwakeDefault,
         GlobalShortcutRole.SoundOutputSwitcher => GlobalShortcut.SoundOutputSwitcherDefault,
         GlobalShortcutRole.CommandBar => GlobalShortcut.CommandBarDefault,
+        GlobalShortcutRole.AgentsJumpToWaiting => GlobalShortcut.AgentsJumpDefault,
+        GlobalShortcutRole.AgentsGoToWindow => GlobalShortcut.AgentsWindowDefault,
+        GlobalShortcutRole.AgentsNextSession => GlobalShortcut.AgentsNextDefault,
+        GlobalShortcutRole.AgentsPreviousSession => GlobalShortcut.AgentsPreviousDefault,
         _ => throw new ArgumentOutOfRangeException(nameof(role)),
     };
 
@@ -38,6 +51,8 @@ public static class GlobalShortcutRoleExtensions
         GlobalShortcutRole.KeepAwake => AppFeature.KeepAwake,
         GlobalShortcutRole.SoundOutputSwitcher => AppFeature.SoundOutputSwitcher,
         GlobalShortcutRole.CommandBar => AppFeature.CommandBar,
+        GlobalShortcutRole.AgentsJumpToWaiting or GlobalShortcutRole.AgentsGoToWindow
+            or GlobalShortcutRole.AgentsNextSession or GlobalShortcutRole.AgentsPreviousSession => AppFeature.FaqraAgents,
         _ => throw new ArgumentOutOfRangeException(nameof(role)),
     };
 
@@ -47,6 +62,8 @@ public static class GlobalShortcutRoleExtensions
         GlobalShortcutRole.KeepAwake => [DefaultsKey.HotkeyEnabled],
         GlobalShortcutRole.SoundOutputSwitcher => [DefaultsKey.SoundOutputSwitcherEnabled],
         GlobalShortcutRole.CommandBar => [DefaultsKey.CommandBarShortcutEnabled],
+        GlobalShortcutRole.AgentsJumpToWaiting or GlobalShortcutRole.AgentsGoToWindow
+            or GlobalShortcutRole.AgentsNextSession or GlobalShortcutRole.AgentsPreviousSession => [DefaultsKey.FaqraAgentsShortcutsEnabled],
         _ => throw new ArgumentOutOfRangeException(nameof(role)),
     };
 

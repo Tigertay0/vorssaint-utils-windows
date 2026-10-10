@@ -213,6 +213,16 @@ public static partial class RegisteredDefaults
         [DefaultsKey.CommandBarFileIgnores] = "",
         [DefaultsKey.KillProcessCommandBarEnabled] = true,
 
+        // Faqra Agents (Faqra-only)
+        [DefaultsKey.FaqraAgentsNeedsYouSound] = true,
+        [DefaultsKey.FaqraAgentsAnsweredSound] = true,
+        [DefaultsKey.FaqraAgentsOpenOnAnswer] = true,
+        [DefaultsKey.FaqraAgentsShortcutsEnabled] = true,
+        [DefaultsKey.FaqraAgentsJumpShortcut] = "control+option+command:65",      // Ctrl+Alt+Win+A (Windows VK)
+        [DefaultsKey.FaqraAgentsWindowShortcut] = "control+option+command:71",    // Ctrl+Alt+Win+G (Windows VK)
+        [DefaultsKey.FaqraAgentsNextShortcut] = "control+option+command:40",      // Ctrl+Alt+Win+Down (Windows VK)
+        [DefaultsKey.FaqraAgentsPreviousShortcut] = "control+option+command:38",  // Ctrl+Alt+Win+Up (Windows VK)
+
         // App updates utility
         [DefaultsKey.AppUpdatesCheckFrequency] = "off",
         [DefaultsKey.AppUpdatesNotify] = true,

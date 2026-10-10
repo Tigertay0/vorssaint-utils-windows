@@ -64,7 +64,7 @@ public class AgentsRenderTests
         Assert.Equal(new Size(18, 18), orb.DesiredSize);
     });
 
-    private static AgentHub HubWith(params string[] lines)
+    internal static AgentHub HubWith(params string[] lines)
     {
         var hub = new AgentHub("faqra-test-unused", SynchronizationContext.Current ?? new SynchronizationContext(),
             () => new DateTimeOffset(2026, 10, 9, 12, 0, 0, TimeSpan.Zero));
@@ -316,7 +316,7 @@ public class AgentsRenderTests
         return rows;
     }
 
-    private static string AllText(DependencyObject root)
+    internal static string AllText(DependencyObject root)
     {
         var builder = new System.Text.StringBuilder();
         void Walk(DependencyObject node)

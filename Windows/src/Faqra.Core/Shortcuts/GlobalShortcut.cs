@@ -47,6 +47,18 @@ public readonly record struct GlobalShortcut(int VirtualKey, ShortcutModifiers M
     /// <summary>Ctrl+Alt+Win+S: upstream's ⌃⌥⌘S.</summary>
     public static readonly GlobalShortcut SoundOutputSwitcherDefault = new(0x53, ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win);
 
+    /// <summary>Faqra Agents: open the island on the waiting card, Ctrl+Alt+Win+A.</summary>
+    public static readonly GlobalShortcut AgentsJumpDefault = new(0x41, ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win);
+
+    /// <summary>Faqra Agents: bring the session's window forward, Ctrl+Alt+Win+G.</summary>
+    public static readonly GlobalShortcut AgentsWindowDefault = new(0x47, ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win);
+
+    /// <summary>Faqra Agents: next session, Ctrl+Alt+Win+Down.</summary>
+    public static readonly GlobalShortcut AgentsNextDefault = new(0x28, ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win);
+
+    /// <summary>Faqra Agents: previous session, Ctrl+Alt+Win+Up.</summary>
+    public static readonly GlobalShortcut AgentsPreviousDefault = new(0x26, ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win);
+
     /// <summary>Control, Alt or Win; Shift alone never counts (GlobalShortcut.swift:23-25).</summary>
     public bool HasPrimaryModifier => (Modifiers & (ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win)) != 0;
 

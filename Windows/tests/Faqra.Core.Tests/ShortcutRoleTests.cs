@@ -157,4 +157,34 @@ public class ShortcutRecordingTests
     [Fact]
     public void ReservedCombinationIsRejected() =>
         Assert.Equal(RecordingOutcome.Reserved, ShortcutRecording.Handle(0x4C, ShortcutModifiers.Win).Outcome);
+
+    [Theory]
+    [InlineData(GlobalShortcutRole.AgentsJumpToWaiting, DefaultsKey.FaqraAgentsJumpShortcut, 0x41)]
+    [InlineData(GlobalShortcutRole.AgentsGoToWindow, DefaultsKey.FaqraAgentsWindowShortcut, 0x47)]
+    [InlineData(GlobalShortcutRole.AgentsNextSession, DefaultsKey.FaqraAgentsNextShortcut, 0x28)]
+    [InlineData(GlobalShortcutRole.AgentsPreviousSession, DefaultsKey.FaqraAgentsPreviousShortcut, 0x26)]
+    public void AgentRolesUseCtrlAltWinUnderOneSwitch(GlobalShortcutRole role, string key, int virtualKey)
+    {
+        Assert.Equal(key, role.StorageKey());
+        Assert.Equal(new GlobalShortcut(virtualKey, ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Win), role.DefaultShortcut());
+        Assert.Equal(AppFeature.FaqraAgents, role.Feature());
+        Assert.Equal([DefaultsKey.FaqraAgentsShortcutsEnabled], role.RequiredEnableKeys());
+    }
+
+    [Fact]
+    public void NoTwoRolesShareADefault()
+    {
+        var defaults = Enum.GetValues<GlobalShortcutRole>().Select(role => role.DefaultShortcut()).ToList();
+        Assert.Equal(defaults.Count, defaults.Distinct().Count());
+    }
+
+    [Fact]
+    public void TheAgentSwitchesStartOn()
+    {
+        var store = DefaultsStore.InMemory();
+        Assert.True(store.Bool(DefaultsKey.FaqraAgentsNeedsYouSound));
+        Assert.True(store.Bool(DefaultsKey.FaqraAgentsAnsweredSound));
+        Assert.True(store.Bool(DefaultsKey.FaqraAgentsOpenOnAnswer));
+        Assert.True(store.Bool(DefaultsKey.FaqraAgentsShortcutsEnabled));
+    }
 }

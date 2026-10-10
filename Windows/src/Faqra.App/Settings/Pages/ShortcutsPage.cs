@@ -19,6 +19,7 @@ public sealed class ShortcutsPage : UserControl
 {
     private readonly FeatureHubStrings _hub = FeatureHubStrings.For(L10n.Shared.Language);
     private readonly ShortcutStrings _s = ShortcutStrings.For(L10n.Shared.Language);
+    private readonly AgentsStrings _agents = AgentsStrings.For(L10n.Shared.Language);
 
     public ShortcutsPage()
     {
@@ -45,7 +46,14 @@ public sealed class ShortcutsPage : UserControl
         Content = page;
     }
 
-    private string RoleTitle(GlobalShortcutRole role) => _hub.FeatureTitles[role.Feature()];
+    private string RoleTitle(GlobalShortcutRole role) => role switch
+    {
+        GlobalShortcutRole.AgentsJumpToWaiting => _agents.ShortcutJump,
+        GlobalShortcutRole.AgentsGoToWindow => _agents.ShortcutWindow,
+        GlobalShortcutRole.AgentsNextSession => _agents.ShortcutNext,
+        GlobalShortcutRole.AgentsPreviousSession => _agents.ShortcutPrevious,
+        _ => _hub.FeatureTitles[role.Feature()],
+    };
 
     private CardControl Row(GlobalShortcutRole role, double top)
     {
@@ -80,6 +88,10 @@ public sealed class ShortcutsPage : UserControl
     {
         GlobalShortcutRole.KeepAwake => SymbolRegular.WeatherMoon24,
         GlobalShortcutRole.SoundOutputSwitcher => SymbolRegular.Speaker224,
+        GlobalShortcutRole.AgentsJumpToWaiting => SymbolRegular.Alert24,
+        GlobalShortcutRole.AgentsGoToWindow => SymbolRegular.Open24,
+        GlobalShortcutRole.AgentsNextSession => SymbolRegular.ArrowDown24,
+        GlobalShortcutRole.AgentsPreviousSession => SymbolRegular.ArrowUp24,
         _ => SymbolRegular.Search24,
     };
 

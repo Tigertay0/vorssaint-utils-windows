@@ -219,6 +219,16 @@ public static partial class DefaultsKey
     public const string CommandBarFileIgnores = "commandBarFileIgnores";
     public const string KillProcessCommandBarEnabled = "killProcessCommandBarEnabled";
 
+    // Faqra Agents (Faqra-only; every key carries the faqraAgents prefix so it never meets an upstream key)
+    public const string FaqraAgentsNeedsYouSound = "faqraAgentsNeedsYouSound";
+    public const string FaqraAgentsAnsweredSound = "faqraAgentsAnsweredSound";
+    public const string FaqraAgentsOpenOnAnswer = "faqraAgentsOpenOnAnswer";
+    public const string FaqraAgentsShortcutsEnabled = "faqraAgentsShortcutsEnabled";
+    public const string FaqraAgentsJumpShortcut = "faqraAgentsJumpShortcut";
+    public const string FaqraAgentsWindowShortcut = "faqraAgentsWindowShortcut";
+    public const string FaqraAgentsNextShortcut = "faqraAgentsNextShortcut";
+    public const string FaqraAgentsPreviousShortcut = "faqraAgentsPreviousShortcut";
+
     // Updates
     public const string AutoCheckUpdates = "autoCheckUpdates";
     public const string IncludeBetaUpdates = "includeBetaUpdates";

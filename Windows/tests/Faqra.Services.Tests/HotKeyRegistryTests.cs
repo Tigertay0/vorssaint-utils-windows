@@ -64,6 +64,7 @@ public class HotKeyRegistryTests
             registry.Bind(role, () => { });
         }
         store.Set(DefaultsKey.CommandBarShortcutEnabled, false);
+        store.Set(DefaultsKey.FaqraAgentsShortcutsEnabled, false);
         store.Set(DefaultsKey.SoundOutputSwitcherEnabled, true);
         registry.Sync();
 
@@ -215,6 +216,29 @@ public class HotKeyRegistryTests
         registry.Sync();
         Assert.Equal(2, host.Registered.Count);
         registry.Dispose();
+        Assert.Empty(host.Registered);
+    }
+
+    [Fact]
+    public void TheExistingRolesKeepTheirHotKeyIds()
+    {
+        Assert.Equal(1, HotKeyRegistry.HotKeyId(GlobalShortcutRole.KeepAwake));
+        Assert.Equal(2, HotKeyRegistry.HotKeyId(GlobalShortcutRole.SoundOutputSwitcher));
+        Assert.Equal(3, HotKeyRegistry.HotKeyId(GlobalShortcutRole.CommandBar));
+    }
+
+    [Fact]
+    public void TheAgentShortcutsRegisterTogetherUnderOneSwitch()
+    {
+        var (registry, host, store) = Create(f => f == AppFeature.FaqraAgents);
+        foreach (var role in Enum.GetValues<GlobalShortcutRole>())
+        {
+            registry.Bind(role, () => { });
+        }
+        registry.Sync();
+        Assert.Equal(4, host.Registered.Count);
+
+        store.Set(DefaultsKey.FaqraAgentsShortcutsEnabled, false);
         Assert.Empty(host.Registered);
     }
 }

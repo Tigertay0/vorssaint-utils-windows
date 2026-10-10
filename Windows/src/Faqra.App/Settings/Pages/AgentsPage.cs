@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Faqra.Core;
 using Faqra.Core.Agents.Install;
+using Faqra.Core.Defaults;
 using Faqra.Core.Localization;
 using Wpf.Ui.Controls;
 
@@ -95,6 +96,7 @@ public sealed class AgentsPage : UserControl
         foreach (var line in new[]
         {
             status.CoucouEvents > 0 ? Format(_s.CoucouLeftoversFormat, status.CoucouEvents) : null,
+            status.CoucouEvents > 0 ? _s.WatchOnly : null,
             !relayReady && !status.Installed ? _s.RelayMissing : null,
             problem,
             note,
@@ -111,6 +113,27 @@ public sealed class AgentsPage : UserControl
             text.HorizontalAlignment = HorizontalAlignment.Left;
             _page.Children.Add(text);
         }
+
+        _page.Children.Add(Text(_s.AlertsSection, "SectionHeader"));
+        _page.Children.Add(Toggle(SymbolRegular.Alert24, _s.NeedsYouSound, _s.NeedsYouSoundCaption, DefaultsKey.FaqraAgentsNeedsYouSound, top: 0));
+        _page.Children.Add(Toggle(SymbolRegular.CheckmarkCircle24, _s.AnsweredSound, _s.AnsweredSoundCaption, DefaultsKey.FaqraAgentsAnsweredSound, top: 6));
+        _page.Children.Add(Toggle(SymbolRegular.Chat24, _s.OpenOnAnswer, _s.OpenOnAnswerCaption, DefaultsKey.FaqraAgentsOpenOnAnswer, top: 6));
+        _page.Children.Add(Toggle(SymbolRegular.Keyboard24, _s.ShortcutsToggle, _s.ShortcutsCaption, DefaultsKey.FaqraAgentsShortcutsEnabled, top: 6));
+    }
+
+    /// <summary>A switch bound to one setting, written the moment it flips.</summary>
+    private static CardControl Toggle(SymbolRegular icon, string title, string caption, string key, double top)
+    {
+        var store = AppServices.Current.Store;
+        var toggle = new ToggleSwitch { IsChecked = store.Bool(key) };
+        System.Windows.Automation.AutomationProperties.SetName(toggle, title);
+        toggle.Click += (_, _) => store.Set(key, toggle.IsChecked == true);
+        var header = new StackPanel();
+        header.Children.Add(Text(title, "Body"));
+        var note = Text(caption, "Caption");
+        note.TextWrapping = TextWrapping.Wrap;
+        header.Children.Add(note);
+        return new CardControl { Icon = new SymbolIcon(icon), Header = header, Content = toggle, Margin = new Thickness(0, top, 0, 0) };
     }
 
     private static string Format(string format, object value) => string.Format(CultureInfo.CurrentCulture, format, value);
