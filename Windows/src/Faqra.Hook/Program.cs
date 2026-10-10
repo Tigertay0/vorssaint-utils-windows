@@ -14,7 +14,10 @@ internal static class Program
         {
             Func<string, string?> env = Environment.GetEnvironmentVariable;
             var sid = WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName;
-            return Relay.Run(args, Console.OpenStandardInput(), env, Environment.CurrentDirectory, AgentPipe.Name(sid, env));
+            // The raw stream, not Console.Out: Console.Out encodes with the console's code page, and Claude Code
+            // reads the reply as UTF-8 (a question or an answer may carry any character).
+            using var stdout = Console.OpenStandardOutput();
+            return Relay.Run(args, Console.OpenStandardInput(), stdout, env, Environment.CurrentDirectory, AgentPipe.Name(sid, env));
         }
         catch (Exception)
         {
