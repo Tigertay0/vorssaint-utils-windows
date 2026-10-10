@@ -22,6 +22,19 @@ internal static class AgentCardParts
 
     internal static string Format(string format, params object[] values) => string.Format(CultureInfo.CurrentCulture, format, values);
 
+    internal const double DetailMaxHeight = 120;
+    internal const double MessageMaxHeight = 160;
+
+    /// <summary>Long text in a bounded, vertically scrolling box, so the card stays small and nothing is cut off.</summary>
+    internal static ScrollViewer Scrolling(TextBlock text, double maxHeight) => new()
+    {
+        Content = text,
+        MaxHeight = maxHeight,
+        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+        Margin = new Thickness(0, 6, 0, 0),
+    };
+
     internal static Border Panel(UIElement content) => new()
     {
         Background = IslandPalette.Fill,
@@ -148,17 +161,15 @@ internal sealed class ApprovalCard : ContentControl
         stack.Children.Add(AgentCardParts.Title(AgentCardParts.Format(s.CardTitleFormat, name, AgentsText.RequestTitle(request, s))));
         if (request.Detail.Length > 0)
         {
-            stack.Children.Add(new TextBlock
+            // Scrolls instead of clipping: every character of the command can be read before Allow.
+            stack.Children.Add(AgentCardParts.Scrolling(new TextBlock
             {
                 Text = request.Detail,
                 FontFamily = AgentCardParts.MonoFont,
                 FontSize = 12,
                 Foreground = IslandPalette.Secondary,
                 TextWrapping = TextWrapping.Wrap,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                MaxHeight = 96,
-                Margin = new Thickness(0, 6, 0, 0),
-            });
+            }, AgentCardParts.DetailMaxHeight));
         }
         if (request.CanAlways)
         {
@@ -360,17 +371,14 @@ internal sealed class AnsweredCard : ContentControl
     {
         var stack = new StackPanel();
         stack.Children.Add(AgentCardParts.Title(AgentCardParts.Format(s.CardTitleFormat, session.Name, s.AnsweredTitle)));
-        stack.Children.Add(new TextBlock
+        stack.Children.Add(AgentCardParts.Scrolling(new TextBlock
         {
             Text = session.LastMessage ?? string.Empty,
             FontFamily = AgentCardParts.TextFont,
             FontSize = 12,
             Foreground = IslandPalette.Primary,
             TextWrapping = TextWrapping.Wrap,
-            TextTrimming = TextTrimming.WordEllipsis,
-            MaxHeight = 128,
-            Margin = new Thickness(0, 6, 0, 0),
-        });
+        }, AgentCardParts.MessageMaxHeight));
         stack.Children.Add(AgentCardParts.Footer(AgentCardParts.Actions(AgentCardParts.Action(s.Dismiss, primary: false, (_, _) => dismiss())), quiet: null));
         Content = AgentCardParts.Panel(stack);
     }

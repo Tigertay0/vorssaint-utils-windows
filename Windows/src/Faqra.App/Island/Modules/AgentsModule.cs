@@ -33,7 +33,7 @@ public sealed class AgentsModule : UserControl
     private readonly Dictionary<string, SessionRow> _rows = new(StringComparer.Ordinal);
     private readonly ContentControl _card = new();
     private readonly StackPanel _list = new();
-    private readonly StackPanel _detail = new() { Margin = new Thickness(0, 12, 0, 0) };
+    private readonly StackPanel _detail = new() { Margin = new Thickness(12, 12, 12, 0) };
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
     private string? _focused;
     private string? _cardKey;

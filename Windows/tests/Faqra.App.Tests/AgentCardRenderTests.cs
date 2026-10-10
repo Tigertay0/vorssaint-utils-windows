@@ -250,4 +250,25 @@ public class AgentCardRenderTests
         module.OfferFocus("s3");
         Assert.Equal("s3", module.FocusedSession!.Id);
     });
+
+    [Fact]
+    public void ALongCommandScrollsInsteadOfBeingCut() => StaThread.Run(() =>
+    {
+        var lines = Enumerable.Range(1, 19).Select(i => $"echo line {i}").Append("rm -rf /tmp/unique-last-line").ToList();
+        var command = string.Join('\n', lines);
+        var request = Approval() with { Detail = command };
+        var card = new ApprovalCard(request, "x", S, _ => { }, () => { });
+        Render(card, "island-card-approval-long", 300);
+
+        var box = All<TextBlock>(card).Single(block => block.Text == command);
+        Assert.Contains("unique-last-line", box.Text);
+        var scroller = Assert.IsType<ScrollViewer>(box.Parent);
+        Assert.Equal(ScrollBarVisibility.Auto, scroller.VerticalScrollBarVisibility);
+        Assert.Equal(ScrollBarVisibility.Disabled, scroller.HorizontalScrollBarVisibility);
+
+        var brief = new ApprovalCard(Approval(), "x", S, _ => { }, () => { });
+        card.Measure(new Size(412, double.PositiveInfinity));
+        brief.Measure(new Size(412, double.PositiveInfinity));
+        Assert.True(card.DesiredSize.Height < brief.DesiredSize.Height + 120, "the card grew with the command");
+    });
 }
