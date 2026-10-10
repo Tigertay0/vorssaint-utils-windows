@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text;
 using Faqra.Core.Agents;
+using Faqra.Win32.Agents;
 
 namespace Faqra.Services.Agents;
 
@@ -35,17 +36,25 @@ public sealed class AgentHub : IDisposable
     private readonly SynchronizationContext _context;
     private readonly Func<DateTimeOffset> _now;
     private readonly string? _logPath;
+    private readonly Func<int, WindowLookup>? _locateWindow;
+    private readonly string? _projectsRoot;
+    private readonly SessionWindowCache _windows = new();
     private readonly Dictionary<string, TaskCompletionSource<AgentDecision?>> _waiting = new(StringComparer.Ordinal);
     private CancellationTokenSource? _running;
     private Timer? _tick;
     private bool _disposed;
 
-    public AgentHub(string pipeName, SynchronizationContext context, Func<DateTimeOffset> now, string? logPath = null)
+    /// <param name="locateWindow">Finds the window owner above a relay's process (<see cref="SessionWindows.Locate"/>); null finds none.</param>
+    /// <param name="projectsRoot">Where Claude Code's transcripts live (<see cref="SessionTitles.DefaultProjectsRoot"/>); null reads no names.</param>
+    public AgentHub(string pipeName, SynchronizationContext context, Func<DateTimeOffset> now, string? logPath = null,
+        Func<int, WindowLookup>? locateWindow = null, string? projectsRoot = null)
     {
         _pipeName = pipeName;
         _context = context;
         _now = now;
         _logPath = logPath;
+        _locateWindow = locateWindow;
+        _projectsRoot = projectsRoot;
     }
 
     public AgentBoard Board { get; private set; } = AgentBoard.Empty;
@@ -102,6 +111,12 @@ public sealed class AgentHub : IDisposable
             Changed?.Invoke();
         }
     }
+
+    /// <summary>The process that owns the window a session runs in, once found. Safe from any thread.</summary>
+    public int? WindowOwner(string sessionId) => _windows.Owner(sessionId);
+
+    /// <summary>For render tests: pretends a session's window was found. Never called by the app.</summary>
+    public void RememberWindowForTests(string sessionId, int owner) => _windows.Remember(sessionId, owner);
 
     /// <summary>Starts or stops listening; stopping forgets every session and lets every request go. Call on the context's thread.</summary>
     public void SetRunning(bool running)
@@ -208,10 +223,12 @@ public sealed class AgentHub : IDisposable
             {
                 return;
             }
+            NoteWindow(connection, e);
+            var title = TitleFor(e);
             BeforePost?.Invoke();
             if (e.Event == "PermissionRequest")
             {
-                await ServeRequest(connection, e, token).ConfigureAwait(false);
+                await ServeRequest(connection, e, title, token).ConfigureAwait(false);
                 return;
             }
             Post(() =>
@@ -221,7 +238,7 @@ public sealed class AgentHub : IDisposable
                 {
                     return;
                 }
-                Board = Board.Apply(e, _now());
+                Board = Fold(e, title, _now());
                 Log(e);
                 if (TurnEnds.Contains(e.Event))
                 {
@@ -241,12 +258,12 @@ public sealed class AgentHub : IDisposable
     /// UI, or ended the hook), the turn moving on, the timeout, or a stop. Only a choice is written back; anything else
     /// closes the connection without a word, and Claude Code asks in its own UI.
     /// </summary>
-    private async Task ServeRequest(NamedPipeServerStream connection, AgentEvent e, CancellationToken token)
+    private async Task ServeRequest(NamedPipeServerStream connection, AgentEvent e, string? title, CancellationToken token)
     {
         var id = Guid.NewGuid().ToString("N");
         var decided = new TaskCompletionSource<AgentDecision?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var shown = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Post(() => Show(id, e, decided, shown, token));
+        Post(() => Show(id, e, title, decided, shown, token));
         bool isShown;
         try
         {
@@ -292,12 +309,12 @@ public sealed class AgentHub : IDisposable
     /// Runs <see cref="Open"/> and always completes <paramref name="shown"/>. If anything throws (the CanAsk delegate or a
     /// UI handler), the request is let go like a release, so the relay closes with no bytes and Claude Code asks at once.
     /// </summary>
-    private void Show(string id, AgentEvent e, TaskCompletionSource<AgentDecision?> decided, TaskCompletionSource<bool> shown, CancellationToken token)
+    private void Show(string id, AgentEvent e, string? title, TaskCompletionSource<AgentDecision?> decided, TaskCompletionSource<bool> shown, CancellationToken token)
     {
         var isShown = false;
         try
         {
-            isShown = !token.IsCancellationRequested && Open(id, e, decided);
+            isShown = !token.IsCancellationRequested && Open(id, e, title, decided);
         }
         catch (Exception ex)
         {
@@ -319,10 +336,10 @@ public sealed class AgentHub : IDisposable
     }
 
     /// <summary>Folds the request into the board and, when a card can show it, starts waiting on it. Runs on the context's thread.</summary>
-    private bool Open(string id, AgentEvent e, TaskCompletionSource<AgentDecision?> decided)
+    private bool Open(string id, AgentEvent e, string? title, TaskCompletionSource<AgentDecision?> decided)
     {
         var now = _now();
-        Board = Board.Apply(e, now);
+        Board = Fold(e, title, now);
         Log(e);
         AgentRequest? request = null;
         if (CanAsk())
@@ -376,6 +393,50 @@ public sealed class AgentHub : IDisposable
         foreach (var request in Requests.Where(r => r.SessionId == sessionId).ToList())
         {
             Settle(request.Id, null);
+        }
+    }
+
+    /// <summary>The board after an event, named after the session's conversation when its name was read.</summary>
+    private AgentBoard Fold(AgentEvent e, string? title, DateTimeOffset now)
+    {
+        var board = Board.Apply(e, now);
+        return title is null ? board : board.Titled(e.SessionId, title);
+    }
+
+    /// <summary>The conversation's name, for the events after which Claude Code may have named or renamed it. Off the context's thread.</summary>
+    private string? TitleFor(AgentEvent e) =>
+        _projectsRoot is not null && e.Event is "SessionStart" or "UserPromptSubmit" or "Stop" or "PermissionRequest"
+            ? SessionTitles.Read(e.TranscriptPath, _projectsRoot)
+            : null;
+
+    /// <summary>
+    /// Remembers, once per session, which window the session runs in. Runs on the pipe thread while the relay is still
+    /// connected, because the walk starts from the relay's own process.
+    /// </summary>
+    private void NoteWindow(NamedPipeServerStream connection, AgentEvent e)
+    {
+        if (e.Event == "SessionEnd")
+        {
+            _windows.Forget(e.SessionId);
+            return;
+        }
+        if (_locateWindow is null || !SessionWindowCache.IsPlausible(e.SessionId) || _windows.Knows(e.SessionId)
+            || PipeClient.ProcessId(connection.SafePipeHandle) is not { } relay)
+        {
+            return;
+        }
+        try
+        {
+            var found = _locateWindow(relay);
+            if (found.Settled)
+            {
+                _windows.Remember(e.SessionId, found.Owner);
+            }
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // A failed lookup only means no "Go to window" for this session; the event itself still counts.
+            Trace.TraceWarning($"Faqra agents window lookup: {ex.Message}");
         }
     }
 
