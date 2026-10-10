@@ -128,8 +128,9 @@ focused session's card:
 **Shortcuts.** Faqra's shortcut registry gains: jump to the waiting card, go to the session's
 window, next and previous session. Defaults chosen in A2 against the existing Ctrl+Alt+Win set.
 
-**Sounds.** None by default: Coucou's sounds are not licensed for reuse. An optional Windows
-notification sound for "needs you" is a setting.
+**Sounds.** Coucou's sounds are not licensed for reuse, so Faqra plays Windows' own notification
+sounds: one when an agent needs the owner, one when it finishes a turn, each with a switch (on by
+default since the owner's additions below).
 
 ## Milestones
 
@@ -138,7 +139,7 @@ Each ends with a published build in `Faqra-test`, a desktop check, and a commit.
 | | Milestone | Done when |
 |---|---|---|
 | A1 | Orb, relay, install, watching | The orb renders all states (PNG tests); `faqra-hook.exe` passes recorded-payload contract tests and starts under the 80 ms budget or the http fallback is chosen; install shows the diff and writes only on click, with the Coucou removal offered; a real Claude Code session's activity and states appear in the island. |
-| A2 | Approvals, questions, alerts, go to window, shortcuts | Allow, Deny and Always work on a real permission prompt; a real AskUserQuestion (single, multi, two questions) is answered from the island; the free-text test is settled; the island opens without stealing focus; go to window brings the right window forward. |
+| A2 | Approvals, questions, alerts, go to window, shortcuts, session names | Allow, Deny and Always work on a real permission prompt; a real AskUserQuestion (single, multi, two questions) is answered from the island; the free-text test is settled; the island opens without stealing focus; go to window brings the right window forward; sessions show their conversation names and last prompt; a finished turn chimes and opens the island saying the agent has answered. |
 | A3 | Reading and replying | Claude's last message shows after each turn; a reply sent from the island makes Claude carry on, in the Antigravity panel and in a terminal; Done and timeout release the turn. |
 | A4 | Edits and plan usage | +N -M per edit with a readable diff; the 5-hour and weekly Claude limits show in the island header. |
 | A5 | Other agents | Install and watch for Codex, Cursor, Gemini CLI, Antigravity's agent, Copilot CLI, OpenCode and Amp, with Coucou's per-agent formats; approvals where the agent supports them. |
@@ -146,7 +147,19 @@ Each ends with a published build in `Faqra-test`, a desktop check, and a commit.
 | A7 | Weekly recap | Counts only (time, sessions, files, lines, commands, permissions, top agent and project, busiest day), 12 weeks kept locally, a Monday summary, a shareable image. |
 | A8 | Service pills | GitHub, Vercel, Stripe, n8n, Resend, Notion and Cal.com, each polled only once its key exists. |
 
-M7 (installer and release) runs after A3, then A4 to A8.
+Order after the owner's additions below: A2, A3, then H1 and H2, then M7 (installer and release), then A4 to A8.
+
+## Owner's additions (2026-10-10)
+
+Asked while A2 was being planned. The first three join A2; the last two become their own milestones.
+
+| Addition | Decision |
+|---|---|
+| Session names | Each session shows its conversation's name, not its folder: the newest `{"type":"custom-title","customTitle":…}` line in the session's transcript (`transcript_path`), else the newest `{"type":"ai-title","aiTitle":…}`, else the folder. Only files under `~/.claude/projects` are read. |
+| Prompted | The focused session shows the owner's last prompt in full under a "Prompted" label. |
+| Sounds and the answered alert | A short Windows sound when an agent needs the owner and when it finishes a turn, both on by default (this replaces "Sounds: none by default"; Coucou's sounds stay unused). When a turn finishes, the island opens on that session without taking focus and says it has answered, with Claude's last message. A3 adds the reply box to the same card. Each part has a switch in Settings → Agents. |
+| H1: island home page | A Faqra-only Home section, shown when the island opens on hover with nothing selected: what is playing, the next calendar event, and the agents by default, with items the owner can add, remove and reorder. The calendar comes from a private iCal (ICS) link the owner pastes (Google, Outlook and iCloud all offer one), read-only, no sign-in. Planned after A3 with its own spec pass. |
+| H2: file shelf | Drag files and items onto the island and they stay there until dragged back out somewhere else: a port of upstream's Files section and shelf service. Planned with H1. |
 
 ## Not ported
 
