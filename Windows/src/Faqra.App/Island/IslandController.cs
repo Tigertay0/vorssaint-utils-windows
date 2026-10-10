@@ -6,6 +6,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using Faqra.App.Agents;
 using Faqra.App.Island.Modules;
 using Faqra.Core;
 using Faqra.Core.Agents;
@@ -16,6 +17,7 @@ using Faqra.Core.Localization;
 using Faqra.Services.Agents;
 using Faqra.Services.Media;
 using Faqra.Services.Monitor;
+using Faqra.Win32.Agents;
 using Faqra.Win32.Display;
 using FeatureRuntime = Faqra.Services.FeatureRuntime;
 using Faqra.Win32.Input;
@@ -68,6 +70,8 @@ public sealed class IslandController : IDisposable
     private bool _sectionsOpen;
     private bool _suspendedForFullscreen;
     private (string? Id, AgentState? State) _agentsShown;
+    private AgentsModule? _agentsModule;
+    private string? _agentsFocus;
 
     public IslandController(ISettingsStore store, FeatureRuntime runtime, NowPlayingService nowPlaying, SystemMonitor monitor, Services.Audio.AppVolumeMixer mixer, AgentHub agents)
     {
@@ -93,6 +97,9 @@ public sealed class IslandController : IDisposable
         _outsideClick.Pressed += OnOutsidePress;
         _nowPlaying.Changed += OnNowPlayingChanged;
         _agents.Changed += OnAgentsChanged;
+        _agents.RequestArrived += OnAgentRequest;
+        _agents.TurnFinished += OnAgentFinished;
+        _agents.CanAsk = CanShowAgentCards;
         _store.Changed += OnSettingChanged;
     }
 
@@ -138,6 +145,10 @@ public sealed class IslandController : IDisposable
 
     private void Stop()
     {
+        foreach (var request in _agents.Requests.ToList())
+        {
+            _agents.Release(request.Id);
+        }
         _openTimer.Stop();
         _closeTimer.Stop();
         _pointerPoll.Stop();
@@ -296,17 +307,35 @@ public sealed class IslandController : IDisposable
         };
     }
 
-    private UIElement? BuildModule(IslandModule module) => module switch
+    private UIElement? BuildModule(IslandModule module)
     {
-        IslandModule.Music => new MusicModule(_nowPlaying),
-        IslandModule.Timer => new TimerModule(),
-        IslandModule.System => new SystemModule(_systemMonitor, SystemCards(), _geometry.SystemColumns),
-        IslandModule.Mixer => new MixerModule(_store, _runtime.IsAvailable, _mixer),
-        IslandModule.FaqraAgents => new AgentsModule(_agents, AgentHooksInstalled),
-        // Modules whose feature is not ported yet keep their place in the section list; their
-        // content arrives with the feature.
-        _ => new ModulePlaceholder(ModuleTitle(module)),
-    };
+        _agentsModule = null;
+        return module switch
+        {
+            IslandModule.Music => new MusicModule(_nowPlaying),
+            IslandModule.Timer => new TimerModule(),
+            IslandModule.System => new SystemModule(_systemMonitor, SystemCards(), _geometry.SystemColumns),
+            IslandModule.Mixer => new MixerModule(_store, _runtime.IsAvailable, _mixer),
+            IslandModule.FaqraAgents => BuildAgentsModule(),
+            // Modules whose feature is not ported yet keep their place in the section list; their
+            // content arrives with the feature.
+            _ => new ModulePlaceholder(ModuleTitle(module)),
+        };
+    }
+
+    private AgentsModule BuildAgentsModule()
+    {
+        var module = new AgentsModule(_agents, () => ClaudeHooks.Read().Installed);
+        module.KeyboardWanted += TakeKeyboard;
+        module.GoToWindowRequested += GoToWindow;
+        if (_agentsFocus is { } sessionId)
+        {
+            module.FocusSession(sessionId);
+            _agentsFocus = null;
+        }
+        _agentsModule = module;
+        return module;
+    }
 
     private IReadOnlyList<IslandSystemCard> SystemCards() => IslandSystemCards.Available(_runtime.IsAvailable, _systemMonitor.HasBattery);
 
@@ -324,19 +353,6 @@ public sealed class IslandController : IDisposable
             IslandIdleContent.Battery => new IdleBatteryView(),
             _ => null,
         };
-    }
-
-    private static bool AgentHooksInstalled()
-    {
-        try
-        {
-            return File.Exists(AppPaths.ClaudeSettingsFile)
-                && Core.Agents.Install.ClaudeHookConfig.Inspect(File.ReadAllText(AppPaths.ClaudeSettingsFile)).Installed;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Core.Agents.Install.ConfigFormatException)
-        {
-            return false;
-        }
     }
 
     // MARK: hover
@@ -424,14 +440,18 @@ public sealed class IslandController : IDisposable
 
     internal void ShapeClicked()
     {
-        if (_presentation == IslandPresentation.Collapsed)
+        if (_presentation == IslandPresentation.Expanded)
         {
-            Expand(takeFocus: true);
+            return;
         }
-        else if (_presentation == IslandPresentation.Peek)
+        // A waiting card is what the owner came for.
+        if (_agents.Requests.FirstOrDefault() is { } waiting)
         {
-            Expand(takeFocus: true);
+            _agentsFocus = waiting.SessionId;
+            Expand(takeFocus: true, IslandModule.FaqraAgents);
+            return;
         }
+        Expand(takeFocus: true);
     }
 
     /// <summary>Opens a module. A click-opened island takes the keyboard and does not auto-close.</summary>
@@ -533,6 +553,132 @@ public sealed class IslandController : IDisposable
         }
     }
 
+    // MARK: agents
+
+    /// <summary>The island can show the Agents section right now: running, not stepped aside for a fullscreen app, and the section on.</summary>
+    private bool CanShowAgents() =>
+        _window is not null
+        && !_suspendedForFullscreen
+        && _runtime.IsAvailable(AppFeature.FaqraAgents)
+        && VisibleModules().Contains(IslandModule.FaqraAgents);
+
+    /// <summary>
+    /// Whether a card may take a request (the hub asks for each one). Never while Coucou's hooks are installed: two apps
+    /// answering one request would race, so Faqra only watches then.
+    /// </summary>
+    private bool CanShowAgentCards() => CanShowAgents() && ClaudeHooks.Read().CoucouEvents == 0;
+
+    private bool IsShowingAgents() =>
+        _presentation == IslandPresentation.Expanded && _module == IslandModule.FaqraAgents && !_sectionsOpen && _agentsModule is not null;
+
+    /// <summary>An agent waits on the owner: chime if asked to, then open on its card without taking the keyboard.</summary>
+    private void OnAgentRequest(AgentRequest request)
+    {
+        if (_store.Bool(DefaultsKey.FaqraAgentsNeedsYouSound))
+        {
+            AlertSound.Play(AlertKind.NeedsYou);
+        }
+        OpenOnAgent(request.SessionId);
+    }
+
+    /// <summary>An agent finished a turn: chime and, if the owner wants it, open on its answer without taking the keyboard.</summary>
+    private void OnAgentFinished(AgentSession session)
+    {
+        if (!CanShowAgents())
+        {
+            return;
+        }
+        if (_store.Bool(DefaultsKey.FaqraAgentsAnsweredSound))
+        {
+            AlertSound.Play(AlertKind.Answered);
+        }
+        if (_store.Bool(DefaultsKey.FaqraAgentsOpenOnAnswer))
+        {
+            OpenOnAgent(session.Id);
+        }
+    }
+
+    /// <summary>Opens on a session without activating; an Agents section already open only offers it the focus.</summary>
+    private void OpenOnAgent(string sessionId)
+    {
+        if (_window is null)
+        {
+            return;
+        }
+        if (IsShowingAgents())
+        {
+            _agentsModule!.OfferFocus(sessionId);
+            return;
+        }
+        _agentsFocus = sessionId;
+        _sectionsOpen = false;
+        Expand(takeFocus: false, IslandModule.FaqraAgents);
+    }
+
+    /// <summary>The owner is about to type in the island (a question's own-answer box): take the keyboard now.</summary>
+    internal void TakeKeyboard()
+    {
+        if (_window is null || _presentation == IslandPresentation.Collapsed || WindowStyles.ForegroundWindow() == _window.Handle)
+        {
+            return;
+        }
+        _previousForeground = WindowStyles.ForegroundWindow();
+        WindowStyles.SetNonActivating(_window.Handle, nonActivating: false);
+        WindowStyles.Focus(_window.Handle);
+        _window.Activate();
+    }
+
+    private void GoToWindow(AgentSession session)
+    {
+        if (_agents.WindowOwner(session.Id) is not { } owner)
+        {
+            return;
+        }
+        _agents.MarkRead(session.Id);
+        // The keyboard goes to the window being brought forward, not back to whatever had it before.
+        _previousForeground = IntPtr.Zero;
+        Collapse();
+        SessionWindows.BringForward(owner, session.Project);
+    }
+
+    /// <summary>Shortcut: open on the oldest waiting card (else the most urgent session) and take the keyboard.</summary>
+    public void JumpToWaitingAgent()
+    {
+        if (_window is null || _suspendedForFullscreen)
+        {
+            return;
+        }
+        _agentsFocus = _agents.Requests.FirstOrDefault()?.SessionId ?? _agents.Board.MostUrgent?.Id;
+        _sectionsOpen = false;
+        Expand(takeFocus: true, IslandModule.FaqraAgents);
+    }
+
+    /// <summary>Shortcut: bring the focused (else the most urgent) session's window forward.</summary>
+    public void GoToAgentWindow()
+    {
+        if ((_agentsModule?.FocusedSession ?? _agents.Board.MostUrgent) is { } session)
+        {
+            GoToWindow(session);
+        }
+    }
+
+    /// <summary>Shortcut: the next (+1) or previous (-1) session, opening the island on Agents first.</summary>
+    public void CycleAgentSession(int delta)
+    {
+        if (_window is null || _suspendedForFullscreen)
+        {
+            return;
+        }
+        if (IsShowingAgents())
+        {
+            _agentsModule!.MoveFocus(delta);
+            return;
+        }
+        _agentsFocus = _agents.Board.MostUrgent?.Id;
+        _sectionsOpen = false;
+        Expand(takeFocus: false, IslandModule.FaqraAgents);
+    }
+
     // MARK: environment
 
     private void OnOutsidePress(Faqra.Win32.Native.POINT point)
@@ -628,6 +774,9 @@ public sealed class IslandController : IDisposable
         _store.Changed -= OnSettingChanged;
         _nowPlaying.Changed -= OnNowPlayingChanged;
         _agents.Changed -= OnAgentsChanged;
+        _agents.RequestArrived -= OnAgentRequest;
+        _agents.TurnFinished -= OnAgentFinished;
+        _agents.CanAsk = () => false;
         _outsideClick.Dispose();
         Stop();
     }

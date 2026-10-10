@@ -53,7 +53,9 @@ public sealed class AppServices : IDisposable
             AgentPipe.Name(WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName, Environment.GetEnvironmentVariable),
             new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher),
             () => DateTimeOffset.Now,
-            AppPaths.AgentsLogFile);
+            AppPaths.AgentsLogFile,
+            SessionWindows.Locate,
+            SessionTitles.DefaultProjectsRoot);
         FeatureRuntime = new FeatureRuntime(store, Bindings());
         Island = new IslandController(store, FeatureRuntime, NowPlaying, Monitor, Mixer, Agents);
     }
@@ -131,6 +133,10 @@ public sealed class AppServices : IDisposable
         HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.KeepAwake, KeepAwake.Session.Toggle);
         CommandBar = new CommandBar.CommandBarController(this);
         HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.CommandBar, CommandBar.Toggle);
+        HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.AgentsJumpToWaiting, Island.JumpToWaitingAgent);
+        HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.AgentsGoToWindow, Island.GoToAgentWindow);
+        HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.AgentsNextSession, () => Island.CycleAgentSession(1));
+        HotKeys.Bind(Core.Shortcuts.GlobalShortcutRole.AgentsPreviousSession, () => Island.CycleAgentSession(-1));
         FeatureRuntime.SyncAtLaunch();
         KeepAwake.Start(SystemEvents);
         // Tray metrics switched on in a previous session need sampling from the first second.
@@ -156,6 +162,7 @@ public sealed class AppServices : IDisposable
                 RelayDeployment.Ensure(AppContext.BaseDirectory, AppPaths.AgentsRelayFile);
             }
             Agents.SetRunning(on);
+            HotKeys?.Sync();
             if (FeatureRuntime.IsAvailable(AppFeature.Notch))
             {
                 Island.SyncWithPreferences();
