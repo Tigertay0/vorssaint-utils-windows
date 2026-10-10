@@ -132,9 +132,9 @@ the outside.
   clicking elsewhere keeps the card behind the pill. A huge request (over about 1 MB once escaped)
   gets no card and is answered in Claude Code.
 - **Questions need an interactive session.** Claude Code offers AskUserQuestion only in sessions
-  with a permission host, so `claude -p` runs never show a question card. Free-text answers (the
-  "Your own answer" box) go back as the answer itself; A2's live check could not try this in a
-  headless run.
+  with a permission host, so `claude -p` runs never show a question card. In an interactive session
+  (checked live 2026-10-10) every option shows, several picks go back joined with commas, and words
+  typed in "Your own answer" go back as the answer itself.
 - **Always allow is offered only when Claude Code suggests a rule.** Faqra keeps only "allow" rules
   (saved to the project's `.claude/settings.local.json`) and "accept edits" for the session. A
   command that writes outside the working folders, for example, comes with a "add this folder"
