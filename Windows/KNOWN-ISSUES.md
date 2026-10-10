@@ -124,9 +124,23 @@ the outside.
   but records whatever path the build currently sits at, which breaks if that folder moves.
 - **Only English ships.** The twelve other languages resolve to English by design until their
   catalogs are ported.
-- **Agents only watches for now.** The island shows each Claude Code session's orb, state and recent
-  steps, but approving a tool, answering a question, replying when a turn ends and jumping to the
-  session's window come in A2 and A3. Until then Claude Code still asks in its own window.
+- **Replying to Claude comes in A3.** The island approves tools, answers questions, opens when a turn
+  ends and goes to the session's window (A2), but the "Has answered" card has no reply box yet, and
+  Claude's words show as plain text with their Markdown marks.
+- **A waiting card holds Claude Code's own prompt.** While a card waits (up to 108 s), Claude Code
+  waits on Faqra's hook. Esc, the collapse button or "Answer in Claude Code" let it go at once;
+  clicking elsewhere keeps the card behind the pill. A huge request (over about 1 MB once escaped)
+  gets no card and is answered in Claude Code.
+- **Questions need an interactive session.** Claude Code offers AskUserQuestion only in sessions
+  with a permission host, so `claude -p` runs never show a question card. Free-text answers (the
+  "Your own answer" box) go back as the answer itself; A2's live check could not try this in a
+  headless run.
+- **Always allow is offered only when Claude Code suggests a rule.** Faqra keeps only "allow" rules
+  (saved to the project's `.claude/settings.local.json`) and "accept edits" for the session. A
+  command that writes outside the working folders, for example, comes with a "add this folder"
+  suggestion instead, which Faqra drops, so its card has no Always allow.
+- **A session shows its folder until Claude names it.** Claude Code writes the conversation's title
+  into the transcript after the first exchange; a name you give with `/rename` wins.
 - **A busy session that goes quiet for 30 minutes rests.** A session left Working, Thinking or in an
   error with no hook event for 30 minutes shows as Idle, since a crashed or killed Claude Code never
   sends SessionEnd. Sessions waiting on an approval or a question are kept.

@@ -106,6 +106,8 @@ how Windows reports reduced motion.
 | Component | Source | What changed |
 |---|---|---|
 | Thinking orb (`OrbView`) | [Thinking Orbs](https://21st.dev/@yogesharc/components/thinking-orbs), yogesharc, MIT | Ported from SVG to a WPF `FrameworkElement`; the math is unchanged and tested frame by frame against the original. Ink comes from the agent's tone (the island palette plus Windows 11's dark caution, critical and success colours), never a hard-coded per-orb colour. It animates only while on screen and holds one frame when Windows' animations are off. |
+| Agent cards (approval, question, answered; `AgentCards.cs`) | Coucou's cards (MIT code, none of its look) | A `Fill` panel with a 12px radius and 12px padding, a 13px semibold "name · what" title, then the content. Pill buttons: the primary is filled with `Accent` and carries dark `Surface` text, secondary ones use `FillStrong`; hover lightens, press scales to 0.97, disabled dims, keyboard focus draws a 2px `Primary` outline. Allow is never a default button. The way out ("Answer in Claude Code") is a quiet text button under the actions. Commands and Claude's words sit in bounded scroll areas (120px and 160px) so nothing is cut unseen. Questions use the Fluent dark radio buttons, check boxes and text box. |
+| Agents shortcuts | Faqra-only | Ctrl+Alt+Win+A opens the waiting card with the keyboard, G goes to the session's window, Down and Up switch sessions; all behind one switch on the Agents page. |
 
 ## Verification
 

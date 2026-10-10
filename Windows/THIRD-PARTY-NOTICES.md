@@ -28,7 +28,8 @@ IN THE SOFTWARE.
 
 ## Coucou
 
-The agent hook contract, relay protocol, session rules and reviewed config install in `src/Faqra.Core/Agents`,
+The agent hook contract, relay protocol, session rules, permission replies, question answers, session window
+lookup and reviewed config install in `src/Faqra.Core/Agents`,
 `src/Faqra.Hook`, `src/Faqra.Services/Agents` and the Agents settings page are ported from
 https://github.com/Louis-CFM/coucou. Only Coucou's code is used. Its names, its Mochi character, icons and sounds
 are not part of Faqra (see Coucou's LICENSE-ASSETS.md).
