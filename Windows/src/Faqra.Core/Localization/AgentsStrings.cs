@@ -54,6 +54,12 @@ public sealed partial class AgentsStrings
     public required string StateRateLimited { get; init; }
     public required string StateFinished { get; init; }
 
+    // Requests
+    public required string ApprovalRun { get; init; }
+    public required string ApprovalEdit { get; init; }
+    public required string ApprovalFetch { get; init; }
+    public required string ApprovalToolFormat { get; init; }
+
     // Ticker steps
     public required string StepPromptFormat { get; init; }
     public required string StepReadFormat { get; init; }

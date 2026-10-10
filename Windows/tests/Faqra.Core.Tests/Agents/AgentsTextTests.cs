@@ -49,4 +49,24 @@ public class AgentsTextTests
     public void NoStringUsesADash() =>
         Assert.All(typeof(AgentsStrings).GetProperties().Where(p => p.PropertyType == typeof(string)),
             p => Assert.DoesNotMatch("[\u2013\u2014]", (string)p.GetValue(S)!));
+
+    [Theory]
+    [InlineData("Bash", "Wants to run a command")]
+    [InlineData("PowerShell", "Wants to run a command")]
+    [InlineData("Edit", "Wants to edit a file")]
+    [InlineData("Write", "Wants to edit a file")]
+    [InlineData("WebFetch", "Wants to open a web page")]
+    [InlineData("mcp__github__create_issue", "Wants to use mcp__github__create_issue")]
+    public void ARequestSaysWhatClaudeWants(string tool, string title)
+    {
+        var request = new AgentRequest("r", "s", AgentRequestKind.Approval, tool, "", [], [], false, DateTimeOffset.Now);
+        Assert.Equal(title, AgentsText.RequestTitle(request, Faqra.Core.Localization.AgentsStrings.EnUS));
+    }
+
+    [Fact]
+    public void AQuestionSaysSo()
+    {
+        var request = new AgentRequest("r", "s", AgentRequestKind.Question, "AskUserQuestion", "", [], [], false, DateTimeOffset.Now);
+        Assert.Equal("Has a question", AgentsText.RequestTitle(request, Faqra.Core.Localization.AgentsStrings.EnUS));
+    }
 }

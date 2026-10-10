@@ -46,6 +46,17 @@ public static class AgentsText
             ? Step(session.Steps[^1], s)
             : State(session, s);
 
+    /// <summary>A card's headline: what Claude wants, in the owner's words.</summary>
+    public static string RequestTitle(AgentRequest request, AgentsStrings s) => request.Kind == AgentRequestKind.Question
+        ? s.StateQuestion
+        : request.ToolName switch
+        {
+            "Bash" or "PowerShell" => s.ApprovalRun,
+            "Edit" or "MultiEdit" or "Write" or "NotebookEdit" => s.ApprovalEdit,
+            "WebFetch" => s.ApprovalFetch,
+            _ => Format(s.ApprovalToolFormat, request.ToolName),
+        };
+
     public static string Elapsed(TimeSpan span, AgentsStrings s) =>
         span < TimeSpan.FromMinutes(1) ? s.ElapsedNow
         : span < TimeSpan.FromHours(1) ? Format(s.ElapsedMinutesFormat, (int)span.TotalMinutes)

@@ -28,8 +28,20 @@ public sealed record AgentSession(
     DateTimeOffset UpdatedAt,
     DateTimeOffset? FinishedAt)
 {
+    /// <summary>The conversation's name in Claude Code (the owner's rename, else Claude's title), once known.</summary>
+    public string? Title { get; init; }
+
+    /// <summary>The owner's last prompt, as the relay forwarded it (up to 2,000 characters).</summary>
+    public string? LastPrompt { get; init; }
+
+    /// <summary>Claude finished a turn with something to say and the owner has not opened it yet.</summary>
+    public bool Unread { get; init; }
+
     /// <summary>The folder the session runs in, as the owner calls the project.</summary>
     public string Project => Cwd.Length == 0 ? Id : Path.GetFileName(Cwd.TrimEnd('\\', '/')) is { Length: > 0 } name ? name : Cwd;
+
+    /// <summary>What the island calls the session: its conversation's name, else its folder.</summary>
+    public string Name => Title is { Length: > 0 } title ? title : Project;
 }
 
 /// <summary>Every agent session Faqra knows about. Immutable: Apply and Tick return a new board.</summary>
@@ -103,6 +115,36 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
         return ReferenceEquals(sessions, Sessions) ? this : this with { Sessions = sessions };
     }
 
+    /// <summary>The owner answered a waiting request: the tool runs (allowed) or Claude reads the refusal (denied).</summary>
+    public AgentBoard Answered(string sessionId, bool allowed, DateTimeOffset now) =>
+        Sessions.TryGetValue(sessionId, out var s) && s.State is AgentState.Approval or AgentState.Question
+            ? this with { Sessions = Sessions.SetItem(sessionId, s with { State = allowed ? AgentState.Working : AgentState.Thinking, UpdatedAt = now }) }
+            : this;
+
+    /// <summary>Names a session after its conversation; the same board when nothing changes.</summary>
+    public AgentBoard Titled(string sessionId, string title) =>
+        Sessions.TryGetValue(sessionId, out var s) && s.Title != title
+            ? this with { Sessions = Sessions.SetItem(sessionId, s with { Title = title }) }
+            : this;
+
+    /// <summary>The owner has seen the session's latest answer.</summary>
+    public AgentBoard MarkRead(string sessionId) =>
+        Sessions.TryGetValue(sessionId, out var s) && s.Unread
+            ? this with { Sessions = Sessions.SetItem(sessionId, s with { Unread = false }) }
+            : this;
+
+    private static AgentSession Finished(AgentSession s, AgentEvent e, DateTimeOffset now)
+    {
+        var said = e.LastAssistantMessage ?? e.Message;
+        return s with
+        {
+            State = AgentState.Finished,
+            FinishedAt = now,
+            LastMessage = said ?? s.LastMessage,
+            Unread = said is { Length: > 0 },
+        };
+    }
+
     private static bool IsStale(AgentSession session, DateTimeOffset now) =>
         session.State is AgentState.Thinking or AgentState.Working or AgentState.Searching or AgentState.Compacting
             or AgentState.Background or AgentState.Error
@@ -113,13 +155,13 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
     private static AgentSession? Next(AgentSession s, AgentEvent e, DateTimeOffset now) => e.Event switch
     {
         "SessionStart" => s,
-        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
+        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null, LastPrompt = e.Prompt ?? s.LastPrompt, Unread = false }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
         "PreToolUse" => ToolStep(s with { State = e.ToolName is { } t && SearchTools.Contains(t) ? AgentState.Searching : AgentState.Working }, e, now),
         "PostToolUse" => s with { State = AgentState.Working },
         "PostToolUseFailure" => Step(s with { State = AgentState.Working }, now, AgentStepKind.Failed, e.ToolName ?? string.Empty),
         "PermissionRequest" => s with { State = e.ToolName == "AskUserQuestion" ? AgentState.Question : AgentState.Approval },
         "Notification" => Notified(s, e.Message ?? string.Empty),
-        "Stop" => s with { State = AgentState.Finished, FinishedAt = now, LastMessage = e.LastAssistantMessage ?? e.Message ?? s.LastMessage },
+        "Stop" => Finished(s, e, now),
         "StopFailure" => s with { State = AgentState.Error, LastMessage = e.Message ?? s.LastMessage },
         "SubagentStart" => s with { Subagents = s.Subagents + 1, State = s.State == AgentState.Idle ? AgentState.Background : s.State },
         "SubagentStop" => SubagentDone(s, now),

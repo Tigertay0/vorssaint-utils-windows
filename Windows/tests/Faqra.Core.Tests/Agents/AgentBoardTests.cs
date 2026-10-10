@@ -268,4 +268,65 @@ public class AgentBoardTests
         Assert.Equal(tone, style.Tone);
         Assert.Equal(state == AgentState.Idle ? 0.5 : 1, style.Speed);
     }
+
+    private static AgentBoard With(params string[] lines)
+    {
+        var board = AgentBoard.Empty;
+        foreach (var line in lines)
+        {
+            board = board.Apply(AgentEvent.TryParse(line)!, new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero));
+        }
+        return board;
+    }
+
+    [Fact]
+    public void AnAnsweredRequestMovesTheSessionOn()
+    {
+        var now = new DateTimeOffset(2026, 10, 10, 9, 1, 0, TimeSpan.Zero);
+        var waiting = With("{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s\",\"tool_name\":\"Bash\"}");
+        Assert.Equal(AgentState.Working, waiting.Answered("s", allowed: true, now).Sessions["s"].State);
+        Assert.Equal(AgentState.Thinking, waiting.Answered("s", allowed: false, now).Sessions["s"].State);
+        Assert.Equal(now, waiting.Answered("s", allowed: true, now).Sessions["s"].UpdatedAt);
+
+        var busy = With("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Bash\"}");
+        Assert.Same(busy, busy.Answered("s", allowed: true, now));
+        Assert.Same(busy, busy.Answered("other", allowed: true, now));
+    }
+
+    [Fact]
+    public void ASessionRemembersTheLastPromptInFull()
+    {
+        var prompt = "Please refactor the relay so it waits for a decision on permission requests, then run the tests";
+        var board = With($"{{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"{prompt}\"}}");
+        Assert.Equal(prompt, board.Sessions["s"].LastPrompt);
+    }
+
+    [Fact]
+    public void AFinishedTurnIsUnreadUntilReadOrANewPrompt()
+    {
+        var finished = With(
+            "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"go\"}",
+            "{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"All done.\"}");
+        Assert.True(finished.Sessions["s"].Unread);
+        Assert.False(finished.MarkRead("s").Sessions["s"].Unread);
+        Assert.Same(finished, finished.MarkRead("other"));
+        var next = finished.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"more\"}")!, DateTimeOffset.Now);
+        Assert.False(next.Sessions["s"].Unread);
+
+        var silent = With("{\"hook_event_name\":\"Stop\",\"session_id\":\"q\"}");
+        Assert.False(silent.Sessions["q"].Unread);
+    }
+
+    [Fact]
+    public void ASessionIsNamedAfterItsConversation()
+    {
+        var board = With("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s\",\"cwd\":\"C:\\\\code\\\\Windows\"}");
+        Assert.Equal("Windows", board.Sessions["s"].Name);
+        var titled = board.Titled("s", "Faqra milestones 5 and 6");
+        Assert.Equal("Faqra milestones 5 and 6", titled.Sessions["s"].Name);
+        Assert.Same(titled, titled.Titled("s", "Faqra milestones 5 and 6"));
+        Assert.Same(board, board.Titled("other", "x"));
+        var later = titled.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Read\"}")!, DateTimeOffset.Now);
+        Assert.Equal("Faqra milestones 5 and 6", later.Sessions["s"].Name);
+    }
 }
