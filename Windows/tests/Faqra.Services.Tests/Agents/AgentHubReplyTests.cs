@@ -121,6 +121,28 @@ public class AgentHubReplyTests
     }
 
     [Fact]
+    public async Task TheHoldLineDoesNotWaitForTheIslandsHandlers()
+    {
+        var pipe = NewPipe();
+        using var context = new SerialContext();
+        var handlerDone = 0;
+        using var hub = Hub(context, pipe, _ => TimeSpan.FromMinutes(1));
+        hub.TurnFinished += _ =>
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(1.5));
+            Volatile.Write(ref handlerDone, 1);
+        };
+        using var relay = await FakeRelay.SendAsync(pipe, Asked);
+
+        var line = await relay.ReplyAsync(Within);
+
+        Assert.Equal(StopReply.HoldLine, line);
+        Assert.Equal(0, Volatile.Read(ref handlerDone));
+        await OnContext(context, () => 0);
+        Assert.Equal(1, Volatile.Read(ref handlerDone));
+    }
+
+    [Fact]
     public async Task AThrowingHoldForLetsTheTurnEnd()
     {
         var pipe = NewPipe();

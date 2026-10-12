@@ -400,6 +400,8 @@ public sealed class AgentHub : IDisposable
                     Board = Board.AwaitingReply(finished.Id, now);
                 }
             }
+            // The relay is waiting for the hold line inside its run budget: send it before the island's handlers run.
+            held.TrySetResult(window);
             Changed?.Invoke();
             // A held turn always tells the island, even with no words to read: Claude is waiting on the owner.
             if (Board.Sessions.TryGetValue(e.SessionId, out var session) && (session.Unread || window is not null))
