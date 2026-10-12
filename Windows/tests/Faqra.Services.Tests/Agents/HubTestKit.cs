@@ -10,6 +10,8 @@ internal sealed class FakeRelay : IDisposable
 
     private FakeRelay(NamedPipeClientStream pipe) => _pipe = pipe;
 
+    private StreamReader? _reader;
+
     public static async Task<FakeRelay> SendAsync(string pipeName, string line)
     {
         var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly | PipeOptions.Asynchronous);
@@ -19,13 +21,18 @@ internal sealed class FakeRelay : IDisposable
         return new FakeRelay(pipe);
     }
 
+    /// <summary>The next line Faqra writes, or null once it hangs up. One reader per relay, so a buffered second line is not lost.</summary>
     public async Task<string?> ReplyAsync(TimeSpan within)
     {
-        using var reader = new StreamReader(_pipe, Encoding.UTF8, false, 1024, leaveOpen: true);
-        return await reader.ReadLineAsync().WaitAsync(within);
+        _reader ??= new StreamReader(_pipe, Encoding.UTF8, false, 1024, leaveOpen: true);
+        return await _reader.ReadLineAsync().WaitAsync(within);
     }
 
-    public void Dispose() => _pipe.Dispose();
+    public void Dispose()
+    {
+        _reader?.Dispose();
+        _pipe.Dispose();
+    }
 }
 
 internal static class HubTestKit

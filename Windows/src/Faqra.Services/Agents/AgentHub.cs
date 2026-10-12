@@ -13,8 +13,9 @@ using Faqra.Win32.Agents;
 namespace Faqra.Services.Agents;
 
 /// <summary>
-/// Listens on the agents pipe and folds every event into <see cref="Board"/>. A permission request keeps its
-/// connection open while a card shows it, and the owner's choice goes back on that same connection. The board and the
+/// Listens on the agents pipe and folds every event into <see cref="Board"/>. A permission request, or a finished turn
+/// held for the owner's reply, keeps its connection open while a card shows it, and the owner's choice goes back on that
+/// same connection. The board and the
 /// requests are read and replaced only on the given context's thread (the UI thread in the app), and every event the
 /// hub raises is raised there.
 /// </summary>
@@ -78,6 +79,13 @@ public sealed class AgentHub : IDisposable
     /// </summary>
     public Func<bool> CanAsk { get; set; } = () => false;
 
+    /// <summary>
+    /// How long to hold a finished turn open for the owner's reply, or null to let Claude stop at once. Asked on the
+    /// context's thread for each Stop, with the turn's words already on the board and before <see cref="TurnFinished"/>,
+    /// so "the island is open on it" means the owner was already looking. Nothing is held until the island sets it.
+    /// </summary>
+    public Func<AgentSession, TimeSpan?> HoldFor { get; set; } = _ => null;
+
     /// <summary>How long a card waits; tests shorten it.</summary>
     internal TimeSpan DecisionWait { get; set; } = DecisionTimeout;
 
@@ -105,6 +113,17 @@ public sealed class AgentHub : IDisposable
     public void MarkRead(string sessionId)
     {
         var next = Board.MarkRead(sessionId);
+        if (!ReferenceEquals(next, Board))
+        {
+            Board = next;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Holds (or stops holding) every finished turn of a session for the owner's reply. Call on the context's thread.</summary>
+    public void SetRepliesOn(string sessionId, bool on)
+    {
+        var next = Board.SetRepliesOn(sessionId, on);
         if (!ReferenceEquals(next, Board))
         {
             Board = next;
@@ -231,6 +250,11 @@ public sealed class AgentHub : IDisposable
                 await ServeRequest(connection, e, title, token).ConfigureAwait(false);
                 return;
             }
+            if (e.Event == "Stop")
+            {
+                await ServeStop(connection, e, title, token).ConfigureAwait(false);
+                return;
+            }
             Post(() =>
             {
                 // A run that was stopped meanwhile must not put sessions back on the emptied board.
@@ -245,10 +269,6 @@ public sealed class AgentHub : IDisposable
                     ReleaseSession(e.SessionId);
                 }
                 Changed?.Invoke();
-                if (e.Event == "Stop" && Board.Sessions.TryGetValue(e.SessionId, out var session) && session.Unread)
-                {
-                    TurnFinished?.Invoke(session);
-                }
             });
         }
     }
@@ -278,11 +298,20 @@ public sealed class AgentHub : IDisposable
             return;
         }
 
+        await WaitAndAnswer(connection, id, decided, DecisionWait, token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Waits for the owner's choice on a held connection, the relay hanging up (Claude Code ended the hook), the wait
+    /// running out, or a stop. Writes only a choice; anything else lets the request go and closes without a word.
+    /// </summary>
+    private async Task WaitAndAnswer(NamedPipeServerStream connection, string id, TaskCompletionSource<AgentDecision?> decided, TimeSpan wait, CancellationToken token)
+    {
         AgentDecision? decision;
         using (var waiting = CancellationTokenSource.CreateLinkedTokenSource(token))
         {
             var hangUp = HangUp(connection, waiting.Token);
-            var timeout = Task.Delay(DecisionWait, waiting.Token);
+            var timeout = Task.Delay(wait, waiting.Token);
             var first = await Task.WhenAny(decided.Task, hangUp, timeout).ConfigureAwait(false);
             decision = first == decided.Task ? await decided.Task.ConfigureAwait(false) : null;
             // Stop watching for the hang-up before writing on the same pipe.
@@ -301,7 +330,99 @@ public sealed class AgentHub : IDisposable
         }
         catch (IOException)
         {
-            // The relay left between the click and the write: Claude Code asks in its own UI.
+            // The relay left between the click and the write: Claude Code carries on as if nobody had answered.
+        }
+    }
+
+    /// <summary>
+    /// A finished turn. Faqra answers at once: it hangs up (Claude stops as usual) or sends the hold line and keeps the
+    /// turn open until the owner replies, presses Done, the window runs out, the turn moves on, the relay hangs up, or
+    /// Faqra stops.
+    /// </summary>
+    private async Task ServeStop(NamedPipeServerStream connection, AgentEvent e, string? title, CancellationToken token)
+    {
+        var id = Guid.NewGuid().ToString("N");
+        var decided = new TaskCompletionSource<AgentDecision?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = new TaskCompletionSource<TimeSpan?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Post(() => Finish(id, e, title, decided, held, token));
+        TimeSpan? window;
+        try
+        {
+            window = await held.Task.WaitAsync(token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        if (window is not { } length)
+        {
+            return;
+        }
+        try
+        {
+            await connection.WriteAsync(Encoding.UTF8.GetBytes(StopReply.HoldLine + "\n")).ConfigureAwait(false);
+            await connection.FlushAsync().ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            // The relay already gave up waiting for the hold: the turn ends as it would have.
+            Post(() => Settle(id, null));
+            return;
+        }
+        await WaitAndAnswer(connection, id, decided, length, token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Folds a finished turn into the board and, when <see cref="HoldFor"/> says so, opens a reply window on it. Always
+    /// completes <paramref name="held"/> with the window's length, or null to let Claude stop at once; if anything throws
+    /// (the island's delegate or a handler) the turn is let go. Runs on the context's thread.
+    /// </summary>
+    private void Finish(string id, AgentEvent e, string? title, TaskCompletionSource<AgentDecision?> decided, TaskCompletionSource<TimeSpan?> held, CancellationToken token)
+    {
+        TimeSpan? window = null;
+        try
+        {
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+            var now = _now();
+            Board = Fold(e, title, now);
+            Log(e);
+            ReleaseSession(e.SessionId);
+            if (Board.Sessions.TryGetValue(e.SessionId, out var finished))
+            {
+                window = HoldFor(finished);
+                if (window is { } length)
+                {
+                    Requests = Requests.Add(AgentRequest.ForReply(id, finished.Id, now, now + length));
+                    _waiting[id] = decided;
+                    Board = Board.AwaitingReply(finished.Id, now);
+                }
+            }
+            Changed?.Invoke();
+            // A held turn always tells the island, even with no words to read: Claude is waiting on the owner.
+            if (Board.Sessions.TryGetValue(e.SessionId, out var session) && (session.Unread || window is not null))
+            {
+                TurnFinished?.Invoke(session);
+            }
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceWarning($"Faqra agents stop: {ex.GetType().Name}: {ex.Message}");
+            window = null;
+            try
+            {
+                Settle(id, null);
+            }
+            catch (Exception inner)
+            {
+                Trace.TraceWarning($"Faqra agents stop: {inner.GetType().Name}: {inner.Message}");
+            }
+        }
+        finally
+        {
+            held.TrySetResult(window);
         }
     }
 
@@ -375,9 +496,15 @@ public sealed class AgentHub : IDisposable
         }
         var request = Requests.Find(r => r.Id == requestId);
         Requests = Requests.RemoveAll(r => r.Id == requestId);
-        if (decision is not null && request is not null)
+        if (request is not null)
         {
-            Board = Board.Answered(request.SessionId, allowed: decision.Kind != AgentDecisionKind.Deny, _now());
+            Board = (request.Kind, decision) switch
+            {
+                (AgentRequestKind.Reply, { Kind: AgentDecisionKind.Reply, Message: { } words }) => Board.Replied(request.SessionId, words, _now()),
+                (AgentRequestKind.Reply, _) => Board.ReplyClosed(request.SessionId),
+                (_, { } chosen) => Board.Answered(request.SessionId, allowed: chosen.Kind != AgentDecisionKind.Deny, _now()),
+                _ => Board,
+            };
         }
         waiting.TrySetResult(decision);
         if (request is not null)
@@ -524,9 +651,11 @@ public sealed class AgentHub : IDisposable
             AgentDecisionKind.Always => "always",
             AgentDecisionKind.Deny => "deny",
             AgentDecisionKind.Answer => "answered",
+            AgentDecisionKind.Reply => "replied",
             _ => "released",
         };
-        WriteLog($"{_now():O} Decision {Short(request.SessionId)} {request.ToolName} {outcome}");
+        var tool = request.ToolName.Length > 0 ? request.ToolName : "-";
+        WriteLog($"{_now():O} Decision {Short(request.SessionId)} {tool} {outcome}");
     }
 
     private static string Short(string sessionId) => sessionId.Length > 8 ? sessionId[..8] : sessionId;
