@@ -129,10 +129,6 @@ the outside.
   Code waits on Faqra's Stop hook for up to the reply window (5 minutes by default, at most 8). Done,
   Esc, the collapse button or a new prompt in Claude Code let it go at once. A reply typed when the
   window runs out is not kept.
-- **While the island stays open on a session, each answer waits again.** After you reply from the
-  island, Claude's next answer is held too if the island is still showing that session (checked live
-  2026-10-12: the answer waited the full 5 minutes until the window ran out). Press Done, or click
-  away so the island collapses, to let Claude Code finish.
 - **Unattended `claude -p` runs can be held.** A scripted run (a nightly automation, for example)
   whose last message asks something waits up to the reply window while the island is on. Claude
   Code's hook payload has no reliable "unattended" flag, so Faqra cannot tell it apart yet.

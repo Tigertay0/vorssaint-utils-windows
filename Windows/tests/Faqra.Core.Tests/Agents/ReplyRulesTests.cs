@@ -38,6 +38,18 @@ public class ReplyRulesTests
     }
 
     [Fact]
+    public void AfterAnIslandReplyLookingIsNotEnough()
+    {
+        // The owner's reply went to Claude from the island: its answer goes through though the island still shows it.
+        var answered = Finished("Done, the button is blue now.") with { TurnFromIsland = true };
+        Assert.Null(ReplyRules.HoldFor(answered, true, watching: true, opensOnAnswer: true, 300));
+        // It still waits when Claude asks something, or when the owner switched replies on.
+        var asks = Finished("Blue it is. Should I change the border too?") with { TurnFromIsland = true };
+        Assert.NotNull(ReplyRules.HoldFor(asks, true, watching: true, opensOnAnswer: true, 300));
+        Assert.NotNull(ReplyRules.HoldFor(answered with { RepliesOn = true }, true, watching: true, opensOnAnswer: false, 300));
+    }
+
+    [Fact]
     public void NoCardMeansNoHold() =>
         Assert.Null(ReplyRules.HoldFor(Finished("Which one?", repliesOn: true), cardsCanShow: false, watching: true, opensOnAnswer: true, 300));
 

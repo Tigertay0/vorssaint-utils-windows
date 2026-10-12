@@ -381,6 +381,22 @@ public class AgentBoardTests
     }
 
     [Fact]
+    public void AnIslandReplyMarksTheTurnUntilTheNextPrompt()
+    {
+        var now = DateTimeOffset.Now;
+        var replied = With("{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"Red or blue?\"}")
+            .Replied("s", "Blue", now);
+        Assert.True(replied.Sessions["s"].TurnFromIsland);
+        // Tool use and the turn's end are still that same turn.
+        var finished = replied
+            .Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Edit\"}")!, now)
+            .Apply(AgentEvent.TryParse("{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"Done.\"}")!, now);
+        Assert.True(finished.Sessions["s"].TurnFromIsland);
+        var prompt = finished.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"x\"}")!, now);
+        Assert.False(prompt.Sessions["s"].TurnFromIsland);
+    }
+
+    [Fact]
     public void TheReplySwitchIsPerSession()
     {
         var board = With("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s\"}");

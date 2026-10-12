@@ -43,6 +43,9 @@ public sealed record AgentSession(
     /// <summary>The owner wants every finished turn of this session held for a reply.</summary>
     public bool RepliesOn { get; init; }
 
+    /// <summary>This turn began with the owner's reply from the island; it lasts until a prompt typed in Claude Code.</summary>
+    public bool TurnFromIsland { get; init; }
+
     /// <summary>The folder the session runs in, as the owner calls the project.</summary>
     public string Project => Cwd.Length == 0 ? Id : Path.GetFileName(Cwd.TrimEnd('\\', '/')) is { Length: > 0 } name ? name : Cwd;
 
@@ -162,6 +165,7 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
             Unread = false,
             LastPrompt = text,
             ConsecutiveReplies = s.ConsecutiveReplies + 1,
+            TurnFromIsland = true,
             UpdatedAt = now,
         };
         return this with { Sessions = Sessions.SetItem(sessionId, Step(carrying, now, AgentStepKind.Prompt, OneLine(text, PromptChars))) };
@@ -201,7 +205,7 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
     private static AgentSession? Next(AgentSession s, AgentEvent e, DateTimeOffset now) => e.Event switch
     {
         "SessionStart" => s,
-        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null, LastPrompt = e.Prompt ?? s.LastPrompt, Unread = false, ConsecutiveReplies = 0 }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
+        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null, LastPrompt = e.Prompt ?? s.LastPrompt, Unread = false, ConsecutiveReplies = 0, TurnFromIsland = false }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
         "PreToolUse" => ToolStep(s with { State = e.ToolName is { } t && SearchTools.Contains(t) ? AgentState.Searching : AgentState.Working, ConsecutiveReplies = 0 }, e, now),
         "PostToolUse" => s with { State = AgentState.Working },
         "PostToolUseFailure" => Step(s with { State = AgentState.Working }, now, AgentStepKind.Failed, e.ToolName ?? string.Empty),

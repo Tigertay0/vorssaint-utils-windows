@@ -72,7 +72,9 @@ in its own UI as usual. The Stop hook's `timeout` is set above the reply window 
 
 **Reply window rules.** The relay holds Stop only when the owner has asked for replies on that
 session, or Claude's last message reads as a question to the owner, or the island is open on that
-session; otherwise Stop returns at once. Done, Esc, the window running out, or a new prompt from
+session; otherwise Stop returns at once. A turn the owner started by replying from the island is
+not held just because the island still shows it (owner, 2026-10-12): the reply goes to Claude, and
+Claude's answer waits only if it asks something or replies are on. Done, Esc, the window running out, or a new prompt from
 the terminal releases it. Claude Code caps consecutive Stop continuations at 8 (reset whenever
 Claude uses a tool); at the cap the reply box explains it and points to the Antigravity panel.
 
