@@ -127,11 +127,11 @@ public class RelayTests
     }
 
     [Fact]
-    public async Task AFaqraThatNeverAnswersAStopCostsAtMostTheRunBudget()
+    public void AFaqraThatNeverAnswersAStopCostsAtMostTheRunBudget()
     {
         var name = PipeName();
         using var server = Server(name);
-        var reading = Task.Run(async () =>
+        _ = Task.Run(async () => // never awaited: it outlives the relay on purpose
         {
             await server.WaitForConnectionAsync();
             using var reader = new StreamReader(server, Encoding.UTF8, false, 1024, leaveOpen: true);
