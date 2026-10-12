@@ -28,6 +28,9 @@ public static partial class Relay
     /// <summary>How long a permission request waits for the owner. Faqra lets go at 108 s; Claude Code's hook timeout is 120 s.</summary>
     public const int DecisionBudgetMs = 110_000;
 
+    /// <summary>How long a held turn waits for the owner's reply; Claude Code's Stop hook timeout is 600 s.</summary>
+    public const int ReplyBudgetMs = 590_000;
+
     /// <summary>Larger than any hook payload; anything bigger is not read whole.</summary>
     private const int MaxStdinBytes = 32 * 1024 * 1024;
 
@@ -42,22 +45,51 @@ public static partial class Relay
         {
             return 0;
         }
-        var talk = Task.Run(() => Talk(pipeName, outgoing.Line, outgoing.WaitsForAnswer));
-        var budget = outgoing.WaitsForAnswer ? DecisionBudgetMs : Math.Max(0, RunBudgetMs - (int)clock.ElapsedMilliseconds);
-        if (!talk.Wait(budget) || !outgoing.WaitsForAnswer)
+        if (outgoing.Wait == Waits.Reply)
+        {
+            return HoldTurn(pipeName, outgoing.Line, stdout, Math.Max(0, RunBudgetMs - (int)clock.ElapsedMilliseconds));
+        }
+        var waits = outgoing.Wait == Waits.Decision;
+        var talk = Task.Run(() => Talk(pipeName, outgoing.Line, waits));
+        var budget = waits ? DecisionBudgetMs : Math.Max(0, RunBudgetMs - (int)clock.ElapsedMilliseconds);
+        if (!talk.Wait(budget) || !waits)
         {
             return 0;
         }
-        if (PermissionReply.Stdout(outgoing.Request, AgentDecision.TryParse(talk.Result)) is { } reply)
+        Print(stdout, PermissionReply.Stdout(outgoing.Request, AgentDecision.TryParse(talk.Result)));
+        return 0;
+    }
+
+    /// <summary>
+    /// A finished turn: Faqra says at once whether it holds it for the owner's reply. Not held, or no answer inside the run
+    /// budget, and the relay ends with nothing printed. Held, and it waits up to <see cref="ReplyBudgetMs"/> for the reply,
+    /// which it prints for Claude to carry on with.
+    /// </summary>
+    private static int HoldTurn(string pipeName, string line, Stream stdout, int holdBudgetMs)
+    {
+        var held = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var talk = Task.Run(() => TalkHeld(pipeName, line, held));
+        if (!held.Task.Wait(holdBudgetMs) || !held.Task.Result || !talk.Wait(ReplyBudgetMs))
+        {
+            return 0;
+        }
+        Print(stdout, StopReply.Stdout(AgentDecision.TryParse(talk.Result)));
+        return 0;
+    }
+
+    private static void Print(Stream stdout, string? reply)
+    {
+        if (reply is not null)
         {
             stdout.Write(Encoding.UTF8.GetBytes(reply + "\n"));
             stdout.Flush();
         }
-        return 0;
     }
 
-    /// <summary>The line for Faqra and, for a permission request, the untrimmed payload its reply is built from.</summary>
-    private sealed record Outgoing(string Line, JsonObject Request, bool WaitsForAnswer);
+    private enum Waits { Nothing, Decision, Reply }
+
+    /// <summary>The line for Faqra; for a permission request also the untrimmed payload its reply is built from.</summary>
+    private sealed record Outgoing(string Line, JsonObject Request, Waits Wait);
 
     private static Outgoing? Prepare(string eventArg, Stream stdin, Func<string, string?> env, string cwd)
     {
@@ -67,16 +99,22 @@ public static partial class Relay
             {
                 return null;
             }
+            // A finished turn may be held for the owner's reply. StopFailure's name continues past "Stop", so the
+            // closing quote keeps it out.
+            if (line.Contains("\"hook_event_name\":\"Stop\"", StringComparison.Ordinal))
+            {
+                return new Outgoing(line, new JsonObject(), Waits.Reply);
+            }
             // Only a permission request needs the payload again, whole: Claude reads its own question back.
             var maybe = eventArg == "PermissionRequest" || line.Contains("\"hook_event_name\":\"PermissionRequest\"", StringComparison.Ordinal);
             if (!maybe || JsonNode.Parse(text.TrimStart('\uFEFF')) is not JsonObject request)
             {
-                return new Outgoing(line, new JsonObject(), false);
+                return new Outgoing(line, new JsonObject(), Waits.Nothing);
             }
             var name = request["hook_event_name"] is JsonValue value && value.GetValueKind() == JsonValueKind.String
                 ? value.GetValue<string>()
                 : eventArg;
-            return new Outgoing(line, request, name == "PermissionRequest");
+            return new Outgoing(line, request, name == "PermissionRequest" ? Waits.Decision : Waits.Nothing);
         }
         catch (Exception)
         {
@@ -101,7 +139,7 @@ public static partial class Relay
             pipe.Connect(ConnectBudgetMs);
             pipe.Write(Encoding.UTF8.GetBytes(line + "\n"));
             pipe.Flush();
-            return waitsForAnswer ? ReadReply(pipe) : null;
+            return waitsForAnswer ? new LineReader(pipe).Next() : null;
         }
         catch (Exception)
         {
@@ -109,24 +147,75 @@ public static partial class Relay
         }
     }
 
-    /// <summary>Up to the first newline, or until Faqra hangs up; nothing when it hung up without a word.</summary>
-    private static string? ReadReply(Stream pipe)
+    /// <summary>Sends the line, then reads Faqra's hold line and, once held, the reply line. Always completes <paramref name="held"/>.</summary>
+    private static string? TalkHeld(string pipeName, string line, TaskCompletionSource<bool> held)
     {
-        using var buffer = new MemoryStream();
-        var chunk = new byte[16 * 1024];
-        int read;
-        while ((read = pipe.Read(chunk, 0, chunk.Length)) > 0)
+        try
         {
-            var newline = Array.IndexOf(chunk, (byte)'\n', 0, read);
-            buffer.Write(chunk, 0, newline >= 0 ? newline : read);
-            if (newline >= 0 || buffer.Length > MaxReplyBytes)
+            if (!WaitNamedPipe(@"\\.\pipe\" + pipeName, ConnectBudgetMs))
             {
-                break;
+                return null;
+            }
+            using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
+            pipe.Connect(ConnectBudgetMs);
+            pipe.Write(Encoding.UTF8.GetBytes(line + "\n"));
+            pipe.Flush();
+            var lines = new LineReader(pipe);
+            if (lines.Next() != StopReply.HoldLine)
+            {
+                return null;
+            }
+            held.TrySetResult(true);
+            return lines.Next();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+        finally
+        {
+            held.TrySetResult(false);
+        }
+    }
+
+    /// <summary>Faqra's answer one line at a time: null once it hangs up with nothing more, or a line passes 1 MB.</summary>
+    private sealed class LineReader(Stream pipe)
+    {
+        private readonly MemoryStream _pending = new();
+        private readonly byte[] _chunk = new byte[16 * 1024];
+
+        public string? Next()
+        {
+            while (true)
+            {
+                var buffered = _pending.GetBuffer();
+                var newline = Array.IndexOf(buffered, (byte)'\n', 0, (int)_pending.Length);
+                if (newline >= 0)
+                {
+                    var text = Encoding.UTF8.GetString(buffered, 0, newline);
+                    var rest = buffered.AsSpan(newline + 1, (int)_pending.Length - newline - 1).ToArray();
+                    _pending.SetLength(0);
+                    _pending.Write(rest);
+                    return text;
+                }
+                if (_pending.Length > MaxReplyBytes)
+                {
+                    return null;
+                }
+                var read = pipe.Read(_chunk, 0, _chunk.Length);
+                if (read == 0)
+                {
+                    if (_pending.Length == 0)
+                    {
+                        return null;
+                    }
+                    var last = Encoding.UTF8.GetString(_pending.GetBuffer(), 0, (int)_pending.Length);
+                    _pending.SetLength(0);
+                    return last;
+                }
+                _pending.Write(_chunk, 0, read);
             }
         }
-        return buffer.Length == 0 || buffer.Length > MaxReplyBytes
-            ? null
-            : Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
     }
 
     [LibraryImport("kernel32.dll", EntryPoint = "WaitNamedPipeW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]

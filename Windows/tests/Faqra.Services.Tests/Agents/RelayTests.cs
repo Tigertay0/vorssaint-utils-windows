@@ -44,6 +44,145 @@ public class RelayTests
         return line;
     });
 
+    private const string StopLine = "{\"session_id\":\"s1\",\"hook_event_name\":\"Stop\",\"last_assistant_message\":\"Red or blue?\"}";
+
+    /// <summary>Plays Faqra holding a finished turn: reads the relay's line, writes the hold line (or not), waits, then the reply (or nothing), and hangs up.</summary>
+    private static Task<string?> FaqraHolds(NamedPipeServerStream server, bool hold, string? reply, int delayMs = 0) => Task.Run(async () =>
+    {
+        string? line = null;
+        try
+        {
+            await server.WaitForConnectionAsync();
+            using var reader = new StreamReader(server, Encoding.UTF8, false, 1024, leaveOpen: true);
+            line = await reader.ReadLineAsync();
+            if (hold)
+            {
+                await server.WriteAsync(Encoding.UTF8.GetBytes(Faqra.Core.Agents.StopReply.HoldLine + "\n"));
+                await server.FlushAsync();
+            }
+            await Task.Delay(delayMs);
+            if (reply is not null)
+            {
+                await server.WriteAsync(Encoding.UTF8.GetBytes(reply + "\n"));
+                await server.FlushAsync();
+            }
+        }
+        catch (IOException)
+        {
+            // The relay already left, which some tests expect.
+        }
+        server.Dispose();
+        return line;
+    });
+
+    [Fact]
+    public async Task AFinishedTurnNobodyHoldsEndsAtOnce()
+    {
+        var name = PipeName();
+        var faqra = FaqraHolds(Server(name), hold: false, reply: null);
+        using var stdout = new MemoryStream();
+        var clock = Stopwatch.StartNew();
+        Assert.Equal(0, Relay.Run(["Stop"], Stdin(StopLine), stdout, NoEnv, @"C:\work", name));
+        Assert.InRange(clock.ElapsedMilliseconds, 0, 1000);
+        Assert.Empty(stdout.ToArray());
+        Assert.Contains("\"hook_event_name\":\"Stop\"", await faqra);
+    }
+
+    [Fact]
+    public async Task AHeldTurnPrintsTheOwnersReply()
+    {
+        var name = PipeName();
+        var faqra = FaqraHolds(Server(name), hold: true, reply: "{\"decision\":\"reply\",\"message\":\"Blue, please\"}", delayMs: 300);
+        using var stdout = new MemoryStream();
+        Relay.Run(["Stop"], Stdin(StopLine), stdout, NoEnv, @"C:\work", name);
+        var printed = JsonNode.Parse(Printed(stdout))!["hookSpecificOutput"]!;
+        Assert.Equal("Stop", printed["hookEventName"]!.GetValue<string>());
+        Assert.EndsWith("Blue, please", printed["additionalContext"]!.GetValue<string>());
+        await faqra;
+    }
+
+    [Fact]
+    public async Task AHeldTurnWaitsBeyondTheRunBudget()
+    {
+        var name = PipeName();
+        var faqra = FaqraHolds(Server(name), hold: true, reply: "{\"decision\":\"reply\",\"message\":\"later\"}", delayMs: Relay.RunBudgetMs + 600);
+        using var stdout = new MemoryStream();
+        Relay.Run(["Stop"], Stdin(StopLine), stdout, NoEnv, @"C:\work", name);
+        Assert.Contains("later", Printed(stdout));
+        await faqra;
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("{\"decision\":\"allow\"}")]
+    [InlineData("not json")]
+    public async Task AHeldTurnLetGoPrintsNothing(string? reply)
+    {
+        var name = PipeName();
+        var faqra = FaqraHolds(Server(name), hold: true, reply: reply);
+        using var stdout = new MemoryStream();
+        Relay.Run(["Stop"], Stdin(StopLine), stdout, NoEnv, @"C:\work", name);
+        Assert.Empty(stdout.ToArray());
+        await faqra;
+    }
+
+    [Fact]
+    public async Task AFaqraThatNeverAnswersAStopCostsAtMostTheRunBudget()
+    {
+        var name = PipeName();
+        using var server = Server(name);
+        var reading = Task.Run(async () =>
+        {
+            await server.WaitForConnectionAsync();
+            using var reader = new StreamReader(server, Encoding.UTF8, false, 1024, leaveOpen: true);
+            await reader.ReadLineAsync();
+            await Task.Delay(Relay.RunBudgetMs + 3000); // never answers, never hangs up
+        });
+        using var stdout = new MemoryStream();
+        var clock = Stopwatch.StartNew();
+        Relay.Run(["Stop"], Stdin(StopLine), stdout, NoEnv, @"C:\work", name);
+        Assert.InRange(clock.ElapsedMilliseconds, 0, Relay.RunBudgetMs + 1500);
+        Assert.Empty(stdout.ToArray());
+    }
+
+    [Fact]
+    public void AFinishedTurnNeverWaitsWhenFaqraIsClosed()
+    {
+        Relay.Run(["Stop"], Stdin(StopLine), Stream.Null, NoEnv, @"C:\work", PipeName()); // warm up the JIT
+        var clock = Stopwatch.StartNew();
+        Relay.Run(["Stop"], Stdin(StopLine), Stream.Null, NoEnv, @"C:\work", PipeName());
+        Assert.InRange(clock.ElapsedMilliseconds, 0, 250);
+    }
+
+    [Fact]
+    public async Task AFailedTurnIsNeverHeld()
+    {
+        var name = PipeName();
+        var faqra = FaqraHolds(Server(name), hold: true, reply: "{\"decision\":\"reply\",\"message\":\"x\"}", delayMs: 200);
+        using var stdout = new MemoryStream();
+        var clock = Stopwatch.StartNew();
+        Relay.Run(["StopFailure"], Stdin("{\"session_id\":\"s1\",\"hook_event_name\":\"StopFailure\"}"), stdout, NoEnv, @"C:\work", name);
+        Assert.InRange(clock.ElapsedMilliseconds, 0, 1000);
+        Assert.Empty(stdout.ToArray());
+        await faqra;
+    }
+
+    [Fact]
+    public async Task AReplyComesBackAsUtf8()
+    {
+        const string words = "Oui, en bleu 🙂\nEt « merci ».";
+        var reply = new JsonObject { ["decision"] = "reply", ["message"] = words }.ToJsonString();
+        var name = PipeName();
+        var faqra = FaqraHolds(Server(name), hold: true, reply: reply);
+        using var stdout = new MemoryStream();
+        Relay.Run(["Stop"], Stdin(StopLine), stdout, NoEnv, @"C:\work", name);
+        var bytes = stdout.ToArray();
+        Assert.Equal((byte)'{', bytes[0]);
+        var said = JsonNode.Parse(Encoding.UTF8.GetString(bytes))!["hookSpecificOutput"]!["additionalContext"]!.GetValue<string>();
+        Assert.EndsWith(words, said);
+        await faqra;
+    }
+
     private static string Printed(MemoryStream stdout) => Encoding.UTF8.GetString(stdout.ToArray());
 
     [Fact]
