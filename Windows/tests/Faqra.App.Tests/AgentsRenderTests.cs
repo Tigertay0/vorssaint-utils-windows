@@ -359,7 +359,7 @@ public class AgentsRenderTests
 
         // The island has not started (no window), so no card could show a reply box: nothing waits, even with the switch on.
         var at = new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero);
-        var session = new AgentSession("s1", "claude", @"C:\codeaqra", AgentState.Finished, [], "Red or blue?", 0, at, at, at)
+        var session = new AgentSession("s1", "claude", @"C:\code\faqra", AgentState.Finished, [], "Red or blue?", 0, at, at, at)
         {
             Unread = true,
             RepliesOn = true,
