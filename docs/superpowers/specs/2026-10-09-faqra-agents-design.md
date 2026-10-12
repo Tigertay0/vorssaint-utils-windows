@@ -65,7 +65,7 @@ Waiting events and their budgets:
 |---|---|---|---|
 | PermissionRequest (a tool) | Allow, Deny, Always | 110 s | `{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}`, deny with a message, Always adds `updatedPermissions` `addRules` to `localSettings` |
 | PermissionRequest (AskUserQuestion) | The answers | 110 s | allow with `updatedInput` = the original input plus `answers` (`{question text: label}` or a list for multi-select) |
-| Stop | A reply, Done, or nothing | the reply window, 5 min default | `{"decision":"block","reason":"<reply>"}`, or nothing |
+| Stop | A reply, Done, or nothing | the reply window, 5 min default | `{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"<preamble>\n\n<reply>"}}` (checked live 2026-10-12: Claude Code reports the hook as a success and Claude carries on; `{"decision":"block","reason":…}` stays as a fallback behind `StopReply.UseAdditionalContext`), or nothing. Replies stop at 9,000 characters, under Claude Code's 10,000-character context cap. |
 
 Everything else is fire-and-forget. With no answer the relay prints nothing and Claude Code asks
 in its own UI as usual. The Stop hook's `timeout` is set above the reply window (default 600 s).

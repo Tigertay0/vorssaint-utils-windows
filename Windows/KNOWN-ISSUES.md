@@ -124,9 +124,25 @@ the outside.
   but records whatever path the build currently sits at, which breaks if that folder moves.
 - **Only English ships.** The twelve other languages resolve to English by design until their
   catalogs are ported.
-- **Replying to Claude comes in A3.** The island approves tools, answers questions, opens when a turn
-  ends and goes to the session's window (A2), but the "Has answered" card has no reply box yet, and
-  Claude's words show as plain text with their Markdown marks.
+- **A held turn keeps Claude Code waiting.** When Faqra holds a finished turn for your reply (Claude
+  asked you something, you were looking at that session, or you switched replies on for it), Claude
+  Code waits on Faqra's Stop hook for up to the reply window (5 minutes by default, at most 8). Done,
+  Esc, the collapse button or a new prompt in Claude Code let it go at once. A reply typed when the
+  window runs out is not kept.
+- **While the island stays open on a session, each answer waits again.** After you reply from the
+  island, Claude's next answer is held too if the island is still showing that session (checked live
+  2026-10-12: the answer waited the full 5 minutes until the window ran out). Press Done, or click
+  away so the island collapses, to let Claude Code finish.
+- **Unattended `claude -p` runs can be held.** A scripted run (a nightly automation, for example)
+  whose last message asks something waits up to the reply window while the island is on. Claude
+  Code's hook payload has no reliable "unattended" flag, so Faqra cannot tell it apart yet.
+- **Replies stop at 9,000 characters.** Claude Code keeps hook context under 10,000 characters and
+  turns anything longer into a short preview, so the reply box stops there.
+- **Claude Code takes at most 8 replies in a row from the island.** After that Faqra stops holding
+  the session and the card says to reply in Claude Code; a tool call or a prompt typed in Claude Code
+  starts the count again.
+- **Some Markdown shows as plain text.** Tables, images and nested emphasis keep their marks, and a
+  line that opens and closes a code fence on itself starts a code block.
 - **A waiting card holds Claude Code's own prompt.** While a card waits (up to 108 s), Claude Code
   waits on Faqra's hook. Esc, the collapse button or "Answer in Claude Code" let it go at once;
   clicking elsewhere keeps the card behind the pill. A huge request (over about 1 MB once escaped)
