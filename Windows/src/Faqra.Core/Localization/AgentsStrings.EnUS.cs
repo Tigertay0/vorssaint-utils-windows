@@ -77,6 +77,7 @@ public sealed partial class AgentsStrings
         StateError = "Error",
         StateRateLimited = "Rate limited",
         StateFinished = "Done",
+        StateAwaitingReply = "Waiting for your reply",
         ApprovalRun = "Wants to run a command",
         ApprovalEdit = "Wants to edit a file",
         ApprovalFetch = "Wants to open a web page",

@@ -9,7 +9,7 @@ using System.Text.Json.Nodes;
 
 namespace Faqra.Core.Agents;
 
-public enum AgentState { Idle, Thinking, Working, Searching, Compacting, Background, Approval, Question, Error, RateLimited, Finished }
+public enum AgentState { Idle, Thinking, Working, Searching, Compacting, Background, Approval, Question, Error, RateLimited, Finished, AwaitingReply }
 
 public enum AgentStepKind { Prompt, Read, Edit, Run, Search, WebSearch, WebFetch, Subagent, SubagentDone, Plan, Tool, Failed }
 
@@ -37,6 +37,12 @@ public sealed record AgentSession(
     /// <summary>Claude finished a turn with something to say and the owner has not opened it yet.</summary>
     public bool Unread { get; init; }
 
+    /// <summary>Replies from the island in a row with no tool use between them; Claude Code stops taking them at 8.</summary>
+    public int ConsecutiveReplies { get; init; }
+
+    /// <summary>The owner wants every finished turn of this session held for a reply.</summary>
+    public bool RepliesOn { get; init; }
+
     /// <summary>The folder the session runs in, as the owner calls the project.</summary>
     public string Project => Cwd.Length == 0 ? Id : Path.GetFileName(Cwd.TrimEnd('\\', '/')) is { Length: > 0 } name ? name : Cwd;
 
@@ -48,6 +54,9 @@ public sealed record AgentSession(
 public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessions)
 {
     public const int MaxSteps = 20;
+
+    /// <summary>How many Stop-hook replies in a row Claude Code takes before it stops anyway.</summary>
+    public const int MaxConsecutiveReplies = 8;
     private const int CommandChars = 40;
     private const int PromptChars = 60;
 
@@ -133,6 +142,43 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
             ? this with { Sessions = Sessions.SetItem(sessionId, s with { Unread = false }) }
             : this;
 
+    /// <summary>A finished turn is held open for the owner's reply.</summary>
+    public AgentBoard AwaitingReply(string sessionId, DateTimeOffset now) =>
+        Sessions.TryGetValue(sessionId, out var s)
+            ? this with { Sessions = Sessions.SetItem(sessionId, s with { State = AgentState.AwaitingReply, UpdatedAt = now }) }
+            : this;
+
+    /// <summary>The owner replied from the island: Claude carries on with the reply as its next prompt.</summary>
+    public AgentBoard Replied(string sessionId, string text, DateTimeOffset now)
+    {
+        if (!Sessions.TryGetValue(sessionId, out var s))
+        {
+            return this;
+        }
+        var carrying = s with
+        {
+            State = AgentState.Thinking,
+            FinishedAt = null,
+            Unread = false,
+            LastPrompt = text,
+            ConsecutiveReplies = s.ConsecutiveReplies + 1,
+            UpdatedAt = now,
+        };
+        return this with { Sessions = Sessions.SetItem(sessionId, Step(carrying, now, AgentStepKind.Prompt, OneLine(text, PromptChars))) };
+    }
+
+    /// <summary>A held turn was let go without a reply: the session rests as it would have.</summary>
+    public AgentBoard ReplyClosed(string sessionId) =>
+        Sessions.TryGetValue(sessionId, out var s) && s.State == AgentState.AwaitingReply
+            ? this with { Sessions = Sessions.SetItem(sessionId, s with { State = Resting(s) }) }
+            : this;
+
+    /// <summary>The owner wants (or no longer wants) every finished turn of this session held for a reply.</summary>
+    public AgentBoard SetRepliesOn(string sessionId, bool on) =>
+        Sessions.TryGetValue(sessionId, out var s) && s.RepliesOn != on
+            ? this with { Sessions = Sessions.SetItem(sessionId, s with { RepliesOn = on }) }
+            : this;
+
     private static AgentSession Finished(AgentSession s, AgentEvent e, DateTimeOffset now)
     {
         var said = e.LastAssistantMessage ?? e.Message;
@@ -155,8 +201,8 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
     private static AgentSession? Next(AgentSession s, AgentEvent e, DateTimeOffset now) => e.Event switch
     {
         "SessionStart" => s,
-        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null, LastPrompt = e.Prompt ?? s.LastPrompt, Unread = false }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
-        "PreToolUse" => ToolStep(s with { State = e.ToolName is { } t && SearchTools.Contains(t) ? AgentState.Searching : AgentState.Working }, e, now),
+        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null, LastPrompt = e.Prompt ?? s.LastPrompt, Unread = false, ConsecutiveReplies = 0 }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
+        "PreToolUse" => ToolStep(s with { State = e.ToolName is { } t && SearchTools.Contains(t) ? AgentState.Searching : AgentState.Working, ConsecutiveReplies = 0 }, e, now),
         "PostToolUse" => s with { State = AgentState.Working },
         "PostToolUseFailure" => Step(s with { State = AgentState.Working }, now, AgentStepKind.Failed, e.ToolName ?? string.Empty),
         "PermissionRequest" => s with { State = e.ToolName == "AskUserQuestion" ? AgentState.Question : AgentState.Approval },

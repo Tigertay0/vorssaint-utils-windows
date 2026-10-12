@@ -21,6 +21,7 @@ public static class AgentsText
         AgentState.Error => s.StateError,
         AgentState.RateLimited => s.StateRateLimited,
         AgentState.Finished => s.StateFinished,
+        AgentState.AwaitingReply => s.StateAwaitingReply,
         _ => s.StateIdle,
     };
 
@@ -56,6 +57,70 @@ public static class AgentsText
             "WebFetch" => s.ApprovalFetch,
             _ => Format(s.ApprovalToolFormat, request.ToolName),
         };
+
+    /// <summary>
+    /// True when Claude's last words ask the owner something: the last paragraph of prose (code blocks skipped) has a line
+    /// ending in a question mark, or the last paragraph is a list of options and the one before it asks or ends in a colon.
+    /// </summary>
+    public static bool AsksOwner(string? message)
+    {
+        var paragraphs = ProseParagraphs(message);
+        if (paragraphs.Count == 0)
+        {
+            return false;
+        }
+        if (paragraphs[^1].Any(EndsAsking))
+        {
+            return true;
+        }
+        return paragraphs.Count > 1
+            && paragraphs[^1].All(IsListLine)
+            && paragraphs[^2].Any(line => EndsAsking(line) || Unwrapped(line).EndsWith(':'));
+    }
+
+    private static List<List<string>> ProseParagraphs(string? message)
+    {
+        var paragraphs = new List<List<string>>();
+        var current = new List<string>();
+        var inFence = false;
+        foreach (var raw in (message ?? string.Empty).Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.StartsWith("```", StringComparison.Ordinal) || line.StartsWith("~~~", StringComparison.Ordinal))
+            {
+                inFence = !inFence;
+                continue;
+            }
+            if (inFence)
+            {
+                continue;
+            }
+            if (line.Length == 0)
+            {
+                if (current.Count > 0)
+                {
+                    paragraphs.Add(current);
+                    current = [];
+                }
+                continue;
+            }
+            current.Add(line);
+        }
+        if (current.Count > 0)
+        {
+            paragraphs.Add(current);
+        }
+        return paragraphs;
+    }
+
+    private static bool EndsAsking(string line) => Unwrapped(line) is var bare && (bare.EndsWith('?') || bare.EndsWith('？'));
+
+    /// <summary>A line without the emphasis, quotes and brackets that may close it.</summary>
+    private static string Unwrapped(string line) => line.TrimEnd('*', '_', '`', '"', '\'', ')', ']', '»', '”', '’', ' ');
+
+    private static bool IsListLine(string line) =>
+        line.StartsWith("- ", StringComparison.Ordinal) || line.StartsWith("* ", StringComparison.Ordinal) || line.StartsWith("+ ", StringComparison.Ordinal)
+        || (line.Length > 2 && char.IsDigit(line[0]) && (line.Contains(". ", StringComparison.Ordinal) || line.Contains(") ", StringComparison.Ordinal)));
 
     public static string Elapsed(TimeSpan span, AgentsStrings s) =>
         span < TimeSpan.FromMinutes(1) ? s.ElapsedNow

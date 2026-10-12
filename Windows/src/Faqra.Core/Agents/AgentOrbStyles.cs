@@ -17,6 +17,7 @@ public static class AgentOrbStyles
     {
         AgentState.Approval => new(OrbLook.Waiting, AgentTone.Caution, 1),
         AgentState.Question => new(OrbLook.Waiting, AgentTone.Accent, 1),
+        AgentState.AwaitingReply => new(OrbLook.Waiting, AgentTone.Accent, 0.75),
         AgentState.Error => new(OrbLook.RetryingSurge, AgentTone.Critical, 1),
         AgentState.RateLimited => new(OrbLook.Retrying, AgentTone.Caution, 1),
         AgentState.Working => new(OrbLook.Working, AgentTone.Neutral, 1),
@@ -32,7 +33,7 @@ public static class AgentOrbStyles
     public static int Urgency(AgentState state) => state switch
     {
         AgentState.Approval => 0,
-        AgentState.Question => 1,
+        AgentState.Question or AgentState.AwaitingReply => 1,
         AgentState.Error or AgentState.RateLimited => 2,
         AgentState.Working or AgentState.Thinking or AgentState.Searching or AgentState.Compacting or AgentState.Background => 3,
         AgentState.Finished => 4,

@@ -87,6 +87,7 @@ public sealed partial class AgentsStrings
     public required string StateError { get; init; }
     public required string StateRateLimited { get; init; }
     public required string StateFinished { get; init; }
+    public required string StateAwaitingReply { get; init; }
 
     // Requests
     public required string ApprovalRun { get; init; }

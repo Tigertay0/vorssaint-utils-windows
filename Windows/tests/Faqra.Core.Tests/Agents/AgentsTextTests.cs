@@ -69,4 +69,22 @@ public class AgentsTextTests
         var request = new AgentRequest("r", "s", AgentRequestKind.Question, "AskUserQuestion", "", [], [], false, DateTimeOffset.Now);
         Assert.Equal("Has a question", AgentsText.RequestTitle(request, Faqra.Core.Localization.AgentsStrings.EnUS));
     }
+
+    [Theory]
+    [InlineData("Which do you prefer?", true)]
+    [InlineData("Done. Should I push the branch?", true)]
+    [InlineData("All tests pass.\n\nWant me to open a pull request?", true)]
+    [InlineData("**Want me to continue?**", true)]
+    [InlineData("Which approach?\n\n- Keep it\n- Rewrite it", true)]
+    [InlineData("Pick one:\n\n1. Red\n2. Blue", true)]
+    [InlineData("Fixed it. All 1,022 tests pass.", false)]
+    [InlineData("Why did it fail? A race on the pipe. Fixed now.", false)]
+    [InlineData("Here is the check:\n\n```\nif (x?)\n```\nDone.", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void KnowsWhenClaudeAsksTheOwner(string? message, bool asks) => Assert.Equal(asks, AgentsText.AsksOwner(message));
+
+    [Fact]
+    public void AWaitingTurnSaysSo() =>
+        Assert.Equal("Waiting for your reply", AgentsText.State(Session(AgentState.AwaitingReply), S));
 }

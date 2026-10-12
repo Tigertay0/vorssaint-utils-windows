@@ -329,4 +329,72 @@ public class AgentBoardTests
         var later = titled.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Read\"}")!, DateTimeOffset.Now);
         Assert.Equal("Faqra milestones 5 and 6", later.Sessions["s"].Name);
     }
+
+    [Fact]
+    public void AHeldTurnWaitsThenCarriesOnWithTheReply()
+    {
+        var now = new DateTimeOffset(2026, 10, 10, 9, 5, 0, TimeSpan.Zero);
+        var finished = With(
+            "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"go\"}",
+            "{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"Red or blue?\"}");
+        var waiting = finished.AwaitingReply("s", now);
+        Assert.Equal(AgentState.AwaitingReply, waiting.Sessions["s"].State);
+        Assert.Same(waiting, waiting.AwaitingReply("other", now));
+
+        var replied = waiting.Replied("s", "Blue, please", now);
+        var s = replied.Sessions["s"];
+        Assert.Equal((AgentState.Thinking, "Blue, please", 1, false), (s.State, s.LastPrompt, s.ConsecutiveReplies, s.Unread));
+        Assert.Equal(new AgentStep(now, AgentStepKind.Prompt, "Blue, please"), s.Steps[^1]);
+        Assert.Null(s.FinishedAt);
+    }
+
+    [Fact]
+    public void ALetGoTurnRests()
+    {
+        var waiting = With("{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"Red or blue?\"}")
+            .AwaitingReply("s", DateTimeOffset.Now);
+        Assert.Equal(AgentState.Idle, waiting.ReplyClosed("s").Sessions["s"].State);
+        var busy = With("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Read\"}");
+        Assert.Same(busy, busy.ReplyClosed("s"));
+    }
+
+    [Fact]
+    public void AHeldTurnNeverGoesStale()
+    {
+        var waiting = With("{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"Red or blue?\"}")
+            .AwaitingReply("s", new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero));
+        var later = new DateTimeOffset(2026, 10, 10, 9, 45, 0, TimeSpan.Zero);
+        Assert.Equal(AgentState.AwaitingReply, waiting.Tick(later).Sessions["s"].State);
+    }
+
+    [Fact]
+    public void ToolUseOrANewPromptResetsTheReplyCount()
+    {
+        var now = DateTimeOffset.Now;
+        var twice = With("{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"?\"}")
+            .Replied("s", "a", now).Replied("s", "b", now);
+        Assert.Equal(2, twice.Sessions["s"].ConsecutiveReplies);
+        var tool = twice.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Read\"}")!, now);
+        Assert.Equal(0, tool.Sessions["s"].ConsecutiveReplies);
+        var prompt = twice.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"x\"}")!, now);
+        Assert.Equal(0, prompt.Sessions["s"].ConsecutiveReplies);
+    }
+
+    [Fact]
+    public void TheReplySwitchIsPerSession()
+    {
+        var board = With("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s\"}");
+        var on = board.SetRepliesOn("s", true);
+        Assert.True(on.Sessions["s"].RepliesOn);
+        Assert.Same(on, on.SetRepliesOn("s", true));
+        Assert.False(on.SetRepliesOn("s", false).Sessions["s"].RepliesOn);
+        Assert.Same(board, board.SetRepliesOn("other", true));
+    }
+
+    [Fact]
+    public void AWaitingTurnLooksLikeAQuestion()
+    {
+        Assert.Equal(new AgentOrbStyle(OrbLook.Waiting, AgentTone.Accent, 0.75), AgentOrbStyles.For(AgentState.AwaitingReply));
+        Assert.Equal(AgentOrbStyles.Urgency(AgentState.Question), AgentOrbStyles.Urgency(AgentState.AwaitingReply));
+    }
 }
