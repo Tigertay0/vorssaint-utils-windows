@@ -15,8 +15,11 @@ public static class StopReply
     /// <summary>Faqra's first line on a held turn: the owner may reply, so the relay keeps waiting.</summary>
     public const string HoldLine = "{\"hold\":true}";
 
-    /// <summary>Longest reply the island sends; the reply box stops there.</summary>
-    public const int MaxReplyLength = 20_000;
+    /// <summary>
+    /// Longest reply the island sends; the reply box stops there. Claude Code caps a hook's <c>additionalContext</c> at 10,000
+    /// characters (longer text is saved to a file and Claude sees a 2,000-character preview), so this leaves room for the preamble.
+    /// </summary>
+    public const int MaxReplyLength = 9_000;
 
     /// <summary>How Claude is told the words that follow are the owner's.</summary>
     public const string Preamble = "The user replied from Faqra, their desktop island, instead of the Claude Code prompt:";
