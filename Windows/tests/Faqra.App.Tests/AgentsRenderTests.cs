@@ -350,4 +350,20 @@ public class AgentsRenderTests
         System.Windows.Documents.Span span => string.Concat(span.Inlines.Select(InlineWords)),
         _ => string.Empty,
     };
+
+    [Fact]
+    public void TheIslandDecidesWhichTurnsWait() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(Core.Defaults.DefaultsStore.InMemory());
+        Assert.IsType<Island.IslandController>(services.Agents.HoldFor.Target);
+
+        // The island has not started (no window), so no card could show a reply box: nothing waits, even with the switch on.
+        var at = new DateTimeOffset(2026, 10, 10, 9, 0, 0, TimeSpan.Zero);
+        var session = new AgentSession("s1", "claude", @"C:\codeaqra", AgentState.Finished, [], "Red or blue?", 0, at, at, at)
+        {
+            Unread = true,
+            RepliesOn = true,
+        };
+        Assert.Null(services.Agents.HoldFor(session));
+    });
 }
