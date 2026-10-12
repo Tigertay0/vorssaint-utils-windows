@@ -179,6 +179,10 @@ public class ShortcutRecordingTests
     }
 
     [Fact]
+    public void TheReplyWindowStartsAtFiveMinutes() =>
+        Assert.Equal(300, DefaultsStore.InMemory().Int(DefaultsKey.FaqraAgentsReplyWindowSeconds));
+
+    [Fact]
     public void TheAgentSwitchesStartOn()
     {
         var store = DefaultsStore.InMemory();

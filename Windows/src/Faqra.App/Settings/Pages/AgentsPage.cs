@@ -24,6 +24,9 @@ public sealed class AgentsPage : UserControl
     private readonly AgentsStrings _s = AgentsStrings.For(L10n.Shared.Language);
     private readonly StackPanel _page = new();
 
+    /// <summary>The reply window's choices, in seconds; each ends well inside Claude Code's 600 s Stop hook timeout.</summary>
+    internal static readonly int[] ReplyWindowChoices = [60, 120, 300, 480];
+
     public AgentsPage()
         : this(AppPaths.ClaudeSettingsFile, AppPaths.AgentsRelayFile)
     {
@@ -119,6 +122,33 @@ public sealed class AgentsPage : UserControl
         _page.Children.Add(Toggle(SymbolRegular.CheckmarkCircle24, _s.AnsweredSound, _s.AnsweredSoundCaption, DefaultsKey.FaqraAgentsAnsweredSound, top: 6));
         _page.Children.Add(Toggle(SymbolRegular.Chat24, _s.OpenOnAnswer, _s.OpenOnAnswerCaption, DefaultsKey.FaqraAgentsOpenOnAnswer, top: 6));
         _page.Children.Add(Toggle(SymbolRegular.Keyboard24, _s.ShortcutsToggle, _s.ShortcutsCaption, DefaultsKey.FaqraAgentsShortcutsEnabled, top: 6));
+        _page.Children.Add(Text(_s.RepliesSection, "SectionHeader"));
+        _page.Children.Add(ReplyWindowCard());
+    }
+
+    private CardControl ReplyWindowCard()
+    {
+        var store = AppServices.Current.Store;
+        var box = new System.Windows.Controls.ComboBox { MinWidth = 160 };
+        foreach (var seconds in ReplyWindowChoices)
+        {
+            box.Items.Add(seconds == 60 ? _s.OneMinute : Format(_s.MinutesFormat, seconds / 60));
+        }
+        box.SelectedIndex = Array.IndexOf(ReplyWindowChoices, store.Int(DefaultsKey.FaqraAgentsReplyWindowSeconds));
+        System.Windows.Automation.AutomationProperties.SetName(box, _s.ReplyWindow);
+        box.SelectionChanged += (_, _) =>
+        {
+            if (box.SelectedIndex >= 0)
+            {
+                store.Set(DefaultsKey.FaqraAgentsReplyWindowSeconds, ReplyWindowChoices[box.SelectedIndex]);
+            }
+        };
+        var header = new StackPanel();
+        header.Children.Add(Text(_s.ReplyWindow, "Body"));
+        var note = Text(_s.ReplyWindowCaption, "Caption");
+        note.TextWrapping = TextWrapping.Wrap;
+        header.Children.Add(note);
+        return new CardControl { Icon = new SymbolIcon(SymbolRegular.Clock24), Header = header, Content = box, Margin = new Thickness(0) };
     }
 
     /// <summary>A switch bound to one setting, written the moment it flips.</summary>

@@ -30,6 +30,11 @@ public sealed partial class AgentsStrings
     public required string ShortcutsToggle { get; init; }
     public required string ShortcutsCaption { get; init; }
     public required string WatchOnly { get; init; }
+    public required string RepliesSection { get; init; }
+    public required string ReplyWindow { get; init; }
+    public required string ReplyWindowCaption { get; init; }
+    public required string OneMinute { get; init; }
+    public required string MinutesFormat { get; init; }
 
     // Shortcuts page
     public required string ShortcutJump { get; init; }

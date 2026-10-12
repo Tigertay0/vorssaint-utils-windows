@@ -74,4 +74,45 @@ public class AgentSettingsRenderTests
             Assert.Contains(title, texts);
         }
     });
+
+    [Fact]
+    public void TheReplyWindowIsTheOwnersChoice() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        var dir = Directory.CreateTempSubdirectory("faqra-page-").FullName;
+        try
+        {
+            var page = new AgentsPage(Path.Combine(dir, "settings.json"), Path.Combine(dir, "faqra-hook.exe"));
+            Assert.Contains(S.RepliesSection, AgentsRenderTests.AllText(page));
+            var box = FindAll<System.Windows.Controls.ComboBox>(page).Single(b => AutomationProperties.GetName(b) == S.ReplyWindow);
+            Assert.Equal(["1 minute", "2 minutes", "5 minutes", "8 minutes"], box.Items.Cast<string>());
+            Assert.Equal("5 minutes", box.SelectedItem);
+
+            box.SelectedIndex = 0;
+            Assert.Equal(60, services.Store.Int(Faqra.Core.Defaults.DefaultsKey.FaqraAgentsReplyWindowSeconds));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    });
+
+    private static List<T> FindAll<T>(DependencyObject root) where T : DependencyObject
+    {
+        var found = new List<T>();
+        void Walk(DependencyObject node)
+        {
+            if (node is T match)
+            {
+                found.Add(match);
+            }
+            // A CardControl's Content is a logical child; its Header is not until the template applies.
+            foreach (var child in LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>())
+            {
+                Walk(child);
+            }
+        }
+        Walk(root);
+        return found;
+    }
 }
