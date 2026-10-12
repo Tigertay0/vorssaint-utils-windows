@@ -323,7 +323,7 @@ public class AgentsRenderTests
         {
             if (node is System.Windows.Controls.TextBlock block)
             {
-                builder.Append(block.Text).Append('\n');
+                builder.Append(Words(block)).Append('\n');
             }
             // A CardControl's Header is not a logical child until the template is applied.
             if (node is Wpf.Ui.Controls.CardControl { Header: DependencyObject header })
@@ -338,4 +338,16 @@ public class AgentsRenderTests
         Walk(root);
         return builder.ToString();
     }
+
+    /// <summary>A text block's words, whether set as Text or built from runs (whose TextBlock.Text stays empty).</summary>
+    internal static string Words(System.Windows.Controls.TextBlock block) =>
+        string.Concat(block.Inlines.Select(InlineWords));
+
+    private static string InlineWords(System.Windows.Documents.Inline inline) => inline switch
+    {
+        System.Windows.Documents.Run run => run.Text,
+        System.Windows.Documents.LineBreak => "\n",
+        System.Windows.Documents.Span span => string.Concat(span.Inlines.Select(InlineWords)),
+        _ => string.Empty,
+    };
 }

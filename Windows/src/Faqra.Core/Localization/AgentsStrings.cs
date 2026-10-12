@@ -79,6 +79,12 @@ public sealed partial class AgentsStrings
     public required string QuestionUnreadable { get; init; }
     public required string AnsweredTitle { get; init; }
     public required string Dismiss { get; init; }
+    public required string ReplyPlaceholder { get; init; }
+    public required string ReplyDone { get; init; }
+    public required string ReplyWaitsFormat { get; init; }
+    public required string ReplyWindowOver { get; init; }
+    public required string ReplyCapReachedFormat { get; init; }
+    public required string RepliesOnToggle { get; init; }
 
     // States
     public required string StateIdle { get; init; }

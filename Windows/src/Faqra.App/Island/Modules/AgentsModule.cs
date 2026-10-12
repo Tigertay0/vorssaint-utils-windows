@@ -17,7 +17,8 @@ namespace Faqra.App.Island.Modules;
 
 /// <summary>
 /// Every agent session, most urgent first. Above the list sits the focused session's card (an approval, a question, or
-/// its latest answer); below it, the session's folder, the owner's last prompt, Claude's last words and its activity.
+/// its latest answer with a reply box while Claude waits); below it, the session's folder, the replies switch, the owner's last prompt,
+/// Claude's last words and its activity.
 /// Rows and cards are kept and updated in place, so orbs keep moving and the owner's picks and typing survive events.
 /// </summary>
 public sealed class AgentsModule : UserControl
@@ -35,6 +36,7 @@ public sealed class AgentsModule : UserControl
     private readonly StackPanel _list = new();
     private readonly StackPanel _detail = new() { Margin = new Thickness(12, 12, 12, 0) };
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly CheckBox _repliesOn = new() { Margin = new Thickness(0, 0, 0, 10) };
     private string? _focused;
     private string? _cardKey;
 
@@ -48,6 +50,16 @@ public sealed class AgentsModule : UserControl
         body.Children.Add(_detail);
         Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         _clock.Tick += (_, _) => RefreshTimes();
+        _repliesOn.Content = new TextBlock { Text = _s.RepliesOnToggle, FontFamily = TextFont, FontSize = 12, Foreground = IslandPalette.Secondary };
+        System.Windows.Automation.AutomationProperties.SetName(_repliesOn, _s.RepliesOnToggle);
+        // Click, not Checked: it fires only for the owner, never when a render sets the box from the board.
+        _repliesOn.Click += (_, _) =>
+        {
+            if (FocusedSession is { } session)
+            {
+                _hub.SetRepliesOn(session.Id, _repliesOn.IsChecked == true);
+            }
+        };
         Render();
         _hub.Changed += Render;
         Loaded += (_, _) => _clock.Start();
@@ -156,18 +168,42 @@ public sealed class AgentsModule : UserControl
     {
         if (_hub.Requests.FirstOrDefault(r => r.SessionId == session.Id) is { } request)
         {
-            ShowCard(request.Id, () => request.Kind == AgentRequestKind.Question
-                ? new QuestionCard(request, session.Name, _s, decision => _hub.Answer(request.Id, decision), () => _hub.Release(request.Id), () => KeyboardWanted?.Invoke())
-                : new ApprovalCard(request, session.Name, _s, decision => _hub.Answer(request.Id, decision), () => _hub.Release(request.Id)));
+            ShowCard(request.Id, () => request.Kind switch
+            {
+                AgentRequestKind.Question => new QuestionCard(request, session.Name, _s, decision => _hub.Answer(request.Id, decision), () => _hub.Release(request.Id), () => KeyboardWanted?.Invoke()),
+                AgentRequestKind.Reply => Answered(session, request),
+                _ => new ApprovalCard(request, session.Name, _s, decision => _hub.Answer(request.Id, decision), () => _hub.Release(request.Id)),
+            });
             return;
         }
         if (session.Unread && session.LastMessage is { Length: > 0 })
         {
-            ShowCard($"{AnsweredKey}{session.Id}:{session.FinishedAt:O}", () => new AnsweredCard(session, _s, () => _hub.MarkRead(session.Id)));
+            ShowCard($"{AnsweredKey}{session.Id}:{session.FinishedAt:O}", () => Answered(session, null));
             return;
         }
         ShowCard(null, null);
     }
+
+    /// <summary>A finished turn's card; <paramref name="window"/> is the held turn, or null when Claude already stopped.</summary>
+    private AnsweredCard Answered(AgentSession session, AgentRequest? window) => new(session, window, _s, new AnsweredCardActions(
+        Close: () =>
+        {
+            // Read first, then let the turn go, so the card closes without passing through the card of a turn not held.
+            _hub.MarkRead(session.Id);
+            if (window is not null)
+            {
+                _hub.Release(window.Id);
+            }
+        },
+        Reply: text =>
+        {
+            if (window is not null)
+            {
+                _hub.Answer(window.Id, AgentDecision.Reply(text));
+            }
+        },
+        WantKeyboard: () => KeyboardWanted?.Invoke()),
+        DateTimeOffset.Now);
 
     private void ShowCard(string? key, Func<UIElement>? build)
     {
@@ -188,6 +224,7 @@ public sealed class AgentsModule : UserControl
                 row.Update(session, _s, DateTimeOffset.Now, session.Id == _focused);
             }
         }
+        (_card.Content as AnsweredCard)?.Tick(DateTimeOffset.Now);
     }
 
     private void RenderDetail(AgentSession session)
@@ -210,17 +247,18 @@ public sealed class AgentsModule : UserControl
             TextTrimming = TextTrimming.CharacterEllipsis,
         });
         _detail.Children.Add(header);
+        _repliesOn.IsChecked = session.RepliesOn;
+        _detail.Children.Add(_repliesOn);
         if (session.LastPrompt is { Length: > 0 } prompt)
         {
             _detail.Children.Add(Label(_s.PromptedHeader));
             _detail.Children.Add(Paragraph(prompt));
         }
-        // An answered card already shows Claude's words.
-        var answeredOnCard = _cardKey?.StartsWith(AnsweredKey, StringComparison.Ordinal) == true;
-        if (!answeredOnCard && session.LastMessage is { Length: > 0 } message)
+        // An answered card (held or not) already shows Claude's words.
+        if (_card.Content is not AnsweredCard && session.LastMessage is { Length: > 0 } message)
         {
             _detail.Children.Add(Label(_s.LastMessageHeader));
-            _detail.Children.Add(Paragraph(message));
+            _detail.Children.Add(Paragraph(MarkdownLite.PlainText(message)));
         }
         if (session.Steps.Count == 0)
         {

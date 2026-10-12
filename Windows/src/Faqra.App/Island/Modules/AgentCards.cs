@@ -26,9 +26,9 @@ internal static class AgentCardParts
     internal const double MessageMaxHeight = 160;
 
     /// <summary>Long text in a bounded, vertically scrolling box, so the card stays small and nothing is cut off.</summary>
-    internal static ScrollViewer Scrolling(TextBlock text, double maxHeight) => new()
+    internal static ScrollViewer Scrolling(UIElement content, double maxHeight) => new()
     {
-        Content = text,
+        Content = content,
         MaxHeight = maxHeight,
         VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
@@ -377,22 +377,126 @@ internal sealed class QuestionCard : ContentControl
     }
 }
 
-/// <summary>Claude finished a turn: what it said, and Dismiss. A3 adds the reply box here.</summary>
+/// <summary>What the answered card's buttons do: close it (Dismiss, or Done on a held turn), send a reply, take the keyboard.</summary>
+internal sealed record AnsweredCardActions(Action Close, Action<string> Reply, Action WantKeyboard);
+
+/// <summary>
+/// Claude finished a turn: what it said, styled from its Markdown. A turn held for the owner's reply adds a countdown, a
+/// reply box, Done and Send; a turn not held has Dismiss, and says so when Claude Code's replies-in-a-row cap is reached.
+/// </summary>
 internal sealed class AnsweredCard : ContentControl
 {
-    public AnsweredCard(AgentSession session, AgentsStrings s, Action dismiss)
+    private readonly AgentRequest? _window;
+    private readonly AgentsStrings _s;
+    private readonly AnsweredCardActions _actions;
+    private readonly TextBlock? _countdown;
+    private bool _over;
+
+    public AnsweredCard(AgentSession session, AgentRequest? window, AgentsStrings s, AnsweredCardActions actions, DateTimeOffset now)
     {
+        _window = window;
+        _s = s;
+        _actions = actions;
         var stack = new StackPanel();
         stack.Children.Add(AgentCardParts.Title(AgentCardParts.Format(s.CardTitleFormat, session.Name, s.AnsweredTitle)));
-        stack.Children.Add(AgentCardParts.Scrolling(new TextBlock
+        if (session.LastMessage is { Length: > 0 } message)
         {
-            Text = session.LastMessage ?? string.Empty,
-            FontFamily = AgentCardParts.TextFont,
+            stack.Children.Add(AgentCardParts.Scrolling(MarkdownView.Build(message), AgentCardParts.MessageMaxHeight));
+        }
+        if (window is null)
+        {
+            if (session.ConsecutiveReplies >= AgentBoard.MaxConsecutiveReplies)
+            {
+                var cap = AgentCardParts.Caption(AgentCardParts.Format(s.ReplyCapReachedFormat, AgentBoard.MaxConsecutiveReplies));
+                cap.Margin = new Thickness(0, 8, 0, 0);
+                stack.Children.Add(cap);
+            }
+            stack.Children.Add(AgentCardParts.Footer(AgentCardParts.Actions(AgentCardParts.Action(s.Dismiss, primary: false, (_, _) => actions.Close())), quiet: null));
+            Content = AgentCardParts.Panel(stack);
+            return;
+        }
+
+        var countdown = AgentCardParts.Caption(string.Empty);
+        countdown.Foreground = IslandPalette.Tertiary;
+        countdown.Margin = new Thickness(0, 10, 0, 0);
+        stack.Children.Add(countdown);
+        _countdown = countdown;
+
+        var box = new Wpf.Ui.Controls.TextBox
+        {
+            PlaceholderText = s.ReplyPlaceholder,
             FontSize = 12,
-            Foreground = IslandPalette.Primary,
+            AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
-        }, AgentCardParts.MessageMaxHeight));
-        stack.Children.Add(AgentCardParts.Footer(AgentCardParts.Actions(AgentCardParts.Action(s.Dismiss, primary: false, (_, _) => dismiss())), quiet: null));
+            MaxLength = StopReply.MaxReplyLength,
+            MaxHeight = AgentCardParts.DetailMaxHeight,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Margin = new Thickness(0, 6, 0, 0),
+        };
+        System.Windows.Automation.AutomationProperties.SetName(box, s.ReplyPlaceholder);
+        // The island never takes the keyboard by itself; clicking into the box is the owner asking for it.
+        box.AddHandler(UIElement.PreviewMouseDownEvent, new MouseButtonEventHandler((_, _) => actions.WantKeyboard()), handledEventsToo: true);
+        box.TextChanged += (_, _) => UpdateSend();
+        box.PreviewKeyDown += (_, e) =>
+        {
+            if (SendsOnEnter(e.Key, Keyboard.Modifiers))
+            {
+                e.Handled = true;
+                Send();
+            }
+        };
+        stack.Children.Add(box);
+        ReplyBox = box;
+
+        var send = AgentCardParts.Action(s.Send, primary: true, (_, _) => Send());
+        SendButton = send;
+        var done = AgentCardParts.Action(s.ReplyDone, primary: false, (_, _) => actions.Close());
+        stack.Children.Add(AgentCardParts.Footer(AgentCardParts.Actions(done, send), quiet: null));
         Content = AgentCardParts.Panel(stack);
+        Tick(now);
+    }
+
+    internal Wpf.Ui.Controls.TextBox? ReplyBox { get; }
+
+    internal Button? SendButton { get; }
+
+    internal string Countdown => _countdown?.Text ?? string.Empty;
+
+    /// <summary>Enter sends; Shift+Enter starts a new line.</summary>
+    internal static bool SendsOnEnter(Key key, ModifierKeys modifiers) => key == Key.Enter && (modifiers & ModifierKeys.Shift) == 0;
+
+    /// <summary>Updates the countdown. Once the window has passed, Send is off and the card says Claude stopped waiting.</summary>
+    internal void Tick(DateTimeOffset now)
+    {
+        if (_countdown is null || _window?.ClosesAt is not { } closes)
+        {
+            return;
+        }
+        var left = closes - now;
+        _over = left <= TimeSpan.Zero;
+        _countdown.Text = _over ? _s.ReplyWindowOver : AgentCardParts.Format(_s.ReplyWaitsFormat, Clock(left));
+        UpdateSend();
+    }
+
+    private static string Clock(TimeSpan left)
+    {
+        var seconds = (int)Math.Ceiling(left.TotalSeconds);
+        return AgentCardParts.Format("{0}:{1:00}", seconds / 60, seconds % 60);
+    }
+
+    private void UpdateSend()
+    {
+        if (SendButton is not null && ReplyBox is not null)
+        {
+            SendButton.IsEnabled = !_over && ReplyBox.Text.Trim().Length > 0;
+        }
+    }
+
+    private void Send()
+    {
+        if (SendButton?.IsEnabled == true && ReplyBox is not null)
+        {
+            _actions.Reply(ReplyBox.Text.Trim());
+        }
     }
 }

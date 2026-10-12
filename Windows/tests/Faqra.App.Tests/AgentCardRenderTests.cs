@@ -297,4 +297,148 @@ public class AgentCardRenderTests
         brief.Measure(new Size(412, double.PositiveInfinity));
         Assert.True(card.DesiredSize.Height < brief.DesiredSize.Height + 120, "the card grew with the command");
     });
+
+    private const string AskedLine = "{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\",\"cwd\":\"C:\\\\code\\\\site\",\"last_assistant_message\":\"Red or **blue**?\"}";
+
+    private static AgentSession Answered(int replies = 0) =>
+        new AgentSession("s1", "claude", @"C:\code\site", AgentState.AwaitingReply, [], "Red or **blue**?", 0, T0, T0, T0)
+        {
+            Unread = true,
+            ConsecutiveReplies = replies,
+        };
+
+    private static AnsweredCard HeldCard(Action<string>? reply = null, Action? close = null, Action? keyboard = null) =>
+        new(Answered(), AgentRequest.ForReply("r3", "s1", T0, T0.AddMinutes(5)), S,
+            new AnsweredCardActions(close ?? (() => { }), reply ?? (_ => { }), keyboard ?? (() => { })), T0);
+
+    [Fact]
+    public void AHeldTurnShowsTheReplyBoxAndCountsDown() => StaThread.Run(() =>
+    {
+        var card = HeldCard();
+        Render(card, "island-card-reply", 330);
+        Assert.Contains("Red or blue?", AgentsRenderTests.AllText(card));
+        Assert.Equal("Claude waits 5:00 for your reply", card.Countdown);
+        Assert.False(card.SendButton!.IsEnabled);
+
+        card.ReplyBox!.Text = "Blue";
+        Assert.True(card.SendButton.IsEnabled);
+        card.Tick(T0.AddSeconds(61));
+        Assert.Equal("Claude waits 3:59 for your reply", card.Countdown);
+        card.Tick(T0.AddMinutes(5));
+        Assert.Equal(S.ReplyWindowOver, card.Countdown);
+        Assert.False(card.SendButton.IsEnabled);
+    });
+
+    [Fact]
+    public void SendGivesTheReplyAndDoneClosesTheCard() => StaThread.Run(() =>
+    {
+        string? sent = null;
+        var closed = 0;
+        var card = HeldCard(reply: text => sent = text, close: () => closed++);
+        card.ReplyBox!.Text = "  Blue, please\nand a test  ";
+        Click(card.SendButton!);
+        Assert.Equal("Blue, please\nand a test", sent);
+
+        Click(ButtonNamed(card, S.ReplyDone));
+        Assert.Equal(1, closed);
+    });
+
+    [Fact]
+    public void EnterSendsAndShiftEnterStartsALine()
+    {
+        Assert.True(AnsweredCard.SendsOnEnter(Key.Enter, ModifierKeys.None));
+        Assert.True(AnsweredCard.SendsOnEnter(Key.Enter, ModifierKeys.Control));
+        Assert.False(AnsweredCard.SendsOnEnter(Key.Enter, ModifierKeys.Shift));
+        Assert.False(AnsweredCard.SendsOnEnter(Key.A, ModifierKeys.None));
+    }
+
+    [Fact]
+    public void TheReplyBoxStopsAtTheLimit() => StaThread.Run(() =>
+    {
+        var box = HeldCard().ReplyBox!;
+        Assert.Equal(StopReply.MaxReplyLength, box.MaxLength);
+        Assert.True(box.AcceptsReturn);
+        Assert.Equal(S.ReplyPlaceholder, System.Windows.Automation.AutomationProperties.GetName(box));
+    });
+
+    [Fact]
+    public void ClickingIntoTheReplyBoxAsksForTheKeyboard() => StaThread.Run(() =>
+    {
+        var asked = 0;
+        var card = HeldCard(keyboard: () => asked++);
+        card.ReplyBox!.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseDownEvent });
+        Assert.Equal(1, asked);
+    });
+
+    [Fact]
+    public void ATurnNotHeldHasNoReplyBox() => StaThread.Run(() =>
+    {
+        var closed = 0;
+        var card = new AnsweredCard(Answered(), null, S, new AnsweredCardActions(() => closed++, _ => { }, () => { }), T0);
+        Assert.Null(card.ReplyBox);
+        Assert.Equal(string.Empty, card.Countdown);
+        Click(ButtonNamed(card, S.Dismiss));
+        Assert.Equal(1, closed);
+    });
+
+    [Fact]
+    public void AtTheCapTheCardExplains() => StaThread.Run(() =>
+    {
+        var card = new AnsweredCard(Answered(replies: AgentBoard.MaxConsecutiveReplies), null, S, new AnsweredCardActions(() => { }, _ => { }, () => { }), T0);
+        Assert.Contains("Claude Code stops after 8 replies in a row from the island", AgentsRenderTests.AllText(card));
+        Assert.DoesNotContain("8 replies", AgentsRenderTests.AllText(new AnsweredCard(Answered(), null, S, new AnsweredCardActions(() => { }, _ => { }, () => { }), T0)));
+    });
+
+    [Fact]
+    public void TheReplyBoxKeepsItsTextWhileEventsArrive() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        using var hub = AgentsRenderTests.HubWith(AskedLine, WorkingLine);
+        var now = DateTimeOffset.Now;
+        hub.ReplaceBoardForTests(hub.Board.AwaitingReply("s1", now));
+        hub.ReplaceRequestsForTests(AgentRequest.ForReply("r3", "s1", now, now.AddMinutes(5)));
+        var module = new AgentsModule(hub, () => true);
+        module.FocusSession("s1");
+        Render(module, "island-agents-reply", 520);
+        var card = All<AnsweredCard>(module).Single();
+        card.ReplyBox!.Text = "Blue, with a darker";
+
+        hub.ReplaceBoardForTests(hub.Board.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"s2\",\"tool_name\":\"Read\"}")!, T0));
+        hub.ReplaceBoardForTests(hub.Board.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s2\",\"tool_name\":\"Grep\",\"tool_input\":{\"pattern\":\"x\"}}")!, T0));
+        card.Tick(now.AddSeconds(30));
+
+        var after = All<AnsweredCard>(module).Single();
+        Assert.Same(card, after);
+        Assert.Equal("Blue, with a darker", after.ReplyBox!.Text);
+        // Claude's words show once, styled on the card, not again under "Claude said".
+        Assert.DoesNotContain(S.LastMessageHeader, AgentsRenderTests.AllText(module));
+    });
+
+    [Fact]
+    public void TheRepliesSwitchIsPerSession() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        using var hub = AgentsRenderTests.HubWith(WorkingLine);
+        var module = new AgentsModule(hub, () => true);
+        var toggle = All<CheckBox>(module).Single(box => System.Windows.Automation.AutomationProperties.GetName(box) == S.RepliesOnToggle);
+        Assert.False(toggle.IsChecked);
+
+        toggle.IsChecked = true;
+        toggle.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        Assert.True(hub.Board.Sessions["s2"].RepliesOn);
+        Assert.True(All<CheckBox>(module).Single(box => System.Windows.Automation.AutomationProperties.GetName(box) == S.RepliesOnToggle).IsChecked);
+    });
+
+    [Fact]
+    public void ClaudeSaidShowsTheWordsWithoutTheirMarks() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        using var hub = AgentsRenderTests.HubWith("{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\",\"last_assistant_message\":\"## Done\\n\\nThe **tests** pass.\"}");
+        hub.MarkRead("s1");
+        var module = new AgentsModule(hub, () => true);
+        var text = AgentsRenderTests.AllText(module);
+        Assert.Contains(S.LastMessageHeader, text);
+        Assert.Contains("Done\nThe tests pass.", text);
+        Assert.DoesNotContain("**", text);
+    });
 }
