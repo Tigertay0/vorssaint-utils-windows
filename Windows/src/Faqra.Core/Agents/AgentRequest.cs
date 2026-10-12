@@ -6,9 +6,9 @@ using System.Text.Json.Nodes;
 
 namespace Faqra.Core.Agents;
 
-public enum AgentRequestKind { Approval, Question }
+public enum AgentRequestKind { Approval, Question, Reply }
 
-/// <summary>A permission request a card shows: what Claude wants, and what an Always click would save.</summary>
+/// <summary>What a card is waiting on: a permission request (what Claude wants, what Always would save) or a finished turn held open for the owner's reply.</summary>
 public sealed record AgentRequest(
     string Id,
     string SessionId,
@@ -21,6 +21,13 @@ public sealed record AgentRequest(
     DateTimeOffset ReceivedAt,
     bool InputTruncated = false)
 {
+    /// <summary>For a held turn: when Faqra lets it go if the owner has not replied.</summary>
+    public DateTimeOffset? ClosesAt { get; init; }
+
+    /// <summary>A finished turn held open for the owner's reply until <paramref name="closesAt"/>.</summary>
+    public static AgentRequest ForReply(string id, string sessionId, DateTimeOffset now, DateTimeOffset closesAt) =>
+        new(id, sessionId, AgentRequestKind.Reply, string.Empty, string.Empty, [], [], false, now) { ClosesAt = closesAt };
+
     public bool CanAlways => Kind == AgentRequestKind.Approval && (AlwaysRules.Count > 0 || AlwaysAcceptsEdits);
 
     /// <summary>The card for a PermissionRequest event. Reads the tool input, so a payload with repeated keys throws ArgumentException.</summary>

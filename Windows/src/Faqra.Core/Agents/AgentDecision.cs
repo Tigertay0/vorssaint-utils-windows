@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 
 namespace Faqra.Core.Agents;
 
-public enum AgentDecisionKind { Allow, Always, Deny, Answer }
+public enum AgentDecisionKind { Allow, Always, Deny, Answer, Reply }
 
 /// <summary>
 /// What the owner chose on a card, as it travels from Faqra back to the waiting relay. Only the relay turns it into
@@ -23,7 +23,7 @@ public sealed class AgentDecision
 
     public AgentDecisionKind Kind { get; }
 
-    /// <summary>For Deny: what Claude is told. Null means <see cref="PermissionReply.DefaultDenyMessage"/>.</summary>
+    /// <summary>For Deny: what Claude is told (null means <see cref="PermissionReply.DefaultDenyMessage"/>). For Reply: the owner's words.</summary>
     public string? Message { get; }
 
     /// <summary>For Answer: each question's text and the answer to it.</summary>
@@ -36,6 +36,8 @@ public sealed class AgentDecision
     public static AgentDecision Deny(string? message = null) => new(AgentDecisionKind.Deny, message, null);
 
     public static AgentDecision Answer(IReadOnlyDictionary<string, string> answers) => new(AgentDecisionKind.Answer, null, answers);
+
+    public static AgentDecision Reply(string text) => new(AgentDecisionKind.Reply, text, null);
 
     public string ToLine()
     {
@@ -74,6 +76,7 @@ public sealed class AgentDecision
                 "allow" => Allow,
                 "always" => Always,
                 "deny" => Deny(Text(obj["message"])),
+                "reply" when Text(obj["message"]) is { Length: > 0 } text => Reply(text),
                 "answer" when obj["answers"] is JsonObject answers && ReadAnswers(answers) is { } read => Answer(read),
                 _ => null,
             };
@@ -104,6 +107,7 @@ public sealed class AgentDecision
         AgentDecisionKind.Allow => "allow",
         AgentDecisionKind.Always => "always",
         AgentDecisionKind.Deny => "deny",
+        AgentDecisionKind.Reply => "reply",
         _ => "answer",
     };
 

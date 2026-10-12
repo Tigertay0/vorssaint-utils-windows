@@ -140,4 +140,11 @@ public class PermissionReplyTests
         var request = Request("{\"tool_name\":\"AskUserQuestion\",\"tool_input\":{\"questions\":[{\"question\":\"Same?\"},{\"question\":\"Same?\"}]}}");
         Assert.Null(PermissionReply.Stdout(request, AgentDecision.Answer(Answers(("Same?", "yes")))));
     }
+
+    [Fact]
+    public void AReplyIsNoAnswerToAPermissionRequest()
+    {
+        Assert.Null(PermissionReply.Stdout(Bash(), AgentDecision.Reply("go")));
+        Assert.Null(PermissionReply.Stdout(Question(), AgentDecision.Reply("go")));
+    }
 }

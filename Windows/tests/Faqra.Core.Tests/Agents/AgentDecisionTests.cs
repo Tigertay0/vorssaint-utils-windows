@@ -44,4 +44,15 @@ public class AgentDecisionTests
     [InlineData("{\"decision\":\"answer\",\"answers\":{\"q\":1}}")]
     [InlineData("{\"decision\":\"allow\",\"decision\":\"deny\"}")]
     public void AnythingElseIsNoDecision(string? line) => Assert.Null(AgentDecision.TryParse(line));
+
+    [Fact]
+    public void AReplySurvivesTheWire()
+    {
+        Assert.Equal("{\"decision\":\"reply\",\"message\":\"Go on\"}", AgentDecision.Reply("Go on").ToLine());
+        var reply = AgentDecision.TryParse(AgentDecision.Reply("Ligne 1\nLigne 2 é").ToLine())!;
+        Assert.Equal(AgentDecisionKind.Reply, reply.Kind);
+        Assert.Equal("Ligne 1\nLigne 2 é", reply.Message);
+        Assert.Null(AgentDecision.TryParse("{\"decision\":\"reply\"}"));
+        Assert.Null(AgentDecision.TryParse("{\"decision\":\"reply\",\"message\":\"\"}"));
+    }
 }

@@ -78,4 +78,15 @@ public class AgentRequestTests
     [Fact]
     public void AnEmptyInputKeepsTheDetailEmpty() =>
         Assert.Equal(string.Empty, From("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"mcp__x__y\",\"tool_input\":{}}").Detail);
+
+    [Fact]
+    public void AHeldTurnIsAReplyRequestWithItsDeadline()
+    {
+        var closes = T0.AddMinutes(5);
+        var request = AgentRequest.ForReply("r9", "s1", T0, closes);
+        Assert.Equal(("r9", "s1", AgentRequestKind.Reply, T0, closes), (request.Id, request.SessionId, request.Kind, request.ReceivedAt, request.ClosesAt));
+        Assert.False(request.CanAlways);
+        Assert.Empty(request.Questions);
+        Assert.Null(AgentRequest.From("r1", AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"tool_name\":\"Bash\"}")!, T0).ClosesAt);
+    }
 }
