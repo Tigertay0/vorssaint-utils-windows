@@ -2,12 +2,13 @@
 // Copyright (C) 2026 Faqra contributors
 
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Faqra.Core.Localization;
 
 namespace Faqra.Core.Agents;
 
 /// <summary>Turns sessions and steps into the short lines the island shows.</summary>
-public static class AgentsText
+public static partial class AgentsText
 {
     public static string State(AgentSession session, AgentsStrings s) => session.State switch
     {
@@ -75,7 +76,7 @@ public static class AgentsText
         }
         return paragraphs.Count > 1
             && paragraphs[^1].All(IsListLine)
-            && paragraphs[^2].Any(line => EndsAsking(line) || Unwrapped(line).EndsWith(':'));
+            && paragraphs[^2].Any(line => EndsAsking(line) || NamesChoice(line));
     }
 
     private static List<List<string>> ProseParagraphs(string? message)
@@ -113,7 +114,21 @@ public static class AgentsText
         return paragraphs;
     }
 
-    private static bool EndsAsking(string line) => Unwrapped(line) is var bare && (bare.EndsWith('?') || bare.EndsWith('？'));
+    /// <summary>True when the line, ignoring inline code, ends in a question mark.</summary>
+    private static bool EndsAsking(string line)
+    {
+        var bare = Unwrapped(InlineCode().Replace(line, string.Empty));
+        return bare.EndsWith('?') || bare.EndsWith('？');
+    }
+
+    /// <summary>True when the line talks of picking something, so a list after it is the options.</summary>
+    private static bool NamesChoice(string line) => ChoiceWord().IsMatch(line);
+
+    [GeneratedRegex("`[^`]*`")]
+    private static partial Regex InlineCode();
+
+    [GeneratedRegex(@"\b(pick|choose|which|prefer|options?|decide)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ChoiceWord();
 
     /// <summary>A line without the emphasis, quotes and brackets that may close it.</summary>
     private static string Unwrapped(string line) => line.TrimEnd('*', '_', '`', '"', '\'', ')', ']', '»', '”', '’', ' ');
