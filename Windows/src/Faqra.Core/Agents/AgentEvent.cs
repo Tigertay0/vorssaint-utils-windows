@@ -30,6 +30,12 @@ public sealed record AgentEvent(
     /// <summary>True when the relay had to cut part of a permission request's input, so the card cannot show all of it.</summary>
     public bool InputTruncated { get; init; }
 
+    /// <summary>The session's inbox, when Claude Code gave the hook one. Never logged.</summary>
+    public AgentInbox? Inbox { get; init; }
+
+    /// <summary>False for a session nobody is watching (a scripted <c>claude -p</c> run), true for an interactive one, null when Claude Code did not say.</summary>
+    public bool? Attended { get; init; }
+
     public static AgentEvent? TryParse(string line)
     {
         try
@@ -55,6 +61,8 @@ public sealed record AgentEvent(
                 PermissionSuggestions = obj["permission_suggestions"] as JsonArray,
                 TranscriptPath = Text(obj, "transcript_path"),
                 InputTruncated = obj["faqra_input_truncated"] is JsonValue flag && flag.GetValueKind() == JsonValueKind.True,
+                Inbox = AgentInbox.TryCreate(Text(obj, "messaging_socket"), Text(obj, "messaging_token")),
+                Attended = Text(obj, "session_attended") switch { "1" => true, "0" => false, _ => null },
             };
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException)

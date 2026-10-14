@@ -71,4 +71,22 @@ public class AgentEventTests
         Assert.Equal("faqra-agents-S-1-5-21-1", AgentPipe.Name("S-1-5-21-1", _ => null));
         Assert.Equal("test-pipe", AgentPipe.Name("S-1-5-21-1", name => name == AgentPipe.OverrideVariable ? "test-pipe" : null));
     }
+
+    [Fact]
+    public void ReadsTheInboxAndTheAttendedFlag()
+    {
+        var e = AgentEvent.TryParse("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s1\",\"messaging_socket\":\"\\\\\\\\.\\\\pipe\\\\LOCAL\\\\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c\",\"messaging_token\":\"0123456789abcdef0123456789abcdef\",\"session_attended\":\"0\"}")!;
+        Assert.Equal(@"LOCAL\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c", e.Inbox!.PipeName);
+        Assert.False(e.Attended);
+        Assert.True(AgentEvent.TryParse("{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\",\"session_attended\":\"1\"}")!.Attended);
+        Assert.Null(AgentEvent.TryParse("{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\"}")!.Attended);
+        Assert.Null(AgentEvent.TryParse("{\"hook_event_name\":\"Stop\",\"session_id\":\"s1\",\"messaging_socket\":\"\\\\\\\\.\\\\pipe\\\\faqra-agents\",\"messaging_token\":\"0123456789abcdef0123456789abcdef\"}")!.Inbox);
+    }
+
+    [Fact]
+    public void AnEventNeverPrintsItsToken()
+    {
+        var e = AgentEvent.TryParse("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s1\",\"messaging_socket\":\"\\\\\\\\.\\\\pipe\\\\LOCAL\\\\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c\",\"messaging_token\":\"0123456789abcdef0123456789abcdef\"}")!;
+        Assert.DoesNotContain("0123456789abcdef0123456789abcdef", e.ToString());
+    }
 }

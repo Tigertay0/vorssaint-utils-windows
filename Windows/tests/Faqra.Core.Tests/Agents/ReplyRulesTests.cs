@@ -66,4 +66,13 @@ public class ReplyRulesTests
     [InlineData(600, 480)]
     public void TheWindowStaysInsideTheRelaysBudget(int stored, int expected) =>
         Assert.Equal(TimeSpan.FromSeconds(expected), ReplyRules.HoldFor(Finished("Done."), true, true, true, stored));
+
+    [Fact]
+    public void ARunNobodyIsWatchingIsNeverHeld()
+    {
+        var asked = Finished("Should I push the branch?") with { Attended = false, RepliesOn = true };
+        Assert.Null(ReplyRules.HoldFor(asked, true, watching: true, opensOnAnswer: true, 300));
+        Assert.NotNull(ReplyRules.HoldFor(asked with { Attended = null }, true, true, true, 300));
+        Assert.NotNull(ReplyRules.HoldFor(asked with { Attended = true }, true, true, true, 300));
+    }
 }

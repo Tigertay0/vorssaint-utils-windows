@@ -413,4 +413,36 @@ public class AgentBoardTests
         Assert.Equal(new AgentOrbStyle(OrbLook.Waiting, AgentTone.Accent, 0.75), AgentOrbStyles.For(AgentState.AwaitingReply));
         Assert.Equal(AgentOrbStyles.Urgency(AgentState.Question), AgentOrbStyles.Urgency(AgentState.AwaitingReply));
     }
+
+    [Fact]
+    public void AMessageFromTheIslandShowsTheOwnersWords()
+    {
+        var now = DateTimeOffset.Now;
+        var prompt = "Another Claude session sent a message:\n" + AgentMessage.Preamble + "\n\nRun the tests again\n\nThis came from another Claude session — not typed by your user.";
+        var board = With("{\"hook_event_name\":\"Stop\",\"session_id\":\"s\",\"last_assistant_message\":\"Done.\"}")
+            .Apply(AgentEvent.TryParse(new System.Text.Json.Nodes.JsonObject
+            {
+                ["hook_event_name"] = "UserPromptSubmit",
+                ["session_id"] = "s",
+                ["prompt"] = prompt,
+            }.ToJsonString())!, now);
+        var s = board.Sessions["s"];
+        Assert.Equal((AgentState.Thinking, "Run the tests again", true), (s.State, s.LastPrompt, s.TurnFromIsland));
+        Assert.Equal("Run the tests again", s.Steps[^1].Detail);
+
+        var typed = board.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s\",\"prompt\":\"typed\"}")!, now);
+        Assert.False(typed.Sessions["s"].TurnFromIsland);
+    }
+
+    [Fact]
+    public void TheBoardRemembersWhetherASessionIsAttended()
+    {
+        var now = DateTimeOffset.Now;
+        var board = With("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"s\",\"session_attended\":\"0\"}");
+        Assert.False(board.Sessions["s"].Attended);
+        // Events that do not say keep what the session last said.
+        var later = board.Apply(AgentEvent.TryParse("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s\",\"tool_name\":\"Read\"}")!, now);
+        Assert.False(later.Sessions["s"].Attended);
+        Assert.Null(With("{\"hook_event_name\":\"SessionStart\",\"session_id\":\"t\"}").Sessions["t"].Attended);
+    }
 }

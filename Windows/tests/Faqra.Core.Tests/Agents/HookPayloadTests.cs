@@ -34,6 +34,21 @@ public class HookPayloadTests
     }
 
     [Fact]
+    public void ForwardsTheSessionsInboxAndWhetherItIsAttended()
+    {
+        var env = new Dictionary<string, string?>
+        {
+            ["CLAUDE_CODE_MESSAGING_SOCKET"] = @"\\.\pipe\LOCAL\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c",
+            ["CLAUDE_CODE_MESSAGING_TOKEN"] = "0123456789abcdef0123456789abcdef",
+            ["CLAUDE_CODE_SESSION_ATTENDED"] = "1",
+        };
+        var line = Line("{\"session_id\":\"s1\"}", env: name => env.GetValueOrDefault(name));
+        Assert.Equal(@"\\.\pipe\LOCAL\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c", line["messaging_socket"]!.GetValue<string>());
+        Assert.Equal("0123456789abcdef0123456789abcdef", line["messaging_token"]!.GetValue<string>());
+        Assert.Equal("1", line["session_attended"]!.GetValue<string>());
+    }
+
+    [Fact]
     public void TagsTheAgentTheTerminalAndAMissingFolder()
     {
         var env = new Dictionary<string, string?> { ["TERM_PROGRAM"] = "vscode", ["WT_SESSION"] = "abc", ["CLAUDE_CODE_ENTRYPOINT"] = "claude-vscode" };

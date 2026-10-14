@@ -9,6 +9,7 @@ namespace Faqra.Core.Agents;
 /// and the island will open on them. Never when no card can show, and never past Claude Code's replies-in-a-row cap.
 /// Looking does not count for a turn the owner started from the island (2026-10-12): a reply sent there goes to Claude,
 /// and Claude's answer only waits if it asks something or replies are on.
+/// A session Claude Code reports as unattended (a scripted run) is never held: nobody would see the box.
 /// </summary>
 public static class ReplyRules
 {
@@ -20,7 +21,7 @@ public static class ReplyRules
     /// <summary>How long to hold <paramref name="session"/>'s finished turn, or null to let Claude stop at once.</summary>
     public static TimeSpan? HoldFor(AgentSession session, bool cardsCanShow, bool watching, bool opensOnAnswer, int windowSeconds)
     {
-        if (!cardsCanShow || session.ConsecutiveReplies >= AgentBoard.MaxConsecutiveReplies)
+        if (!cardsCanShow || session.Attended == false || session.ConsecutiveReplies >= AgentBoard.MaxConsecutiveReplies)
         {
             return null;
         }

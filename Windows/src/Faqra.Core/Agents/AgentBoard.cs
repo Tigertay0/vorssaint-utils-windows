@@ -46,6 +46,9 @@ public sealed record AgentSession(
     /// <summary>This turn began with the owner's reply from the island; it lasts until a prompt typed in Claude Code.</summary>
     public bool TurnFromIsland { get; init; }
 
+    /// <summary>Whether someone is watching the session, as Claude Code last said; null until it says.</summary>
+    public bool? Attended { get; init; }
+
     /// <summary>The folder the session runs in, as the owner calls the project.</summary>
     public string Project => Cwd.Length == 0 ? Id : Path.GetFileName(Cwd.TrimEnd('\\', '/')) is { Length: > 0 } name ? name : Cwd;
 
@@ -103,7 +106,7 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
         {
             return this;
         }
-        return this with { Sessions = Sessions.SetItem(e.SessionId, next with { UpdatedAt = now, Cwd = e.Cwd.Length > 0 ? e.Cwd : next.Cwd }) };
+        return this with { Sessions = Sessions.SetItem(e.SessionId, next with { UpdatedAt = now, Cwd = e.Cwd.Length > 0 ? e.Cwd : next.Cwd, Attended = e.Attended ?? next.Attended }) };
     }
 
     public AgentBoard Tick(DateTimeOffset now)
@@ -183,6 +186,22 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
             ? this with { Sessions = Sessions.SetItem(sessionId, s with { RepliesOn = on }) }
             : this;
 
+    /// <summary>A new turn from a prompt typed in Claude Code, or from words the owner sent from the island.</summary>
+    private static AgentSession Prompted(AgentSession s, string? prompt, DateTimeOffset now)
+    {
+        var words = AgentMessage.Unwrap(prompt);
+        var started = s with
+        {
+            State = AgentState.Thinking,
+            FinishedAt = null,
+            LastPrompt = words ?? s.LastPrompt,
+            Unread = false,
+            ConsecutiveReplies = 0,
+            TurnFromIsland = AgentMessage.IsFromIsland(prompt),
+        };
+        return Step(started, now, AgentStepKind.Prompt, OneLine(words ?? string.Empty, PromptChars));
+    }
+
     private static AgentSession Finished(AgentSession s, AgentEvent e, DateTimeOffset now)
     {
         var said = e.LastAssistantMessage ?? e.Message;
@@ -205,7 +224,7 @@ public sealed record AgentBoard(ImmutableDictionary<string, AgentSession> Sessio
     private static AgentSession? Next(AgentSession s, AgentEvent e, DateTimeOffset now) => e.Event switch
     {
         "SessionStart" => s,
-        "UserPromptSubmit" => Step(s with { State = AgentState.Thinking, FinishedAt = null, LastPrompt = e.Prompt ?? s.LastPrompt, Unread = false, ConsecutiveReplies = 0, TurnFromIsland = false }, now, AgentStepKind.Prompt, OneLine(e.Prompt ?? string.Empty, PromptChars)),
+        "UserPromptSubmit" => Prompted(s, e.Prompt, now),
         "PreToolUse" => ToolStep(s with { State = e.ToolName is { } t && SearchTools.Contains(t) ? AgentState.Searching : AgentState.Working, ConsecutiveReplies = 0 }, e, now),
         "PostToolUse" => s with { State = AgentState.Working },
         "PostToolUseFailure" => Step(s with { State = AgentState.Working }, now, AgentStepKind.Failed, e.ToolName ?? string.Empty),

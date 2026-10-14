@@ -28,6 +28,9 @@ public static class HookPayload
         ("term_program", "TERM_PROGRAM"),
         ("wt_session", "WT_SESSION"),
         ("claude_entrypoint", "CLAUDE_CODE_ENTRYPOINT"),
+        ("messaging_socket", "CLAUDE_CODE_MESSAGING_SOCKET"),
+        ("messaging_token", "CLAUDE_CODE_MESSAGING_TOKEN"),
+        ("session_attended", "CLAUDE_CODE_SESSION_ATTENDED"),
     ];
 
     /// <summary>The line sent to Faqra for this stdin, or null when stdin is not a JSON object.</summary>
