@@ -17,8 +17,8 @@ namespace Faqra.App.Island.Modules;
 
 /// <summary>
 /// Every agent session, most urgent first. Above the list sits the focused session's card (an approval, a question, or
-/// its latest answer with a reply box while Claude waits); below it, the session's folder, the replies switch, the owner's last prompt,
-/// Claude's last words and its activity.
+/// its latest answer with a reply box while Claude waits); under the list, a box to message the focused session; below it,
+/// the session's folder, the replies switch, the owner's last prompt, Claude's last words and its activity.
 /// Rows and cards are kept and updated in place, so orbs keep moving and the owner's picks and typing survive events.
 /// </summary>
 public sealed class AgentsModule : UserControl
@@ -37,6 +37,7 @@ public sealed class AgentsModule : UserControl
     private readonly StackPanel _detail = new() { Margin = new Thickness(12, 12, 12, 0) };
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly CheckBox _repliesOn = new() { Margin = new Thickness(0, 0, 0, 10) };
+    private readonly MessageComposer _composer;
     private string? _focused;
     private string? _cardKey;
 
@@ -47,6 +48,14 @@ public sealed class AgentsModule : UserControl
         var body = new StackPanel();
         body.Children.Add(_card);
         body.Children.Add(_list);
+        // The box lives outside the details, which are rebuilt on every event: taking it out of the window would drop the
+        // caret while the owner types. It is only shown or hidden.
+        _composer = new MessageComposer(_s, (session, words) => _hub.MessageAsync(session, words), () => KeyboardWanted?.Invoke())
+        {
+            Margin = new Thickness(12, 12, 12, 0),
+            Visibility = Visibility.Collapsed,
+        };
+        body.Children.Add(_composer);
         body.Children.Add(_detail);
         Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         _clock.Tick += (_, _) => RefreshTimes();
@@ -121,6 +130,7 @@ public sealed class AgentsModule : UserControl
             _rows.Clear();
             _list.Children.Clear();
             _detail.Children.Clear();
+            _composer.Visibility = Visibility.Collapsed;
             ShowCard(null, null);
             _list.Children.Add(Empty());
             return;
@@ -229,6 +239,13 @@ public sealed class AgentsModule : UserControl
 
     private void RenderDetail(AgentSession session)
     {
+        // A waiting card has its own buttons and reply box; otherwise any session Faqra can reach takes a message.
+        var canMessage = _hub.CanMessage(session.Id) && _hub.Requests.All(request => request.SessionId != session.Id);
+        if (canMessage)
+        {
+            _composer.ShowFor(session.Id);
+        }
+        _composer.Visibility = canMessage ? Visibility.Visible : Visibility.Collapsed;
         _detail.Children.Clear();
         var header = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 0, 0, 10) };
         if (_hub.WindowOwner(session.Id) is not null)

@@ -303,6 +303,10 @@ public class AgentsRenderTests
         var rows = new List<System.Windows.Controls.Button>();
         void Walk(DependencyObject node)
         {
+            if (node is Faqra.App.Island.Modules.MessageComposer)
+            {
+                return; // its Send button is not a session row
+            }
             if (node is System.Windows.Controls.Button button)
             {
                 rows.Add(button);

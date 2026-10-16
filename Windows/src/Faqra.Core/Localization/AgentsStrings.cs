@@ -85,6 +85,9 @@ public sealed partial class AgentsStrings
     public required string ReplyWindowOver { get; init; }
     public required string ReplyCapReachedFormat { get; init; }
     public required string RepliesOnToggle { get; init; }
+    public required string MessagePlaceholder { get; init; }
+    public required string MessageSent { get; init; }
+    public required string MessageFailed { get; init; }
 
     // States
     public required string StateIdle { get; init; }
