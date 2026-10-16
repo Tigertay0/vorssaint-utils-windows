@@ -40,6 +40,10 @@ public sealed class AgentHub : IDisposable
     private readonly Func<int, WindowLookup>? _locateWindow;
     private readonly string? _projectsRoot;
     private readonly SessionWindowCache _windows = new();
+    private readonly SessionInboxes _inboxes = new();
+
+    /// <summary>How long a message may take to reach a session's inbox before Faqra says it could not.</summary>
+    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(3);
     private readonly Dictionary<string, TaskCompletionSource<AgentDecision?>> _waiting = new(StringComparer.Ordinal);
     private CancellationTokenSource? _running;
     private Timer? _tick;
@@ -137,6 +141,32 @@ public sealed class AgentHub : IDisposable
     /// <summary>For render tests: pretends a session's window was found. Never called by the app.</summary>
     public void RememberWindowForTests(string sessionId, int owner) => _windows.Remember(sessionId, owner);
 
+    /// <summary>Whether Faqra can send words to this session: it has seen the session's inbox. Any thread.</summary>
+    public bool CanMessage(string sessionId) => _inboxes.Find(sessionId) is not null;
+
+    /// <summary>For render tests: an inbox without a relay. Never called by the app.</summary>
+    public void RememberInboxForTests(string sessionId, AgentInbox inbox) => _inboxes.Remember(sessionId, inbox);
+
+    /// <summary>
+    /// Sends the owner's words to a session through its inbox. Claude Code starts a new turn when the session is idle or
+    /// reads them between steps; the hook events that follow update the board as for a typed prompt. Any thread.
+    /// </summary>
+    public async Task<AgentMessageOutcome> MessageAsync(string sessionId, string text)
+    {
+        var words = text.Trim();
+        if (!AgentMessage.Fits(words))
+        {
+            return AgentMessageOutcome.Invalid;
+        }
+        if (_inboxes.Find(sessionId) is not { } inbox)
+        {
+            return AgentMessageOutcome.Unavailable;
+        }
+        var sent = await PeerInbox.SendAsync(inbox, AgentMessage.Lines(inbox, words), MessageTimeout).ConfigureAwait(false);
+        Post(() => WriteLog($"{_now():O} Message {Short(sessionId)} {(sent ? "sent" : "unreachable")}"));
+        return sent ? AgentMessageOutcome.Sent : AgentMessageOutcome.Unreachable;
+    }
+
     /// <summary>Starts or stops listening; stopping forgets every session and lets every request go. Call on the context's thread.</summary>
     public void SetRunning(bool running)
     {
@@ -173,6 +203,7 @@ public sealed class AgentHub : IDisposable
         _running = null;
         _tick?.Dispose();
         _tick = null;
+        _inboxes.Clear();
         Post(() =>
         {
             foreach (var waiting in _waiting.Values)
@@ -243,6 +274,7 @@ public sealed class AgentHub : IDisposable
                 return;
             }
             NoteWindow(connection, e);
+            NoteInbox(e);
             var title = TitleFor(e);
             BeforePost?.Invoke();
             if (e.Event == "PermissionRequest")
@@ -578,6 +610,20 @@ public sealed class AgentHub : IDisposable
         {
             // A failed lookup only means no "Go to window" for this session; the event itself still counts.
             Trace.TraceWarning($"Faqra agents window lookup: {ex.Message}");
+        }
+    }
+
+    /// <summary>Keeps the session's inbox from its latest event, so the island can message it; forgets it when the session ends.</summary>
+    private void NoteInbox(AgentEvent e)
+    {
+        if (e.Event == "SessionEnd")
+        {
+            _inboxes.Forget(e.SessionId);
+            return;
+        }
+        if (e.Inbox is { } inbox)
+        {
+            _inboxes.Remember(e.SessionId, inbox);
         }
     }
 
