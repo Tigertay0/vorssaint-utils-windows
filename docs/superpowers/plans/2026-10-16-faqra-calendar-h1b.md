@@ -35,7 +35,7 @@
   - Timeout 20 s, at most 5 MB per feed.
   - 401, 403 and 404 mark a link broken. Any other failure keeps the last good copy and marks the link failing.
 - **Reading**
-  - Occurrences from 1 day back to 14 days ahead.
+  - Occurrences from 14 days back to 14 days ahead, so the previous week the Calendar section shows is real.
   - Repeats, exceptions, moved occurrences, time zones (IANA and Windows names) and all-day events are handled.
   - `STATUS:CANCELLED` is skipped.
 - **Last good copy**
@@ -370,9 +370,12 @@ public class CalendarRulesTests
     [InlineData(null)]
     public void RefusesOtherLinks(string? input) => Assert.Null(CalendarRules.FeedLink(input));
 
-    [Fact]
-    public void AMaskedLinkShowsOnlyTheHostAndTheEnd() =>
-        Assert.Equal("calendar.google.com…s.ics", CalendarRules.Mask(new Uri("https://calendar.google.com/calendar/ical/x/private-abc/basic.ics")));
+    [Theory]
+    [InlineData("https://calendar.google.com/calendar/ical/x/private-abc9/basic.ics", "calendar.google.com…abc9")]
+    [InlineData("https://p01-caldav.icloud.com/published/2/XYZ12", "p01-caldav.icloud.com…YZ12")]
+    [InlineData("https://outlook.office365.com/owa/calendar/a@b.com/f00d/calendar.ics", "outlook.office365.com…f00d")]
+    public void AMaskedLinkShowsOnlyTheHostAndTheEnd(string link, string masked) =>
+        Assert.Equal(masked, CalendarRules.Mask(new Uri(link)));
 }
 ```
 
@@ -461,7 +464,8 @@ public static class CalendarFeed
         var join = CalendarRules.JoinLink(source.Location, source.Description, source.Url?.ToString());
         if (source.IsAllDay)
         {
-            var day = period.StartTime.Date;
+            // Unspecified kind: a Local-kind DateTime with another zone's offset would make DateTimeOffset throw.
+            var day = DateTime.SpecifyKind(period.StartTime.Date, DateTimeKind.Unspecified);
             var days = Math.Max(1, (int)Math.Round(((period.EffectiveEndTime?.Date ?? day.AddDays(1)) - day).TotalDays));
             var startLocal = new DateTimeOffset(day, local.GetUtcOffset(day));
             var endDay = day.AddDays(days);
@@ -576,10 +580,18 @@ public static partial class CalendarRules
         return Uri.TryCreate(text, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && uri.Host.Length > 0 ? uri : null;
     }
 
-    /// <summary>A link as the owner may see it: its host, then the last four characters.</summary>
+    /// <summary>
+    /// A link as the owner may see it: its host, then the last four characters before a trailing "something.ics" file
+    /// name (Google and Outlook end every link the same way, so the file name would not tell two links apart).
+    /// </summary>
     public static string Mask(Uri link)
     {
-        var text = link.AbsoluteUri;
+        var text = link.AbsoluteUri.TrimEnd('/');
+        var slash = text.LastIndexOf('/');
+        if (text.EndsWith(".ics", StringComparison.OrdinalIgnoreCase) && slash > link.GetLeftPart(UriPartial.Authority).Length)
+        {
+            text = text[..slash];
+        }
         return $"{link.Host}…{text[^Math.Min(4, text.Length)..]}";
     }
 
@@ -1002,7 +1014,8 @@ public sealed class CalendarService : IDisposable
     public static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(15);
     public static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(20);
     public const int MaxFeedBytes = 5 * 1024 * 1024;
-    private static readonly TimeSpan Back = TimeSpan.FromDays(1);
+    // Back covers the whole previous week the Calendar section can show; Ahead covers the next one.
+    private static readonly TimeSpan Back = TimeSpan.FromDays(14);
     private static readonly TimeSpan Ahead = TimeSpan.FromDays(14);
 
     private readonly ISettingsStore _store;
@@ -1050,7 +1063,10 @@ public sealed class CalendarService : IDisposable
             Links = [.. Links, link];
             SaveLinks();
             Publish();
-            _ = RefreshAsync();
+            if (_running)
+            {
+                _ = RefreshAsync();
+            }
         }
         return true;
     }
@@ -1415,7 +1431,7 @@ public class CalendarPageTests
 }
 ```
 
-(In tests, `AppServices.StartWith` builds a `CalendarService` over the in-memory store. Its cache directory should be a temp folder, not the owner's. Give `AppServices` a test-only way to point it at `Path.GetTempPath()` the way other paths are handled. Say in the report what you used.)
+(In tests, `AppServices.StartWith` builds a `CalendarService` over the in-memory store. No test may touch the owner's folder or the network. Give `AppServices` a test-only way to pass the cache directory (a fresh temp folder) and an `HttpMessageHandler` (one that answers 404 to everything) the way other test overrides in `AppServices` are handled, and use it in every App test that starts services. Say in the report what you used.)
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -1501,7 +1517,7 @@ Tests:
   - The strip has 7 day buttons with automation names like "Monday 19 October", via `ToString("dddd d MMMM", culture)`.
   - Today's two events are listed with `Range` text and titles. Render `island-calendar.png` at 412 by 400.
 - `ChoosingADayShowsItsEvents`: click Thursday's button; that day's event shows. Click an empty day; `NothingThisDay` shows.
-- `TheArrowsMoveByAWeek`: invoke the "Next week" button (automation name `NextWeek`). `WeekStart` moves 7 days and the selected day moves with it. Then "Previous week" moves it back.
+- `TheArrowsMoveByAWeek`: invoke the "Next week" button (automation name `NextWeek`). `WeekStart` moves 7 days and the selected day moves with it, and "Next week" is now disabled (the feed only covers two weeks). Then "Previous week" twice reaches last week, where "Previous week" is disabled.
 - `WithoutALinkTheSectionSaysHowToAddOne`: with no links, the text contains `AddLinkPrompt` and there is a button named `OpenSettings`.
 - `ABrokenLinkSaysSo`: with a handler returning 404, the text contains `LinkBroken`.
 - `JoinShowsOnlyForMeetingLinks`: an event with a Meet link in its location has a `Join` button. One without has none.
@@ -1536,7 +1552,7 @@ Expected: build FAILS with "The type or namespace name 'CalendarModule' could no
 
 **Behaviour:**
 - `SelectedDay` starts as today (local). `WeekStart` is the Monday on or before it.
-- `ShowDay(day)` selects a day. `ShiftWeek(n)` moves `WeekStart` and the selected day by `7n` days.
+- `ShowDay(day)` selects a day. `ShiftWeek(n)` moves `WeekStart` and the selected day by `7n` days, kept between last week and next week (the weeks the feed covers). An arrow at its limit is disabled.
 - The module subscribes to `Calendar.Changed`, marshalled with `Dispatcher.BeginInvoke`, and rebuilds only the day list (the strip keeps its buttons; update its backgrounds).
 - Subscribe and unsubscribe idempotently on Loaded, Unloaded and `IsVisibleChanged`, as `HomeModule` does.
 - A minute `DispatcherTimer` re-renders the day list so "Now" and the soon state stay right.
