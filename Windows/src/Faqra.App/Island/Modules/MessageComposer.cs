@@ -21,6 +21,7 @@ internal sealed class MessageComposer : ContentControl
     private readonly AgentsStrings _s;
     private readonly Func<string, string, Task<AgentMessageOutcome>> _send;
     private bool _sending;
+    private int _focus;
 
     public MessageComposer(AgentsStrings s, Func<string, string, Task<AgentMessageOutcome>> send, Action wantKeyboard)
     {
@@ -52,6 +53,7 @@ internal sealed class MessageComposer : ContentControl
         Status = AgentCardParts.Caption(string.Empty);
         Status.Foreground = IslandPalette.Tertiary;
         Status.Margin = new Thickness(0, 6, 0, 0);
+        ShowStatus(string.Empty);
 
         var stack = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
         stack.Children.Add(Box);
@@ -78,8 +80,9 @@ internal sealed class MessageComposer : ContentControl
             return;
         }
         SessionId = sessionId;
+        _focus++;
         Box.Text = string.Empty;
-        Status.Text = string.Empty;
+        ShowStatus(string.Empty);
     }
 
     /// <summary>Sends the box's words to its session. Never throws; the caption says how it went.</summary>
@@ -90,6 +93,7 @@ internal sealed class MessageComposer : ContentControl
             return;
         }
         var words = Box.Text.Trim();
+        var focus = _focus;
         _sending = true;
         UpdateSend();
         AgentMessageOutcome outcome;
@@ -106,16 +110,24 @@ internal sealed class MessageComposer : ContentControl
         {
             _sending = false;
         }
-        // The owner may have moved to another session meanwhile: that session's box is not touched.
-        if (SessionId == session)
+        // The owner may have moved away (even away and back) meanwhile: then the box is not touched. Words typed
+        // since pressing Send are never wiped either.
+        if (_focus == focus)
         {
-            if (outcome == AgentMessageOutcome.Sent)
+            if (outcome == AgentMessageOutcome.Sent && Box.Text.Trim() == words)
             {
                 Box.Text = string.Empty;
             }
-            Status.Text = outcome == AgentMessageOutcome.Sent ? _s.MessageSent : _s.MessageFailed;
+            ShowStatus(outcome == AgentMessageOutcome.Sent ? _s.MessageSent : _s.MessageFailed);
         }
         UpdateSend();
+    }
+
+    /// <summary>An empty caption takes no room, so no gap opens between the box and Send.</summary>
+    private void ShowStatus(string text)
+    {
+        Status.Text = text;
+        Status.Visibility = text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void UpdateSend() => SendButton.IsEnabled = !_sending && AgentMessage.Fits(Box.Text);

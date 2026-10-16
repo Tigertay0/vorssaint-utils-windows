@@ -156,6 +156,57 @@ public class MessageComposerTests
     });
 
     [Fact]
+    public void WordsTypedDuringASendAreKept() => StaThread.Run(() =>
+    {
+        var pending = new TaskCompletionSource<AgentMessageOutcome>();
+        var composer = Composer((_, _) => pending.Task);
+        composer.ShowFor("s1");
+        composer.Box.Text = "first";
+        var sending = composer.SendAsync();
+        composer.Box.Text = "second";
+
+        pending.SetResult(AgentMessageOutcome.Sent);
+        Drain(sending);
+
+        Assert.Equal("second", composer.Box.Text);
+    });
+
+    [Fact]
+    public void ALateSendAfterLeavingAndComingBackLeavesTheNewDraft() => StaThread.Run(() =>
+    {
+        var pending = new TaskCompletionSource<AgentMessageOutcome>();
+        var composer = Composer((_, _) => pending.Task);
+        composer.ShowFor("s1");
+        composer.Box.Text = "first";
+        var sending = composer.SendAsync();
+        composer.ShowFor("s2");
+        composer.ShowFor("s1");
+        composer.Box.Text = "new draft";
+
+        pending.SetResult(AgentMessageOutcome.Sent);
+        Drain(sending);
+
+        Assert.Equal("new draft", composer.Box.Text);
+        Assert.Equal(string.Empty, composer.Status.Text);
+    });
+
+    [Fact]
+    public void AThrowingSendSaysItFailedAndAllowsAnother() => StaThread.Run(() =>
+    {
+        var composer = Composer((_, _) => throw new InvalidOperationException("boom"));
+        composer.ShowFor("s1");
+        Assert.Equal(Visibility.Collapsed, composer.Status.Visibility);
+        composer.Box.Text = "Run the tests again";
+
+        Drain(composer.SendAsync());
+
+        Assert.Equal(S.MessageFailed, composer.Status.Text);
+        Assert.Equal(Visibility.Visible, composer.Status.Visibility);
+        Assert.Equal("Run the tests again", composer.Box.Text);
+        Assert.True(composer.SendButton.IsEnabled);
+    });
+
+    [Fact]
     public void TheBoxStopsAtTheLimitAndAsksForTheKeyboard() => StaThread.Run(() =>
     {
         var asked = 0;
