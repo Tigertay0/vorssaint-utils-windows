@@ -37,9 +37,9 @@ public sealed partial class AgentInbox
 
     public override string ToString() => $"AgentInbox({PipeName}, token hidden)";
 
-    [GeneratedRegex(@"^\\\\\.\\pipe\\(LOCAL\\)?cc-msg-[0-9a-f]{32}$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^\\\\\.\\pipe\\(LOCAL\\)?cc-msg-[0-9a-f]{32}\z", RegexOptions.IgnoreCase)]
     private static partial Regex SocketPattern();
 
-    [GeneratedRegex("^[0-9a-f]{32}$")]
+    [GeneratedRegex(@"^[0-9a-f]{32}\z")]
     private static partial Regex TokenPattern();
 }

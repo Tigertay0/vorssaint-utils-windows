@@ -22,6 +22,7 @@ public class AgentInboxTests
     [InlineData(@"\\.\pipe\LOCAL\cc-msg-f482ac3a68b5e314e2a7bcadb825f61")]
     [InlineData(@"\\.\pipe\LOCAL\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c\x")]
     [InlineData("/tmp/cc-socks-1000/cc-msg-f482ac3a68b5e314e2a7bcadb825f61c.sock")]
+    [InlineData("\\\\.\\pipe\\LOCAL\\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c\n")]
     [InlineData("")]
     [InlineData(null)]
     public void RefusesAnythingButClaudeCodesInbox(string? socket) => Assert.Null(AgentInbox.TryCreate(socket, Token));
@@ -31,6 +32,7 @@ public class AgentInboxTests
     [InlineData("0123456789abcdef0123456789abcde")]
     [InlineData("0123456789abcdef0123456789abcdefa")]
     [InlineData("0123456789abcdef0123456789abcdeg")]
+    [InlineData("0123456789abcdef0123456789abcdef\n")]
     [InlineData(null)]
     public void RefusesATokenThatIsNotClaudeCodes(string? token) =>
         Assert.Null(AgentInbox.TryCreate(@"\\.\pipe\LOCAL\cc-msg-f482ac3a68b5e314e2a7bcadb825f61c", token));
