@@ -44,11 +44,16 @@ public static class HomeItems
         return items;
     }
 
-    /// <summary>What to save: the rows in their new order, then any names from <paramref name="previous"/> this version does not know.</summary>
-    public static string Saved(IReadOnlyList<HomeItem> items, string? previous)
+    /// <summary>
+    /// What to save: the rows in their new order, then, in their previous order, the names from <paramref name="previous"/>
+    /// this version does not know and the known rows whose feature is off (so they return when it is turned back on).
+    /// </summary>
+    public static string Saved(IReadOnlyList<HomeItem> items, string? previous, Func<HomeItem, bool> isAvailable)
     {
-        var unknown = Names(previous).Where(raw => FromRawValue(raw) is null).Distinct(StringComparer.Ordinal);
-        return string.Join(",", items.Select(item => item.RawValue()).Concat(unknown));
+        var kept = Names(previous)
+            .Where(raw => FromRawValue(raw) is not { } item || (!isAvailable(item) && !items.Contains(item)))
+            .Distinct(StringComparer.Ordinal);
+        return string.Join(",", items.Select(item => item.RawValue()).Concat(kept));
     }
 
     /// <summary>Rows that can be added: available and not on Home yet, in canonical order.</summary>

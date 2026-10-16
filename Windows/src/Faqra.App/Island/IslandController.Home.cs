@@ -21,6 +21,7 @@ public sealed partial class IslandController
             _agentsFocus = sessionId;
             Expand(takeFocus: false, IslandModule.FaqraAgents);
         };
+        module.ItemsChanged += UpdateSampling;
         _homeModule = module;
         return module;
     }
@@ -35,6 +36,10 @@ public sealed partial class IslandController
         HomeItem.Battery => _systemMonitor.HasBattery,
         _ => false,
     };
+
+    /// <summary>The monitor samples only while a System card, or Home's System row, is on screen.</summary>
+    private void UpdateSampling() =>
+        _systemMonitor.SetNotchVisible(_window is not null && _presentation == IslandPresentation.Expanded && !_sectionsOpen && (_module == IslandModule.System || HomeShowsSystem()));
 
     /// <summary>Home is open with a System row, so the monitor should sample as it does for the System section.</summary>
     private bool HomeShowsSystem() => _module == IslandModule.FaqraHome && _homeModule?.Shows(HomeItem.System) == true;

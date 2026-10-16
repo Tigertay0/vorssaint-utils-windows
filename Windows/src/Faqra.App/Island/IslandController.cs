@@ -264,8 +264,8 @@ public sealed partial class IslandController : IDisposable
         {
             _window.SetIdleContent(BuildIdleContent());
         }
-        // The monitor samples only while a System card is on screen; Home's row is known once built.
-        _systemMonitor.SetNotchVisible(expanded && !_sectionsOpen && (_module == IslandModule.System || HomeShowsSystem()));
+        // Home's System row is known once built.
+        UpdateSampling();
 
         _window.ApplyShape(
             _currentSize,

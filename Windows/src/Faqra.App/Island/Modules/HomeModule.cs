@@ -62,6 +62,20 @@ public sealed class HomeModule : UserControl
             _battery.Stop();
             Unsubscribe();
         };
+        // Collapsing the island hides Home without unloading it; a hidden Home keeps nothing busy.
+        IsVisibleChanged += (_, e) =>
+        {
+            if (e.NewValue is true)
+            {
+                Subscribe();
+                _battery.Start();
+            }
+            else
+            {
+                _battery.Stop();
+                Unsubscribe();
+            }
+        };
     }
 
     private bool _subscribed;
@@ -101,6 +115,9 @@ public sealed class HomeModule : UserControl
 
     /// <summary>A session row asked for that session's card in the Agents section.</summary>
     public event Action<string>? SessionRequested;
+
+    /// <summary>The rows changed in Edit (added, removed or moved), after Home was rebuilt.</summary>
+    public event Action? ItemsChanged;
 
     public IReadOnlyList<HomeItem> Items { get; private set; }
 
@@ -205,14 +222,16 @@ public sealed class HomeModule : UserControl
         button.Margin = new Thickness(6, 0, 0, 0);
         button.IsEnabled = enabled;
         AutomationProperties.SetName(button, name);
+        button.ToolTip = name;
         return button;
     }
 
     private void Change(IReadOnlyList<HomeItem> items)
     {
-        _store.Set(DefaultsKey.FaqraHomeItems, HomeItems.Saved(items, _store.String(DefaultsKey.FaqraHomeItems)));
+        _store.Set(DefaultsKey.FaqraHomeItems, HomeItems.Saved(items, _store.String(DefaultsKey.FaqraHomeItems), _isAvailable));
         Items = items;
         Build();
+        ItemsChanged?.Invoke();
     }
 
     private string ItemName(HomeItem item) => item switch

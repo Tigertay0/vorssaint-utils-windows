@@ -66,6 +66,7 @@ internal abstract class HomeRow
             Template = MusicModule.RoundButtonTemplate(12),
         };
         AutomationProperties.SetName(button, name);
+        button.ToolTip = name;
         button.Click += (_, _) => click();
         return button;
     }

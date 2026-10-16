@@ -34,8 +34,17 @@ public class HomeItemsTests
         Assert.Empty(HomeItems.Parse(null, Everything));
 
         // Names this version does not know survive a save, so a later Faqra still finds them.
-        Assert.Equal("timer,agents,nextEvent,shelf", HomeItems.Saved([HomeItem.Timer, HomeItem.Agents], "agents,nextEvent,timer,shelf,timer"));
-        Assert.Equal("agents", HomeItems.Saved([HomeItem.Agents], null));
+        Assert.Equal("timer,agents,nextEvent,shelf", HomeItems.Saved([HomeItem.Timer, HomeItem.Agents], "agents,nextEvent,timer,shelf,timer", _ => true));
+        Assert.Equal("agents", HomeItems.Saved([HomeItem.Agents], null, _ => true));
+    }
+
+    [Fact]
+    public void AnEditKeepsRowsWhoseFeatureIsOff()
+    {
+        var saved = HomeItems.Saved([HomeItem.NowPlaying], "nowPlaying,nextEvent,agents", item => item != HomeItem.Agents);
+        Assert.Equal("nowPlaying,nextEvent,agents", saved);
+        // An available row the owner removed stays removed.
+        Assert.Equal("nextEvent", HomeItems.Saved([], "nowPlaying,nextEvent", _ => true));
     }
 
     [Fact]

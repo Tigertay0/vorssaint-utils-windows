@@ -81,6 +81,20 @@ public class HomeModuleTests
     });
 
     [Fact]
+    public void ItemsChangedFiresOnceWhenARowIsAddedInEdit() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        var home = Home(services);
+        var raised = 0;
+        home.ItemsChanged += () => raised++;
+        Click(Named(home, S.Edit));
+        Assert.Equal(0, raised);
+        Click(Named(home, string.Format(S.AddFormat, S.ItemTimer)));
+        Assert.Equal(1, raised);
+        Assert.Contains(HomeItem.Timer, home.Items);
+    });
+
+    [Fact]
     public void AnEmptyHomeSaysHowToFillIt() => StaThread.Run(() =>
     {
         using var services = AppServices.StartWith(DefaultsStore.InMemory());
