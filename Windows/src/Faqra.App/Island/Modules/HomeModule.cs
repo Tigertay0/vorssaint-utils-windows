@@ -50,22 +50,52 @@ public sealed class HomeModule : UserControl
         Items = HomeItems.Parse(_store.String(DefaultsKey.FaqraHomeItems), _isAvailable);
         Build();
 
+        Subscribe();
+        _battery.Tick += (_, _) => Refresh(HomeItem.Battery);
+        Loaded += (_, _) =>
+        {
+            Subscribe();
+            _battery.Start();
+        };
+        Unloaded += (_, _) =>
+        {
+            _battery.Stop();
+            Unsubscribe();
+        };
+    }
+
+    private bool _subscribed;
+
+    /// <summary>WPF can raise Loaded again after Unloaded; subscribe once regardless, and catch up on what was missed.</summary>
+    private void Subscribe()
+    {
+        if (_subscribed)
+        {
+            return;
+        }
+        _subscribed = true;
         _nowPlaying.Changed += OnNowPlaying;
         _agents.Changed += OnAgents;
         _timer.Changed += OnTimer;
         _monitor.SnapshotChanged += OnSnapshot;
-        _battery.Tick += (_, _) => Refresh(HomeItem.Battery);
-        Loaded += (_, _) => _battery.Start();
-        Unloaded += (_, _) =>
+        foreach (var row in _rows)
         {
-            _battery.Stop();
-            _nowPlaying.Changed -= OnNowPlaying;
-            _agents.Changed -= OnAgents;
-            _timer.Changed -= OnTimer;
-            _monitor.SnapshotChanged -= OnSnapshot;
-        };
+            row.Update();
+        }
     }
 
+    private void Unsubscribe()
+    {
+        if (!_subscribed)
+        {
+            return;
+        }
+        _subscribed = false;
+        _nowPlaying.Changed -= OnNowPlaying;
+        _agents.Changed -= OnAgents;
+        _timer.Changed -= OnTimer;
+        _monitor.SnapshotChanged -= OnSnapshot;
+    }
     /// <summary>A row asked for its section (Timer, System, Agents).</summary>
     public event Action<IslandModule>? SectionRequested;
 

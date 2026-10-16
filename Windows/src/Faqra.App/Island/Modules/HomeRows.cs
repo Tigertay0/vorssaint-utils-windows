@@ -215,7 +215,7 @@ internal sealed class AgentsRow : HomeRow
         _empty.Visibility = sessions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         for (var i = 0; i < Slots; i++)
         {
-            _slots[i].Show(i < sessions.Count ? sessions[i] : null, _words);
+            _slots[i].Show(i < sessions.Count ? sessions[i] : null, _words, canOpen: i == 0);
         }
         _more.Content = sessions.Count > Slots ? Format(_s.MoreAgentsFormat, sessions.Count - Slots) : null;
         _more.Visibility = sessions.Count > Slots ? Visibility.Visible : Visibility.Collapsed;
@@ -239,6 +239,7 @@ internal sealed class AgentsRow : HomeRow
                 CornerRadius = new CornerRadius(11),
                 Padding = new Thickness(10, 3, 10, 3),
                 VerticalAlignment = VerticalAlignment.Center,
+                Visibility = Visibility.Collapsed,
                 Child = new TextBlock { Text = s.Open, FontFamily = AgentCardParts.TextFont, FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = IslandPalette.Surface },
             };
             var grid = new Grid();
@@ -276,7 +277,8 @@ internal sealed class AgentsRow : HomeRow
 
         public Button Button { get; }
 
-        public void Show(AgentSession? session, AgentsStrings words)
+        /// <summary>Only the first slot (the most urgent session) may wear the Open pill, so Home keeps one accented outlier.</summary>
+        public void Show(AgentSession? session, AgentsStrings words, bool canOpen)
         {
             _sessionId = session?.Id;
             Button.Visibility = session is null ? Visibility.Collapsed : Visibility.Visible;
@@ -288,7 +290,7 @@ internal sealed class AgentsRow : HomeRow
             _orb.Apply(style, AgentInk.For(style.Tone));
             _name.Text = session.Name;
             _status.Text = AgentsText.Status(session, words);
-            _open.Visibility = HomeItems.Waits(session.State) ? Visibility.Visible : Visibility.Collapsed;
+            _open.Visibility = canOpen && HomeItems.Waits(session.State) ? Visibility.Visible : Visibility.Collapsed;
             AutomationProperties.SetName(Button, $"{_name.Text}, {_status.Text}");
         }
     }

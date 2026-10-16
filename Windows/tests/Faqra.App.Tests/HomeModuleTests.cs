@@ -140,4 +140,31 @@ public class HomeModuleTests
         Assert.Same(play, Named(home, S.PlayPause));
         Assert.Same(session, All<Button>(home).First(button => AutomationProperties.GetName(button).StartsWith("faqra", StringComparison.Ordinal)));
     });
+
+    [Fact]
+    public void HomeStillUpdatesAfterBeingUnloadedAndLoadedAgain() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        using var hub = AgentsRenderTests.HubWith("{\"hook_event_name\":\"PreToolUse\",\"session_id\":\"s1\",\"cwd\":\"C:\\\\code\\\\faqra\",\"tool_name\":\"Read\"}");
+        var home = Home(services, hub);
+
+        home.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+        home.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+        hub.ReplaceBoardForTests(hub.Board.Apply(Faqra.Core.Agents.AgentEvent.TryParse("{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s1\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm test\"}}")!, DateTimeOffset.Now));
+
+        Assert.Single(All<TextBlock>(home), block => ReferenceEquals(block.Foreground, IslandPalette.Accent));
+    });
+
+    [Fact]
+    public void OnlyOneOpenPillShowsWhenSeveralAgentsWait() => StaThread.Run(() =>
+    {
+        using var services = AppServices.StartWith(DefaultsStore.InMemory());
+        using var hub = AgentsRenderTests.HubWith(
+            "{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s1\",\"cwd\":\"C:\\\\code\\\\faqra\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm test\"}}",
+            "{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"s2\",\"cwd\":\"C:\\\\code\\\\other\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm test\"}}");
+        var home = Home(services, hub);
+
+        var pills = All<Border>(home).Where(border => ReferenceEquals(border.Background, IslandPalette.Accent) && border.Visibility == Visibility.Visible);
+        Assert.Single(pills);
+    });
 }
