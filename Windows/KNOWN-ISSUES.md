@@ -129,9 +129,16 @@ the outside.
   Code waits on Faqra's Stop hook for up to the reply window (5 minutes by default, at most 8). Done,
   Esc, the collapse button or a new prompt in Claude Code let it go at once. A reply typed when the
   window runs out is not kept.
-- **Unattended `claude -p` runs can be held.** A scripted run (a nightly automation, for example)
-  whose last message asks something waits up to the reply window while the island is on. Claude
-  Code's hook payload has no reliable "unattended" flag, so Faqra cannot tell it apart yet.
+- **Messages from the island arrive as relayed words.** Claude Code tells Claude that words sent
+  from the island's "Message Claude" box came through another session and were not typed at its
+  prompt, so Claude treats them as your request relayed by Faqra (checked live 2026-10-16: an idle
+  session started a new turn and answered as asked). They cannot approve a permission prompt or run
+  a slash command. Sessions in WSL, sessions started with `--bare`, and Claude Code older than
+  2.1.234 have no inbox, so the box does not show for them.
+- **Home cannot be hidden from Settings yet.** Settings has no list of island sections, so Home
+  always leads; hovering opens Home every time.
+- **Home's play and next buttons have no tooltip yet.** Screen readers name them; a pointer sees
+  only the icon.
 - **Replies stop at 9,000 characters.** Claude Code keeps hook context under 10,000 characters and
   turns anything longer into a short preview, so the reply box stops there.
 - **Claude Code takes at most 8 replies in a row from the island.** After that Faqra stops holding

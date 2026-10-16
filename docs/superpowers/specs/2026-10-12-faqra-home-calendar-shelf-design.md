@@ -151,7 +151,7 @@ file contents. Thumbnails come from Windows' shell at display time.
 
 | | Builds | Done when |
 |---|---|---|
-| H1a | The Home section, hover opens Home, the Now playing, Agents, Timer, System and Battery rows, Edit with add, remove and reorder | Hovering opens Home; rows act in place; the order survives a restart |
+| H1a (done, checked live 2026-10-16) | The Home section, hover opens Home, the Now playing, Agents, Timer, System and Battery rows, Edit with add, remove and reorder | Hovering opens Home; rows act in place; the order survives a restart |
 | H1b | Calendar links in Settings, the reader, the Next event row, the Calendar section | The owner's own link shows their next event and their week, offline included |
 | H2 | The Shelf section, the depot on drag, Just now and Earlier, dragging out, Home's Shelf row | Files dragged to the island stay, move to Earlier after 15 minutes, and drag back out to Explorer |
 
