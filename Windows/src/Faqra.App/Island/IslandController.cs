@@ -256,7 +256,7 @@ public sealed partial class IslandController : IDisposable
 
         _window.ShowExpanded(expanded, _geometry.ContentInset, animate);
         // The monitor samples for the System module only while its cards are on screen.
-        _systemMonitor.SetNotchVisible(expanded && _module == IslandModule.System && !_sectionsOpen);
+        _systemMonitor.SetNotchVisible(expanded && !_sectionsOpen && (_module == IslandModule.System || HomeShowsSystem()));
         if (expanded)
         {
             _window.SetModule(ModuleTitle(_module), BuildModule(_module), animate);
@@ -313,6 +313,7 @@ public sealed partial class IslandController : IDisposable
             IslandModule.Timer => hub.FeatureTitles[AppFeature.NotchTimer],
             IslandModule.Mixer => hub.FeatureTitles[AppFeature.Mixer],
             IslandModule.FaqraAgents => hub.FeatureTitles[AppFeature.FaqraAgents],
+            IslandModule.FaqraHome => Faqra.Core.Localization.HomeStrings.For(L10n.Shared.Language).Title,
             IslandModule.System => hub.GroupTitles[FeatureGroup.Monitor],
             _ => module.RawValue(),
         };
@@ -321,6 +322,7 @@ public sealed partial class IslandController : IDisposable
     private UIElement? BuildModule(IslandModule module)
     {
         _agentsModule = null;
+        _homeModule = null;
         return module switch
         {
             IslandModule.Music => new MusicModule(_nowPlaying),
@@ -328,6 +330,7 @@ public sealed partial class IslandController : IDisposable
             IslandModule.System => new SystemModule(_systemMonitor, SystemCards(), _geometry.SystemColumns),
             IslandModule.Mixer => new MixerModule(_store, _runtime.IsAvailable, _mixer),
             IslandModule.FaqraAgents => BuildAgentsModule(),
+            IslandModule.FaqraHome => BuildHomeModule(),
             // Modules whose feature is not ported yet keep their place in the section list; their
             // content arrives with the feature.
             _ => new ModulePlaceholder(ModuleTitle(module)),
@@ -418,15 +421,8 @@ public sealed partial class IslandController : IDisposable
         Render();
     }
 
-    private IslandModule DefaultModule()
-    {
-        var visible = VisibleModules();
-        if (visible.Count == 0)
-        {
-            return IslandModule.Controls;
-        }
-        return visible.Contains(_module) ? _module : visible[0];
-    }
+    /// <summary>Home while it is shown, else the section in use, else the first.</summary>
+    private IslandModule DefaultModule() => IslandModules.Opening(_module, VisibleModules()) ?? IslandModule.Controls;
 
     /// <summary>A hover-opened island loses the pointer without a MouseLeave; the poll catches it.</summary>
     private void PollPointer()

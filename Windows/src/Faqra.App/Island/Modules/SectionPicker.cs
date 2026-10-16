@@ -107,6 +107,7 @@ public sealed class SectionPicker : UserControl
     /// <summary>Sentence-case module names. They are the island's own labels, not feature titles.</summary>
     private static string Title(IslandModule module) => module switch
     {
+        IslandModule.FaqraHome => "Home",
         IslandModule.Controls => "Controls",
         IslandModule.Mixer => "Mixer",
         IslandModule.Music => "Music",

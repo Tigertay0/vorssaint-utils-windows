@@ -37,6 +37,15 @@ public class HomeModuleTests
         new(services.Store, services.NowPlaying, hub ?? services.Agents, services.Timer, services.Monitor, _ => true);
 
     [Fact]
+    public void TheSectionListNamesHome() => StaThread.Run(() =>
+    {
+        var picker = new SectionPicker([IslandModule.FaqraHome, IslandModule.Music], _ => { });
+        var text = AgentsRenderTests.AllText(picker);
+        Assert.Contains("Home", text);
+        Assert.DoesNotContain("faqraHome", text);
+    });
+
+    [Fact]
     public void HomeShowsItsDefaultRowsInOrder() => StaThread.Run(() =>
     {
         using var services = AppServices.StartWith(DefaultsStore.InMemory());
