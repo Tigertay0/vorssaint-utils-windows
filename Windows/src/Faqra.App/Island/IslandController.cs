@@ -255,8 +255,6 @@ public sealed partial class IslandController : IDisposable
         var expanded = _presentation == IslandPresentation.Expanded;
 
         _window.ShowExpanded(expanded, _geometry.ContentInset, animate);
-        // The monitor samples for the System module only while its cards are on screen.
-        _systemMonitor.SetNotchVisible(expanded && !_sectionsOpen && (_module == IslandModule.System || HomeShowsSystem()));
         if (expanded)
         {
             _window.SetModule(ModuleTitle(_module), BuildModule(_module), animate);
@@ -266,6 +264,8 @@ public sealed partial class IslandController : IDisposable
         {
             _window.SetIdleContent(BuildIdleContent());
         }
+        // The monitor samples only while a System card is on screen; Home's row is known once built.
+        _systemMonitor.SetNotchVisible(expanded && !_sectionsOpen && (_module == IslandModule.System || HomeShowsSystem()));
 
         _window.ApplyShape(
             _currentSize,
