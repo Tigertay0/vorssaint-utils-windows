@@ -12,7 +12,7 @@ namespace Faqra.Core.Island;
 /// </summary>
 public enum IslandModule
 {
-    Controls, Mixer, Music, Clipboard, Captures, Files, System, Tools, Calendar, Notifications, Timer, Camera, Downloads, FaqraAgents,
+    Controls, Mixer, Music, Clipboard, Captures, Files, System, Tools, Calendar, Notifications, Timer, Camera, Downloads, FaqraAgents, FaqraHome,
 }
 
 public static class IslandModules
@@ -35,6 +35,7 @@ public static class IslandModules
         IslandModule.Camera => "camera",
         IslandModule.Downloads => "downloads",
         IslandModule.FaqraAgents => "faqraAgents",
+        IslandModule.FaqraHome => "faqraHome",
         _ => throw new ArgumentOutOfRangeException(nameof(module), module, null),
     };
 
@@ -58,6 +59,7 @@ public static class IslandModules
         IslandModule.Camera => 'w',
         IslandModule.Downloads => 'd',
         IslandModule.FaqraAgents => 'g',
+        IslandModule.FaqraHome => 'h',
         _ => throw new ArgumentOutOfRangeException(nameof(module), module, null),
     };
 
@@ -78,6 +80,7 @@ public static class IslandModules
         IslandModule.Camera => "",        // Webcam
         IslandModule.Downloads => "",     // Download
         IslandModule.FaqraAgents => "\uE99A",      // Robot
+        IslandModule.FaqraHome => "\uE80F",      // Home
         _ => throw new ArgumentOutOfRangeException(nameof(module), module, null),
     };
 
@@ -87,7 +90,7 @@ public static class IslandModules
     /// </summary>
     public static bool IsAvailable(this IslandModule module, Func<AppFeature, bool> isAvailable) => module switch
     {
-        IslandModule.Controls or IslandModule.Music => true,
+        IslandModule.Controls or IslandModule.Music or IslandModule.FaqraHome => true,
         IslandModule.Timer => isAvailable(AppFeature.NotchTimer),
         IslandModule.Camera => isAvailable(AppFeature.CameraPreview),
         IslandModule.Downloads => isAvailable(AppFeature.NotchDownloads),
@@ -129,12 +132,30 @@ public static class IslandModules
         }
         foreach (var module in All.Where(module => seen.Add(module)))
         {
-            ordered.Add(module);
+            // Home leads unless the owner placed it themselves.
+            if (module == IslandModule.FaqraHome)
+            {
+                ordered.Insert(0, module);
+            }
+            else
+            {
+                ordered.Add(module);
+            }
         }
         return ordered
             .Where(module => !hidden.Contains(module.RawValue()) && module.IsAvailable(isAvailable))
             .ToList();
     }
+
+    /// <summary>
+    /// The section the island opens on when nothing asks for one: Home while it is shown, else the current section,
+    /// else the first. Null when no section is shown.
+    /// </summary>
+    public static IslandModule? Opening(IslandModule current, IReadOnlyList<IslandModule> visible) =>
+        visible.Count == 0 ? null
+        : visible.Contains(IslandModule.FaqraHome) ? IslandModule.FaqraHome
+        : visible.Contains(current) ? current
+        : visible[0];
 
     /// <summary>The next or previous visible module, wrapping. Drives Ctrl+Tab and Ctrl+Shift+Tab.</summary>
     public static IslandModule? Adjacent(IslandModule current, int delta, IReadOnlyList<IslandModule> visible)

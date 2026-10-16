@@ -229,6 +229,7 @@ public static partial class DefaultsKey
     public const string FaqraAgentsNextShortcut = "faqraAgentsNextShortcut";
     public const string FaqraAgentsPreviousShortcut = "faqraAgentsPreviousShortcut";
     public const string FaqraAgentsReplyWindowSeconds = "faqraAgentsReplyWindowSeconds";
+    public const string FaqraHomeItems = "faqraHomeItems";
 
     // Updates
     public const string AutoCheckUpdates = "autoCheckUpdates";

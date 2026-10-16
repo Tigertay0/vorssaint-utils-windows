@@ -223,6 +223,7 @@ public static partial class RegisteredDefaults
         [DefaultsKey.FaqraAgentsNextShortcut] = "control+option+command:40",      // Ctrl+Alt+Win+Down (Windows VK)
         [DefaultsKey.FaqraAgentsPreviousShortcut] = "control+option+command:38",  // Ctrl+Alt+Win+Up (Windows VK)
         [DefaultsKey.FaqraAgentsReplyWindowSeconds] = 300L,  // 5 minutes; the island offers 1, 2, 5 and 8
+        [DefaultsKey.FaqraHomeItems] = Island.HomeItems.DefaultOrder,
 
         // App updates utility
         [DefaultsKey.AppUpdatesCheckFrequency] = "off",
